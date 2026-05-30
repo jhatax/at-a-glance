@@ -1,0 +1,644 @@
+#include "ataglance.h"
+
+static char s_text_buffers[TOTAL_BUFFERS][MAX_STR_LEN];
+
+static GColor s_color_primary;
+static GColor s_color_time;
+static GColor s_color_date;
+
+static GFont s_font_gothic_24;
+static GFont s_font_time;
+static GFont s_font_gothic_18_bold;
+
+static Window* s_window;
+static Layer* s_background_layer;
+
+static TextLayer* s_date_layer;
+static TextLayer* s_time_layer;
+
+static Layer* s_heart_icon_layer;
+static GDrawCommandImage* s_heart_vector;
+
+static TextLayer* s_bpm_layer;
+static int s_bpm;
+static GColor s_bpm_color;
+
+static Layer* s_steps_icon_layer;
+static TextLayer* s_steps_layer;
+
+static TextLayer* s_temp_layer;
+static Layer* s_battery_icon_layer;
+static TextLayer* s_battery_layer;
+static BatteryChargeState s_battery_state;
+
+static struct {
+  uint8_t temp_unit;
+  uint8_t time_format;
+  uint8_t hr_sample_minutes;
+  int16_t temp_celsius_tenths;
+} s_settings;
+
+static bool hr_sample_minutes_valid(int minutes) {
+  switch ((HrSampleMinutes)minutes) {
+    case HR_SAMPLE_MINUTES_10:
+    case HR_SAMPLE_MINUTES_15:
+    case HR_SAMPLE_MINUTES_30:
+    case HR_SAMPLE_MINUTES_60:
+    case HR_SAMPLE_MINUTES_120:
+      return true;
+    default:
+      return false;
+  }
+}
+
+static void apply_hr_sample_period() {
+  uint16_t interval_sec = (uint16_t)s_settings.hr_sample_minutes *  60;
+  health_service_set_heart_rate_sample_period(interval_sec);
+}
+
+static void settings_load() {
+  s_settings.temp_unit = TEMP_UNIT_F;
+  s_settings.time_format = TIME_FMT_24;
+  s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
+  s_settings.temp_celsius_tenths = TEMP_INVALID;
+
+  if (persist_exists(PERSIST_SETTINGS)) {
+    persist_read_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
+  }
+  if (!hr_sample_minutes_valid(s_settings.hr_sample_minutes)) {
+    s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
+  }
+}
+
+static void settings_save() {
+  persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
+}
+
+static char* get_text_buffer(TextBufferId id) {
+  switch (id) {
+    case BUF_DATE:
+    case BUF_TIME:
+    case BUF_BPM:
+    case BUF_STEPS:
+    case BUF_BATTERY:
+    case BUF_TEMP:
+      return s_text_buffers[id];
+
+    case BUF_CLEANUP: {
+        for (size_t i = 0; i < TOTAL_BUFFERS; ++i) {
+          s_text_buffers[i][0] = '\0';
+        }
+        return NULL;
+    }
+
+    default:
+      return NULL;
+  }
+}
+
+static void uppercase_date(char* buf) {
+  if (!buf || strlen(buf) == 0) {
+    return;
+  }
+  int distance = 'a' - 'A';
+  for (char* p = buf;* p; ++p) {
+    if (*p >= 'a' &&* p <= 'z') {
+     * p = (char)(*p - distance);
+    }
+  }
+}
+
+static void format_time(char* buf, size_t buflen, const struct tm* t) {
+  if (buf && buflen > 0) {
+    if (s_settings.time_format == TIME_FMT_12) {
+      strftime(buf, buflen, "%I:%M", t);
+      if (buf[0] == '0') {
+        memmove(buf, buf + 1, strlen(buf));
+      }
+    } else {
+      strftime(buf, buflen, "%H:%M", t);
+    }
+  }
+}
+
+static void format_temp(char* buf, size_t buflen) {
+  if (buf && buflen > 0) {
+    int c_tenths = s_settings.temp_celsius_tenths;
+
+    if (c_tenths == TEMP_INVALID) {
+      // Temperature can be 3-digits, so we need to print 3 hyphens and the unit
+      snprintf(buf, buflen, "---%s", s_settings.temp_unit == TEMP_UNIT_C ? "°C" : "°F");
+      return;
+    }
+
+    if (s_settings.temp_unit == TEMP_UNIT_F) {
+    // Convert Celsius to Fahrenheit, add half the divisor to round up
+      int f_whole = ((c_tenths*  9 + 25) / 50) + 32;
+      snprintf(buf, buflen, "%d°F", f_whole);
+    } else {
+      // Add half the divisor to round up, in this case 10
+      int c_whole = (c_tenths >= 0) ? (c_tenths + 5) / 10 : (c_tenths - 5) / 10;
+      snprintf(buf, buflen, "%d°C", c_whole);
+    }
+  }
+}
+
+// This is a callback function, so no need to mark the layer as dirty.
+// This is being called because the OS knows the layer is dirty!
+static void background_update_proc(Layer* layer, GContext* ctx) {
+  (void)layer;
+  graphics_context_set_stroke_color(ctx, GColorDarkGray);
+  graphics_draw_line(ctx, GPoint(CONTENT_X, RULE_VERT), GPoint(RULE_RIGHT, RULE_VERT));
+}
+
+static GColor get_bpm_color(int bpm) {
+  if (bpm <= 0) {
+    // Not Available or Invalid
+    return GColorWhite;
+  } else if (bpm > 120) {
+    // Peak Cardiorespiratory Zone
+    return GColorRed;
+  } else if (bpm >= 100) {
+    // Active Cardio/Fat Burn Zone
+    return GColorMagenta;
+  } else {
+    // Healthy Resting Zone
+    return GColorJaegerGreen;
+  }
+}
+
+static bool set_bpm_color_callback(GDrawCommand *cmd, uint32_t index, void *context) {
+  GColor *target_color = (GColor *)context;
+
+  gdraw_command_set_fill_color(cmd, *target_color);
+  gdraw_command_set_stroke_color(cmd, *target_color);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Changed the Heart Icon's color");
+  return true;
+}
+
+// Called whenever this layer is updated. This will be called multiple times per second, so try not to do any heavy processing here (like drawing)
+static void heart_update_proc(Layer* layer, GContext* ctx) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "In the Handler: Updating BPM icon");
+  (void) layer;
+
+  if (!ctx) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "In the Handler: Oh no, something was NULL");
+    return;
+  }
+
+  GDrawCommandList* list = gdraw_command_image_get_command_list(s_heart_vector);
+  if (!list) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Command list is NULL");
+    return;
+  }
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Current BPM Color: %u", (uint8_t)s_bpm_color.argb);
+  gdraw_command_list_iterate(list, set_bpm_color_callback, &s_bpm_color);
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Drawing the Heart Icon");
+  gdraw_command_image_draw(ctx, s_heart_vector, GPoint(0,0));
+  APP_LOG(APP_LOG_LEVEL_INFO, "Drew the Heart Icon");
+}
+
+static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating steps icon");
+  (void)layer;
+  graphics_context_set_fill_color(ctx, s_color_date);
+  // --- THE MAIN HEEL PAD (Centered and unified) ---
+    // A clean, central oval-like base anchoring the bottom of the 24x24 frame
+    graphics_fill_circle(ctx, GPoint(12, 17), 5); // Main pad center
+    graphics_fill_circle(ctx, GPoint(9, 18), 4);  // Left swell
+    graphics_fill_circle(ctx, GPoint(15, 18), 4); // Right swell
+
+    // --- THE 4 SMALL TOE PADS (Arcing cleanly above the heel) ---
+    graphics_fill_circle(ctx, GPoint(5, 11), 2);  // Far Left Toe
+    graphics_fill_circle(ctx, GPoint(9, 7), 2.5); // Center Left Toe
+    graphics_fill_circle(ctx, GPoint(15, 7), 2.5);// Center Right Toe
+    graphics_fill_circle(ctx, GPoint(19, 11), 2); // Far Right Toe
+}
+
+static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
+  (void)layer;
+
+  // 1. Fetch live system battery metrics
+  int percent = s_battery_state.charge_percent;
+
+  // 2. Determine battery health color profiles
+  GColor draw_color = s_color_primary;
+  if (s_battery_state.is_charging) {
+    draw_color = GColorJaegerGreen;
+  } else {
+    // Battery health color profile based on percentage remaining
+    // Green for >50%, Yellow for 20-50%, Red otherwise
+    draw_color = ((percent > 50) ? GColorGreen :
+                  ((percent > 20) ? GColorYellow :
+                    GColorRed));
+  }
+
+  // 3. Draw the outer AA Battery shell (Centered inside the 25x25 canvas)
+  graphics_context_set_stroke_color(ctx, draw_color);
+  graphics_context_set_stroke_width(ctx, 2);
+
+  // Main cylinder body shell (Width: 14px, Height: 20px)
+  graphics_draw_rect(ctx, GRect(5, 4, 14, 20));
+
+  // The positive (+) contact terminal nub on the very top of the AA battery
+  graphics_context_set_fill_color(ctx, draw_color);
+  graphics_fill_rect(ctx, GRect(9, 1, 6, 3), 0, GCornerNone);
+
+  // 4. Calculate the vertical fuel cell height from the percentage variable
+  // Total interior cylinder height is 16 pixels (from Y = 6 to Y = 22)
+  int fill_height = (int) (((percent * 16) / 100) + 1);
+  fill_height = (fill_height > 16) ? 16 : fill_height; // Cap the height at 16px max
+
+  // 5. Draw the inner fluid level (Fills upwards from the bottom base plate)
+  int fill_y = 22 - fill_height;
+  graphics_fill_rect(ctx, GRect(7, fill_y, 10, fill_height), 0, GCornerNone);
+}
+
+static void update_date() {
+  char* buf = get_text_buffer(BUF_DATE);
+  if (!buf) {
+    return;
+  }
+  time_t now = time(NULL);
+  struct tm* t = localtime(&now);
+  strftime(buf, MAX_STR_LEN, "%a · %d %b", t);
+  uppercase_date(buf);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating date");
+  if (s_date_layer) {
+    text_layer_set_text(s_date_layer, buf);
+  }
+}
+
+static void update_time() {
+  char* buf = get_text_buffer(BUF_TIME);
+  if (!buf) {
+    return;
+  }
+  time_t now = time(NULL);
+  struct tm* t = localtime(&now);
+  format_time(buf, MAX_STR_LEN, t);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating time");
+  if (s_time_layer) {
+    text_layer_set_text(s_time_layer, buf);
+  }
+}
+
+static void update_health() {
+  char* bpm_buf = get_text_buffer(BUF_BPM);
+  char* steps_buf = get_text_buffer(BUF_STEPS);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating Health");
+
+  if (!bpm_buf || !steps_buf) {
+    return;
+  }
+
+  time_t now = time(NULL);
+  HealthServiceAccessibilityMask hr_mask = health_service_metric_accessible(
+      HealthMetricHeartRateBPM, now, now);
+
+  if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
+    s_bpm = (int) health_service_peek_current_value(HealthMetricHeartRateBPM);
+
+    if (s_bpm > 0) {
+      snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
+    } else {
+      snprintf(bpm_buf, MAX_STR_LEN, "--");
+    }
+  } else {
+    snprintf(bpm_buf, MAX_STR_LEN, "--");
+  }
+  s_bpm_color = get_bpm_color(s_bpm);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Got BPM Color: %u", (uint8_t)s_bpm_color.argb);
+
+  HealthValue steps = health_service_sum_today(HealthMetricStepCount);
+  if (steps > 0) {
+    snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
+    text_layer_set_text_color(s_steps_layer, s_color_primary);
+  } else {
+    snprintf(steps_buf, MAX_STR_LEN, "--");
+  }
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating steps");
+
+  if (s_bpm_layer) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Should we update BPM?");
+    text_layer_set_text_color(s_bpm_layer, s_bpm_color);
+    text_layer_set_text(s_bpm_layer, bpm_buf);
+  }
+
+  if (s_heart_icon_layer) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Marking BPM layer dirty");
+    layer_mark_dirty(s_heart_icon_layer);
+  }
+
+  if (s_steps_layer) {
+    text_layer_set_text(s_steps_layer, steps_buf);
+  }
+}
+
+static void update_battery() {
+  char* buf = get_text_buffer(BUF_BATTERY);
+  if (!buf) {
+    return;
+  }
+  s_battery_state = battery_state_service_peek();
+  snprintf(buf, MAX_STR_LEN, "%d%%", s_battery_state.charge_percent);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating battery");
+
+  if (s_battery_layer) {
+      text_layer_set_text(s_battery_layer, buf);
+  }
+
+  if (s_battery_icon_layer) {
+    layer_mark_dirty(s_battery_icon_layer);
+  }
+}
+
+static void update_temp() {
+  char* buf = get_text_buffer(BUF_TEMP);
+  if (!buf) {
+    return;
+  }
+  format_temp(buf, MAX_STR_LEN);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Updating temperature");
+
+  if (s_temp_layer) {
+    text_layer_set_text(s_temp_layer, buf);
+  }
+}
+
+static void update_all() {
+  APP_LOG(APP_LOG_LEVEL_INFO, "In Update All");
+  update_date();
+  update_time();
+  update_health();
+  update_battery();
+  update_temp();
+  APP_LOG(APP_LOG_LEVEL_INFO, "All Updated");
+}
+
+static void health_handler(HealthEventType event, void* context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Health");
+  update_health();
+}
+
+static void battery_handler(BatteryChargeState state) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Battery");
+  update_battery();
+}
+
+static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Time / Date");
+  if (units_changed & MINUTE_UNIT) {
+    update_date();
+    update_time();
+  }
+}
+
+static int tuple_to_int(Tuple* tuple) {
+  if (!tuple) {
+    return -1;
+  }
+  switch (tuple->type) {
+    case TUPLE_INT:
+      return (int)tuple->value->int32;
+    case TUPLE_CSTRING:
+      return atoi(tuple->value->cstring);
+    default:
+      return -1;
+  }
+}
+
+static void inbox_received_callback(DictionaryIterator* iter, void* context) {
+  // context is unused in this function
+  if (!iter) {
+    return;
+  }
+  bool changed = false;
+
+  Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
+  int time_fmt = tuple_to_int(tf);
+  if (time_fmt >= 0 && time_fmt <= 1) {
+    s_settings.time_format = (uint8_t)time_fmt;
+    changed = true;
+    update_time();
+  }
+
+  Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
+  int temp_unit = tuple_to_int(tu);
+  if (temp_unit >= 0 && temp_unit <= 1) {
+    s_settings.temp_unit = (uint8_t)temp_unit;
+    changed = true;
+    update_temp();
+  }
+
+  Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
+  if (tt && tt->type == TUPLE_INT) {
+    s_settings.temp_celsius_tenths = (int16_t)tt->value->int32;
+    update_temp();
+    changed = true;
+  }
+
+  Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
+  int hr_minutes = tuple_to_int(th);
+  if (hr_sample_minutes_valid(hr_minutes)) {
+    s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
+    apply_hr_sample_period();
+    changed = true;
+  }
+
+  if (changed) {
+    settings_save();
+  }
+}
+
+static void inbox_dropped_callback(AppMessageResult reason, void* context) {
+  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage dropped: %d", reason);
+}
+
+static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+}
+
+static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+}
+
+static void main_window_load(Window* window) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Main Window Load Handler");
+
+  Layer* root = window_get_root_layer(window);
+  window_set_background_color(window, GColorBlack);
+
+  // Background Rule Layer
+  s_background_layer = layer_create(GRect(0, 0, 200, 228));
+  layer_set_update_proc(s_background_layer, background_update_proc);
+  layer_add_child(root, s_background_layer);
+
+  // --- TOP ZONE: DATE & TIME ---
+  s_date_layer = text_layer_create(GRect(CONTENT_X, 10, 176, 36));
+  text_layer_set_background_color(s_date_layer, GColorClear);
+  text_layer_set_text_color(s_date_layer, s_color_date);
+  text_layer_set_font(s_date_layer, s_font_gothic_18_bold);
+  text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_date_layer));
+
+  s_time_layer = text_layer_create(GRect(CONTENT_X, 46, 200, 84));
+  text_layer_set_background_color(s_time_layer, GColorClear);
+  text_layer_set_text_color(s_time_layer, s_color_time);
+  text_layer_set_font(s_time_layer, s_font_time);
+  text_layer_set_text_alignment(s_time_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_time_layer));
+
+  // --- MIDDLE ZONE: HEALTH METRICS (25px x 25px ICONS) ---
+  // Left Column: Heart Rate
+  s_heart_icon_layer = layer_create(GRect(CONTENT_X, RULE_VERT + 8, 28, 28));
+  APP_LOG(APP_LOG_LEVEL_INFO, "Ready to initialize the BPM icon");
+  s_heart_vector = gdraw_command_image_create_with_resource(RESOURCE_ID_ICON_BPM);
+  if (s_heart_vector) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Initialized the BPM icon");
+  } else {
+    APP_LOG(APP_LOG_LEVEL_INFO, "There is no BPM icon to initialize, gotta try plan-B");
+  }
+  layer_set_update_proc(s_heart_icon_layer, heart_update_proc);
+  layer_add_child(root, s_heart_icon_layer);
+
+  s_bpm_layer = text_layer_create(GRect(41, RULE_VERT + 8, 45, 30));
+  text_layer_set_background_color(s_bpm_layer, GColorClear);
+  text_layer_set_text_color(s_bpm_layer, s_color_primary);
+  text_layer_set_font(s_bpm_layer, s_font_gothic_24);
+  text_layer_set_text_alignment(s_bpm_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_bpm_layer));
+
+  // Right Column: Step Counter
+  s_steps_icon_layer = layer_create(GRect(106, RULE_VERT + 8, 25, 25));
+  layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
+  layer_add_child(root, s_steps_icon_layer);
+
+  s_steps_layer = text_layer_create(GRect(135, RULE_VERT + 8, 53, 30));
+  text_layer_set_background_color(s_steps_layer, GColorClear);
+  text_layer_set_text_color(s_steps_layer, s_color_primary);
+  text_layer_set_font(s_steps_layer, s_font_gothic_24);
+  text_layer_set_text_alignment(s_steps_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_steps_layer));
+
+  // --- BOTTOM ZONE: WEATHER & BATTERY (25px x 25px ICONS) ---
+  // Left Column: Weather / Temperature
+  // Shifted to X = 41 to match row above!
+  s_temp_layer = text_layer_create(GRect(41, 192, 45, 24));
+  text_layer_set_background_color(s_temp_layer, GColorClear);
+  text_layer_set_text_color(s_temp_layer, s_color_primary);
+  text_layer_set_font(s_temp_layer, s_font_gothic_18_bold);
+  text_layer_set_text_alignment(s_temp_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_temp_layer));
+
+  // Initialize the Battery Custom Canvas Layer
+  // Matches paw column!
+  s_battery_icon_layer = layer_create(GRect(106, 192, 25, 25));
+  layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
+  layer_add_child(root, s_battery_icon_layer);
+
+  // Right Column: AA Battery
+  // Shifted to X = 135 to match row above!
+  s_battery_layer = text_layer_create(GRect(135, 192, 53, 24));
+  text_layer_set_background_color(s_battery_layer, GColorClear);
+  text_layer_set_text_color(s_battery_layer, s_color_primary);
+  text_layer_set_font(s_battery_layer, s_font_gothic_18_bold);
+  text_layer_set_text_alignment(s_battery_layer, GTextAlignmentLeft);
+  layer_add_child(root, text_layer_get_layer(s_battery_layer));
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Right before Update All");
+  update_all();
+}
+
+static void main_window_unload(Window* window) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Main Window Unload");
+  layer_destroy(s_background_layer);
+  s_background_layer = NULL;
+
+  text_layer_destroy(s_date_layer);
+  s_date_layer = NULL;
+
+  text_layer_destroy(s_time_layer);
+  s_time_layer = NULL;
+
+  if (s_heart_vector) {
+    gdraw_command_image_destroy(s_heart_vector);
+    s_heart_vector = NULL;
+  }
+
+  layer_destroy(s_heart_icon_layer);
+  s_heart_icon_layer = NULL;
+  text_layer_destroy(s_bpm_layer);
+  s_bpm_layer = NULL;
+
+  text_layer_destroy(s_steps_layer);
+  s_steps_layer = NULL;
+  layer_destroy(s_steps_icon_layer);
+  s_steps_icon_layer = NULL;
+
+  text_layer_destroy(s_temp_layer);
+  s_temp_layer = NULL;
+
+  layer_destroy(s_battery_icon_layer);
+  s_battery_icon_layer = NULL;
+
+  text_layer_destroy(s_battery_layer);
+  s_battery_layer = NULL;
+
+  get_text_buffer(BUF_CLEANUP);
+}
+
+static void init(void) {
+  s_font_gothic_24 = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+  s_font_time = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
+  s_font_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+
+  s_color_primary = GColorLightGray;
+  s_color_time = GColorSunsetOrange;
+  s_color_date = GColorRichBrilliantLavender;
+
+  // Initialize BPM releated variables
+  s_bpm = 0;
+  s_bpm_color = GColorWhite;
+
+  settings_load();
+  APP_LOG(APP_LOG_LEVEL_INFO, "INIT");
+
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+
+  s_window = window_create();
+  window_set_window_handlers(s_window, (WindowHandlers) {
+    .load = main_window_load,
+    .unload = main_window_unload,
+  });
+  window_stack_push(s_window, true);
+
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  battery_state_service_subscribe(battery_handler);
+  health_service_events_subscribe(health_handler, NULL);
+
+  apply_hr_sample_period();
+  APP_LOG(APP_LOG_LEVEL_INFO, "INIT Complete");
+}
+
+static void deinit(void) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "De-Initialize");
+  tick_timer_service_unsubscribe();
+  health_service_events_unsubscribe();
+  battery_state_service_unsubscribe();
+  settings_save();
+  window_destroy(s_window);
+  APP_LOG(APP_LOG_LEVEL_INFO, "Destroying...");
+}
+
+int main(void) {
+  init();
+  app_event_loop();
+  deinit();
+}

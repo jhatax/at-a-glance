@@ -1,0 +1,85 @@
+static void heart_icon_update_proc(Layer *layer, GContext *ctx) {
+  // 1. Get your dynamic heart rate tracking color
+  GColor dynamic_color = get_bpm_color(s_current_bpm);
+  graphics_context_set_fill_color(ctx, dynamic_color);
+
+  // 2. Procedural Embedded Heart Geometry (Fits perfectly in a 24x24 box)
+  // Two round lobes side-by-side at the top
+  graphics_fill_circle(ctx, GPoint(7, 8), 5);  // Left Lobe
+  graphics_fill_circle(ctx, GPoint(16, 8), 5); // Right Lobe
+
+  // A crisp, inverted triangular tip locking down the base center point
+  GPathInfo triangle_info = {
+    .num_points = 3,
+    .points = (GPoint[]) {
+      { 2, 11 },   // Upper Left Anchor
+      { 21, 11 },  // Upper Right Anchor
+      { 12, 22 }   // Bottom Center Tip Point
+    }
+  };
+
+  // Build the path handle and paint the solid shape fill
+  GPath *heart_tip = gpath_create(&triangle_info);
+  gpath_draw_filled(ctx, heart_tip);
+  gpath_destroy(heart_tip); // Free path structure memory immediately
+}
+
+static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
+  (void)layer;
+
+  int percent = s_battery_state.charge_percent;
+
+  GColor draw_color = s_color_primary;
+  if (s_battery_state.is_charging) {
+    draw_color = GColorJaegerGreen;
+  } else {
+    draw_color = (percent > 50) ? GColorGreen : ((percent > 20) ? GColorYellow : GColorRed);
+  }
+
+  // Draw the outer AA Battery shell outline frame (2 parameters)
+  graphics_context_set_stroke_color(ctx, draw_color);
+  graphics_context_set_stroke_width(ctx, 2);
+  graphics_draw_rect(ctx, GRect(5, 4, 14, 20));
+
+  // The positive (+) contact terminal nub on top (2 parameters)
+  graphics_context_set_fill_color(ctx, draw_color);
+  graphics_fill_rect(ctx, GRect(9, 1, 6, 3));
+
+  // Calculate fluid level bounds
+  int fill_height = (int)(((percent * 16) / 100) + 1);
+  fill_height = (fill_height > 16) ? 16 : fill_height;
+
+  // Render the interior charging gauge fluid block (2 parameters)
+  int fill_y = 22 - fill_height;
+  graphics_fill_rect(ctx, GRect(7, fill_y, 10, fill_height));
+}
+
+static void heart_update_proc(Layer* layer, GContext* ctx) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Updating BPM icon");
+
+  if (!s_heart_vector) {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "There is no heart PNG image");
+    graphics_context_set_fill_color(ctx, GColorSunsetOrange);
+    graphics_fill_rect(ctx, layer_get_bounds(layer)); // Fixed to 2 parameters!
+    return;
+  }
+
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+
+  if (!gcolor_equal(s_bpm_icon_prev_color, s_bpm_color)) {
+    GColor *palette = gbitmap_get_palette(s_heart_vector);
+
+    if (palette) {
+      for (int i = 0; i < 4; ++i) {
+        if (gcolor_equal(palette[i], s_bpm_icon_prev_color)) {
+          palette[i] = s_bpm_color;
+          break;
+        }
+      }
+      s_bpm_icon_prev_color = s_bpm_color;
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Recolored Heart Icon Palette successfully.");
+    }
+  }
+
+  graphics_draw_bitmap_in_rect(ctx, s_heart_vector, GRect(0, 0, 25, 25));
+}

@@ -1,0 +1,67 @@
+[
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "At a Glance"
+      },
+      {
+        "type": "select",
+        "messageKey": "TIME_FORMAT",
+        "label": "Time format",
+        "defaultValue": "0",
+        "options": [
+          {
+            "value": "0",
+            "label": "24-hour"
+          },
+          {
+            "value": "1",
+            "label": "12-hour"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "messageKey": "TEMP_UNIT",
+        "label": "Temperature unit",
+        "defaultValue": "0",
+        "options": [
+          {
+            "value": "0",
+            "label": "Fahrenheit (°F)"
+          },
+          {
+            "value": "1",
+            "label": "Celsius (°C)"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "messageKey": "HR_SAMPLE_MINUTES",
+        "label": "Heart rate sampling",
+        "defaultValue": "15",
+        "options": [
+          {
+            "value": "15",
+            "label": "Every 15 minutes"
+          },
+          {
+            "value": "30",
+            "label": "Every 30 minutes"
+          },
+          {
+            "value": "60",
+            "label": "Every 60 minutes"
+          },
+          {
+            "value": "120",
+            "label": "Every 120 minutes"
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,58 @@
+{
+  "name": "AtAGlance",
+  "author": "Manoj Mehta",
+  "description": "Get all the info you need, with a glance at your Pebble!",
+  "version": "1.0.0",
+  "keywords": [
+    "pebble",
+    "watchface"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "pebble-clay": "^1.0.4"
+  },
+  "pebble": {
+    "displayName": "At A Glance",
+    "uuid": "62B9295D-D680-409D-991B-B07B033352F9",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": [
+      "configurable",
+      "location",
+      "health"
+    ],
+    "messageKeys": [
+      "TIME_FORMAT",
+      "TEMP_UNIT",
+      "TEMPERATURE",
+      "HR_SAMPLE_MINUTES"
+    ],
+    "resources": {
+      "media": [
+        {
+          "file": "bpm_option-2.pdc",
+          "name": "ICON_BPM",
+          "type": "raw",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "icon.png",
+          "name": "MENU_ICON",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ],
+          "menuIcon": true
+        }
+      ]
+    }
+  }
+}
