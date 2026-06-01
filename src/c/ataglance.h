@@ -17,6 +17,8 @@
 #define TEMP_UNIT_C 1
 #define TIME_FMT_24 0
 #define TIME_FMT_12 1
+#define TEMP_UNIT_VALID(value) ((value) == TEMP_UNIT_F || (value) == TEMP_UNIT_C)
+#define TIME_FORMAT_VALID(value) ((value) == TIME_FMT_24 || (value) == TIME_FMT_12)
 
 #define TEMP_INVALID INT16_MIN
 
@@ -28,7 +30,13 @@ typedef enum {
   HR_SAMPLE_MINUTES_120 = 120,
 } HrSampleMinutes;
 
+// TODO: Update README and DESIGN to reflect the 10-minute default.
 #define HR_SAMPLE_MINUTES_DEFAULT HR_SAMPLE_MINUTES_10
+#define HR_SAMPLE_MINUTES_VALID(minutes) ((minutes) == HR_SAMPLE_MINUTES_10 || \
+                                          (minutes) == HR_SAMPLE_MINUTES_15 || \
+                                          (minutes) == HR_SAMPLE_MINUTES_30 || \
+                                          (minutes) == HR_SAMPLE_MINUTES_60 || \
+                                          (minutes) == HR_SAMPLE_MINUTES_120)
 
 typedef enum {
   BUF_DATE = 0,
