@@ -12,9 +12,9 @@ static Layer* s_background_layer;
 static TextLayer* s_date_layer;
 static TextLayer* s_time_layer;
 
-static Layer* s_heart_icon_layer;
-static GDrawCommandImage* s_heart_vector;
-static GPath* s_heart_fallback_path;
+static Layer* s_bpm_icon_layer;
+static GDrawCommandImage* s_bpm_icon_image;
+static GPath* s_bpm_icon_fallback_path;
 
 static TextLayer* s_bpm_layer;
 static int s_bpm;
@@ -40,14 +40,14 @@ static const GColor c_color_date = GColorRichBrilliantLavender;
 static const GColor c_data_unavailable_color = GColorWhite;
 static const GColor c_ataglance_text_color = GColorLightGray;
 static const char c_unavailable_text[] = "---";
-static GPoint s_heart_fallback_points[] = {
+static GPoint s_bpm_icon_fallback_points[] = {
   GPoint(4, 13),
   GPoint(23, 13),
   GPoint(14, 24),
 };
-static const GPathInfo s_heart_fallback_path_info = {
+static const GPathInfo s_bpm_icon_fallback_path_info = {
   .num_points = 3,
-  .points = s_heart_fallback_points,
+  .points = s_bpm_icon_fallback_points,
 };
 
 static void apply_hr_sample_period() {
@@ -181,7 +181,7 @@ static bool set_bpm_color_callback(GDrawCommand *cmd, uint32_t index, void *cont
   return true;
 }
 
-static void draw_fallback_heart_icon(GContext* ctx, GColor color) {
+static void draw_fallback_bpm_icon(GContext* ctx, GColor color) {
   if (!ctx) {
     return;
   }
@@ -190,35 +190,35 @@ static void draw_fallback_heart_icon(GContext* ctx, GColor color) {
   graphics_fill_circle(ctx, GPoint(9, 10), 5);
   graphics_fill_circle(ctx, GPoint(18, 10), 5);
 
-  if (s_heart_fallback_path) {
-    gpath_draw_filled(ctx, s_heart_fallback_path);
+  if (s_bpm_icon_fallback_path) {
+    gpath_draw_filled(ctx, s_bpm_icon_fallback_path);
   }
 }
 
-static void draw_heart_icon_with_color(GContext* ctx, GColor color) {
-  static GColor s_prev_heart_color = GColorBlack;
+static void draw_bpm_icon_with_color(GContext* ctx, GColor color) {
+  static GColor s_prev_bpm_icon_color = GColorBlack;
 
   if (!ctx) {
     return;
   }
 
-  if (!s_heart_vector) {
-    draw_fallback_heart_icon(ctx, color);
+  if (!s_bpm_icon_image) {
+    draw_fallback_bpm_icon(ctx, color);
     return;
   }
 
-  if (s_prev_heart_color.argb != color.argb) {
-    GDrawCommandList* list = gdraw_command_image_get_command_list(s_heart_vector);
+  if (s_prev_bpm_icon_color.argb != color.argb) {
+    GDrawCommandList* list = gdraw_command_image_get_command_list(s_bpm_icon_image);
     if (!list) {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Heart icon command list is unavailable; using fallback");
-      draw_fallback_heart_icon(ctx, color);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "BPM icon command list is unavailable; using fallback");
+      draw_fallback_bpm_icon(ctx, color);
       return;
     }
     gdraw_command_list_iterate(list, set_bpm_color_callback, &color);
-    s_prev_heart_color = color;
+    s_prev_bpm_icon_color = color;
   }
 
-  gdraw_command_image_draw(ctx, s_heart_vector, GPoint(0, 0));
+  gdraw_command_image_draw(ctx, s_bpm_icon_image, GPoint(0, 0));
 }
 
 // Called whenever this layer is updated. This will be called multiple times per second,
@@ -231,7 +231,7 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
     return;
   }
 
-  draw_heart_icon_with_color(ctx, s_bpm_color);
+  draw_bpm_icon_with_color(ctx, s_bpm_color);
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -345,10 +345,10 @@ static void update_bpm() {
   text_layer_set_text_color(s_bpm_layer, s_bpm_color);
   text_layer_set_text(s_bpm_layer, bpm_buf);
 
-  if (s_heart_icon_layer) {
-    layer_mark_dirty(s_heart_icon_layer);
+  if (s_bpm_icon_layer) {
+    layer_mark_dirty(s_bpm_icon_layer);
   } else {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Heart icon layer is unavailable");
+    APP_LOG(APP_LOG_LEVEL_WARNING, "BPM icon layer is unavailable");
   }
 }
 
@@ -563,19 +563,19 @@ static void main_window_load(Window* window) {
   }
 
   // --- MIDDLE ZONE: HEALTH METRICS (25px x 25px ICONS) ---
-  // Left Column: Heart Rate
-  s_heart_icon_layer = layer_create(GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
-  s_heart_vector = gdraw_command_image_create_with_resource(RESOURCE_ID_ICON_BPM);
-  if (!s_heart_vector) {
+  // Left Column: BPM
+  s_bpm_icon_layer = layer_create(GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
+  s_bpm_icon_image = gdraw_command_image_create_with_resource(RESOURCE_ID_ICON_BPM);
+  if (!s_bpm_icon_image) {
     APP_LOG(APP_LOG_LEVEL_INFO, "There is no BPM icon to initialize, gotta try plan-B");
-    s_heart_fallback_path = gpath_create(&s_heart_fallback_path_info);
-    if (!s_heart_fallback_path) {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Fallback heart path could not be created");
+    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
+    if (!s_bpm_icon_fallback_path) {
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Fallback BPM icon path could not be created");
     }
   }
-  if (s_heart_icon_layer) {
-    layer_set_update_proc(s_heart_icon_layer, bpm_icon_update_proc);
-    layer_add_child(root, s_heart_icon_layer);
+  if (s_bpm_icon_layer) {
+    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
+    layer_add_child(root, s_bpm_icon_layer);
   }
 
   s_bpm_layer = text_layer_create(GRect(left_value_x, metrics_row_top, 58, metrics_text_height));
@@ -648,17 +648,17 @@ static void main_window_unload(Window* window) {
   text_layer_destroy(s_time_layer);
   s_time_layer = NULL;
 
-  if (s_heart_vector) {
-    gdraw_command_image_destroy(s_heart_vector);
-    s_heart_vector = NULL;
+  if (s_bpm_icon_image) {
+    gdraw_command_image_destroy(s_bpm_icon_image);
+    s_bpm_icon_image = NULL;
   }
-  if (s_heart_fallback_path) {
-    gpath_destroy(s_heart_fallback_path);
-    s_heart_fallback_path = NULL;
+  if (s_bpm_icon_fallback_path) {
+    gpath_destroy(s_bpm_icon_fallback_path);
+    s_bpm_icon_fallback_path = NULL;
   }
 
-  layer_destroy(s_heart_icon_layer);
-  s_heart_icon_layer = NULL;
+  layer_destroy(s_bpm_icon_layer);
+  s_bpm_icon_layer = NULL;
   text_layer_destroy(s_bpm_layer);
   s_bpm_layer = NULL;
 
