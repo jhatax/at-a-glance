@@ -511,6 +511,10 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+static inline bool is_bpm_icon_fallback_mode_enabled() {
+  return FALLBACK_MODE == BPM_ICON_MODE_FALLBACK;
+}
+
 static inline TextLayer* create_and_initialize_text_layer(
     Layer* parent,
     GRect frame,
@@ -570,11 +574,19 @@ static inline void init_bpm_column(
     int metrics_row_top,
     int icon_size,
     int metrics_text_height) {
+  bool use_fallback = is_bpm_icon_fallback_mode_enabled();
+
   s_bpm_icon_layer = layer_create(
       GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
-  s_bpm_icon_image = gdraw_command_image_create_with_resource(
-      RESOURCE_ID_ICON_BPM);
+  s_bpm_icon_image = NULL;
+  if (!use_fallback) {
+    s_bpm_icon_image = gdraw_command_image_create_with_resource(
+        RESOURCE_ID_ICON_BPM);
+  }
   if (!s_bpm_icon_image) {
+    if (use_fallback) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "BPM icon fallback mode is enabled");
+    }
     APP_LOG(APP_LOG_LEVEL_INFO,
             "There is no BPM icon to initialize, using fallback option");
     s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);

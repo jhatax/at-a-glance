@@ -16,8 +16,14 @@
 #define TEMP_UNIT_C 1
 #define TIME_FMT_24 0
 #define TIME_FMT_12 1
+#define BPM_ICON_MODE_RESOURCE 0
+#define BPM_ICON_MODE_FALLBACK 1
+// Build-time icon mode for fallback testing.
+#define FALLBACK_MODE BPM_ICON_MODE_RESOURCE
 #define TEMP_UNIT_VALID(value) ((value) == TEMP_UNIT_F || (value) == TEMP_UNIT_C)
 #define TIME_FORMAT_VALID(value) ((value) == TIME_FMT_24 || (value) == TIME_FMT_12)
+#define BPM_ICON_MODE_VALID(value) ((value) == BPM_ICON_MODE_RESOURCE || \
+                                    (value) == BPM_ICON_MODE_FALLBACK)
 
 #define TEMP_INVALID INT16_MIN
 
