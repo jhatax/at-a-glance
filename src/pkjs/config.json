@@ -1,11 +1,15 @@
 [
   {
+    "type": "heading",
+    "defaultValue": "At A Glance: Configuration"
+  },
+  {
+    "type": "text",
+    "defaultValue": "Select units and update frequencies for key capabilities."
+  },
+  {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "At a Glance"
-      },
       {
         "type": "select",
         "messageKey": "TIME_FORMAT",
@@ -41,27 +45,35 @@
       {
         "type": "select",
         "messageKey": "HR_SAMPLE_MINUTES",
-        "label": "Heart rate sampling",
-        "defaultValue": "15",
+        "label": "HR Sampling Frequency",
+        "defaultValue": "10",
         "options": [
           {
+            "value": "10",
+            "label": "Every 10-minutes"
+          },
+          {
             "value": "15",
-            "label": "Every 15 minutes"
+            "label": "Every 15-minutes"
           },
           {
             "value": "30",
-            "label": "Every 30 minutes"
+            "label": "Every 30-minutes"
           },
           {
             "value": "60",
-            "label": "Every 60 minutes"
+            "label": "Every 60-minutes"
           },
           {
             "value": "120",
-            "label": "Every 120 minutes"
+            "label": "Every 120-minutes"
           }
         ]
       }
     ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save Settings"
   }
 ]
