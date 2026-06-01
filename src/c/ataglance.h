@@ -7,9 +7,8 @@
 #define RAIL_BOTTOM 216
 
 #define CONTENT_X 12
-
 #define RULE_RIGHT 188
-#define RULE_VERT 140
+#define RULE_VERT 110
 
 #define PERSIST_SETTINGS 2
 

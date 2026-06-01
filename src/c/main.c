@@ -2,9 +2,9 @@
 
 static char s_text_buffers[TOTAL_BUFFERS][MAX_STR_LEN];
 
-static GFont s_font_gothic_24;
+static GFont s_font_gothic_28;
 static GFont s_font_time;
-static GFont s_font_gothic_18_bold;
+static GFont s_font_gothic_24_bold;
 
 static Window* s_window;
 static Layer* s_background_layer;
@@ -142,7 +142,8 @@ static void format_temp(char* buf, size_t buflen) {
 // This is being called because the OS knows the layer is dirty!
 static void background_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
-  graphics_context_set_stroke_color(ctx, GColorDarkGray);
+  graphics_context_set_stroke_color(ctx, GColorLightGray);
+  graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_line(ctx, GPoint(CONTENT_X, RULE_VERT), GPoint(RULE_RIGHT, RULE_VERT));
 }
 
@@ -198,7 +199,6 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
     gdraw_command_list_iterate(list, set_bpm_color_callback, &s_bpm_color);
     l_prev_bpm_color = s_bpm_color;
   }
-  APP_LOG(APP_LOG_LEVEL_INFO, "Drawing the Heart Icon with color %u", s_bpm_color.argb);
   gdraw_command_image_draw(ctx, s_heart_vector, GPoint(0,0));
 }
 
@@ -207,15 +207,15 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, c_color_date);
   // --- THE MAIN HEEL PAD (Centered and unified) ---
     // A clean, central oval-like base anchoring the bottom of the 24x24 frame
-    graphics_fill_circle(ctx, GPoint(12, 17), 5); // Main pad center
-    graphics_fill_circle(ctx, GPoint(9, 18), 4);  // Left swell
-    graphics_fill_circle(ctx, GPoint(15, 18), 4); // Right swell
+    graphics_fill_circle(ctx, GPoint(13, 18), 5); // Main pad center
+    graphics_fill_circle(ctx, GPoint(10, 19), 4); // Left swell
+    graphics_fill_circle(ctx, GPoint(16, 19), 4); // Right swell
 
     // --- THE 4 SMALL TOE PADS (Arcing cleanly above the heel) ---
-    graphics_fill_circle(ctx, GPoint(5, 11), 2);  // Far Left Toe
-    graphics_fill_circle(ctx, GPoint(9, 7), 2.5); // Center Left Toe
-    graphics_fill_circle(ctx, GPoint(15, 7), 2.5);// Center Right Toe
-    graphics_fill_circle(ctx, GPoint(19, 11), 2); // Far Right Toe
+    graphics_fill_circle(ctx, GPoint(6, 12), 2);   // Far Left Toe
+    graphics_fill_circle(ctx, GPoint(10, 8), 2.5); // Center Left Toe
+    graphics_fill_circle(ctx, GPoint(16, 8), 2.5); // Center Right Toe
+    graphics_fill_circle(ctx, GPoint(20, 12), 2);  // Far Right Toe
 }
 
 static inline GColor get_battery_color_from_state() {
@@ -241,11 +241,11 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_stroke_width(ctx, 2);
 
   // Main cylinder body shell (Width: 14px, Height: 20px)
-  graphics_draw_rect(ctx, GRect(5, 4, 14, 20));
+  graphics_draw_rect(ctx, GRect(4, 5, 14, 20));
 
   // The positive (+) contact terminal nub on the very top of the AA battery
   graphics_context_set_fill_color(ctx, draw_color);
-  graphics_fill_rect(ctx, GRect(9, 1, 6, 3), 0, GCornerNone);
+  graphics_fill_rect(ctx, GRect(8, 2, 6, 3), 0, GCornerNone);
 
   // 4. Calculate the vertical fuel cell height from the percentage variable
   // Total interior cylinder height is 16 pixels (from Y = 6 to Y = 22)
@@ -253,8 +253,8 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   fill_height = (fill_height > 16) ? 16 : fill_height; // Cap the height at 16px max
 
   // 5. Draw the inner fluid level (Fills upwards from the bottom base plate)
-  int fill_y = 22 - fill_height;
-  graphics_fill_rect(ctx, GRect(7, fill_y, 10, fill_height), 0, GCornerNone);
+  int fill_y = 23 - fill_height;
+  graphics_fill_rect(ctx, GRect(6, fill_y, 10, fill_height), 0, GCornerNone);
 }
 
 static void update_date() {
@@ -481,6 +481,27 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 
 static void main_window_load(Window* window) {
   Layer* root = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(root);
+  const int content_width = bounds.size.w - (2 * CONTENT_X);
+
+  const int date_top = 10;
+  const int date_height = 36;
+
+  const int time_layer_top = 46;
+  const int time_layer_height = 50;
+
+  const int metrics_row_top = RULE_VERT + 8;
+  const int bottom_row_top = 184;
+
+  const int left_icon_x = CONTENT_X + 8;
+  const int left_value_x = 44 + 8;
+  const int right_icon_x = 86 + 8;
+  const int right_value_x = 118 + 8;
+
+  const int icon_size = 28;
+  const int metrics_text_height = 36;
+  const int bottom_text_height = 30;
+
   window_set_background_color(window, GColorBlack);
 
   // Background Rule Layer
@@ -491,16 +512,16 @@ static void main_window_load(Window* window) {
   }
 
   // --- TOP ZONE: DATE & TIME ---
-  s_date_layer = text_layer_create(GRect(CONTENT_X, 10, 176, 36));
+  s_date_layer = text_layer_create(GRect(CONTENT_X, date_top, content_width, date_height));
   if (s_date_layer) {
     text_layer_set_background_color(s_date_layer, GColorClear);
     text_layer_set_text_color(s_date_layer, c_color_date);
-    text_layer_set_font(s_date_layer, s_font_gothic_18_bold);
+    text_layer_set_font(s_date_layer, s_font_gothic_24_bold);
     text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
     layer_add_child(root, text_layer_get_layer(s_date_layer));
   }
 
-  s_time_layer = text_layer_create(GRect(CONTENT_X, 46, 200, 84));
+  s_time_layer = text_layer_create(GRect(CONTENT_X, time_layer_top, content_width, time_layer_height));
   if (s_time_layer) {
     text_layer_set_background_color(s_time_layer, GColorClear);
     text_layer_set_text_color(s_time_layer, c_color_time);
@@ -511,7 +532,7 @@ static void main_window_load(Window* window) {
 
   // --- MIDDLE ZONE: HEALTH METRICS (25px x 25px ICONS) ---
   // Left Column: Heart Rate
-  s_heart_icon_layer = layer_create(GRect(CONTENT_X, RULE_VERT + 8, 28, 28));
+  s_heart_icon_layer = layer_create(GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
   s_heart_vector = gdraw_command_image_create_with_resource(RESOURCE_ID_ICON_BPM);
   if (!s_heart_vector) {
     APP_LOG(APP_LOG_LEVEL_INFO, "There is no BPM icon to initialize, gotta try plan-B");
@@ -521,27 +542,27 @@ static void main_window_load(Window* window) {
     layer_add_child(root, s_heart_icon_layer);
   }
 
-  s_bpm_layer = text_layer_create(GRect(41, RULE_VERT + 8, 45, 30));
+  s_bpm_layer = text_layer_create(GRect(left_value_x, metrics_row_top, 58, metrics_text_height));
   if (s_bpm_layer) {
     text_layer_set_background_color(s_bpm_layer, GColorClear);
     text_layer_set_text_color(s_bpm_layer, c_data_unavailable_color);
-    text_layer_set_font(s_bpm_layer, s_font_gothic_24);
+    text_layer_set_font(s_bpm_layer, s_font_gothic_28);
     text_layer_set_text_alignment(s_bpm_layer, GTextAlignmentLeft);
     layer_add_child(root, text_layer_get_layer(s_bpm_layer));
   }
 
   // Right Column: Step Counter
-  s_steps_icon_layer = layer_create(GRect(106, RULE_VERT + 8, 25, 25));
+  s_steps_icon_layer = layer_create(GRect(right_icon_x, metrics_row_top, icon_size, icon_size));
   if (s_steps_icon_layer) {
     layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
     layer_add_child(root, s_steps_icon_layer);
   }
 
-  s_steps_layer = text_layer_create(GRect(135, RULE_VERT + 8, 53, 30));
+  s_steps_layer = text_layer_create(GRect(right_value_x, metrics_row_top, 54, metrics_text_height));
   if (s_steps_layer) {
     text_layer_set_background_color(s_steps_layer, GColorClear);
     text_layer_set_text_color(s_steps_layer, c_data_unavailable_color);
-    text_layer_set_font(s_steps_layer, s_font_gothic_24);
+    text_layer_set_font(s_steps_layer, s_font_gothic_28);
     text_layer_set_text_alignment(s_steps_layer, GTextAlignmentLeft);
     layer_add_child(root, text_layer_get_layer(s_steps_layer));
   }
@@ -549,18 +570,18 @@ static void main_window_load(Window* window) {
   // --- BOTTOM ZONE: WEATHER & BATTERY (25px x 25px ICONS) ---
   // Left Column: Weather / Temperature
   // Shifted to X = 41 to match row above!
-  s_temp_layer = text_layer_create(GRect(41, 192, 45, 24));
+  s_temp_layer = text_layer_create(GRect(44, bottom_row_top, 64, bottom_text_height));
   if (s_temp_layer) {
     text_layer_set_background_color(s_temp_layer, GColorClear);
     text_layer_set_text_color(s_temp_layer, c_ataglance_text_color);
-    text_layer_set_font(s_temp_layer, s_font_gothic_18_bold);
+    text_layer_set_font(s_temp_layer, s_font_gothic_24_bold);
     text_layer_set_text_alignment(s_temp_layer, GTextAlignmentLeft);
     layer_add_child(root, text_layer_get_layer(s_temp_layer));
   }
 
   // Initialize the Battery Custom Canvas Layer
   // Matches paw column!
-  s_battery_icon_layer = layer_create(GRect(106, 192, 25, 25));
+  s_battery_icon_layer = layer_create(GRect(86, bottom_row_top, icon_size, icon_size));
   if (s_battery_icon_layer) {
     layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
     layer_add_child(root, s_battery_icon_layer);
@@ -568,11 +589,11 @@ static void main_window_load(Window* window) {
 
   // Right Column: AA Battery
   // Shifted to X = 135 to match row above!
-  s_battery_layer = text_layer_create(GRect(135, 192, 53, 24));
+  s_battery_layer = text_layer_create(GRect(118, bottom_row_top, 54, bottom_text_height));
   if (s_battery_layer) {
     text_layer_set_background_color(s_battery_layer, GColorClear);
     text_layer_set_text_color(s_battery_layer, c_data_unavailable_color);
-    text_layer_set_font(s_battery_layer, s_font_gothic_18_bold);
+    text_layer_set_font(s_battery_layer, s_font_gothic_24_bold);
     text_layer_set_text_alignment(s_battery_layer, GTextAlignmentLeft);
     layer_add_child(root, text_layer_get_layer(s_battery_layer));
   }
@@ -626,9 +647,9 @@ static void init(void) {
     return;
   }
 
-  s_font_gothic_24 = fonts_get_system_font(FONT_KEY_GOTHIC_24);
-  s_font_time = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
-  s_font_gothic_18_bold = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_font_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
+  s_font_time = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
+  s_font_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
 
   // Initialize BPM releated variables
   s_bpm = 0;
