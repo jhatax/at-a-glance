@@ -95,6 +95,7 @@ Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 - Align naming, formatting, and structure with Pebble C conventions. This is important.
 - Stick to standard C supported by the Pebble toolchain. Avoid unsupported extensions and desktop-only assumptions.
 - Use spaces, not tabs. Remove trailing spaces.
+- Keep source lines at 72 characters max across all programming files.
 - Use braces and new lines for all `if`, `else`, `switch`, `case`, `for`, `while`, and similar blocks, even for one statement.
 - Keep variables in the narrowest practical local scope.
 - Prefer readability over unnecessary optimization.
