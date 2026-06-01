@@ -21,6 +21,66 @@ This repo is for Pebble SDK 4+ watchfaces and apps. The first target is Pebble T
 - Current design reference: `DESIGN.md`
 - Current product: "Life at a Glance", a Swiss-Rail-inspired glanceable watchface.
 
+## Current Watchface Implementation Snapshot
+
+Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/config.json`, and `package.json`.
+
+- Target platform: `emery` only (`200x228`, color).
+- Pebble manifest capabilities currently required:
+  - `configurable` (Clay settings page)
+  - `location` (weather via geolocation)
+  - `health` (BPM + steps)
+- AppMessage keys currently required:
+  - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `HR_SAMPLE_MINUTES`
+- Persisted settings defaults:
+  - time format: `24h`
+  - temperature unit: `°F`
+  - HR sampling: `10` minutes
+
+Layout geometry (current frames/anchors):
+
+- date: `GRect(12, 10, 176, 36)` (`FONT_KEY_GOTHIC_18_BOLD`, `GColorRichBrilliantLavender`)
+- time: `GRect(12, 46, 200, 84)` (`FONT_KEY_BITHAM_42_BOLD`, `GColorSunsetOrange`)
+- rule: line from `(12, 140)` to `(188, 140)`
+- heart icon: `GRect(12, 148, 28, 28)` (resource `ICON_BPM`)
+- bpm text: `GRect(41, 148, 45, 30)` (`FONT_KEY_GOTHIC_24`)
+- steps icon: `GRect(106, 148, 25, 25)` (custom drawn paw glyph)
+- steps text: `GRect(135, 148, 53, 30)` (`FONT_KEY_GOTHIC_24`)
+- temp text: `GRect(41, 192, 45, 24)` (`FONT_KEY_GOTHIC_18_BOLD`)
+- battery icon: `GRect(106, 192, 25, 25)` (custom drawn AA battery)
+- battery text: `GRect(135, 192, 53, 24)` (`FONT_KEY_GOTHIC_18_BOLD`)
+
+Color/semantic rules that must remain documented when changed:
+
+- unavailable text token is `---` in white.
+- BPM color zones:
+  - `<=0` or unavailable: white
+  - `1-99`: Jaeger Green
+  - `100-120`: Magenta
+  - `>120`: Red
+- battery text/icon colors:
+  - charging: Jaeger Green
+  - not charging and `>50`: Cobalt Blue
+  - not charging and `21-50`: Yellow
+  - not charging and `<=20`: Red
+
+Clay configuration UI (must stay in sync across Clay, JS, C, docs):
+
+```text
+At A Glance: Configuration
+  - Time format: 24-hour, 12-hour
+  - Temperature unit: Fahrenheit, Celsius
+  - HR Sampling Frequency: 10, 15, 30, 60, 120 minutes
+  - Submit: Save Settings
+```
+
+Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
+
+- date and hero time are fitting at sampled values (`MON · 01 JUN`, `14:50`).
+- bottom row sample (`90°F`, `80%`) fits without clipping.
+- unavailable health values render as `---`.
+- current implementation does not draw a vertical rail; it uses a horizontal rule at `y=140`.
+
 ## Pebble Platform Rules
 
 - Use only Pebble SDK 4+ APIs. If an API is platform-specific, guard it and document the fallback.

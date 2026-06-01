@@ -4,12 +4,105 @@ Swiss-Rail Inspired watchface for **Pebble Time 2** (emery).
 
 ## Features
 
-- Left-aligned typographic layout with vertical rail
+- Left-aligned typographic layout with a mid-screen horizontal rule
 - Time (12h or 24h) and short date (`THU · 28 MAY`)
 - Heart rate and full step count from Pebble Health
 - Temperature from phone (Open-Meteo) in °F or °C
 - Battery percentage (bottom-right)
 - Settings: time format, temperature unit, bpm sampling interval (Clay config page)
+
+## Target And Capabilities
+
+- Platform target: `emery` (Pebble Time 2), `200x228`, color.
+- Pebble SDK metadata: `sdkVersion: "3"` (Pebble SDK 4+ compatible workflow in this repo).
+- Required Pebble capabilities from `package.json`:
+  - `configurable` for Clay settings page.
+  - `location` for weather lookup via phone geolocation.
+  - `health` for step count and heart-rate metrics.
+
+## Layout Spec (Current Implementation)
+
+Screen hierarchy:
+
+```text
+DATE (top rail)
+TIME (hero)
+---------------------- (rule at y=140)
+HEART ICON + BPM        STEPS ICON + STEPS
+TEMP                    BATTERY ICON + BATTERY %
+```
+
+Key geometry from `src/c/main.c` and `src/c/ataglance.h`:
+
+- Date layer: `GRect(12, 10, 176, 36)`
+- Time layer: `GRect(12, 46, 200, 84)`
+- Horizontal rule: from `(12, 140)` to `(188, 140)`
+- Heart icon: `GRect(12, 148, 28, 28)`
+- BPM value: `GRect(41, 148, 45, 30)`
+- Steps icon: `GRect(106, 148, 25, 25)`
+- Steps value: `GRect(135, 148, 53, 30)`
+- Temperature: `GRect(41, 192, 45, 24)`
+- Battery icon: `GRect(106, 192, 25, 25)`
+- Battery value: `GRect(135, 192, 53, 24)`
+
+## Typography And Color
+
+Fonts used:
+
+- Hero time: `FONT_KEY_BITHAM_42_BOLD`
+- Date: `FONT_KEY_GOTHIC_18_BOLD`
+- BPM and steps values: `FONT_KEY_GOTHIC_24`
+- Temperature and battery values: `FONT_KEY_GOTHIC_18_BOLD`
+
+Color usage:
+
+- Time: `GColorSunsetOrange`
+- Date and steps icon: `GColorRichBrilliantLavender`
+- Primary data text: `GColorLightGray`
+- Unavailable data fallback (`---`): `GColorWhite`
+- Heart icon and BPM text:
+  - `<= 0` or unavailable: white
+  - `1-99`: `GColorJaegerGreen`
+  - `100-120`: `GColorMagenta`
+  - `>120`: `GColorRed`
+- Battery icon and battery `%`:
+  - Charging: `GColorJaegerGreen`
+  - Not charging, `>50%`: `GColorCobaltBlue`
+  - Not charging, `21-50%`: `GColorYellow`
+  - Not charging, `<=20%`: `GColorRed`
+
+## Icons Used
+
+- Heart icon: vector resource `ICON_BPM` (`resources/bpm_option-2.pdc`), recolored in C by BPM zone.
+- Steps icon: custom-drawn paw/footprint using `graphics_fill_circle` calls (no bitmap resource).
+- Battery icon: custom-drawn AA-style battery in a 25x25 canvas (outline + fill level).
+- App/menu icon: `resources/icon.png` (`MENU_ICON`).
+
+## Configuration Page (Clay) Mockup
+
+Current `src/pkjs/config.json`:
+
+```text
+At A Glance: Configuration
+Select units and update frequencies for key capabilities.
+
+Time format
+  ( ) 24-hour
+  ( ) 12-hour
+
+Temperature unit
+  ( ) Fahrenheit (°F)
+  ( ) Celsius (°C)
+
+HR Sampling Frequency
+  ( ) Every 10-minutes
+  ( ) Every 15-minutes
+  ( ) Every 30-minutes
+  ( ) Every 60-minutes
+  ( ) Every 120-minutes
+
+[ Save Settings ]
+```
 
 ## Build
 
@@ -35,10 +128,20 @@ In the Pebble app on your phone: Life at a Glance → Settings
 
 - **Time format:** 24-hour or 12-hour
 - **Temperature unit:** Fahrenheit or Celsius
-- **Heart rate sampling:** every 15, 30, 60, or 120 minutes
+- **Heart rate sampling:** every 10, 15, 30, 60, or 120 minutes (default: 10)
 
 Temperature uses your phone’s location (falls back to NYC if unavailable). Weather refreshes every 30 minutes while the companion app is active.
 
 ## Layout
 
 See [DESIGN.md](DESIGN.md) for the full spec.
+
+## Visual Validation Notes (Emulator)
+
+Validated against emulator screenshot from June 1, 2026 (`14:50` runtime sample):
+
+- Date (`MON · 01 JUN`) and hero time (`14:50`) render without clipping.
+- Mid horizontal rule is visible and aligns with the complication row.
+- Health placeholders (`---`) display correctly when BPM/steps are unavailable.
+- Bottom row (`90°F`, battery icon, `80%`) fits within bounds with visible right/bottom padding.
+- No vertical rail is currently rendered in this implementation.
