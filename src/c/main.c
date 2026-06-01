@@ -38,6 +38,7 @@ static const GColor c_color_time = GColorSunsetOrange;
 static const GColor c_color_date = GColorRichBrilliantLavender;
 static const GColor c_data_unavailable_color = GColorWhite;
 static const GColor c_ataglance_text_color = GColorLightGray;
+static const char c_unavailable_text[] = "---";
 
 static void apply_hr_sample_period() {
   uint16_t interval_sec = (uint16_t)s_settings.hr_sample_minutes *  60;
@@ -121,7 +122,7 @@ static void format_temp(char* buf, size_t buflen) {
 
     if (c_tenths == TEMP_INVALID) {
       // Temperature can be 3-digits, so we need to print 3 hyphens and the unit
-      snprintf(buf, buflen, "---%s", s_settings.temp_unit == TEMP_UNIT_C ? "°C" : "°F");
+      snprintf(buf, buflen, "%s%s", c_unavailable_text, s_settings.temp_unit == TEMP_UNIT_C ? "°C" : "°F");
       return;
     }
 
@@ -301,11 +302,11 @@ static void update_bpm() {
       snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
       s_bpm_color = calculate_bpm_color(s_bpm);
     } else {
-      snprintf(bpm_buf, MAX_STR_LEN, "--");
+      snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
       s_bpm_color = c_data_unavailable_color;
     }
   } else {
-    snprintf(bpm_buf, MAX_STR_LEN, "--");
+    snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     s_bpm_color = c_data_unavailable_color;
   }
 
@@ -338,10 +339,10 @@ static void update_step_count(){
      snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
      textColor = c_ataglance_text_color;
     } else {
-     snprintf(steps_buf, MAX_STR_LEN, "--");
+     snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     }
   } else {
-    snprintf(steps_buf, MAX_STR_LEN, "--");
+    snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
   }
 
   text_layer_set_text_color(s_steps_layer, textColor);
