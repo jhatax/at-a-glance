@@ -512,7 +512,17 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static void main_window_load(Window* window) {
+  if (!window) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
+    return;
+  }
+
   Layer* root = window_get_root_layer(window);
+  if (!root) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
+    return;
+  }
+
   GRect bounds = layer_get_bounds(root);
   const int content_width = bounds.size.w - (2 * CONTENT_X);
 
@@ -639,14 +649,22 @@ static void main_window_load(Window* window) {
 }
 
 static void main_window_unload(Window* window) {
-  layer_destroy(s_background_layer);
-  s_background_layer = NULL;
+  (void)window;
 
-  text_layer_destroy(s_date_layer);
-  s_date_layer = NULL;
+  if (s_background_layer) {
+    layer_destroy(s_background_layer);
+    s_background_layer = NULL;
+  }
 
-  text_layer_destroy(s_time_layer);
-  s_time_layer = NULL;
+  if (s_date_layer) {
+    text_layer_destroy(s_date_layer);
+    s_date_layer = NULL;
+  }
+
+  if (s_time_layer) {
+    text_layer_destroy(s_time_layer);
+    s_time_layer = NULL;
+  }
 
   if (s_bpm_icon_image) {
     gdraw_command_image_destroy(s_bpm_icon_image);
@@ -657,24 +675,38 @@ static void main_window_unload(Window* window) {
     s_bpm_icon_fallback_path = NULL;
   }
 
-  layer_destroy(s_bpm_icon_layer);
-  s_bpm_icon_layer = NULL;
-  text_layer_destroy(s_bpm_layer);
-  s_bpm_layer = NULL;
+  if (s_bpm_icon_layer) {
+    layer_destroy(s_bpm_icon_layer);
+    s_bpm_icon_layer = NULL;
+  }
+  if (s_bpm_layer) {
+    text_layer_destroy(s_bpm_layer);
+    s_bpm_layer = NULL;
+  }
 
-  text_layer_destroy(s_steps_layer);
-  s_steps_layer = NULL;
-  layer_destroy(s_steps_icon_layer);
-  s_steps_icon_layer = NULL;
+  if (s_steps_layer) {
+    text_layer_destroy(s_steps_layer);
+    s_steps_layer = NULL;
+  }
+  if (s_steps_icon_layer) {
+    layer_destroy(s_steps_icon_layer);
+    s_steps_icon_layer = NULL;
+  }
 
-  text_layer_destroy(s_temp_layer);
-  s_temp_layer = NULL;
+  if (s_temp_layer) {
+    text_layer_destroy(s_temp_layer);
+    s_temp_layer = NULL;
+  }
 
-  layer_destroy(s_battery_icon_layer);
-  s_battery_icon_layer = NULL;
+  if (s_battery_icon_layer) {
+    layer_destroy(s_battery_icon_layer);
+    s_battery_icon_layer = NULL;
+  }
 
-  text_layer_destroy(s_battery_layer);
-  s_battery_layer = NULL;
+  if (s_battery_layer) {
+    text_layer_destroy(s_battery_layer);
+    s_battery_layer = NULL;
+  }
 
   get_text_buffer(BUF_CLEANUP);
 }
