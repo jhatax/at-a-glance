@@ -38,7 +38,7 @@ Phone config page (Clay) → AppMessage → watch persists in `persist` or reapp
 |---------|---------|---------|
 | Temperature unit | °F / °C | °F |
 | Time format | 12h / 24h | 24h |
-| Heart rate sampling | 15 / 30 / 60 / 120 min | 15 min |
+| Heart rate sampling | 10 / 15 / 30 / 60 / 120 min | 10 min |
 
 Implementation: `package.json` → `capabilities: ["configurable"]`, message keys for prefs, `src/pkjs/index.js` for Clay UI.
 

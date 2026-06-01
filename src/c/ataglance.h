@@ -29,7 +29,6 @@ typedef enum {
   HR_SAMPLE_MINUTES_120 = 120,
 } HrSampleMinutes;
 
-// TODO: Update README and DESIGN to reflect the 10-minute default.
 #define HR_SAMPLE_MINUTES_DEFAULT HR_SAMPLE_MINUTES_10
 #define HR_SAMPLE_MINUTES_VALID(minutes) ((minutes) == HR_SAMPLE_MINUTES_10 || \
                                           (minutes) == HR_SAMPLE_MINUTES_15 || \
