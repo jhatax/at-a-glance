@@ -511,6 +511,147 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+static inline TextLayer* create_and_initialize_text_layer(
+    Layer* parent,
+    GRect frame,
+    GColor text_color,
+    GColor background_color,
+    GFont font,
+    GTextAlignment alignment) {
+  TextLayer* layer = text_layer_create(frame);
+  if (!layer) {
+    return NULL;
+  }
+
+  text_layer_set_background_color(layer, background_color);
+  text_layer_set_text_color(layer, text_color);
+  text_layer_set_font(layer, font);
+  text_layer_set_text_alignment(layer, alignment);
+  layer_add_child(parent, text_layer_get_layer(layer));
+  return layer;
+}
+
+static inline void init_background_layer(Layer* root) {
+  s_background_layer = layer_create(GRect(0, 0, 200, 228));
+  if (s_background_layer) {
+    layer_set_update_proc(s_background_layer, background_update_proc);
+    layer_add_child(root, s_background_layer);
+  }
+}
+
+static inline void init_top_layers(
+    Layer* root,
+    int content_width,
+    int date_top,
+    int date_height,
+    int time_layer_top,
+    int time_layer_height) {
+  s_date_layer = create_and_initialize_text_layer(
+      root,
+      GRect(CONTENT_X, date_top, content_width, date_height),
+      c_color_date,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+
+  s_time_layer = create_and_initialize_text_layer(
+      root,
+      GRect(CONTENT_X, time_layer_top, content_width, time_layer_height),
+      c_color_time,
+      GColorClear,
+      s_font_time,
+      GTextAlignmentLeft);
+}
+
+static inline void init_bpm_column(
+    Layer* root,
+    int left_icon_x,
+    int left_value_x,
+    int metrics_row_top,
+    int icon_size,
+    int metrics_text_height) {
+  s_bpm_icon_layer = layer_create(
+      GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
+  s_bpm_icon_image = gdraw_command_image_create_with_resource(
+      RESOURCE_ID_ICON_BPM);
+  if (!s_bpm_icon_image) {
+    APP_LOG(APP_LOG_LEVEL_INFO,
+            "There is no BPM icon to initialize, using fallback option");
+    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
+    if (!s_bpm_icon_fallback_path) {
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+              "Fallback BPM icon path could not be created");
+    }
+  }
+  if (s_bpm_icon_layer) {
+    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
+    layer_add_child(root, s_bpm_icon_layer);
+  }
+
+  s_bpm_layer = create_and_initialize_text_layer(
+      root,
+      GRect(left_value_x, metrics_row_top, 58, metrics_text_height),
+      c_data_unavailable_color,
+      GColorClear,
+      s_font_gothic_28,
+      GTextAlignmentLeft);
+}
+
+static inline void init_steps_column(
+    Layer* root,
+    int right_icon_x,
+    int right_value_x,
+    int metrics_row_top,
+    int icon_size,
+    int metrics_text_height) {
+  s_steps_icon_layer = layer_create(
+      GRect(right_icon_x, metrics_row_top, icon_size, icon_size));
+  if (s_steps_icon_layer) {
+    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
+    layer_add_child(root, s_steps_icon_layer);
+  }
+
+  s_steps_layer = create_and_initialize_text_layer(
+      root,
+      GRect(right_value_x, metrics_row_top, 54, metrics_text_height),
+      c_data_unavailable_color,
+      GColorClear,
+      s_font_gothic_28,
+      GTextAlignmentLeft);
+}
+
+static inline void init_temp_layer(
+    Layer* root, int bottom_row_top, int bottom_text_height) {
+  s_temp_layer = create_and_initialize_text_layer(
+      root,
+      GRect(44, bottom_row_top, 64, bottom_text_height),
+      c_ataglance_text_color,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+}
+
+static inline void init_battery_column(
+    Layer* root,
+    int bottom_row_top,
+    int icon_size,
+    int bottom_text_height) {
+  s_battery_icon_layer = layer_create(
+      GRect(86, bottom_row_top, icon_size, icon_size));
+  if (s_battery_icon_layer) {
+    layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
+    layer_add_child(root, s_battery_icon_layer);
+  }
+
+  s_battery_layer = create_and_initialize_text_layer(
+      root,
+      GRect(118, bottom_row_top, 54, bottom_text_height),
+      c_data_unavailable_color,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+}
+
 static void main_window_load(Window* window) {
   if (!window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
@@ -546,103 +687,34 @@ static void main_window_load(Window* window) {
 
   window_set_background_color(window, GColorBlack);
 
-  // Background Rule Layer
-  s_background_layer = layer_create(GRect(0, 0, 200, 228));
-  if (s_background_layer) {
-    layer_set_update_proc(s_background_layer, background_update_proc);
-    layer_add_child(root, s_background_layer);
-  }
+  // Background rule spanning across the content region.
+  init_background_layer(root);
 
-  // --- TOP ZONE: DATE & TIME ---
-  s_date_layer = text_layer_create(GRect(CONTENT_X, date_top, content_width, date_height));
-  if (s_date_layer) {
-    text_layer_set_background_color(s_date_layer, GColorClear);
-    text_layer_set_text_color(s_date_layer, c_color_date);
-    text_layer_set_font(s_date_layer, s_font_gothic_24_bold);
-    text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_date_layer));
-  }
+  // Top row: date and hero time.
+  init_top_layers(root,
+                  content_width,
+                  date_top,
+                  date_height,
+                  time_layer_top,
+                  time_layer_height);
 
-  s_time_layer = text_layer_create(GRect(CONTENT_X, time_layer_top, content_width, time_layer_height));
-  if (s_time_layer) {
-    text_layer_set_background_color(s_time_layer, GColorClear);
-    text_layer_set_text_color(s_time_layer, c_color_time);
-    text_layer_set_font(s_time_layer, s_font_time);
-    text_layer_set_text_alignment(s_time_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_time_layer));
-  }
+  // Middle row: health metrics (BPM and steps).
+  init_bpm_column(root,
+                  left_icon_x,
+                  left_value_x,
+                  metrics_row_top,
+                  icon_size,
+                  metrics_text_height);
+  init_steps_column(root,
+                    right_icon_x,
+                    right_value_x,
+                    metrics_row_top,
+                    icon_size,
+                    metrics_text_height);
 
-  // --- MIDDLE ZONE: HEALTH METRICS (25px x 25px ICONS) ---
-  // Left Column: BPM
-  s_bpm_icon_layer = layer_create(GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
-  s_bpm_icon_image = gdraw_command_image_create_with_resource(RESOURCE_ID_ICON_BPM);
-  if (!s_bpm_icon_image) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "There is no BPM icon to initialize, gotta try plan-B");
-    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
-    if (!s_bpm_icon_fallback_path) {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Fallback BPM icon path could not be created");
-    }
-  }
-  if (s_bpm_icon_layer) {
-    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
-    layer_add_child(root, s_bpm_icon_layer);
-  }
-
-  s_bpm_layer = text_layer_create(GRect(left_value_x, metrics_row_top, 58, metrics_text_height));
-  if (s_bpm_layer) {
-    text_layer_set_background_color(s_bpm_layer, GColorClear);
-    text_layer_set_text_color(s_bpm_layer, c_data_unavailable_color);
-    text_layer_set_font(s_bpm_layer, s_font_gothic_28);
-    text_layer_set_text_alignment(s_bpm_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_bpm_layer));
-  }
-
-  // Right Column: Step Counter
-  s_steps_icon_layer = layer_create(GRect(right_icon_x, metrics_row_top, icon_size, icon_size));
-  if (s_steps_icon_layer) {
-    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
-    layer_add_child(root, s_steps_icon_layer);
-  }
-
-  s_steps_layer = text_layer_create(GRect(right_value_x, metrics_row_top, 54, metrics_text_height));
-  if (s_steps_layer) {
-    text_layer_set_background_color(s_steps_layer, GColorClear);
-    text_layer_set_text_color(s_steps_layer, c_data_unavailable_color);
-    text_layer_set_font(s_steps_layer, s_font_gothic_28);
-    text_layer_set_text_alignment(s_steps_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_steps_layer));
-  }
-
-  // --- BOTTOM ZONE: WEATHER & BATTERY (25px x 25px ICONS) ---
-  // Left Column: Weather / Temperature
-  // Shifted to X = 41 to match row above!
-  s_temp_layer = text_layer_create(GRect(44, bottom_row_top, 64, bottom_text_height));
-  if (s_temp_layer) {
-    text_layer_set_background_color(s_temp_layer, GColorClear);
-    text_layer_set_text_color(s_temp_layer, c_ataglance_text_color);
-    text_layer_set_font(s_temp_layer, s_font_gothic_24_bold);
-    text_layer_set_text_alignment(s_temp_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_temp_layer));
-  }
-
-  // Initialize the Battery Custom Canvas Layer
-  // Matches paw column!
-  s_battery_icon_layer = layer_create(GRect(86, bottom_row_top, icon_size, icon_size));
-  if (s_battery_icon_layer) {
-    layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
-    layer_add_child(root, s_battery_icon_layer);
-  }
-
-  // Right Column: AA Battery
-  // Shifted to X = 135 to match row above!
-  s_battery_layer = text_layer_create(GRect(118, bottom_row_top, 54, bottom_text_height));
-  if (s_battery_layer) {
-    text_layer_set_background_color(s_battery_layer, GColorClear);
-    text_layer_set_text_color(s_battery_layer, c_data_unavailable_color);
-    text_layer_set_font(s_battery_layer, s_font_gothic_24_bold);
-    text_layer_set_text_alignment(s_battery_layer, GTextAlignmentLeft);
-    layer_add_child(root, text_layer_get_layer(s_battery_layer));
-  }
+  // Bottom row: environment metrics (temperature and battery).
+  init_temp_layer(root, bottom_row_top, bottom_text_height);
+  init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
   settings_load();
   update_all();
