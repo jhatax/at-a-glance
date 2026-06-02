@@ -88,8 +88,8 @@
       },
       {
         "type": "input",
-        "messageKey": "BPM_ICON_MODE",
-        "defaultValue": "1",
+        "messageKey": "ICON_FALLBACK_MODE",
+        "defaultValue": "0",
         "label": "",
         "attributes": {
           "type": "hidden"

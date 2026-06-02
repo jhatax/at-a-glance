@@ -32,10 +32,13 @@ Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/co
   - `health` (BPM + steps)
 - AppMessage keys currently required:
   - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `HR_SAMPLE_MINUTES`
+  - `ICON_FALLBACK_MODE`, `DISPLAY_MODE`
 - Persisted settings defaults:
   - time format: `24h`
   - temperature unit: `°F`
   - HR sampling: `10` minutes
+  - icon fallback mode: disabled
+  - display mode: dark
 
 Layout geometry (current frames/anchors):
 
@@ -70,7 +73,9 @@ Clay configuration UI (must stay in sync across Clay, JS, C, docs):
 At A Glance: Configuration
   - Time format: 24-hour, 12-hour
   - Temperature unit: Fahrenheit, Celsius
+  - Display mode: Dark mode, Light mode
   - HR Sampling Frequency: 10, 15, 30, 60, 120 minutes
+  - Hidden icon fallback mode: disabled, enabled
   - Submit: Save Settings
 ```
 

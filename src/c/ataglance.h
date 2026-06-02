@@ -29,11 +29,11 @@ typedef enum {
 } TimeFormat;
 
 typedef enum {
-  FALLBACK_MODE_DISABLED = 0,
-  FALLBACK_MODE_ENABLED,
-  FALLBACK_MODE_COUNT,
-  FALLBACK_MODE_DEFAULT = FALLBACK_MODE_DISABLED,
-} FallbackMode;
+  ICON_FALLBACK_MODE_DISABLED = 0,
+  ICON_FALLBACK_MODE_ENABLED,
+  ICON_FALLBACK_MODE_COUNT,
+  ICON_FALLBACK_MODE_DEFAULT = ICON_FALLBACK_MODE_DISABLED,
+} IconFallbackMode;
 
 typedef enum {
   DISPLAY_MODE_DARK = 0,
@@ -56,8 +56,8 @@ typedef enum {
   ((value) >= 0 && (value) < TEMP_UNIT_COUNT)
 #define TIME_FORMAT_VALID(value) \
   ((value) >= 0 && (value) < TIME_FMT_COUNT)
-#define FALLBACK_MODE_VALID(value) \
-  ((value) >= 0 && (value) < FALLBACK_MODE_COUNT)
+#define ICON_FALLBACK_MODE_VALID(value) \
+  ((value) >= 0 && (value) < ICON_FALLBACK_MODE_COUNT)
 #define DISPLAY_MODE_VALID(value) \
   ((value) >= 0 && (value) < DISPLAY_MODE_COUNT)
 #define HR_SAMPLE_MINUTES_VALID(value) \

@@ -32,7 +32,7 @@ static struct {
   uint8_t temp_unit;
   uint8_t time_format;
   uint8_t hr_sample_minutes;
-  uint8_t fallback_mode;
+  uint8_t icon_fallback_mode;
   uint8_t display_mode;
   int16_t temp_celsius_tenths;
 } s_settings;
@@ -43,7 +43,7 @@ static const GColor c_data_unavailable_color = GColorWindsorTan;
 static GColor c_ataglance_text_color = GColorLightGray;
 static const char c_unavailable_text[] = "---";
 
-static inline bool is_fallback_mode_enabled();
+static inline bool is_icon_fallback_enabled();
 static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
 static void apply_visual_mode_cue();
@@ -75,7 +75,7 @@ static void settings_load() {
   s_settings.temp_unit = TEMP_UNIT_DEFAULT;
   s_settings.time_format = TIME_FMT_DEFAULT;
   s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
-  s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
+  s_settings.icon_fallback_mode = ICON_FALLBACK_MODE_DEFAULT;
   s_settings.display_mode = DISPLAY_MODE_DEFAULT;
   s_settings.temp_celsius_tenths = TEMP_INVALID;
 
@@ -91,8 +91,8 @@ static void settings_load() {
   if (!HR_SAMPLE_MINUTES_VALID(s_settings.hr_sample_minutes)) {
     s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   }
-  if (!FALLBACK_MODE_VALID(s_settings.fallback_mode)) {
-    s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
+  if (!ICON_FALLBACK_MODE_VALID(s_settings.icon_fallback_mode)) {
+    s_settings.icon_fallback_mode = ICON_FALLBACK_MODE_DEFAULT;
   }
   if (!DISPLAY_MODE_VALID(s_settings.display_mode)) {
     s_settings.display_mode = DISPLAY_MODE_DEFAULT;
@@ -197,60 +197,83 @@ static GColor calculate_bpm_color(int bpm) {
   }
 }
 
-static bool set_bpm_color_callback(GDrawCommand *cmd, uint32_t index, void *context) {
+static bool set_bpm_color_callback(
+    GDrawCommand *cmd,
+    uint32_t index,
+    void *context) {
   GColor *target_color = (GColor *)context;
 
+  (void)index;
   gdraw_command_set_fill_color(cmd, *target_color);
   gdraw_command_set_stroke_color(cmd, *target_color);
   return true;
 }
 
-static void draw_fallback_bpm_icon(GContext* ctx, GColor color) {
+static inline int get_icon_draw_size(GRect bounds) {
+  return bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h;
+}
+
+static inline int scale_icon_coord(GRect bounds, int coord) {
+  return (coord * get_icon_draw_size(bounds)) / 28;
+}
+
+static inline GPoint scale_icon_point(GRect bounds, int x, int y) {
+  int size = get_icon_draw_size(bounds);
+  int x_offset = (bounds.size.w - size) / 2;
+  int y_offset = (bounds.size.h - size) / 2;
+
+  return GPoint(x_offset + scale_icon_coord(bounds, x),
+                y_offset + scale_icon_coord(bounds, y));
+}
+
+static void draw_fallback_bpm_icon(
+    GContext* ctx,
+    GColor color,
+    GRect bounds) {
+  int radius = scale_icon_coord(bounds, 5);
+
   if (!ctx) {
     return;
   }
 
+  if (radius < 1) {
+    radius = 1;
+  }
+
   graphics_context_set_fill_color(ctx, color);
-  graphics_fill_circle(ctx, GPoint(9, 10), 5);
-  graphics_fill_circle(ctx, GPoint(18, 10), 5);
+  graphics_fill_circle(ctx, scale_icon_point(bounds, 9, 10), radius);
+  graphics_fill_circle(ctx, scale_icon_point(bounds, 18, 10), radius);
 
   if (s_bpm_icon_fallback_path) {
     gpath_draw_filled(ctx, s_bpm_icon_fallback_path);
   }
 }
 
-static void draw_bpm_icon_with_color(GContext* ctx, GColor color) {
-  static GColor s_prev_bpm_icon_color = GColorBlack;
+static void draw_bpm_icon_with_color(
+    GContext* ctx,
+    GColor color,
+    GRect bounds) {
   bool use_fallback = false;
-  bool bpm_color_updated = false;
 
   if (!ctx) {
     return;
   }
 
-  use_fallback = is_fallback_mode_enabled() || !s_bpm_icon_image;
-
-  if ((bpm_color_updated = (s_prev_bpm_icon_color.argb != color.argb))) {
-    s_prev_bpm_icon_color = color;
-  }
+  use_fallback = is_icon_fallback_enabled() || !s_bpm_icon_image;
 
   if (!use_fallback) {
-    // Use Fallback can only be true if s_bpm_icon_image is NULL
-    // So, if we enter here, s_bpm_icon_image is valid
-    GDrawCommandList* list = gdraw_command_image_get_command_list(s_bpm_icon_image);
+    GDrawCommandList* list = gdraw_command_image_get_command_list(
+        s_bpm_icon_image);
     if (!list) {
       use_fallback = true;
     } else {
-      // Draw the icon from the image
       gdraw_command_list_iterate(list, set_bpm_color_callback, &color);
       gdraw_command_image_draw(ctx, s_bpm_icon_image, GPoint(0, 0));
     }
   }
 
-  // if we get here, use_fallback has to be TRUE
   if (use_fallback) {
-    // Draw the fallback icon
-    draw_fallback_bpm_icon(ctx, color);
+    draw_fallback_bpm_icon(ctx, color, bounds);
   }
 }
 
@@ -265,8 +288,8 @@ static void unload_bpm_icon_assets() {
   }
 }
 
-static inline bool is_fallback_mode_enabled() {
-  return s_settings.fallback_mode == FALLBACK_MODE_ENABLED;
+static inline bool is_icon_fallback_enabled() {
+  return s_settings.icon_fallback_mode == ICON_FALLBACK_MODE_ENABLED;
 }
 
 static void apply_visual_mode_cue() {
@@ -284,11 +307,11 @@ static void apply_visual_mode_cue() {
   }
 }
 
-static inline void create_bpm_fallback_icon() {
+static inline void create_bpm_fallback_icon(GRect bounds) {
   static GPoint s_bpm_icon_fallback_points[] = {
-    GPoint(4, 13),
-    GPoint(23, 13),
-    GPoint(14, 24),
+    GPoint(0, 0),
+    GPoint(0, 0),
+    GPoint(0, 0),
   };
   static GPathInfo s_bpm_icon_fallback_path_info = {
     .num_points = 3,
@@ -296,7 +319,11 @@ static inline void create_bpm_fallback_icon() {
   };
 
   if (!s_bpm_icon_fallback_path) {
-    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
+    s_bpm_icon_fallback_points[0] = scale_icon_point(bounds, 4, 13);
+    s_bpm_icon_fallback_points[1] = scale_icon_point(bounds, 23, 13);
+    s_bpm_icon_fallback_points[2] = scale_icon_point(bounds, 14, 24);
+    s_bpm_icon_fallback_path = gpath_create(
+        &s_bpm_icon_fallback_path_info);
   }
   if (!s_bpm_icon_fallback_path) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
@@ -305,7 +332,12 @@ static inline void create_bpm_fallback_icon() {
 }
 
 static void load_bpm_icon_assets() {
-  bool use_fallback = is_fallback_mode_enabled();
+  bool use_fallback = is_icon_fallback_enabled();
+  GRect bounds = GRect(0, 0, 28, 28);
+
+  if (s_bpm_icon_layer) {
+    bounds = layer_get_bounds(s_bpm_icon_layer);
+  }
 
   if (!use_fallback && !s_bpm_icon_image) {
     s_bpm_icon_image = gdraw_command_image_create_with_resource(
@@ -316,21 +348,25 @@ static void load_bpm_icon_assets() {
     }
   }
 
+  if (!use_fallback && s_bpm_icon_image) {
+    GDrawCommandList* list = gdraw_command_image_get_command_list(
+        s_bpm_icon_image);
+    if (!list) {
+      use_fallback = true;
+    }
+  }
+
   if (use_fallback) {
-    create_bpm_fallback_icon();
+    create_bpm_fallback_icon(bounds);
   }
 }
 
-// Called whenever this layer is updated. This will be called multiple times
-// per second, so try not to do any heavy processing here (like drawing).
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
-  (void)layer;
-
-  if (!ctx) {
+  if (!layer || !ctx) {
     return;
   }
 
-  draw_bpm_icon_with_color(ctx, s_bpm_color);
+  draw_bpm_icon_with_color(ctx, s_bpm_color, layer_get_bounds(layer));
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -588,11 +624,11 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
     changed = true;
   }
 
-  Tuple* tb = dict_find(iter, MESSAGE_KEY_BPM_ICON_MODE);
-  int fallback_mode = tuple_to_int(tb);
-  if (FALLBACK_MODE_VALID(fallback_mode) &&
-      s_settings.fallback_mode != (uint8_t)fallback_mode) {
-    s_settings.fallback_mode = (uint8_t)fallback_mode;
+  Tuple* ti = dict_find(iter, MESSAGE_KEY_ICON_FALLBACK_MODE);
+  int icon_fallback_mode = tuple_to_int(ti);
+  if (ICON_FALLBACK_MODE_VALID(icon_fallback_mode) &&
+      s_settings.icon_fallback_mode != (uint8_t)icon_fallback_mode) {
+    s_settings.icon_fallback_mode = (uint8_t)icon_fallback_mode;
     if (s_bpm_icon_layer) {
       load_bpm_icon_assets();
       layer_mark_dirty(s_bpm_icon_layer);

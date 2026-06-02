@@ -32,7 +32,7 @@
       "TEMP_UNIT",
       "TEMPERATURE",
       "HR_SAMPLE_MINUTES",
-      "BPM_ICON_MODE",
+      "ICON_FALLBACK_MODE",
       "DISPLAY_MODE"
     ],
     "resources": {

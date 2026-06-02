@@ -9,7 +9,7 @@ Swiss-Rail Inspired watchface for **Pebble Time 2** (emery).
 - Heart rate and full step count from Pebble Health
 - Temperature from phone (Open-Meteo) in °F or °C
 - Battery percentage (bottom-right)
-- Settings: time format, temperature unit, bpm sampling interval (Clay config page)
+- Settings: time format, temperature unit, display mode, bpm sampling interval
 
 ## Target And Capabilities
 
@@ -77,6 +77,7 @@ Color usage:
 - Steps icon: custom-drawn paw/footprint using `graphics_fill_circle` calls (no bitmap resource).
 - Battery icon: custom-drawn AA-style battery in a 25x25 canvas (outline + fill level).
 - App/menu icon: `resources/icon.png` (`MENU_ICON`).
+- Hidden `ICON_FALLBACK_MODE` can force procedural icons for testing.
 
 ## Configuration Page (Clay) Mockup
 
@@ -93,6 +94,10 @@ Time format
 Temperature unit
   ( ) Fahrenheit (°F)
   ( ) Celsius (°C)
+
+Display mode
+  ( ) Dark mode
+  ( ) Light mode
 
 HR Sampling Frequency
   ( ) Every 10-minutes
@@ -128,6 +133,7 @@ In the Pebble app on your phone: Life at a Glance → Settings
 
 - **Time format:** 24-hour or 12-hour
 - **Temperature unit:** Fahrenheit or Celsius
+- **Display mode:** dark or light mode
 - **Heart rate sampling:** every 10, 15, 30, 60, or 120 minutes (default: 10)
 
 Temperature uses your phone’s location (falls back to NYC if unavailable). Weather refreshes every 30 minutes while the companion app is active.
