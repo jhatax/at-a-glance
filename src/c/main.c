@@ -70,10 +70,12 @@ static const VisualPalette c_light_palette = {
 static const VisualPalette* s_palette = &c_dark_palette;
 static const char c_unavailable_text[] = "---";
 
+static inline void select_visual_palette();
 static inline bool is_icon_fallback_enabled();
 static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
-static void apply_visual_mode_cue();
+static void apply_visual_palette_to_watchface();
+static void update_all();
 
 static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
@@ -124,6 +126,7 @@ static void settings_load() {
   if (!DISPLAY_MODE_VALID(s_settings.display_mode)) {
     s_settings.display_mode = DISPLAY_MODE_DEFAULT;
   }
+  select_visual_palette();
 }
 
 static void settings_save() {
@@ -133,6 +136,10 @@ static void settings_save() {
 static inline const VisualPalette* get_visual_palette() {
   return (s_settings.display_mode == DISPLAY_MODE_LIGHT) ?
       &c_light_palette : &c_dark_palette;
+}
+
+static inline void select_visual_palette() {
+  s_palette = get_visual_palette();
 }
 
 static char* get_text_buffer(TextBufferId id) {
@@ -324,9 +331,7 @@ static inline bool is_icon_fallback_enabled() {
   return s_settings.icon_fallback_mode == ICON_FALLBACK_MODE_ENABLED;
 }
 
-static void apply_visual_mode_cue() {
-  s_palette = get_visual_palette();
-
+static void apply_visual_palette_to_watchface() {
   if (s_window) {
     window_set_background_color(s_window, s_palette->background);
   }
@@ -334,6 +339,8 @@ static void apply_visual_mode_cue() {
   if (s_background_layer) {
     layer_mark_dirty(s_background_layer);
   }
+
+  update_all();
 }
 
 static inline void create_bpm_fallback_icon(GRect bounds) {
@@ -674,8 +681,8 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   if (DISPLAY_MODE_VALID(display_mode) &&
       s_settings.display_mode != (uint8_t)display_mode) {
     s_settings.display_mode = (uint8_t)display_mode;
-    apply_visual_mode_cue();
-    update_all();
+    select_visual_palette();
+    apply_visual_palette_to_watchface();
     changed = true;
   }
 
@@ -895,8 +902,7 @@ static void main_window_load(Window* window) {
   init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
   // Apply visual style to main window
-  apply_visual_mode_cue();
-  update_all();
+  apply_visual_palette_to_watchface();
 }
 
 static void main_window_unload(Window* window) {
