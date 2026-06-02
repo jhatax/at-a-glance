@@ -1,176 +1,133 @@
 # Current Handoff
 
-## Project
+## Project State
 
 - Workspace: `/Users/manomeht/Code/life-at-a-glance-emery-wf`
-- Product: Pebble SDK watchface targeting Pebble Time 2 / `emery`
-- Current focus: runtime fallback icon mode for testing icon fallbacks
+- Product: Pebble SDK watchface, currently targeting Pebble Time 2 / `emery`.
+- Date: June 2, 2026.
+- Last verified build: `pebble build` passed after commit `9fa6850`.
+- Working tree at handoff: docs-only changes are pending and not
+  committed yet: `AGENTS.md`, `current-handoff.md`, and
+  `NEXT_SESSION_REFINEMENTS.md`.
 
-## User Preferences
+## Current Commit Stack
 
-- Measure twice before editing or committing.
-- Keep changes focused and approval-gated for meaningful code changes.
-- Keep programming lines near 72 characters.
-- Avoid expensive work in Pebble update procs.
-- Remove or gate noisy logs before commit unless they are intentional test logs.
+Recent relevant commits:
 
-## Recent Commits
+- `9fa6850` Rename watchface display refresh path
+- `f6cb94b` Clarify visual palette application flow
+- `57de6f9` Wire rendering to display palettes
+- `c63ce78` Define display color palettes
+- `6d0fa4e` Make icon fallback mode global
+- `2d9e015` docs: record commit message preference
 
-- `aef7fb6` refactored `main_window_load` into inline layer helpers and a
-  shared text-layer initializer.
-- `69eecf3` added compile-time BPM icon fallback mode.
+## Current Runtime Model
 
-## Current Uncommitted Work
+Settings and AppMessage keys:
 
-Runtime fallback mode work is still uncommitted.
+- `TIME_FORMAT`: `0` 24-hour, `1` 12-hour
+- `TEMP_UNIT`: `0` Fahrenheit, `1` Celsius
+- `TEMPERATURE`: Celsius tenths from PebbleKit JS
+- `HR_SAMPLE_MINUTES`: enum-backed sampling interval
+- `ICON_FALLBACK_MODE`: hidden, `0` disabled, `1` enabled
+- `DISPLAY_MODE`: `0` dark, `1` light
 
-Changed files expected:
+Generated key ids after clean build:
 
-- `package.json`
-- `src/pkjs/config.json`
-- `src/c/ataglance.h`
-- `src/c/main.c`
+- `ICON_FALLBACK_MODE` is `10004`
+- `DISPLAY_MODE` is `10005`
 
-There may also be `pebble-log.log` in the repo root from emulator logging. Do
-not commit it unless explicitly requested. Consider adding it to `.gitignore`
-if log capture will be repeated.
-
-## Current Runtime Behavior
-
-Hidden AppMessage key:
-
-- `BPM_ICON_MODE`
-- Current generated key id: `10004`
-- `0` means normal/resource icon mode.
-- `1` means fallback mode.
-
-Commands used during runtime testing:
+Useful commands:
 
 ```sh
 pebble send-app-message --emulator emery --int 10004=0
 pebble send-app-message --emulator emery --int 10004=1
+pebble send-app-message --emulator emery --int 10005=0
+pebble send-app-message --emulator emery --int 10005=1
 ```
 
-Internal C state now uses generic fallback naming:
+## Visual Palette State
 
-- `s_settings.fallback_mode`
-- `FALLBACK_MODE_DISABLED`
-- `FALLBACK_MODE_ENABLED`
-- `FALLBACK_MODE`
-- `FALLBACK_MODE_VALID(...)`
+Palette definitions live in `src/c/main.c` as `VisualPalette`.
 
-The hidden config key is still named `BPM_ICON_MODE`. This was kept to avoid
-message-key churn during testing, but it may deserve discussion because the
-mode is intended to become a generic fallback mode for all icons.
+Dark mode:
 
-## Asset Lifecycle
+- Background: `GColorBlack`
+- Primary text: `GColorLightGray`
+- Unavailable text: `GColorWindsorTan`
+- Date: `GColorRichBrilliantLavender`
+- Time: `GColorSunsetOrange`
+- Rule: `GColorLightGray`
+- Steps icon: `GColorChromeYellow`
 
-Current intended model:
+Light mode:
 
-- Allocate each icon asset lazily.
-- Keep both resource icon and fallback icon resident if both are created.
-- Never allocate or unload assets inside the paint/update proc.
-- Destroy both assets only in `main_window_unload()`.
+- Background: `GColorWhite`
+- Primary text: `GColorBlack`
+- Unavailable text: `GColorLightGray`
+- Date: `GColorImperialPurple`
+- Time: `GColorSunsetOrange`
+- Rule: `GColorLightGray`
+- Steps icon: `GColorChromeYellow`
 
-Important functions in `src/c/main.c`:
+Semantic colors remain mode-independent:
 
-- `load_bpm_icon_assets()`
-- `unload_bpm_icon_assets()`
-- `draw_bpm_icon_with_color()`
-- `create_bpm_fallback_icon()`
-- `apply_mode_visual_cue()`
+- BPM `1-99`: `GColorJaegerGreen`
+- BPM `100-120`: `GColorMagenta`
+- BPM `>120`: `GColorRed`
+- Battery charging: `GColorJaegerGreen`
+- Battery `>50`: `GColorCobaltBlue`
+- Battery `21-50`: `GColorYellow`
+- Battery `<=20`: `GColorRed`
 
-## Visual Cue
+## Refresh Flow
 
-Fallback mode changes the watchface background color:
+Current display refresh entry point:
 
-- fallback enabled: `GColorDarkGray`
-- fallback disabled: `GColorBlack`
+- `refresh_watchface_display()`
 
-This lets fallback mode be visually verified from launch.
+It currently:
 
-## Logging
+- Requires `s_window`, logs error and returns if missing.
+- Sets the window background from `s_palette`.
+- Marks background/rule dirty.
+- Marks steps icon dirty because the icon reads `s_palette->steps_icon`.
+- Refreshes date, time, steps, BPM, battery, and temp.
 
-Fallback draw logging is throttled with a function-local static variable in
-`draw_bpm_icon_with_color()`.
+Palette selection:
 
-Known useful log:
+- `settings_load()` validates settings and calls `select_visual_palette()`.
+- Display-mode AppMessage updates `s_settings.display_mode`, calls
+  `select_visual_palette()`, then `refresh_watchface_display()`.
 
-```text
-Fallback icon draw is active (mode=1, image=1)
-```
+Important audit rule for tomorrow:
 
-That means:
+- Before changing refresh or draw behavior, run `rg "s_palette|update_proc|layer_mark_dirty|text_layer_set_text_color" src/c/main.c`.
+- Identify every layer and text path affected before editing.
 
-- fallback mode is enabled
-- the resource icon is also loaded
-- draw path correctly chooses fallback because the runtime mode says so
+## Known Follow-Ups
 
-Before committing, review log noise. Existing noisy logs such as update and
-handler traces may need to be removed or gated.
+See `NEXT_SESSION_REFINEMENTS.md` for the tomorrow backlog.
 
-## Validation Completed
+Highest-value next items:
 
-`pebble build` passed after the current uncommitted changes.
+1. Reconcile `README.md` and `AGENTS.md` with current implementation.
+2. Audit `refresh_watchface_display()` end-to-end for all layers and callbacks.
+3. Begin a behavior-equivalent layout-state extraction for future form factors.
 
-Emulator testing confirmed:
+## Collaboration Runbook
 
-- `10004=0` switched to normal mode.
-- `10004=1` switched to fallback mode.
-- Fallback drawing worked while resource icon remained loaded:
+Use this cycle for substantive work:
 
-```text
-Fallback icon draw is active (mode=1, image=1)
-```
+1. Inspect relevant code paths and repo state.
+2. Identify affected state, layers, callbacks, config, docs, and generated keys.
+3. Audit all dependent draw/update/refresh paths before suggesting a patch.
+4. Confirm intended behavior and failure modes with the user when needed.
+5. Execute the smallest coherent patch.
+6. Validate with diff review, build, and emulator/log checks when applicable.
 
-The emulator and log capture were stopped with:
+Specific lesson from today:
 
-```sh
-pebble kill --force
-```
-
-## Commands
-
-Build:
-
-```sh
-pebble build
-```
-
-Install:
-
-```sh
-pebble install --emulator emery
-```
-
-Logs:
-
-```sh
-pebble logs --emulator emery
-```
-
-Write logs to a file:
-
-```sh
-pebble logs --emulator emery | tee pebble-log.log
-```
-
-Stop emulator:
-
-```sh
-pebble kill --force
-```
-
-## Before Commit
-
-Recommended next-session checklist:
-
-1. Run `git status --short`.
-2. Review `git diff`.
-3. Decide whether hidden key should remain `BPM_ICON_MODE` or become
-   `FALLBACK_MODE`.
-4. Check 72-character line width in changed C code.
-5. Remove or gate noisy logs that are not needed after testing.
-6. Ensure `pebble-log.log` is not committed.
-7. Run `pebble build`.
-8. Stage and commit only the intended fallback runtime changes.
+- UI refresh changes require a complete layer audit. Do not assume text updates
+  imply icon layers will repaint. Every `Layer` update proc that reads changed
+  state must be explicitly considered and dirtied when appropriate.

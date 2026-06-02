@@ -7,6 +7,11 @@ This repo is for Pebble SDK 4+ watchfaces and apps. The first target is Pebble T
 - Spend most effort on architecture, design, testability, constraints, and look-and-feel before coding.
 - Aim before acting: understand the goal, constraints, platform target, and likely failure modes before changing files.
 - Measure twice, cut once: verify assumptions and inspect diffs before commits, publishing steps, or broad refactors.
+- Use an inspect, identify, audit, confirm, execute, validate cycle for
+  substantive changes. Before proposing or implementing changes, inspect the
+  relevant code paths, identify affected state and layers, audit all
+  dependents, confirm the intended behavior, execute the smallest coherent
+  patch, and validate with build/runtime checks.
 - Use progressive disclosure: discover only the files needed, identify entry points, suggest changes, then edit.
 - Do not guess Pebble behavior. Verify SDK 4+ APIs, generated resources, AppMessage keys, emulator behavior, and build output when they matter.
 - Keep changes focused. Suggest cleanups and stylistic changes before making them unless they are required for the task.
