@@ -27,7 +27,7 @@ Screen hierarchy:
 ```text
 DATE
 TIME
----------------------- (rule at y=110)
+---------------------- (rule at y=114)
 HEART ICON + BPM        STEPS ICON + STEPS
 TEMP              BATTERY ICON + BATTERY %
 ```
@@ -35,12 +35,12 @@ TEMP              BATTERY ICON + BATTERY %
 Key geometry from `src/c/main.c` and `src/c/ataglance.h`:
 
 - Date layer: `GRect(12, 10, 176, 36)`
-- Time layer: `GRect(12, 46, 176, 50)`
-- Horizontal rule: from `(12, 110)` to `(188, 110)`
-- Heart icon: `GRect(20, 118, 28, 28)`
-- BPM value: `GRect(52, 118, 58, 36)`
-- Steps icon: `GRect(94, 118, 28, 28)`
-- Steps value: `GRect(126, 118, 54, 36)`
+- Time layer: `GRect(12, 46, 176, 60)`
+- Horizontal rule: from `(12, 114)` to `(188, 114)`
+- Heart icon: `GRect(20, 122, 28, 28)`
+- BPM value: `GRect(52, 122, 58, 36)`
+- Steps icon: `GRect(94, 122, 28, 28)`
+- Steps value: `GRect(126, 122, 54, 36)`
 - Temperature: `GRect(44, 184, 64, 30)`
 - Battery icon: `GRect(86, 184, 28, 28)`
 - Battery value: `GRect(118, 184, 54, 30)`

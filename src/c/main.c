@@ -58,7 +58,15 @@ typedef struct {
   GRect temp_text_frame;
   GRect battery_icon_frame;
   GRect battery_text_frame;
+  int16_t rule_y;
+  int16_t rule_right;
+  int16_t content_width_date;
+  int16_t content_width_time;
+  int16_t content_width_health;
+  int16_t content_width_environment;
 } WatchfaceLayout;
+
+static WatchfaceLayout s_layout;
 
 static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
@@ -234,7 +242,9 @@ static void background_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
   graphics_context_set_stroke_color(ctx, s_palette->rule);
   graphics_context_set_stroke_width(ctx, 2);
-  graphics_draw_line(ctx, GPoint(CONTENT_X, RULE_VERT), GPoint(RULE_RIGHT, RULE_VERT));
+  graphics_draw_line(ctx,
+                     GPoint(CONTENT_X, s_layout.rule_y),
+                     GPoint(s_layout.rule_right, s_layout.rule_y));
 }
 
 static GColor calculate_bpm_color(int bpm) {
@@ -742,15 +752,18 @@ static inline TextLayer* create_and_initialize_text_layer(
 }
 
 static WatchfaceLayout get_watchface_layout(GRect bounds) {
+  const int row_gap = bounds.size.h / 28;
   const int content_width = bounds.size.w - (2 * CONTENT_X);
+  const int rule_y = bounds.size.h / 2;
+  const int rule_right = bounds.size.w - CONTENT_X;
 
   const int date_top = 10;
   const int date_height = 36;
 
   const int time_layer_top = 46;
-  const int time_layer_height = 50;
+  const int time_layer_height = rule_y - row_gap - time_layer_top;
 
-  const int metrics_row_top = RULE_VERT + 8;
+  const int metrics_row_top = rule_y + row_gap;
   const int bottom_row_top = 184;
 
   const int left_icon_x = CONTENT_X + 8;
@@ -764,13 +777,19 @@ static WatchfaceLayout get_watchface_layout(GRect bounds) {
 
   WatchfaceLayout layout;
   layout.background_frame = bounds;
+  layout.rule_y = rule_y;
+  layout.rule_right = rule_right;
+  layout.content_width_date = content_width;
+  layout.content_width_time = content_width;
+  layout.content_width_health = content_width;
+  layout.content_width_environment = content_width;
   layout.date_frame = GRect(CONTENT_X,
                             date_top,
-                            content_width,
+                            layout.content_width_date,
                             date_height);
   layout.time_frame = GRect(CONTENT_X,
                             time_layer_top,
-                            content_width,
+                            layout.content_width_time,
                             time_layer_height);
   layout.bpm_icon_frame = GRect(left_icon_x,
                                 metrics_row_top,
@@ -910,21 +929,21 @@ static void main_window_load(Window* window) {
   }
 
   GRect bounds = layer_get_bounds(root);
-  WatchfaceLayout layout = get_watchface_layout(bounds);
+  s_layout = get_watchface_layout(bounds);
 
   // Background rule spanning across the content region.
-  init_background_layer(root, layout.background_frame);
+  init_background_layer(root, s_layout.background_frame);
 
   // Top row: date and hero time.
-  init_top_layers(root, &layout);
+  init_top_layers(root, &s_layout);
 
   // Middle row: health metrics (BPM and steps).
-  init_bpm_column(root, &layout);
-  init_steps_column(root, &layout);
+  init_bpm_column(root, &s_layout);
+  init_steps_column(root, &s_layout);
 
   // Bottom row: environment metrics (temperature and battery).
-  init_temp_column(root, &layout);
-  init_battery_column(root, &layout);
+  init_temp_column(root, &s_layout);
+  init_battery_column(root, &s_layout);
 
   refresh_watchface_display();
 }

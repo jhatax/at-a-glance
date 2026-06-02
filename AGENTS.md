@@ -49,13 +49,13 @@ Layout geometry (current frames/anchors):
 
 - date: `GRect(12, 10, 176, 36)` (`FONT_KEY_GOTHIC_24_BOLD`,
   `GColorRichBrilliantLavender`)
-- time: `GRect(12, 46, 176, 50)`
+- time: `GRect(12, 46, 176, 60)`
   (`FONT_KEY_ROBOTO_BOLD_SUBSET_49`, `GColorSunsetOrange`)
-- rule: line from `(12, 110)` to `(188, 110)`
-- heart icon: `GRect(20, 118, 28, 28)` (resource `ICON_BPM`)
-- bpm text: `GRect(52, 118, 58, 36)` (`FONT_KEY_GOTHIC_28`)
-- steps icon: `GRect(94, 118, 28, 28)` (custom drawn paw glyph)
-- steps text: `GRect(126, 118, 54, 36)` (`FONT_KEY_GOTHIC_28`)
+- rule: line from `(12, 114)` to `(188, 114)`
+- heart icon: `GRect(20, 122, 28, 28)` (resource `ICON_BPM`)
+- bpm text: `GRect(52, 122, 58, 36)` (`FONT_KEY_GOTHIC_28`)
+- steps icon: `GRect(94, 122, 28, 28)` (custom drawn paw glyph)
+- steps text: `GRect(126, 122, 54, 36)` (`FONT_KEY_GOTHIC_28`)
 - temp text: `GRect(44, 184, 64, 30)` (`FONT_KEY_GOTHIC_24_BOLD`)
 - battery icon: `GRect(86, 184, 28, 28)` (custom drawn AA battery)
 - battery text: `GRect(118, 184, 54, 30)`
@@ -99,7 +99,7 @@ Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 - bottom row sample (`90°F`, `80%`) fits without clipping.
 - unavailable health values render as `---`.
 - current implementation does not draw a vertical rail; it uses a
-  horizontal rule at `y=110`.
+  horizontal rule at `y=114`.
 
 ## Pebble Platform Rules
 
