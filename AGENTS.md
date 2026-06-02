@@ -47,16 +47,19 @@ Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/co
 
 Layout geometry (current frames/anchors):
 
-- date: `GRect(12, 10, 176, 36)` (`FONT_KEY_GOTHIC_18_BOLD`, `GColorRichBrilliantLavender`)
-- time: `GRect(12, 46, 200, 84)` (`FONT_KEY_BITHAM_42_BOLD`, `GColorSunsetOrange`)
-- rule: line from `(12, 140)` to `(188, 140)`
-- heart icon: `GRect(12, 148, 28, 28)` (resource `ICON_BPM`)
-- bpm text: `GRect(41, 148, 45, 30)` (`FONT_KEY_GOTHIC_24`)
-- steps icon: `GRect(106, 148, 25, 25)` (custom drawn paw glyph)
-- steps text: `GRect(135, 148, 53, 30)` (`FONT_KEY_GOTHIC_24`)
-- temp text: `GRect(41, 192, 45, 24)` (`FONT_KEY_GOTHIC_18_BOLD`)
-- battery icon: `GRect(106, 192, 25, 25)` (custom drawn AA battery)
-- battery text: `GRect(135, 192, 53, 24)` (`FONT_KEY_GOTHIC_18_BOLD`)
+- date: `GRect(12, 10, 176, 36)` (`FONT_KEY_GOTHIC_24_BOLD`,
+  `GColorRichBrilliantLavender`)
+- time: `GRect(12, 46, 176, 50)`
+  (`FONT_KEY_ROBOTO_BOLD_SUBSET_49`, `GColorSunsetOrange`)
+- rule: line from `(12, 110)` to `(188, 110)`
+- heart icon: `GRect(20, 118, 28, 28)` (resource `ICON_BPM`)
+- bpm text: `GRect(52, 118, 58, 36)` (`FONT_KEY_GOTHIC_28`)
+- steps icon: `GRect(94, 118, 28, 28)` (custom drawn paw glyph)
+- steps text: `GRect(126, 118, 54, 36)` (`FONT_KEY_GOTHIC_28`)
+- temp text: `GRect(44, 184, 64, 30)` (`FONT_KEY_GOTHIC_24_BOLD`)
+- battery icon: `GRect(86, 184, 28, 28)` (custom drawn AA battery)
+- battery text: `GRect(118, 184, 54, 30)`
+  (`FONT_KEY_GOTHIC_24_BOLD`)
 
 Color/semantic rules that must remain documented when changed:
 
@@ -86,7 +89,7 @@ At A Glance: Configuration
   - Temperature unit: Fahrenheit, Celsius
   - Display mode: Dark mode, Light mode
   - HR Sampling Frequency: 10, 15, 30, 60, 120 minutes
-  - Hidden icon fallback mode: disabled, enabled
+  - Hidden icon fallback mode: hidden input, default disabled
   - Submit: Save Settings
 ```
 
@@ -95,7 +98,8 @@ Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 - date and hero time are fitting at sampled values (`MON · 01 JUN`, `14:50`).
 - bottom row sample (`90°F`, `80%`) fits without clipping.
 - unavailable health values render as `---`.
-- current implementation does not draw a vertical rail; it uses a horizontal rule at `y=140`.
+- current implementation does not draw a vertical rail; it uses a
+  horizontal rule at `y=110`.
 
 ## Pebble Platform Rules
 

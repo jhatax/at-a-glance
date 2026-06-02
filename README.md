@@ -25,34 +25,34 @@ Swiss-Rail Inspired watchface for **Pebble Time 2** (emery).
 Screen hierarchy:
 
 ```text
-DATE (top rail)
-TIME (hero)
----------------------- (rule at y=140)
+DATE
+TIME
+---------------------- (rule at y=110)
 HEART ICON + BPM        STEPS ICON + STEPS
-TEMP                    BATTERY ICON + BATTERY %
+TEMP              BATTERY ICON + BATTERY %
 ```
 
 Key geometry from `src/c/main.c` and `src/c/ataglance.h`:
 
 - Date layer: `GRect(12, 10, 176, 36)`
-- Time layer: `GRect(12, 46, 200, 84)`
-- Horizontal rule: from `(12, 140)` to `(188, 140)`
-- Heart icon: `GRect(12, 148, 28, 28)`
-- BPM value: `GRect(41, 148, 45, 30)`
-- Steps icon: `GRect(106, 148, 25, 25)`
-- Steps value: `GRect(135, 148, 53, 30)`
-- Temperature: `GRect(41, 192, 45, 24)`
-- Battery icon: `GRect(106, 192, 25, 25)`
-- Battery value: `GRect(135, 192, 53, 24)`
+- Time layer: `GRect(12, 46, 176, 50)`
+- Horizontal rule: from `(12, 110)` to `(188, 110)`
+- Heart icon: `GRect(20, 118, 28, 28)`
+- BPM value: `GRect(52, 118, 58, 36)`
+- Steps icon: `GRect(94, 118, 28, 28)`
+- Steps value: `GRect(126, 118, 54, 36)`
+- Temperature: `GRect(44, 184, 64, 30)`
+- Battery icon: `GRect(86, 184, 28, 28)`
+- Battery value: `GRect(118, 184, 54, 30)`
 
 ## Typography And Color
 
 Fonts used:
 
-- Hero time: `FONT_KEY_BITHAM_42_BOLD`
-- Date: `FONT_KEY_GOTHIC_18_BOLD`
-- BPM and steps values: `FONT_KEY_GOTHIC_24`
-- Temperature and battery values: `FONT_KEY_GOTHIC_18_BOLD`
+- Hero time: `FONT_KEY_ROBOTO_BOLD_SUBSET_49`
+- Date: `FONT_KEY_GOTHIC_24_BOLD`
+- BPM and steps values: `FONT_KEY_GOTHIC_28`
+- Temperature and battery values: `FONT_KEY_GOTHIC_24_BOLD`
 
 Color usage:
 
@@ -84,11 +84,14 @@ Color usage:
 
 ## Icons Used
 
-- Heart icon: vector resource `ICON_BPM` (`resources/bpm_option-2.pdc`), recolored in C by BPM zone.
-- Steps icon: custom-drawn paw/footprint using `graphics_fill_circle` calls (no bitmap resource).
-- Battery icon: custom-drawn AA-style battery in a 25x25 canvas (outline + fill level).
-- App/menu icon: `resources/icon.png` (`MENU_ICON`).
-- Hidden `ICON_FALLBACK_MODE` can force procedural icons for testing.
+- Heart icon: vector resource `ICON_BPM`
+  (`resources/images/bpm_option-tick.pdc`), recolored in C by BPM zone.
+- Steps icon: custom-drawn paw/footprint using `graphics_fill_circle`
+  calls (no bitmap resource).
+- Battery icon: custom-drawn AA-style battery in a 28x28 layer.
+- App/menu icon: `resources/images/icon.png` (`MENU_ICON`).
+- Hidden `ICON_FALLBACK_MODE` defaults disabled and can force procedural icons
+  for testing.
 
 ## Configuration Page (Clay) Mockup
 
@@ -118,6 +121,9 @@ HR Sampling Frequency
   ( ) Every 120-minutes
 
 [ Save Settings ]
+
+Hidden input:
+  ICON_FALLBACK_MODE = 0 (disabled)
 ```
 
 ## Build
