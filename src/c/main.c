@@ -37,6 +37,36 @@ static struct {
   int16_t temp_celsius_tenths;
 } s_settings;
 
+typedef struct {
+  GColor background;
+  GColor primary_text;
+  GColor unavailable_text;
+  GColor date;
+  GColor time;
+  GColor rule;
+  GColor steps_icon;
+} VisualPalette;
+
+const VisualPalette c_dark_palette = {
+  .background = GColorBlack,
+  .primary_text = GColorLightGray,
+  .unavailable_text = GColorWindsorTan,
+  .date = GColorRichBrilliantLavender,
+  .time = GColorSunsetOrange,
+  .rule = GColorLightGray,
+  .steps_icon = GColorChromeYellow,
+};
+
+const VisualPalette c_light_palette = {
+  .background = GColorWhite,
+  .primary_text = GColorBlack,
+  .unavailable_text = GColorLightGray,
+  .date = GColorImperialPurple,
+  .time = GColorSunsetOrange,
+  .rule = GColorLightGray,
+  .steps_icon = GColorChromeYellow,
+};
+
 static const GColor c_color_time = GColorSunsetOrange;
 static const GColor c_color_date = GColorRichBrilliantLavender;
 static const GColor c_data_unavailable_color = GColorWindsorTan;

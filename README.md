@@ -56,12 +56,23 @@ Fonts used:
 
 Color usage:
 
-- Time: `GColorSunsetOrange`
-- Date and steps icon: `GColorRichBrilliantLavender`
-- Primary data text: `GColorLightGray`
-- Unavailable data fallback (`---`): `GColorWhite`
+- Dark mode:
+  - Background: `GColorBlack`
+  - Time: `GColorSunsetOrange`
+  - Date: `GColorRichBrilliantLavender`
+  - Primary data text: `GColorLightGray`
+  - Unavailable data fallback (`---`): `GColorWindsorTan`
+  - Rule: `GColorLightGray`
+- Light mode:
+  - Background: `GColorWhite`
+  - Time: `GColorSunsetOrange`
+  - Date: `GColorImperialPurple`
+  - Primary data text: `GColorBlack`
+  - Unavailable data fallback (`---`): `GColorLightGray`
+  - Rule: `GColorLightGray`
+- Steps icon: `GColorChromeYellow`
 - Heart icon and BPM text:
-  - `<= 0` or unavailable: white
+  - `<= 0` or unavailable: mode unavailable color
   - `1-99`: `GColorJaegerGreen`
   - `100-120`: `GColorMagenta`
   - `>120`: `GColorRed`

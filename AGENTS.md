@@ -55,9 +55,15 @@ Layout geometry (current frames/anchors):
 
 Color/semantic rules that must remain documented when changed:
 
-- unavailable text token is `---` in white.
+- unavailable text token is `---`.
+- dark mode uses black background, light gray primary text, Windsor Tan
+  unavailable text, Rich Brilliant Lavender date, Sunset Orange time,
+  Light Gray rule, and Chrome Yellow steps icon.
+- light mode uses white background, black primary text, Light Gray
+  unavailable text, Imperial Purple date, Sunset Orange time, Light Gray
+  rule, and Chrome Yellow steps icon.
 - BPM color zones:
-  - `<=0` or unavailable: white
+  - `<=0` or unavailable: current mode unavailable color
   - `1-99`: Jaeger Green
   - `100-120`: Magenta
   - `>120`: Red
