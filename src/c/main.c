@@ -144,7 +144,6 @@ static void settings_load() {
   if (!DISPLAY_MODE_VALID(s_settings.display_mode)) {
     s_settings.display_mode = DISPLAY_MODE_DEFAULT;
   }
-  select_visual_palette();
 }
 
 static void settings_save() {
@@ -356,6 +355,7 @@ static void refresh_watchface_display() {
     return;
   }
 
+  select_visual_palette();
   window_set_background_color(s_window, s_palette->background);
 
   if (s_background_layer) {
@@ -702,7 +702,6 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   if (DISPLAY_MODE_VALID(display_mode) &&
       s_settings.display_mode != (uint8_t)display_mode) {
     s_settings.display_mode = (uint8_t)display_mode;
-    select_visual_palette();
     refresh_watchface_display();
     changed = true;
   }
@@ -727,7 +726,6 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 static inline TextLayer* create_and_initialize_text_layer(
     Layer* parent,
     GRect frame,
-    GColor text_color,
     GColor background_color,
     GFont font,
     GTextAlignment alignment) {
@@ -737,7 +735,6 @@ static inline TextLayer* create_and_initialize_text_layer(
   }
 
   text_layer_set_background_color(layer, background_color);
-  text_layer_set_text_color(layer, text_color);
   text_layer_set_font(layer, font);
   text_layer_set_text_alignment(layer, alignment);
   layer_add_child(parent, text_layer_get_layer(layer));
@@ -820,7 +817,6 @@ static inline void init_top_layers(
   s_date_layer = create_and_initialize_text_layer(
       root,
       layout->date_frame,
-      s_palette->date,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -828,7 +824,6 @@ static inline void init_top_layers(
   s_time_layer = create_and_initialize_text_layer(
       root,
       layout->time_frame,
-      s_palette->time,
       GColorClear,
       s_font_time,
       GTextAlignmentLeft);
@@ -852,7 +847,6 @@ static inline void init_bpm_column(
   s_bpm_layer = create_and_initialize_text_layer(
       root,
       layout->bpm_text_frame,
-      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_28,
       GTextAlignmentLeft);
@@ -870,7 +864,6 @@ static inline void init_steps_column(
   s_steps_layer = create_and_initialize_text_layer(
       root,
       layout->steps_text_frame,
-      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_28,
       GTextAlignmentLeft);
@@ -882,7 +875,6 @@ static inline void init_temp_column(
   s_temp_layer = create_and_initialize_text_layer(
       root,
       layout->temp_text_frame,
-      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -900,7 +892,6 @@ static inline void init_battery_column(
   s_battery_layer = create_and_initialize_text_layer(
       root,
       layout->battery_text_frame,
-      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
