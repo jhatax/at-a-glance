@@ -74,8 +74,13 @@ static inline void select_visual_palette();
 static inline bool is_icon_fallback_enabled();
 static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
-static void apply_visual_palette_to_watchface();
-static void update_all();
+static void refresh_watchface_display();
+static void update_date();
+static void update_time();
+static void update_bpm();
+static void update_step_count();
+static void update_battery();
+static void update_temp();
 
 static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
@@ -331,16 +336,31 @@ static inline bool is_icon_fallback_enabled() {
   return s_settings.icon_fallback_mode == ICON_FALLBACK_MODE_ENABLED;
 }
 
-static void apply_visual_palette_to_watchface() {
-  if (s_window) {
-    window_set_background_color(s_window, s_palette->background);
+static void refresh_watchface_display() {
+  if (!s_window) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Cannot refresh watchface display without a window");
+    return;
   }
+
+  window_set_background_color(s_window, s_palette->background);
 
   if (s_background_layer) {
     layer_mark_dirty(s_background_layer);
   }
+  if (s_steps_icon_layer) {
+    layer_mark_dirty(s_steps_icon_layer);
+  }
 
-  update_all();
+  update_date();
+  update_time();
+  #if defined(PBL_HEALTH)
+  update_step_count();
+  update_bpm();
+  #endif
+  s_battery_state = battery_state_service_peek();
+  update_battery();
+  update_temp();
 }
 
 static inline void create_bpm_fallback_icon(GRect bounds) {
@@ -577,18 +597,6 @@ static void update_temp() {
   text_layer_set_text(s_temp_layer, buf);
 }
 
-static void update_all() {
-  update_date();
-  update_time();
-  #if defined(PBL_HEALTH)
-  update_step_count();
-  update_bpm();
-  #endif
-  s_battery_state = battery_state_service_peek();
-  update_battery();
-  update_temp();
-}
-
 static void health_handler(HealthEventType event, void* context) {
   if (event == HealthEventSignificantUpdate || event == HealthEventMovementUpdate) {
     update_step_count();
@@ -682,7 +690,7 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
       s_settings.display_mode != (uint8_t)display_mode) {
     s_settings.display_mode = (uint8_t)display_mode;
     select_visual_palette();
-    apply_visual_palette_to_watchface();
+    refresh_watchface_display();
     changed = true;
   }
 
@@ -901,8 +909,7 @@ static void main_window_load(Window* window) {
   init_temp_column(root, bottom_row_top, bottom_text_height);
   init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
-  // Apply visual style to main window
-  apply_visual_palette_to_watchface();
+  refresh_watchface_display();
 }
 
 static void main_window_unload(Window* window) {
