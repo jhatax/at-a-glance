@@ -47,6 +47,19 @@ typedef struct {
   GColor steps_icon;
 } VisualPalette;
 
+typedef struct {
+  GRect background_frame;
+  GRect date_frame;
+  GRect time_frame;
+  GRect bpm_icon_frame;
+  GRect bpm_text_frame;
+  GRect steps_icon_frame;
+  GRect steps_text_frame;
+  GRect temp_text_frame;
+  GRect battery_icon_frame;
+  GRect battery_text_frame;
+} WatchfaceLayout;
+
 static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
   .primary_text = GColorLightGray,
@@ -731,135 +744,7 @@ static inline TextLayer* create_and_initialize_text_layer(
   return layer;
 }
 
-static inline void init_background_layer(Layer* root) {
-  s_background_layer = layer_create(GRect(0, 0, 200, 228));
-  if (s_background_layer) {
-    layer_set_update_proc(s_background_layer, background_update_proc);
-    layer_add_child(root, s_background_layer);
-  }
-}
-
-static inline void init_top_layers(
-    Layer* root,
-    int content_width,
-    int date_top,
-    int date_height,
-    int time_layer_top,
-    int time_layer_height) {
-  s_date_layer = create_and_initialize_text_layer(
-      root,
-      GRect(CONTENT_X, date_top, content_width, date_height),
-      s_palette->date,
-      GColorClear,
-      s_font_gothic_24_bold,
-      GTextAlignmentLeft);
-
-  s_time_layer = create_and_initialize_text_layer(
-      root,
-      GRect(CONTENT_X, time_layer_top, content_width, time_layer_height),
-      s_palette->time,
-      GColorClear,
-      s_font_time,
-      GTextAlignmentLeft);
-}
-
-static inline void init_bpm_column(
-    Layer* root,
-    int left_icon_x,
-    int left_value_x,
-    int metrics_row_top,
-    int icon_size,
-    int metrics_text_height) {
-  // Initialize BPM releated variables
-  s_bpm = 0;
-  s_bpm_color = calculate_bpm_color(s_bpm);
-
-  // Create the BPM Icon Layer
-  s_bpm_icon_layer = layer_create(
-      GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
-  if (s_bpm_icon_layer) {
-    load_bpm_icon_assets();
-    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
-    layer_add_child(root, s_bpm_icon_layer);
-  }
-
-  s_bpm_layer = create_and_initialize_text_layer(
-      root,
-      GRect(left_value_x, metrics_row_top, 58, metrics_text_height),
-      s_palette->unavailable_text,
-      GColorClear,
-      s_font_gothic_28,
-      GTextAlignmentLeft);
-}
-
-static inline void init_steps_column(
-    Layer* root,
-    int right_icon_x,
-    int right_value_x,
-    int metrics_row_top,
-    int icon_size,
-    int metrics_text_height) {
-  s_steps_icon_layer = layer_create(
-      GRect(right_icon_x, metrics_row_top, icon_size, icon_size));
-  if (s_steps_icon_layer) {
-    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
-    layer_add_child(root, s_steps_icon_layer);
-  }
-
-  s_steps_layer = create_and_initialize_text_layer(
-      root,
-      GRect(right_value_x, metrics_row_top, 54, metrics_text_height),
-      s_palette->unavailable_text,
-      GColorClear,
-      s_font_gothic_28,
-      GTextAlignmentLeft);
-}
-
-static inline void init_temp_column(
-    Layer* root, int bottom_row_top, int bottom_text_height) {
-  s_temp_layer = create_and_initialize_text_layer(
-      root,
-      GRect(44, bottom_row_top, 64, bottom_text_height),
-      s_palette->unavailable_text,
-      GColorClear,
-      s_font_gothic_24_bold,
-      GTextAlignmentLeft);
-}
-
-static inline void init_battery_column(
-    Layer* root,
-    int bottom_row_top,
-    int icon_size,
-    int bottom_text_height) {
-  s_battery_icon_layer = layer_create(
-      GRect(86, bottom_row_top, icon_size, icon_size));
-  if (s_battery_icon_layer) {
-    layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
-    layer_add_child(root, s_battery_icon_layer);
-  }
-
-  s_battery_layer = create_and_initialize_text_layer(
-      root,
-      GRect(118, bottom_row_top, 54, bottom_text_height),
-      s_palette->unavailable_text,
-      GColorClear,
-      s_font_gothic_24_bold,
-      GTextAlignmentLeft);
-}
-
-static void main_window_load(Window* window) {
-  if (!window) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
-    return;
-  }
-
-  Layer* root = window_get_root_layer(window);
-  if (!root) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
-    return;
-  }
-
-  GRect bounds = layer_get_bounds(root);
+static WatchfaceLayout get_watchface_layout(GRect bounds) {
   const int content_width = bounds.size.w - (2 * CONTENT_X);
 
   const int date_top = 10;
@@ -880,34 +765,175 @@ static void main_window_load(Window* window) {
   const int metrics_text_height = 36;
   const int bottom_text_height = 30;
 
+  WatchfaceLayout layout;
+  layout.background_frame = GRect(0, 0, 200, 228);
+  layout.date_frame = GRect(CONTENT_X,
+                            date_top,
+                            content_width,
+                            date_height);
+  layout.time_frame = GRect(CONTENT_X,
+                            time_layer_top,
+                            content_width,
+                            time_layer_height);
+  layout.bpm_icon_frame = GRect(left_icon_x,
+                                metrics_row_top,
+                                icon_size,
+                                icon_size);
+  layout.bpm_text_frame = GRect(left_value_x,
+                                metrics_row_top,
+                                58,
+                                metrics_text_height);
+  layout.steps_icon_frame = GRect(right_icon_x,
+                                  metrics_row_top,
+                                  icon_size,
+                                  icon_size);
+  layout.steps_text_frame = GRect(right_value_x,
+                                  metrics_row_top,
+                                  54,
+                                  metrics_text_height);
+  layout.temp_text_frame = GRect(44,
+                                 bottom_row_top,
+                                 64,
+                                 bottom_text_height);
+  layout.battery_icon_frame = GRect(86,
+                                    bottom_row_top,
+                                    icon_size,
+                                    icon_size);
+  layout.battery_text_frame = GRect(118,
+                                    bottom_row_top,
+                                    54,
+                                    bottom_text_height);
+  return layout;
+}
+
+static inline void init_background_layer(Layer* root, GRect frame) {
+  s_background_layer = layer_create(frame);
+  if (s_background_layer) {
+    layer_set_update_proc(s_background_layer, background_update_proc);
+    layer_add_child(root, s_background_layer);
+  }
+}
+
+static inline void init_top_layers(
+    Layer* root,
+    const WatchfaceLayout* layout) {
+  s_date_layer = create_and_initialize_text_layer(
+      root,
+      layout->date_frame,
+      s_palette->date,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+
+  s_time_layer = create_and_initialize_text_layer(
+      root,
+      layout->time_frame,
+      s_palette->time,
+      GColorClear,
+      s_font_time,
+      GTextAlignmentLeft);
+}
+
+static inline void init_bpm_column(
+    Layer* root,
+    const WatchfaceLayout* layout) {
+  // Initialize BPM releated variables
+  s_bpm = 0;
+  s_bpm_color = calculate_bpm_color(s_bpm);
+
+  // Create the BPM Icon Layer
+  s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
+  if (s_bpm_icon_layer) {
+    load_bpm_icon_assets();
+    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
+    layer_add_child(root, s_bpm_icon_layer);
+  }
+
+  s_bpm_layer = create_and_initialize_text_layer(
+      root,
+      layout->bpm_text_frame,
+      s_palette->unavailable_text,
+      GColorClear,
+      s_font_gothic_28,
+      GTextAlignmentLeft);
+}
+
+static inline void init_steps_column(
+    Layer* root,
+    const WatchfaceLayout* layout) {
+  s_steps_icon_layer = layer_create(layout->steps_icon_frame);
+  if (s_steps_icon_layer) {
+    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
+    layer_add_child(root, s_steps_icon_layer);
+  }
+
+  s_steps_layer = create_and_initialize_text_layer(
+      root,
+      layout->steps_text_frame,
+      s_palette->unavailable_text,
+      GColorClear,
+      s_font_gothic_28,
+      GTextAlignmentLeft);
+}
+
+static inline void init_temp_column(
+    Layer* root,
+    const WatchfaceLayout* layout) {
+  s_temp_layer = create_and_initialize_text_layer(
+      root,
+      layout->temp_text_frame,
+      s_palette->unavailable_text,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+}
+
+static inline void init_battery_column(
+    Layer* root,
+    const WatchfaceLayout* layout) {
+  s_battery_icon_layer = layer_create(layout->battery_icon_frame);
+  if (s_battery_icon_layer) {
+    layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
+    layer_add_child(root, s_battery_icon_layer);
+  }
+
+  s_battery_layer = create_and_initialize_text_layer(
+      root,
+      layout->battery_text_frame,
+      s_palette->unavailable_text,
+      GColorClear,
+      s_font_gothic_24_bold,
+      GTextAlignmentLeft);
+}
+
+static void main_window_load(Window* window) {
+  if (!window) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
+    return;
+  }
+
+  Layer* root = window_get_root_layer(window);
+  if (!root) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(root);
+  WatchfaceLayout layout = get_watchface_layout(bounds);
+
   // Background rule spanning across the content region.
-  init_background_layer(root);
+  init_background_layer(root, layout.background_frame);
 
   // Top row: date and hero time.
-  init_top_layers(root,
-                  content_width,
-                  date_top,
-                  date_height,
-                  time_layer_top,
-                  time_layer_height);
+  init_top_layers(root, &layout);
 
   // Middle row: health metrics (BPM and steps).
-  init_bpm_column(root,
-                  left_icon_x,
-                  left_value_x,
-                  metrics_row_top,
-                  icon_size,
-                  metrics_text_height);
-  init_steps_column(root,
-                    right_icon_x,
-                    right_value_x,
-                    metrics_row_top,
-                    icon_size,
-                    metrics_text_height);
+  init_bpm_column(root, &layout);
+  init_steps_column(root, &layout);
 
   // Bottom row: environment metrics (temperature and battery).
-  init_temp_column(root, bottom_row_top, bottom_text_height);
-  init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
+  init_temp_column(root, &layout);
+  init_battery_column(root, &layout);
 
   refresh_watchface_display();
 }
