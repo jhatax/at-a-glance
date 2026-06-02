@@ -47,7 +47,7 @@ typedef struct {
   GColor steps_icon;
 } VisualPalette;
 
-const VisualPalette c_dark_palette = {
+static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
   .primary_text = GColorLightGray,
   .unavailable_text = GColorWindsorTan,
@@ -57,7 +57,7 @@ const VisualPalette c_dark_palette = {
   .steps_icon = GColorChromeYellow,
 };
 
-const VisualPalette c_light_palette = {
+static const VisualPalette c_light_palette = {
   .background = GColorWhite,
   .primary_text = GColorBlack,
   .unavailable_text = GColorLightGray,
@@ -67,10 +67,7 @@ const VisualPalette c_light_palette = {
   .steps_icon = GColorChromeYellow,
 };
 
-static const GColor c_color_time = GColorSunsetOrange;
-static const GColor c_color_date = GColorRichBrilliantLavender;
-static const GColor c_data_unavailable_color = GColorWindsorTan;
-static GColor c_ataglance_text_color = GColorLightGray;
+static const VisualPalette* s_palette = &c_dark_palette;
 static const char c_unavailable_text[] = "---";
 
 static inline bool is_icon_fallback_enabled();
@@ -131,6 +128,11 @@ static void settings_load() {
 
 static void settings_save() {
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
+}
+
+static inline const VisualPalette* get_visual_palette() {
+  return (s_settings.display_mode == DISPLAY_MODE_LIGHT) ?
+      &c_light_palette : &c_dark_palette;
 }
 
 static char* get_text_buffer(TextBufferId id) {
@@ -206,7 +208,7 @@ static void format_temp(char* buf, size_t buflen) {
 // This is being called because the OS knows the layer is dirty!
 static void background_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
-  graphics_context_set_stroke_color(ctx, GColorLightGray);
+  graphics_context_set_stroke_color(ctx, s_palette->rule);
   graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_line(ctx, GPoint(CONTENT_X, RULE_VERT), GPoint(RULE_RIGHT, RULE_VERT));
 }
@@ -214,7 +216,7 @@ static void background_update_proc(Layer* layer, GContext* ctx) {
 static GColor calculate_bpm_color(int bpm) {
   if (bpm <= 0) {
     // Not Available or Invalid
-    return c_data_unavailable_color;
+    return s_palette->unavailable_text;
   } else if (bpm > 120) {
     // Peak Cardiorespiratory Zone
     return GColorRed;
@@ -323,17 +325,14 @@ static inline bool is_icon_fallback_enabled() {
 }
 
 static void apply_visual_mode_cue() {
-  if (!s_window) {
-    return;
+  s_palette = get_visual_palette();
+
+  if (s_window) {
+    window_set_background_color(s_window, s_palette->background);
   }
-  if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
-    // Background: GColorBabyBlueEyes, Text: GColorDarkGray
-    window_set_background_color(s_window, GColorBabyBlueEyes);
-    c_ataglance_text_color = GColorDarkGray;
-  } else {
-    // Background: GColorBlack, Text: GColorLightGray
-    window_set_background_color(s_window, GColorBlack);
-    c_ataglance_text_color = GColorLightGray;
+
+  if (s_background_layer) {
+    layer_mark_dirty(s_background_layer);
   }
 }
 
@@ -401,7 +400,7 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
-  graphics_context_set_fill_color(ctx, c_color_date);
+  graphics_context_set_fill_color(ctx, s_palette->steps_icon);
   // --- THE MAIN HEEL PAD (Centered and unified) ---
     // A clean, central oval-like base anchoring the bottom of the 24x24 frame
     graphics_fill_circle(ctx, GPoint(13, 18), 5); // Main pad center
@@ -464,6 +463,7 @@ static void update_date() {
   struct tm* t = localtime(&now);
   strftime(buf, MAX_STR_LEN, "%a · %d %b", t);
   uppercase_date(buf);
+  text_layer_set_text_color(s_date_layer, s_palette->date);
   text_layer_set_text(s_date_layer, buf);
 }
 
@@ -476,6 +476,7 @@ static void update_time() {
   time_t now = time(NULL);
   struct tm* t = localtime(&now);
   format_time(buf, MAX_STR_LEN, t);
+  text_layer_set_text_color(s_time_layer, s_palette->time);
   text_layer_set_text(s_time_layer, buf);
 }
 
@@ -500,11 +501,11 @@ static void update_bpm() {
       s_bpm_color = calculate_bpm_color(s_bpm);
     } else {
       snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
-      s_bpm_color = c_data_unavailable_color;
+      s_bpm_color = s_palette->unavailable_text;
     }
   } else {
     snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
-    s_bpm_color = c_data_unavailable_color;
+    s_bpm_color = s_palette->unavailable_text;
   }
 
   text_layer_set_text_color(s_bpm_layer, s_bpm_color);
@@ -523,7 +524,7 @@ static void update_step_count(){
     return;
    }
 
-  GColor textColor = c_data_unavailable_color;
+  GColor textColor = s_palette->unavailable_text;
 
   HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(
     HealthMetricStepCount,
@@ -534,7 +535,7 @@ static void update_step_count(){
     HealthValue steps = health_service_sum_today(HealthMetricStepCount);
     if (steps > 0) {
      snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
-     textColor = c_ataglance_text_color;
+     textColor = s_palette->primary_text;
     } else {
      snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     }
@@ -565,7 +566,7 @@ static void update_temp() {
     return;
   }
   format_temp(buf, MAX_STR_LEN);
-  text_layer_set_text_color(s_temp_layer, c_ataglance_text_color);
+  text_layer_set_text_color(s_temp_layer, s_palette->primary_text);
   text_layer_set_text(s_temp_layer, buf);
 }
 
@@ -597,8 +598,10 @@ static void battery_handler(BatteryChargeState state) {
 
 static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
-    update_date();
     update_time();
+  }
+  if (units_changed & DAY_UNIT) {
+    update_date();
   }
 }
 
@@ -672,6 +675,7 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
       s_settings.display_mode != (uint8_t)display_mode) {
     s_settings.display_mode = (uint8_t)display_mode;
     apply_visual_mode_cue();
+    update_all();
     changed = true;
   }
 
@@ -730,7 +734,7 @@ static inline void init_top_layers(
   s_date_layer = create_and_initialize_text_layer(
       root,
       GRect(CONTENT_X, date_top, content_width, date_height),
-      c_color_date,
+      s_palette->date,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -738,7 +742,7 @@ static inline void init_top_layers(
   s_time_layer = create_and_initialize_text_layer(
       root,
       GRect(CONTENT_X, time_layer_top, content_width, time_layer_height),
-      c_color_time,
+      s_palette->time,
       GColorClear,
       s_font_time,
       GTextAlignmentLeft);
@@ -767,7 +771,7 @@ static inline void init_bpm_column(
   s_bpm_layer = create_and_initialize_text_layer(
       root,
       GRect(left_value_x, metrics_row_top, 58, metrics_text_height),
-      c_data_unavailable_color,
+      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_28,
       GTextAlignmentLeft);
@@ -790,7 +794,7 @@ static inline void init_steps_column(
   s_steps_layer = create_and_initialize_text_layer(
       root,
       GRect(right_value_x, metrics_row_top, 54, metrics_text_height),
-      c_data_unavailable_color,
+      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_28,
       GTextAlignmentLeft);
@@ -801,7 +805,7 @@ static inline void init_temp_column(
   s_temp_layer = create_and_initialize_text_layer(
       root,
       GRect(44, bottom_row_top, 64, bottom_text_height),
-      c_data_unavailable_color,
+      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -822,7 +826,7 @@ static inline void init_battery_column(
   s_battery_layer = create_and_initialize_text_layer(
       root,
       GRect(118, bottom_row_top, 54, bottom_text_height),
-      c_data_unavailable_color,
+      s_palette->unavailable_text,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -864,9 +868,6 @@ static void main_window_load(Window* window) {
   // Background rule spanning across the content region.
   init_background_layer(root);
 
-  // Apply visual style to main window
-  apply_visual_mode_cue();
-
   // Top row: date and hero time.
   init_top_layers(root,
                   content_width,
@@ -893,6 +894,8 @@ static void main_window_load(Window* window) {
   init_temp_column(root, bottom_row_top, bottom_text_height);
   init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
+  // Apply visual style to main window
+  apply_visual_mode_cue();
   update_all();
 }
 
