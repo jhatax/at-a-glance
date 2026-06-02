@@ -46,7 +46,7 @@ static const char c_unavailable_text[] = "---";
 static inline bool is_fallback_mode_enabled();
 static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
-static void apply_mode_visual_cue();
+static void apply_visual_mode_cue();
 
 static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
@@ -269,11 +269,11 @@ static inline bool is_fallback_mode_enabled() {
   return s_settings.fallback_mode == FALLBACK_MODE_ENABLED;
 }
 
-static void apply_mode_visual_cue() {
+static void apply_visual_mode_cue() {
   if (!s_window) {
     return;
   }
-  if (is_fallback_mode_enabled()) {
+  if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
     // Background: GColorBabyBlueEyes, Text: GColorDarkGray
     window_set_background_color(s_window, GColorBabyBlueEyes);
     c_ataglance_text_color = GColorDarkGray;
@@ -593,7 +593,6 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   if (FALLBACK_MODE_VALID(fallback_mode) &&
       s_settings.fallback_mode != (uint8_t)fallback_mode) {
     s_settings.fallback_mode = (uint8_t)fallback_mode;
-    apply_mode_visual_cue();
     if (s_bpm_icon_layer) {
       load_bpm_icon_assets();
       layer_mark_dirty(s_bpm_icon_layer);
@@ -606,6 +605,7 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   if (DISPLAY_MODE_VALID(display_mode) &&
       s_settings.display_mode != (uint8_t)display_mode) {
     s_settings.display_mode = (uint8_t)display_mode;
+    apply_visual_mode_cue();
     changed = true;
   }
 
@@ -795,10 +795,11 @@ static void main_window_load(Window* window) {
   const int metrics_text_height = 36;
   const int bottom_text_height = 30;
 
-  apply_mode_visual_cue();
-
   // Background rule spanning across the content region.
   init_background_layer(root);
+
+  // Apply visual style to main window
+  apply_visual_mode_cue();
 
   // Top row: date and hero time.
   init_top_layers(root,
