@@ -157,6 +157,8 @@ pebble logs --emulator emery
 - New projects start in a private GitHub repo unless the user says otherwise.
 - Never commit secrets, tokens, API keys, credentials, private device addresses, personal location data, signing artifacts, or machine-specific config.
 - Before committing, inspect diffs, untracked files, ignored files, generated output, and docs.
+- When a commit includes new functions or non-trivial behavior, use a detailed
+  commit message body with a bulleted list instead of prose.
 - If something will not build, is wrong for GitHub, contains private data, has broken metadata, or is misleading, tell the user and fix it before commit.
 - Do not publish generated build artifacts unless intentionally releasing them and the user agrees.
 - This folder is not yet on GitHub. The next repo task should prep the initial private GitHub commit: build check, secret audit, `.gitignore`, SDK/platform metadata, README, screenshots if available, and a clear initial commit.
