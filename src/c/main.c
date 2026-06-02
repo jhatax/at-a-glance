@@ -91,7 +91,7 @@ static void refresh_watchface_display();
 static void update_date();
 static void update_time();
 static void update_bpm();
-static void update_step_count();
+static void update_steps();
 static void update_battery();
 static void update_temp();
 
@@ -368,7 +368,7 @@ static void refresh_watchface_display() {
   update_date();
   update_time();
   #if defined(PBL_HEALTH)
-  update_step_count();
+  update_steps();
   update_bpm();
   #endif
   s_battery_state = battery_state_service_peek();
@@ -558,32 +558,32 @@ static void update_bpm() {
   }
 }
 
-static void update_step_count(){
+static void update_steps() {
   char* steps_buf = get_text_buffer(BUF_STEPS);
-   if (!steps_buf || !s_steps_layer) {
+  if (!steps_buf || !s_steps_layer) {
     return;
-   }
+  }
 
-  GColor textColor = s_palette->unavailable_text;
+  GColor text_color = s_palette->unavailable_text;
 
   HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(
-    HealthMetricStepCount,
-    time_start_of_today(),
-    time(NULL));
+      HealthMetricStepCount,
+      time_start_of_today(),
+      time(NULL));
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue steps = health_service_sum_today(HealthMetricStepCount);
     if (steps > 0) {
-     snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
-     textColor = s_palette->primary_text;
+      snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
+      text_color = s_palette->primary_text;
     } else {
-     snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
+      snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     }
   } else {
     snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
   }
 
-  text_layer_set_text_color(s_steps_layer, textColor);
+  text_layer_set_text_color(s_steps_layer, text_color);
   text_layer_set_text(s_steps_layer, steps_buf);
 }
 
@@ -612,7 +612,7 @@ static void update_temp() {
 
 static void health_handler(HealthEventType event, void* context) {
   if (event == HealthEventSignificantUpdate || event == HealthEventMovementUpdate) {
-    update_step_count();
+    update_steps();
   }
   if (event == HealthEventSignificantUpdate || event == HealthEventHeartRateUpdate) {
     update_bpm();
