@@ -766,7 +766,7 @@ static WatchfaceLayout get_watchface_layout(GRect bounds) {
   const int bottom_text_height = 30;
 
   WatchfaceLayout layout;
-  layout.background_frame = GRect(0, 0, 200, 228);
+  layout.background_frame = bounds;
   layout.date_frame = GRect(CONTENT_X,
                             date_top,
                             content_width,
