@@ -32,7 +32,8 @@
       "TEMP_UNIT",
       "TEMPERATURE",
       "HR_SAMPLE_MINUTES",
-      "BPM_ICON_MODE"
+      "BPM_ICON_MODE",
+      "DISPLAY_MODE"
     ],
     "resources": {
       "media": [

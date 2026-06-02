@@ -33,6 +33,12 @@ typedef enum {
 } FallbackMode;
 
 typedef enum {
+  DISPLAY_MODE_DARK = 0,
+  DISPLAY_MODE_LIGHT,
+  DISPLAY_MODE_COUNT,
+} DisplayMode;
+
+typedef enum {
   HR_SAMPLE_MINUTES_10 = 0,
   HR_SAMPLE_MINUTES_15,
   HR_SAMPLE_MINUTES_30,
@@ -47,12 +53,15 @@ typedef enum {
   ((value) >= 0 && (value) < TIME_FMT_COUNT)
 #define FALLBACK_MODE_VALID(value) \
   ((value) >= 0 && (value) < FALLBACK_MODE_COUNT)
+#define DISPLAY_MODE_VALID(value) \
+  ((value) >= 0 && (value) < DISPLAY_MODE_COUNT)
 #define HR_SAMPLE_MINUTES_VALID(value) \
   ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
 
 #define TEMP_UNIT_DEFAULT TEMP_UNIT_F
 #define TIME_FMT_DEFAULT TIME_FMT_24
 #define FALLBACK_MODE_DEFAULT FALLBACK_MODE_ENABLED
+#define DISPLAY_MODE_DEFAULT DISPLAY_MODE_DARK
 #define HR_SAMPLE_MINUTES_DEFAULT HR_SAMPLE_MINUTES_10
 
 typedef enum {

@@ -44,6 +44,22 @@
       },
       {
         "type": "select",
+        "messageKey": "DISPLAY_MODE",
+        "label": "Display mode",
+        "defaultValue": "0",
+        "options": [
+          {
+            "value": "0",
+            "label": "Dark mode"
+          },
+          {
+            "value": "1",
+            "label": "Light mode"
+          }
+        ]
+      },
+      {
+        "type": "select",
         "messageKey": "HR_SAMPLE_MINUTES",
         "label": "HR Sampling Frequency",
         "defaultValue": "0",

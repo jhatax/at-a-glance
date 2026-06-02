@@ -33,6 +33,7 @@ static struct {
   uint8_t time_format;
   uint8_t hr_sample_minutes;
   uint8_t fallback_mode;
+  uint8_t display_mode;
   int16_t temp_celsius_tenths;
 } s_settings;
 
@@ -75,6 +76,7 @@ static void settings_load() {
   s_settings.time_format = TIME_FMT_DEFAULT;
   s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
+  s_settings.display_mode = DISPLAY_MODE_DEFAULT;
   s_settings.temp_celsius_tenths = TEMP_INVALID;
 
   if (persist_exists(PERSIST_SETTINGS)) {
@@ -91,6 +93,9 @@ static void settings_load() {
   }
   if (!FALLBACK_MODE_VALID(s_settings.fallback_mode)) {
     s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
+  }
+  if (!DISPLAY_MODE_VALID(s_settings.display_mode)) {
+    s_settings.display_mode = DISPLAY_MODE_DEFAULT;
   }
 }
 
@@ -593,6 +598,14 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
       load_bpm_icon_assets();
       layer_mark_dirty(s_bpm_icon_layer);
     }
+    changed = true;
+  }
+
+  Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
+  int display_mode = tuple_to_int(td);
+  if (DISPLAY_MODE_VALID(display_mode) &&
+      s_settings.display_mode != (uint8_t)display_mode) {
+    s_settings.display_mode = (uint8_t)display_mode;
     changed = true;
   }
 
