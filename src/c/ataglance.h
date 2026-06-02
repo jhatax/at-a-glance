@@ -12,35 +12,48 @@
 
 #define PERSIST_SETTINGS 2
 
-#define TEMP_UNIT_F 0
-#define TEMP_UNIT_C 1
-#define TIME_FMT_24 0
-#define TIME_FMT_12 1
-#define FALLBACK_MODE_DISABLED 0
-#define FALLBACK_MODE_ENABLED 1
-// Build-time default for hidden fallback mode testing.
-#define FALLBACK_MODE FALLBACK_MODE_ENABLED
-#define TEMP_UNIT_VALID(value) ((value) == TEMP_UNIT_F || (value) == TEMP_UNIT_C)
-#define TIME_FORMAT_VALID(value) ((value) == TIME_FMT_24 || (value) == TIME_FMT_12)
-#define FALLBACK_MODE_VALID(value) ((value) == FALLBACK_MODE_DISABLED || \
-                                    (value) == FALLBACK_MODE_ENABLED)
-
 #define TEMP_INVALID INT16_MIN
 
 typedef enum {
-  HR_SAMPLE_MINUTES_10 = 10,
-  HR_SAMPLE_MINUTES_15 = 15,
-  HR_SAMPLE_MINUTES_30 = 30,
-  HR_SAMPLE_MINUTES_60 = 60,
-  HR_SAMPLE_MINUTES_120 = 120,
+  TEMP_UNIT_F = 0,
+  TEMP_UNIT_C,
+  TEMP_UNIT_COUNT,
+} TempUnit;
+
+typedef enum {
+  TIME_FMT_24 = 0,
+  TIME_FMT_12,
+  TIME_FMT_COUNT,
+} TimeFormat;
+
+typedef enum {
+  FALLBACK_MODE_DISABLED = 0,
+  FALLBACK_MODE_ENABLED,
+  FALLBACK_MODE_COUNT,
+} FallbackMode;
+
+typedef enum {
+  HR_SAMPLE_MINUTES_10 = 0,
+  HR_SAMPLE_MINUTES_15,
+  HR_SAMPLE_MINUTES_30,
+  HR_SAMPLE_MINUTES_60,
+  HR_SAMPLE_MINUTES_120,
+  HR_SAMPLE_MINUTES_COUNT,
 } HrSampleMinutes;
 
+#define TEMP_UNIT_VALID(value) \
+  ((value) >= 0 && (value) < TEMP_UNIT_COUNT)
+#define TIME_FORMAT_VALID(value) \
+  ((value) >= 0 && (value) < TIME_FMT_COUNT)
+#define FALLBACK_MODE_VALID(value) \
+  ((value) >= 0 && (value) < FALLBACK_MODE_COUNT)
+#define HR_SAMPLE_MINUTES_VALID(value) \
+  ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
+
+#define TEMP_UNIT_DEFAULT TEMP_UNIT_F
+#define TIME_FMT_DEFAULT TIME_FMT_24
+#define FALLBACK_MODE_DEFAULT FALLBACK_MODE_ENABLED
 #define HR_SAMPLE_MINUTES_DEFAULT HR_SAMPLE_MINUTES_10
-#define HR_SAMPLE_MINUTES_VALID(minutes) ((minutes) == HR_SAMPLE_MINUTES_10 || \
-                                          (minutes) == HR_SAMPLE_MINUTES_15 || \
-                                          (minutes) == HR_SAMPLE_MINUTES_30 || \
-                                          (minutes) == HR_SAMPLE_MINUTES_60 || \
-                                          (minutes) == HR_SAMPLE_MINUTES_120)
 
 typedef enum {
   BUF_DATE = 0,
@@ -49,8 +62,8 @@ typedef enum {
   BUF_STEPS,
   BUF_BATTERY,
   BUF_TEMP,
-  BUF_CLEANUP
+  BUF_TOTAL_COUNT,
+  BUF_CLEANUP = BUF_TOTAL_COUNT
 } TextBufferId;
 
-#define TOTAL_BUFFERS ((size_t)BUF_CLEANUP)
 #define MAX_STR_LEN 16

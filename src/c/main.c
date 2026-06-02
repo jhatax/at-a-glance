@@ -1,6 +1,6 @@
 #include "ataglance.h"
 
-static char s_text_buffers[TOTAL_BUFFERS][MAX_STR_LEN];
+static char s_text_buffers[BUF_TOTAL_COUNT][MAX_STR_LEN];
 
 static GFont s_font_gothic_28;
 static GFont s_font_time;
@@ -47,32 +47,50 @@ static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
 static void apply_mode_visual_cue();
 
+static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
+  switch ((HrSampleMinutes)hr_sample_minutes) {
+    case HR_SAMPLE_MINUTES_10:
+      return 10;
+    case HR_SAMPLE_MINUTES_15:
+      return 15;
+    case HR_SAMPLE_MINUTES_30:
+      return 30;
+    case HR_SAMPLE_MINUTES_60:
+      return 60;
+    case HR_SAMPLE_MINUTES_120:
+      return 120;
+    default:
+      return 10;
+  }
+}
+
 static void apply_hr_sample_period() {
-  uint16_t interval_sec = (uint16_t)s_settings.hr_sample_minutes *  60;
+  uint8_t minutes = get_hr_sample_minutes(s_settings.hr_sample_minutes);
+  uint16_t interval_sec = (uint16_t)minutes * 60;
   health_service_set_heart_rate_sample_period(interval_sec);
 }
 
 static void settings_load() {
-  s_settings.temp_unit = TEMP_UNIT_F;
-  s_settings.time_format = TIME_FMT_24;
+  s_settings.temp_unit = TEMP_UNIT_DEFAULT;
+  s_settings.time_format = TIME_FMT_DEFAULT;
   s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
-  s_settings.fallback_mode = FALLBACK_MODE;
+  s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
   s_settings.temp_celsius_tenths = TEMP_INVALID;
 
   if (persist_exists(PERSIST_SETTINGS)) {
     persist_read_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
   }
   if (!TEMP_UNIT_VALID(s_settings.temp_unit)) {
-    s_settings.temp_unit = TEMP_UNIT_F;
+    s_settings.temp_unit = TEMP_UNIT_DEFAULT;
   }
   if (!TIME_FORMAT_VALID(s_settings.time_format)) {
-    s_settings.time_format = TIME_FMT_24;
+    s_settings.time_format = TIME_FMT_DEFAULT;
   }
   if (!HR_SAMPLE_MINUTES_VALID(s_settings.hr_sample_minutes)) {
     s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   }
   if (!FALLBACK_MODE_VALID(s_settings.fallback_mode)) {
-    s_settings.fallback_mode = FALLBACK_MODE;
+    s_settings.fallback_mode = FALLBACK_MODE_DEFAULT;
   }
 }
 
@@ -91,7 +109,7 @@ static char* get_text_buffer(TextBufferId id) {
       return s_text_buffers[id];
 
     case BUF_CLEANUP: {
-        for (size_t i = 0; i < TOTAL_BUFFERS; ++i) {
+        for (size_t i = 0; i < BUF_TOTAL_COUNT; ++i) {
           s_text_buffers[i][0] = '\0';
         }
         return NULL;
@@ -545,17 +563,17 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   bool changed = false;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
-  uint8_t time_fmt = (uint8_t) tuple_to_int(tf);
+  int time_fmt = tuple_to_int(tf);
   if (TIME_FORMAT_VALID(time_fmt)) {
-    s_settings.time_format = time_fmt;
+    s_settings.time_format = (uint8_t)time_fmt;
     changed = true;
     update_time();
   }
 
   Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
-  uint8_t temp_unit = (uint8_t) tuple_to_int(tu);
+  int temp_unit = tuple_to_int(tu);
   if (TEMP_UNIT_VALID(temp_unit)) {
-    s_settings.temp_unit = temp_unit;
+    s_settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
     update_temp();
   }
@@ -568,18 +586,18 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   }
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
-  uint8_t hr_minutes = (uint8_t) tuple_to_int(th);
+  int hr_minutes = tuple_to_int(th);
   if (HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
-    s_settings.hr_sample_minutes = hr_minutes;
+    s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
     apply_hr_sample_period();
     changed = true;
   }
 
   Tuple* tb = dict_find(iter, MESSAGE_KEY_BPM_ICON_MODE);
-  uint8_t fallback_mode = (uint8_t) tuple_to_int(tb);
+  int fallback_mode = tuple_to_int(tb);
   if (FALLBACK_MODE_VALID(fallback_mode) &&
-      s_settings.fallback_mode != fallback_mode) {
-    s_settings.fallback_mode = fallback_mode;
+      s_settings.fallback_mode != (uint8_t)fallback_mode) {
+    s_settings.fallback_mode = (uint8_t)fallback_mode;
     apply_mode_visual_cue();
     if (s_bpm_icon_layer) {
       load_bpm_icon_assets();

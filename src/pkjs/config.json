@@ -46,26 +46,26 @@
         "type": "select",
         "messageKey": "HR_SAMPLE_MINUTES",
         "label": "HR Sampling Frequency",
-        "defaultValue": "10",
+        "defaultValue": "0",
         "options": [
           {
-            "value": "10",
+            "value": "0",
             "label": "Every 10-minutes"
           },
           {
-            "value": "15",
+            "value": "1",
             "label": "Every 15-minutes"
           },
           {
-            "value": "30",
+            "value": "2",
             "label": "Every 30-minutes"
           },
           {
-            "value": "60",
+            "value": "3",
             "label": "Every 60-minutes"
           },
           {
-            "value": "120",
+            "value": "4",
             "label": "Every 120-minutes"
           }
         ]
