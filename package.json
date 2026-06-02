@@ -31,25 +31,20 @@
       "TIME_FORMAT",
       "TEMP_UNIT",
       "TEMPERATURE",
-      "HR_SAMPLE_MINUTES"
+      "HR_SAMPLE_MINUTES",
+      "BPM_ICON_MODE"
     ],
     "resources": {
       "media": [
         {
-          "file": "bpm_option-2.pdc",
+          "file": "images/bpm_option-tick.pdc",
           "name": "ICON_BPM",
-          "type": "raw",
-          "targetPlatforms": [
-            "emery"
-          ]
+          "type": "raw"
         },
         {
-          "file": "icon.png",
+          "file": "images/icon.png",
           "name": "MENU_ICON",
           "type": "bitmap",
-          "targetPlatforms": [
-            "emery"
-          ],
           "menuIcon": true
         }
       ]

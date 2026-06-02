@@ -32,23 +32,20 @@ static struct {
   uint8_t temp_unit;
   uint8_t time_format;
   uint8_t hr_sample_minutes;
+  uint8_t fallback_mode;
   int16_t temp_celsius_tenths;
 } s_settings;
 
 static const GColor c_color_time = GColorSunsetOrange;
 static const GColor c_color_date = GColorRichBrilliantLavender;
-static const GColor c_data_unavailable_color = GColorWhite;
+static const GColor c_data_unavailable_color = GColorWindsorTan;
 static const GColor c_ataglance_text_color = GColorLightGray;
 static const char c_unavailable_text[] = "---";
-static GPoint s_bpm_icon_fallback_points[] = {
-  GPoint(4, 13),
-  GPoint(23, 13),
-  GPoint(14, 24),
-};
-static const GPathInfo s_bpm_icon_fallback_path_info = {
-  .num_points = 3,
-  .points = s_bpm_icon_fallback_points,
-};
+
+static inline bool is_fallback_mode_enabled();
+static void load_bpm_icon_assets();
+static void unload_bpm_icon_assets();
+static void apply_mode_visual_cue();
 
 static void apply_hr_sample_period() {
   uint16_t interval_sec = (uint16_t)s_settings.hr_sample_minutes *  60;
@@ -59,6 +56,7 @@ static void settings_load() {
   s_settings.temp_unit = TEMP_UNIT_F;
   s_settings.time_format = TIME_FMT_24;
   s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
+  s_settings.fallback_mode = FALLBACK_MODE;
   s_settings.temp_celsius_tenths = TEMP_INVALID;
 
   if (persist_exists(PERSIST_SETTINGS)) {
@@ -72,6 +70,9 @@ static void settings_load() {
   }
   if (!HR_SAMPLE_MINUTES_VALID(s_settings.hr_sample_minutes)) {
     s_settings.hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
+  }
+  if (!FALLBACK_MODE_VALID(s_settings.fallback_mode)) {
+    s_settings.fallback_mode = FALLBACK_MODE;
   }
 }
 
@@ -197,37 +198,121 @@ static void draw_fallback_bpm_icon(GContext* ctx, GColor color) {
 
 static void draw_bpm_icon_with_color(GContext* ctx, GColor color) {
   static GColor s_prev_bpm_icon_color = GColorBlack;
+  static bool s_logged_fallback_draw = false;
+  bool use_fallback = false;
+  bool bpm_color_updated = false;
 
   if (!ctx) {
     return;
   }
 
-  if (!s_bpm_icon_image) {
-    draw_fallback_bpm_icon(ctx, color);
-    return;
-  }
+  use_fallback = is_fallback_mode_enabled() || !s_bpm_icon_image;
 
-  if (s_prev_bpm_icon_color.argb != color.argb) {
-    GDrawCommandList* list = gdraw_command_image_get_command_list(s_bpm_icon_image);
-    if (!list) {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "BPM icon command list is unavailable; using fallback");
-      draw_fallback_bpm_icon(ctx, color);
-      return;
-    }
-    gdraw_command_list_iterate(list, set_bpm_color_callback, &color);
+  if ((bpm_color_updated = (s_prev_bpm_icon_color.argb != color.argb))) {
     s_prev_bpm_icon_color = color;
   }
 
-  gdraw_command_image_draw(ctx, s_bpm_icon_image, GPoint(0, 0));
+  if (!use_fallback) {
+    // Use Fallback can only be true if s_bpm_icon_image is NULL
+    // So, if we enter here, s_bpm_icon_image is valid
+    GDrawCommandList* list = gdraw_command_image_get_command_list(s_bpm_icon_image);
+    if (!list) {
+      use_fallback = true;
+    } else {
+      // Draw the icon from the image
+      gdraw_command_list_iterate(list, set_bpm_color_callback, &color);
+      gdraw_command_image_draw(ctx, s_bpm_icon_image, GPoint(0, 0));
+      s_logged_fallback_draw = false;
+    }
+  }
+
+  // if we get here, use_fallback has to be TRUE
+  if (use_fallback) {
+    // Log the use of fallback icon
+    if (!s_logged_fallback_draw) {
+    APP_LOG(APP_LOG_LEVEL_INFO,
+            "Fallback icon draw is active (mode=%d, image=%d)",
+            (int)s_settings.fallback_mode,
+            s_bpm_icon_image ? 1 : 0);
+      s_logged_fallback_draw = true;
+    }
+    // Draw the fallback icon
+    draw_fallback_bpm_icon(ctx, color);
+  }
 }
 
-// Called whenever this layer is updated. This will be called multiple times per second,
-// so try not to do any heavy processing here (like drawing)
+static void unload_bpm_icon_assets() {
+  if (s_bpm_icon_image) {
+    gdraw_command_image_destroy(s_bpm_icon_image);
+    s_bpm_icon_image = NULL;
+  }
+  if (s_bpm_icon_fallback_path) {
+    gpath_destroy(s_bpm_icon_fallback_path);
+    s_bpm_icon_fallback_path = NULL;
+  }
+}
+
+static inline bool is_fallback_mode_enabled() {
+  return s_settings.fallback_mode == FALLBACK_MODE_ENABLED;
+}
+
+static void apply_mode_visual_cue() {
+  if (!s_window) {
+    return;
+  }
+  if (is_fallback_mode_enabled()) {
+    window_set_background_color(s_window, GColorBabyBlueEyes);
+  } else {
+    window_set_background_color(s_window, GColorDarkGray);
+  }
+}
+
+static inline void create_bpm_fallback_icon() {
+  static GPoint s_bpm_icon_fallback_points[] = {
+    GPoint(4, 13),
+    GPoint(23, 13),
+    GPoint(14, 24),
+  };
+  static GPathInfo s_bpm_icon_fallback_path_info = {
+    .num_points = 3,
+    .points = s_bpm_icon_fallback_points,
+  };
+
+  if (!s_bpm_icon_fallback_path) {
+    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
+  }
+  if (!s_bpm_icon_fallback_path) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Fallback BPM icon path could not be created");
+  } else {
+    APP_LOG(APP_LOG_LEVEL_INFO,
+            "Fallback BPM icon path created or exists");
+  }
+}
+
+static void load_bpm_icon_assets() {
+  bool use_fallback = is_fallback_mode_enabled();
+
+  if (!use_fallback && !s_bpm_icon_image) {
+    s_bpm_icon_image = gdraw_command_image_create_with_resource(
+        RESOURCE_ID_ICON_BPM);
+
+    if (!s_bpm_icon_image) {
+      use_fallback = true;
+    }
+  }
+
+  if (use_fallback) {
+    create_bpm_fallback_icon();
+  }
+}
+
+// Called whenever this layer is updated. This will be called multiple times
+// per second, so try not to do any heavy processing here (like drawing).
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
 
   if (!ctx) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "In the Handler: Oh no, something was NULL");
     return;
   }
 
@@ -401,26 +486,22 @@ static void update_temp() {
     return;
   }
   format_temp(buf, MAX_STR_LEN);
-  APP_LOG(APP_LOG_LEVEL_INFO, "Updating temperature");
-
   text_layer_set_text(s_temp_layer, buf);
 }
 
 static void update_all() {
-  APP_LOG(APP_LOG_LEVEL_INFO, "In Update All");
   update_date();
   update_time();
   #if defined(PBL_HEALTH)
   update_step_count();
   update_bpm();
   #endif
+  s_battery_state = battery_state_service_peek();
   update_battery();
   update_temp();
-  APP_LOG(APP_LOG_LEVEL_INFO, "All Updated");
 }
 
 static void health_handler(HealthEventType event, void* context) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Health");
   if (event == HealthEventSignificantUpdate || event == HealthEventMovementUpdate) {
     update_step_count();
   }
@@ -430,7 +511,7 @@ static void health_handler(HealthEventType event, void* context) {
 }
 
 static void battery_handler(BatteryChargeState state) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Battery");
+  s_battery_state = state;
   update_battery();
 }
 
@@ -464,17 +545,17 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   bool changed = false;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
-  int time_fmt = tuple_to_int(tf);
+  uint8_t time_fmt = (uint8_t) tuple_to_int(tf);
   if (TIME_FORMAT_VALID(time_fmt)) {
-    s_settings.time_format = (uint8_t)time_fmt;
+    s_settings.time_format = time_fmt;
     changed = true;
     update_time();
   }
 
   Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
-  int temp_unit = tuple_to_int(tu);
+  uint8_t temp_unit = (uint8_t) tuple_to_int(tu);
   if (TEMP_UNIT_VALID(temp_unit)) {
-    s_settings.temp_unit = (uint8_t)temp_unit;
+    s_settings.temp_unit = temp_unit;
     changed = true;
     update_temp();
   }
@@ -487,10 +568,23 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   }
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
-  int hr_minutes = tuple_to_int(th);
+  uint8_t hr_minutes = (uint8_t) tuple_to_int(th);
   if (HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
-    s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
+    s_settings.hr_sample_minutes = hr_minutes;
     apply_hr_sample_period();
+    changed = true;
+  }
+
+  Tuple* tb = dict_find(iter, MESSAGE_KEY_BPM_ICON_MODE);
+  uint8_t fallback_mode = (uint8_t) tuple_to_int(tb);
+  if (FALLBACK_MODE_VALID(fallback_mode) &&
+      s_settings.fallback_mode != fallback_mode) {
+    s_settings.fallback_mode = fallback_mode;
+    apply_mode_visual_cue();
+    if (s_bpm_icon_layer) {
+      load_bpm_icon_assets();
+      layer_mark_dirty(s_bpm_icon_layer);
+    }
     changed = true;
   }
 
@@ -509,10 +603,6 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
   APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
-}
-
-static inline bool is_bpm_icon_fallback_mode_enabled() {
-  return FALLBACK_MODE == BPM_ICON_MODE_FALLBACK;
 }
 
 static inline TextLayer* create_and_initialize_text_layer(
@@ -574,28 +664,15 @@ static inline void init_bpm_column(
     int metrics_row_top,
     int icon_size,
     int metrics_text_height) {
-  bool use_fallback = is_bpm_icon_fallback_mode_enabled();
+  // Initialize BPM releated variables
+  s_bpm = 0;
+  s_bpm_color = calculate_bpm_color(s_bpm);
 
+  // Create the BPM Icon Layer
   s_bpm_icon_layer = layer_create(
       GRect(left_icon_x, metrics_row_top, icon_size, icon_size));
-  s_bpm_icon_image = NULL;
-  if (!use_fallback) {
-    s_bpm_icon_image = gdraw_command_image_create_with_resource(
-        RESOURCE_ID_ICON_BPM);
-  }
-  if (!s_bpm_icon_image) {
-    if (use_fallback) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "BPM icon fallback mode is enabled");
-    }
-    APP_LOG(APP_LOG_LEVEL_INFO,
-            "There is no BPM icon to initialize, using fallback option");
-    s_bpm_icon_fallback_path = gpath_create(&s_bpm_icon_fallback_path_info);
-    if (!s_bpm_icon_fallback_path) {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Fallback BPM icon path could not be created");
-    }
-  }
   if (s_bpm_icon_layer) {
+    load_bpm_icon_assets();
     layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
     layer_add_child(root, s_bpm_icon_layer);
   }
@@ -697,7 +774,7 @@ static void main_window_load(Window* window) {
   const int metrics_text_height = 36;
   const int bottom_text_height = 30;
 
-  window_set_background_color(window, GColorBlack);
+  apply_mode_visual_cue();
 
   // Background rule spanning across the content region.
   init_background_layer(root);
@@ -728,7 +805,6 @@ static void main_window_load(Window* window) {
   init_temp_layer(root, bottom_row_top, bottom_text_height);
   init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
-  settings_load();
   update_all();
 }
 
@@ -750,14 +826,7 @@ static void main_window_unload(Window* window) {
     s_time_layer = NULL;
   }
 
-  if (s_bpm_icon_image) {
-    gdraw_command_image_destroy(s_bpm_icon_image);
-    s_bpm_icon_image = NULL;
-  }
-  if (s_bpm_icon_fallback_path) {
-    gpath_destroy(s_bpm_icon_fallback_path);
-    s_bpm_icon_fallback_path = NULL;
-  }
+  unload_bpm_icon_assets();
 
   if (s_bpm_icon_layer) {
     layer_destroy(s_bpm_icon_layer);
@@ -802,14 +871,11 @@ static void init(void) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create main window");
     return;
   }
+  settings_load();
 
   s_font_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   s_font_time = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
   s_font_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
-
-  // Initialize BPM releated variables
-  s_bpm = 0;
-  s_bpm_color = c_data_unavailable_color;
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,

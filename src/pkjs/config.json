@@ -69,6 +69,15 @@
             "label": "Every 120-minutes"
           }
         ]
+      },
+      {
+        "type": "input",
+        "messageKey": "BPM_ICON_MODE",
+        "defaultValue": "1",
+        "label": "",
+        "attributes": {
+          "type": "hidden"
+        }
       }
     ]
   },
