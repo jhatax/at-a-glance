@@ -39,7 +39,7 @@ static struct {
 static const GColor c_color_time = GColorSunsetOrange;
 static const GColor c_color_date = GColorRichBrilliantLavender;
 static const GColor c_data_unavailable_color = GColorWindsorTan;
-static const GColor c_ataglance_text_color = GColorLightGray;
+static GColor c_ataglance_text_color = GColorLightGray;
 static const char c_unavailable_text[] = "---";
 
 static inline bool is_fallback_mode_enabled();
@@ -216,7 +216,6 @@ static void draw_fallback_bpm_icon(GContext* ctx, GColor color) {
 
 static void draw_bpm_icon_with_color(GContext* ctx, GColor color) {
   static GColor s_prev_bpm_icon_color = GColorBlack;
-  static bool s_logged_fallback_draw = false;
   bool use_fallback = false;
   bool bpm_color_updated = false;
 
@@ -240,20 +239,11 @@ static void draw_bpm_icon_with_color(GContext* ctx, GColor color) {
       // Draw the icon from the image
       gdraw_command_list_iterate(list, set_bpm_color_callback, &color);
       gdraw_command_image_draw(ctx, s_bpm_icon_image, GPoint(0, 0));
-      s_logged_fallback_draw = false;
     }
   }
 
   // if we get here, use_fallback has to be TRUE
   if (use_fallback) {
-    // Log the use of fallback icon
-    if (!s_logged_fallback_draw) {
-    APP_LOG(APP_LOG_LEVEL_INFO,
-            "Fallback icon draw is active (mode=%d, image=%d)",
-            (int)s_settings.fallback_mode,
-            s_bpm_icon_image ? 1 : 0);
-      s_logged_fallback_draw = true;
-    }
     // Draw the fallback icon
     draw_fallback_bpm_icon(ctx, color);
   }
@@ -279,9 +269,13 @@ static void apply_mode_visual_cue() {
     return;
   }
   if (is_fallback_mode_enabled()) {
+    // Background: GColorBabyBlueEyes, Text: GColorDarkGray
     window_set_background_color(s_window, GColorBabyBlueEyes);
+    c_ataglance_text_color = GColorDarkGray;
   } else {
-    window_set_background_color(s_window, GColorDarkGray);
+    // Background: GColorBlack, Text: GColorLightGray
+    window_set_background_color(s_window, GColorBlack);
+    c_ataglance_text_color = GColorLightGray;
   }
 }
 
@@ -302,9 +296,6 @@ static inline void create_bpm_fallback_icon() {
   if (!s_bpm_icon_fallback_path) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Fallback BPM icon path could not be created");
-  } else {
-    APP_LOG(APP_LOG_LEVEL_INFO,
-            "Fallback BPM icon path created or exists");
   }
 }
 
@@ -489,7 +480,6 @@ static void update_battery() {
   if (!buf || !s_battery_layer || !s_battery_icon_layer) {
     return;
   }
-  s_battery_state = battery_state_service_peek();
   snprintf(buf, MAX_STR_LEN, "%d%%", s_battery_state.charge_percent);
 
   // Battery text is recolored based on current battery state
@@ -504,6 +494,7 @@ static void update_temp() {
     return;
   }
   format_temp(buf, MAX_STR_LEN);
+  text_layer_set_text_color(s_temp_layer, c_ataglance_text_color);
   text_layer_set_text(s_temp_layer, buf);
 }
 
@@ -534,7 +525,6 @@ static void battery_handler(BatteryChargeState state) {
 }
 
 static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Handler: Update Time / Date");
   if (units_changed & MINUTE_UNIT) {
     update_date();
     update_time();
@@ -620,7 +610,7 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
+  return;
 }
 
 static inline TextLayer* create_and_initialize_text_layer(
@@ -727,12 +717,12 @@ static inline void init_steps_column(
       GTextAlignmentLeft);
 }
 
-static inline void init_temp_layer(
+static inline void init_temp_column(
     Layer* root, int bottom_row_top, int bottom_text_height) {
   s_temp_layer = create_and_initialize_text_layer(
       root,
       GRect(44, bottom_row_top, 64, bottom_text_height),
-      c_ataglance_text_color,
+      c_data_unavailable_color,
       GColorClear,
       s_font_gothic_24_bold,
       GTextAlignmentLeft);
@@ -820,7 +810,7 @@ static void main_window_load(Window* window) {
                     metrics_text_height);
 
   // Bottom row: environment metrics (temperature and battery).
-  init_temp_layer(root, bottom_row_top, bottom_text_height);
+  init_temp_column(root, bottom_row_top, bottom_text_height);
   init_battery_column(root, bottom_row_top, icon_size, bottom_text_height);
 
   update_all();
