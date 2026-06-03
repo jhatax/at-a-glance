@@ -2,9 +2,9 @@
 
 static char s_text_buffers[BUF_TOTAL_COUNT][MAX_STR_LEN];
 
-static GFont s_font_gothic_28;
+static GFont s_font_date;
+static GFont s_font_value;
 static GFont s_font_time;
-static GFont s_font_gothic_24_bold;
 
 static const int16_t c_icon_dimensions_as_drawn = 28;
 
@@ -30,9 +30,13 @@ static GPathInfo s_bpm_icon_fallback_path_info = {
 static TextLayer* s_bpm_layer;
 static int s_bpm;
 static GColor s_bpm_color;
+static GColor s_bpm_icon_color;
+static GColor s_bpm_icon_background_color;
 
 static Layer* s_steps_icon_layer;
 static TextLayer* s_steps_layer;
+static GColor s_steps_icon_color;
+static GColor s_steps_icon_background_color;
 
 static TextLayer* s_temp_layer;
 static Layer* s_battery_icon_layer;
@@ -85,63 +89,40 @@ typedef struct {
 
 static WatchfaceLayout s_layout;
 
-static const VisualPalette c_dark_color_palette = {
+static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
-  .primary_text = GColorLightGray,
+  .primary_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .available_text_background = GColorClear,
-  .unavailable_text = GColorWindsorTan,
-  .unavailable_text_background = GColorWhite,
-  .date = GColorRichBrilliantLavender,
-  .time = GColorSunsetOrange,
-  .rule = GColorLightGray,
-  .steps_icon = GColorChromeYellow,
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
+  .unavailable_text_background = PBL_IF_COLOR_ELSE(
+      GColorClear,
+      GColorWhite),
+  .date = PBL_IF_COLOR_ELSE(GColorRichBrilliantLavender, GColorWhite),
+  .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
+  .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
+  .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
 };
 
-static const VisualPalette c_light_color_palette = {
+static const VisualPalette c_light_palette = {
   .background = GColorWhite,
   .primary_text = GColorBlack,
   .available_text_background = GColorClear,
-  .unavailable_text = GColorLightGray,
-  .unavailable_text_background = GColorBlack,
-  .date = GColorImperialPurple,
-  .time = GColorSunsetOrange,
-  .rule = GColorLightGray,
-  .steps_icon = GColorChromeYellow,
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
+  .unavailable_text_background = PBL_IF_COLOR_ELSE(
+      GColorClear,
+      GColorBlack),
+  .date = PBL_IF_COLOR_ELSE(GColorImperialPurple, GColorBlack),
+  .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
+  .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
+  .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
 };
 
-static const VisualPalette c_dark_bw_palette = {
-  .background = GColorBlack,
-  .primary_text = GColorWhite,
-  .available_text_background = GColorClear,
-  .unavailable_text = GColorBlack,
-  .unavailable_text_background = GColorWhite,
-  .date = GColorWhite,
-  .time = GColorWhite,
-  .rule = GColorWhite,
-  .steps_icon = GColorWhite,
-};
-
-static const VisualPalette c_light_bw_palette = {
-  .background = GColorWhite,
-  .primary_text = GColorBlack,
-  .available_text_background = GColorClear,
-  .unavailable_text = GColorWhite,
-  .unavailable_text_background = GColorBlack,
-  .date = GColorBlack,
-  .time = GColorBlack,
-  .rule = GColorBlack,
-  .steps_icon = GColorBlack,
-};
-
-#if defined(PBL_COLOR)
-static const VisualPalette* s_palette = &c_dark_color_palette;
-#else
-static const VisualPalette* s_palette = &c_dark_bw_palette;
-#endif
+static const VisualPalette* s_palette = &c_dark_palette;
 static const char c_unavailable_text[] = "---";
 
 static inline void apply_visual_mode_cue();
 static inline bool is_icon_fallback_enabled();
+static inline int scale_down_20_percent(int value);
 static inline void update_text_layer_display(
     TextLayer* layer,
     const char* text,
@@ -224,26 +205,16 @@ static void settings_save() {
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
 }
 
-static inline bool is_color_platform() {
-#if defined(PBL_COLOR)
-  return true;
-#else
-  return false;
-#endif
+static inline int scale_down_20_percent(int value) {
+  return ((value * 4) + 2) / 5;
 }
 
 static inline const VisualPalette* get_visual_palette() {
   if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
-    if (is_color_platform()) {
-      return &c_light_color_palette;
-    }
-    return &c_light_bw_palette;
+    return &c_light_palette;
   }
 
-  if (is_color_platform()) {
-    return &c_dark_color_palette;
-  }
-  return &c_dark_bw_palette;
+  return &c_dark_palette;
 }
 
 static inline void apply_visual_mode_cue() {
@@ -340,7 +311,7 @@ static bool format_temp(char* buf, size_t buflen) {
 static void background_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
   graphics_context_set_stroke_color(ctx, s_palette->rule);
-  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_line(ctx,
                      GPoint(s_layout.rule_left, s_layout.rule_y),
                      GPoint(s_layout.rule_right, s_layout.rule_y));
@@ -350,22 +321,26 @@ static GColor calculate_bpm_color(int bpm) {
   if (bpm <= 0) {
     // Not Available or Invalid
     return s_palette->unavailable_text;
-#if defined(PBL_COLOR)
   } else if (bpm > 120) {
     // Peak Cardiorespiratory Zone
-    return GColorRed;
+    return PBL_IF_COLOR_ELSE(GColorRed, s_palette->primary_text);
   } else if (bpm >= 100) {
     // Active Cardio/Fat Burn Zone
-    return GColorMagenta;
+    return PBL_IF_COLOR_ELSE(GColorMagenta, s_palette->primary_text);
   } else {
     // Healthy Resting Zone
-    return GColorJaegerGreen;
+    return PBL_IF_COLOR_ELSE(
+        GColorJaegerGreen,
+        s_palette->primary_text);
   }
-#else
+}
+
+static GColor calculate_bpm_icon_color(int bpm) {
+  if (bpm <= 0) {
+    return s_palette->unavailable_text;
   }
 
-  return s_palette->primary_text;
-#endif
+  return calculate_bpm_color(bpm);
 }
 
 static bool set_bpm_color_callback(
@@ -529,7 +504,9 @@ static inline void create_bpm_fallback_icon(GRect bounds) {
 }
 
 static void load_bpm_icon_assets() {
-  bool use_fallback = is_icon_fallback_enabled();
+  bool use_fallback = PBL_IF_COLOR_ELSE(
+      is_icon_fallback_enabled(),
+      true);
   GRect bounds = GRect(0, 0,
                        c_icon_dimensions_as_drawn,
                        c_icon_dimensions_as_drawn);
@@ -565,12 +542,25 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
     return;
   }
 
-  draw_bpm_icon_with_color(ctx, s_bpm_color, layer_get_bounds(layer));
+  GRect bounds = layer_get_bounds(layer);
+
+  graphics_context_set_fill_color(ctx, s_bpm_icon_background_color);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  draw_bpm_icon_with_color(ctx, s_bpm_icon_color, bounds);
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
-  (void)layer;
-  graphics_context_set_fill_color(ctx, s_palette->steps_icon);
+  if (!layer || !ctx) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+
+  graphics_context_set_fill_color(ctx, s_steps_icon_background_color);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  graphics_context_set_fill_color(ctx, s_steps_icon_color);
 
   graphics_fill_circle(ctx, GPoint(13, 18), 5);
   graphics_fill_circle(ctx, GPoint(10, 19), 4);
@@ -586,24 +576,18 @@ static inline GColor get_battery_color_from_state() {
   int percent = s_battery_state.charge_percent;
 
   if (s_battery_state.is_charging) {
-#if defined(PBL_COLOR)
-    return GColorJaegerGreen;
-#else
-    return s_palette->primary_text;
-#endif
+    return PBL_IF_COLOR_ELSE(
+        GColorJaegerGreen,
+        s_palette->primary_text);
   }
-
-#if !defined(PBL_COLOR)
-  return s_palette->primary_text;
-#endif
 
   if (percent > 50) {
-    return GColorCobaltBlue;
+    return PBL_IF_COLOR_ELSE(GColorCobaltBlue, s_palette->primary_text);
   }
   if (percent > 20) {
-    return GColorYellow;
+    return PBL_IF_COLOR_ELSE(GColorYellow, s_palette->primary_text);
   }
-  return GColorRed;
+  return PBL_IF_COLOR_ELSE(GColorRed, s_palette->primary_text);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -612,14 +596,17 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 
   GRect bounds = layer_get_bounds(layer);
+  const int stroke_width = 2;
   int body_w = scale_icon_x(bounds, 28);
   int body_h = scale_icon_y(bounds, 20);
   int body_x = (bounds.size.w - body_w) / 2;
-  int body_y = (bounds.size.h - body_h) / 2;
-  int fill_x = body_x + scale_icon_x(bounds, 2);
-  int fill_y = body_y + scale_icon_y(bounds, 2);
-  int max_fill_w = body_w - scale_icon_x(bounds, 4);
-  int fill_h = body_h - scale_icon_y(bounds, 4);
+  int body_y = bounds.size.h - body_h - stroke_width;
+  int fill_inset_x = scale_icon_x(bounds, 2);
+  int fill_inset_y = scale_icon_y(bounds, 2);
+  int fill_x = body_x + fill_inset_x;
+  int fill_y = body_y + fill_inset_y;
+  int max_fill_w = body_w - (2 * fill_inset_x);
+  int fill_h = body_h - (2 * fill_inset_y);
 
   // 1. Fetch live system battery metrics
   int percent = s_battery_state.charge_percent;
@@ -628,7 +615,7 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   GColor draw_color = get_battery_color_from_state();
 
   graphics_context_set_stroke_color(ctx, draw_color);
-  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_width(ctx, stroke_width);
 
   graphics_draw_rect(ctx, GRect(body_x, body_y, body_w, body_h));
 
@@ -699,14 +686,22 @@ static void update_bpm() {
     if (s_bpm > 0) {
       snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
       s_bpm_color = calculate_bpm_color(s_bpm);
+      s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+      s_bpm_icon_background_color = s_palette->background;
       background_color = s_palette->available_text_background;
     } else {
       snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
       s_bpm_color = s_palette->unavailable_text;
+      s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+      s_bpm_icon_background_color =
+          s_palette->unavailable_text_background;
     }
   } else {
     snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     s_bpm_color = s_palette->unavailable_text;
+    s_bpm_icon_color = calculate_bpm_icon_color(0);
+    s_bpm_icon_background_color =
+        s_palette->unavailable_text_background;
   }
 
   update_text_layer_display(
@@ -730,6 +725,9 @@ static void update_steps() {
 
   GColor text_color = s_palette->unavailable_text;
   GColor background_color = s_palette->unavailable_text_background;
+  s_steps_icon_color = s_palette->unavailable_text;
+  s_steps_icon_background_color =
+      s_palette->unavailable_text_background;
 
   HealthServiceAccessibilityMask steps_mask =
       health_service_metric_accessible(
@@ -743,6 +741,8 @@ static void update_steps() {
       snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
       text_color = s_palette->primary_text;
       background_color = s_palette->available_text_background;
+      s_steps_icon_color = s_palette->steps_icon;
+      s_steps_icon_background_color = s_palette->background;
     } else {
       snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     }
@@ -755,6 +755,12 @@ static void update_steps() {
       steps_buf,
       text_color,
       background_color);
+
+  if (s_steps_icon_layer) {
+    layer_mark_dirty(s_steps_icon_layer);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Steps icon layer is unavailable");
+  }
 }
 #endif
 
@@ -959,22 +965,22 @@ static void calculate_watchface_layout(
   const int rule_left = content_x;
   const int rule_right = face_width - content_x;
 
-  const int date_height = 36;
+  const int date_height = scale_down_20_percent(36);
 
-  const int time_layer_height = 60;
+  const int time_layer_height = scale_down_20_percent(60);
   const int time_layer_top = rule_y - row_gap - time_layer_height;
 
   const int date_top = row_gap;
   const int metrics_row_top = rule_y + row_gap;
-  const int bottom_text_height = 24;
+  const int bottom_text_height = scale_down_20_percent(24);
   const int bottom_row_top =
       face_height - row_gap - bottom_text_height;
   const int icon_size = c_icon_dimensions_as_drawn;
-  const int metrics_text_height = 28;
-  const int metrics_left_text_width = 34;
-  const int metrics_right_text_width = 51;
-  const int environment_left_text_width = 43;
-  const int environment_right_text_width = 43;
+  const int metrics_text_height = scale_down_20_percent(28);
+  const int metrics_left_text_width = scale_down_20_percent(34);
+  const int metrics_right_text_width = scale_down_20_percent(51);
+  const int environment_left_text_width = scale_down_20_percent(43);
+  const int environment_right_text_width = scale_down_20_percent(43);
   const int metrics_icon_top =
       metrics_row_top + ((metrics_text_height - icon_size) / 2);
   const int bottom_icon_top =
@@ -1054,7 +1060,7 @@ static inline void init_top_layers(
       root,
       layout->date_frame,
       GColorClear,
-      s_font_gothic_24_bold,
+      s_font_date,
       GTextAlignmentLeft);
 
   s_time_layer = create_and_initialize_text_layer(
@@ -1071,6 +1077,8 @@ static inline void init_bpm_column(
   // Initialize BPM releated variables
   s_bpm = 0;
   s_bpm_color = calculate_bpm_color(s_bpm);
+  s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+  s_bpm_icon_background_color = s_palette->unavailable_text_background;
 
   // Create the BPM Icon Layer
   s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
@@ -1084,13 +1092,17 @@ static inline void init_bpm_column(
       root,
       layout->bpm_text_frame,
       GColorClear,
-      s_font_gothic_28,
+      s_font_value,
       GTextAlignmentLeft);
 }
 
 static inline void init_steps_column(
     Layer* root,
     const WatchfaceLayout* layout) {
+  s_steps_icon_color = s_palette->unavailable_text;
+  s_steps_icon_background_color =
+      s_palette->unavailable_text_background;
+
   s_steps_icon_layer = layer_create(layout->steps_icon_frame);
   if (s_steps_icon_layer) {
     layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
@@ -1101,7 +1113,7 @@ static inline void init_steps_column(
       root,
       layout->steps_text_frame,
       GColorClear,
-      s_font_gothic_28,
+      s_font_value,
       GTextAlignmentLeft);
 }
 
@@ -1112,7 +1124,7 @@ static inline void init_temp_column(
       root,
       layout->temp_text_frame,
       GColorClear,
-      s_font_gothic_24_bold,
+      s_font_value,
       GTextAlignmentLeft);
 }
 
@@ -1131,7 +1143,7 @@ static inline void init_battery_column(
       root,
       layout->battery_text_frame,
       GColorClear,
-      s_font_gothic_24_bold,
+      s_font_value,
       GTextAlignmentLeft);
 }
 
@@ -1233,10 +1245,9 @@ static void init(void) {
   }
   settings_load();
 
-  s_font_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
-  s_font_time = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
-  s_font_gothic_24_bold = fonts_get_system_font(
-      FONT_KEY_GOTHIC_24_BOLD);
+  s_font_date = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_font_value = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_font_time = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,
