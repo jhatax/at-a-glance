@@ -4,7 +4,8 @@
 static char s_text_buffers[BUF_TOTAL_COUNT][MAX_STR_LEN];
 
 static GFont s_font_date;
-static GFont s_font_value;
+static GFont s_font_secondary_value;
+static GFont s_font_battery_value;
 static GFont s_font_time;
 
 static const int16_t c_temp_invalid = INT16_MIN;
@@ -1072,7 +1073,7 @@ static void calculate_watchface_layout(
   const int metrics_text_height = 20;
   const int metrics_left_text_width = 28;
   const int metrics_right_text_width = 40;
-  const int bottom_row_left_text_width = 34;
+  const int bottom_row_left_text_width = 40;
   const int bottom_row_right_text_width = 34;
   const int metrics_icon_top =
       metrics_row_top + ((metrics_text_height - icon_size) / 2);
@@ -1198,7 +1199,7 @@ static inline void init_bpm_column(
       root,
       &layout->bpm_text_frame,
       GColorClear,
-      s_font_value,
+      s_font_secondary_value,
       GTextAlignmentLeft);
 }
 
@@ -1219,7 +1220,7 @@ static inline void init_steps_column(
       root,
       &layout->steps_text_frame,
       GColorClear,
-      s_font_value,
+      s_font_secondary_value,
       GTextAlignmentLeft);
 }
 
@@ -1230,7 +1231,7 @@ static inline void init_temp_column(
       root,
       &layout->temp_text_frame,
       GColorClear,
-      s_font_value,
+      s_font_secondary_value,
       GTextAlignmentLeft);
 }
 
@@ -1249,7 +1250,7 @@ static inline void init_battery_column(
       root,
       &layout->battery_text_frame,
       GColorClear,
-      s_font_value,
+      s_font_battery_value,
       GTextAlignmentLeft);
 }
 
@@ -1358,7 +1359,8 @@ static void init(void) {
   weather_icon_init();
 
   s_font_date = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
-  s_font_value = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  s_font_secondary_value = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  s_font_battery_value = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_font_time = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
 
   window_set_window_handlers(s_window, (WindowHandlers) {
