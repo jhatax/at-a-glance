@@ -3,23 +3,53 @@
 ## Project State
 
 - Workspace: `/Users/manomeht/Code/life-at-a-glance-emery-wf`
-- Product: Pebble SDK watchface, currently targeting Pebble Time 2 / `emery`.
-- Date: June 2, 2026.
-- Last verified build: `pebble build` passed after commit `9fa6850`.
-- Working tree at handoff: docs-only changes are pending and not
-  committed yet: `AGENTS.md`, `current-handoff.md`, and
-  `NEXT_SESSION_REFINEMENTS.md`.
+- Product: Pebble SDK watchface, "Life at a Glance".
+- Date: June 3, 2026.
+- Current target platforms in `package.json`: `aplite`, `basalt`,
+  `diorite`, `emery`, and `flint`.
+- Latest commits:
+  - `f82682c` `Tune secondary metric typography`
+  - `db7de61` `Expand weather condition glyph rendering`
+  - `043cca4` `Add weather condition icon support`
+  - `c34396c` `Add Flint support through Rebble Clay`
+  - `6e2b9c0` `Tighten embedded geometry helper boundaries`
+- Last known build status: `pebble build` passed after the weather glyph
+  and typography slices. Linker RWX segment warnings are known non-fatal
+  Pebble toolchain noise.
+- Working tree at handoff: `wf-punchlist.md` has a pending docs-only
+  update. Do not assume it is ready to commit without inspecting it.
 
-## Current Commit Stack
+## Collaboration Directives
 
-Recent relevant commits:
+This repo has produced the best results when the agent slows down and thinks
+like an architect before editing. The recurring failure mode is jumping into
+code too early, creating broad helpers, or making layout decisions without
+auditing their visual and platform ramifications.
 
-- `9fa6850` Rename watchface display refresh path
-- `f6cb94b` Clarify visual palette application flow
-- `57de6f9` Wire rendering to display palettes
-- `c63ce78` Define display color palettes
-- `6d0fa4e` Make icon fallback mode global
-- `2d9e015` docs: record commit message preference
+Use this cycle for substantive work:
+
+1. Inspect the live code, package metadata, build rules, generated resources,
+   and dirty tree.
+2. Identify every affected state variable, layer, update proc, AppMessage key,
+   persisted field, and platform guard.
+3. Audit call-sites and declaration-definition pairs before proposing edits.
+4. Confirm product/layout decisions with the user when they affect placement,
+   alignment, hierarchy, or visible behavior.
+5. Execute the smallest coherent slice.
+6. Review the diff as if doing a code review, then build and commit the slice.
+
+Be self-critical:
+
+- Use a review mindset before and after editing. Findings should be grounded
+  in files, functions, and behavior, not vibes.
+- Do not create helpers just to avoid basic arithmetic. Extract helpers only
+  when they clarify a real boundary, reduce meaningful duplication, or match
+  an established module seam.
+- Embedded C constraints matter. Avoid large struct pass-by-value when scalar
+  fields or caller-owned pointer outputs are practical.
+- Rendering callbacks must stay lightweight. Avoid allocation, I/O, parsing,
+  or complicated formatting inside update procs.
+- Keep code slices small: audit, patch, build, commit, then move on.
 
 ## Current Runtime Model
 
@@ -28,106 +58,133 @@ Settings and AppMessage keys:
 - `TIME_FORMAT`: `0` 24-hour, `1` 12-hour
 - `TEMP_UNIT`: `0` Fahrenheit, `1` Celsius
 - `TEMPERATURE`: Celsius tenths from PebbleKit JS
+- `WEATHER_CONDITION`: raw Open-Meteo `weather_code`
 - `HR_SAMPLE_MINUTES`: enum-backed sampling interval
 - `ICON_FALLBACK_MODE`: hidden, `0` disabled, `1` enabled
 - `DISPLAY_MODE`: `0` dark, `1` light
 
-Generated key ids after clean build:
+Current PebbleKit JS weather behavior:
 
-- `ICON_FALLBACK_MODE` is `10004`
-- `DISPLAY_MODE` is `10005`
+- `src/pkjs/index.js` fetches `temperature_2m` and `weather_code` from
+  Open-Meteo.
+- JS sends the raw numeric weather code to C. Do not convert it to strings.
+- If geolocation fails, JS currently falls back to fixed coordinates in
+  `DEFAULT_LAT` and `DEFAULT_LON`. This needs a deliberate follow-up.
 
-Useful commands:
+## Current Layout Snapshot
 
-```sh
-pebble send-app-message --emulator emery --int 10004=0
-pebble send-app-message --emulator emery --int 10004=1
-pebble send-app-message --emulator emery --int 10005=0
-pebble send-app-message --emulator emery --int 10005=1
-```
+Rectangular layout is calculated in `calculate_watchface_layout()`.
 
-## Visual Palette State
+For Emery (`200x228`):
+
+- spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
+- date: `GRect(8, 8, 184, 20)`, `FONT_KEY_GOTHIC_18_BOLD`
+- time: `GRect(8, 58, 184, 48)`, `FONT_KEY_BITHAM_42_BOLD`
+- rule: line from `(8, 114)` to `(192, 114)`, 1px stroke
+- BPM icon: `GRect(8, 118, 28, 28)`
+- BPM text: `GRect(38, 122, 28, 20)`, `FONT_KEY_GOTHIC_18`
+- steps icon: `GRect(122, 118, 28, 28)`
+- steps text: `GRect(152, 122, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- weather icon: `GRect(8, 196, 28, 28)`
+- temperature text: `GRect(38, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- battery icon: `GRect(128, 196, 28, 28)`
+- battery text: `GRect(158, 200, 34, 20)`,
+  `FONT_KEY_GOTHIC_18_BOLD`
+
+Text alignment is intentionally left-aligned across all columns.
+
+## Palette And Unavailable State
 
 Palette definitions live in `src/c/main.c` as `VisualPalette`.
 
-Dark mode:
+Unavailable text token: `---`.
 
-- Background: `GColorBlack`
-- Primary text: `GColorLightGray`
-- Unavailable text: `GColorWindsorTan`
-- Date: `GColorRichBrilliantLavender`
-- Time: `GColorSunsetOrange`
-- Rule: `GColorLightGray`
-- Steps icon: `GColorChromeYellow`
+Color displays:
 
-Light mode:
+- available text background is `GColorClear`
+- unavailable text background is `GColorClear`
+- unavailable text is mode-specific
+- weather, BPM, and steps icons use unavailable icon backgrounds only when
+  their paired text value is unavailable
 
-- Background: `GColorWhite`
-- Primary text: `GColorBlack`
-- Unavailable text: `GColorLightGray`
-- Date: `GColorImperialPurple`
-- Time: `GColorSunsetOrange`
-- Rule: `GColorLightGray`
-- Steps icon: `GColorChromeYellow`
+Black-and-white displays:
 
-Semantic colors remain mode-independent:
+- unavailable backgrounds invert against the current display mode so hidden
+  state remains readable without color.
+- color-specific semantic choices fall back to primary text.
 
-- BPM `1-99`: `GColorJaegerGreen`
-- BPM `100-120`: `GColorMagenta`
-- BPM `>120`: `GColorRed`
-- Battery charging: `GColorJaegerGreen`
-- Battery `>50`: `GColorCobaltBlue`
-- Battery `21-50`: `GColorYellow`
-- Battery `<=20`: `GColorRed`
+Important symmetry rule:
 
-## Refresh Flow
+- If an unavailable text value gets an unavailable background, its icon layer
+  should get the matching unavailable background unless there is an explicit
+  product decision otherwise.
 
-Current display refresh entry point:
+## Weather Module State
 
-- `refresh_watchface_display()`
+Weather icon rendering now lives in `src/modules/weather.c`.
 
-It currently:
+Current model:
 
-- Requires `s_window`, logs error and returns if missing.
-- Sets the window background from `s_palette`.
-- Marks background/rule dirty.
-- Marks steps icon dirty because the icon reads `s_palette->steps_icon`.
-- Refreshes date, time, steps, BPM, battery, and temp.
+- JS sends raw Open-Meteo weather codes.
+- C maps codes into private `WeatherIconKind` buckets.
+- Glyphs are procedural and lightweight. No Carbon/IcoMoon font and no PDC
+  weather asset set yet.
+- Weather glyph wrappers are file-local `static inline` functions.
+- Snow grains are folded into snow.
+- Freezing drizzle and freezing rain share the frozen-rain glyph.
+- Unknown maps to a question-mark glyph.
 
-Palette selection:
+Do not move weather drawing back into `main.c`.
 
-- `settings_load()` validates settings and calls `select_visual_palette()`.
-- Display-mode AppMessage updates `s_settings.display_mode`, calls
-  `select_visual_palette()`, then `refresh_watchface_display()`.
+## Recent Lessons
 
-Important audit rule for tomorrow:
+- Screenshots and emulator automation have been flaky. Build validation is
+  still required; screenshots are optional when the user says to skip them.
+- The user has repeatedly corrected unplanned layout changes. Treat x/y
+  placement, alignment, font hierarchy, and row density as product decisions.
+- `PBL_IF_COLOR_ELSE()` keeps monochrome/color palette choices cleaner than
+  open-coded `#if defined(PBL_COLOR)` in many value assignments.
+- Large by-value structs in embedded C are a non-negotiable concern for this
+  project.
+- Commit messages for non-trivial code should have a precise header and a
+  bulleted body naming key functions and behavior changes.
 
-- Before changing refresh or draw behavior, run `rg "s_palette|update_proc|layer_mark_dirty|text_layer_set_text_color" src/c/main.c`.
-- Identify every layer and text path affected before editing.
+## Pending Punchlist
 
-## Known Follow-Ups
+Immediate planning topics:
 
-See `NEXT_SESSION_REFINEMENTS.md` for the tomorrow backlog.
+1. Round-watchface layout plan.
+   - Research Pebble/Rebble round-display guidance before coding.
+   - Account for row-specific clipping on circular screens.
+   - Do not assume the rectangular layout can simply scale.
 
-Highest-value next items:
+2. Main-module architecture plan.
+   - Review `main.c` for low-dependency extraction seams.
+   - Likely modules: settings, layout, palette/display, health, battery,
+     messaging, and weather.
+   - Extract only when the boundary is real and behavior-preserving.
 
-1. Reconcile `README.md` and `AGENTS.md` with current implementation.
-2. Audit `refresh_watchface_display()` end-to-end for all layers and callbacks.
-3. Begin a behavior-equivalent layout-state extraction for future form factors.
+3. State hygiene plan.
+   - Split state into explicit structs only where it improves clarity.
+   - Avoid a giant app-state struct if it only hides globals without reducing
+     coupling.
 
-## Collaboration Runbook
+4. Persisted settings tolerance.
+   - Current `settings_load()` reads the whole struct directly.
+   - Investigate `persist_get_size()` and versioned migration patterns.
+   - Take cues from TimeStyle and Carbon, but keep the first patch small.
 
-Use this cycle for substantive work:
+5. Phone weather fallback configurability.
+   - Current fixed-coordinate fallback is a product/privacy decision.
+   - Consider localStorage cache-first fallback before adding Clay settings.
 
-1. Inspect relevant code paths and repo state.
-2. Identify affected state, layers, callbacks, config, docs, and generated keys.
-3. Audit all dependent draw/update/refresh paths before suggesting a patch.
-4. Confirm intended behavior and failure modes with the user when needed.
-5. Execute the smallest coherent patch.
-6. Validate with diff review, build, and emulator/log checks when applicable.
+## Validation Checklist For Next Agent
 
-Specific lesson from today:
+Before any commit:
 
-- UI refresh changes require a complete layer audit. Do not assume text updates
-  imply icon layers will repaint. Every `Layer` update proc that reads changed
-  state must be explicitly considered and dirtied when appropriate.
+1. Run `git status --short`.
+2. Inspect diffs, including docs and generated files.
+3. Run `pebble build` for code changes.
+4. Confirm no untracked screenshots, build artifacts, or private data are
+   staged.
+5. Use a detailed commit body for non-trivial changes.

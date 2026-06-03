@@ -1,12 +1,20 @@
 # Agent Instructions
 
-This repo is for Pebble SDK 4+ watchfaces and apps. The first target is Pebble Time 2 / `emery`, but design and architecture should anticipate earlier Pebble platforms where SDK 4+ supports them.
+This repo is for Pebble SDK 4+ watchfaces and apps. The current rectangular
+targets are `aplite`, `basalt`, `diorite`, `emery`, and `flint`; round
+platforms still require a separate layout plan before support is added.
 
 ## Working Style
 
 - Spend most effort on architecture, design, testability, constraints, and look-and-feel before coding.
 - Aim before acting: understand the goal, constraints, platform target, and likely failure modes before changing files.
 - Measure twice, cut once: verify assumptions and inspect diffs before commits, publishing steps, or broad refactors.
+- Think like an architect before editing. Slow down, identify the real
+  boundary, and resist broad helper extraction that only hides simple
+  arithmetic or spreads context across files.
+- Review your own code with a code-review mindset before and after patches:
+  prioritize bugs, missing state updates, declaration-definition drift,
+  platform regressions, and missing validation.
 - Use an inspect, identify, audit, confirm, execute, validate cycle for
   substantive changes. Before proposing or implementing changes, inspect the
   relevant code paths, identify affected state and layers, audit all
@@ -15,6 +23,8 @@ This repo is for Pebble SDK 4+ watchfaces and apps. The first target is Pebble T
 - Use progressive disclosure: discover only the files needed, identify entry points, suggest changes, then edit.
 - Do not guess Pebble behavior. Verify SDK 4+ APIs, generated resources, AppMessage keys, emulator behavior, and build output when they matter.
 - Keep changes focused. Suggest cleanups and stylistic changes before making them unless they are required for the task.
+- Keep slices small: audit one coherent change, patch it, inspect the diff,
+  build when code changed, commit it, then move to the next slice.
 - After meaningful work, critique the result: call out misses, uncertain assumptions, platform risks, verification gaps, and what could get dropped in later iterations.
 
 ## Project Facts
@@ -30,14 +40,16 @@ This repo is for Pebble SDK 4+ watchfaces and apps. The first target is Pebble T
 
 Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/config.json`, and `package.json`.
 
-- Target platform: `emery` only (`200x228`, color).
+- Target platforms: `aplite`, `basalt`, `diorite`, `emery`, and `flint`.
+  Round platforms such as `chalk` and `gabbro` still need a separate layout
+  plan before support is added.
 - Pebble manifest capabilities currently required:
   - `configurable` (Clay settings page)
   - `location` (weather via geolocation)
   - `health` (BPM + steps)
 - AppMessage keys currently required:
-  - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `HR_SAMPLE_MINUTES`
-  - `ICON_FALLBACK_MODE`, `DISPLAY_MODE`
+  - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `WEATHER_CONDITION`
+  - `HR_SAMPLE_MINUTES`, `ICON_FALLBACK_MODE`, `DISPLAY_MODE`
 - Persisted settings defaults:
   - time format: `24h`
   - temperature unit: `°F`
@@ -48,29 +60,35 @@ Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/co
 Rectangular `PBL_RECT` layout geometry (current frames/anchors on Emery):
 
 - derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
-- date: `GRect(8, 8, 184, 36)` (`FONT_KEY_GOTHIC_24_BOLD`,
+- date: `GRect(8, 8, 184, 20)` (`FONT_KEY_GOTHIC_18_BOLD`,
   `GColorRichBrilliantLavender`)
-- time: `GRect(8, 46, 184, 60)`
-  (`FONT_KEY_ROBOTO_BOLD_SUBSET_49`, `GColorSunsetOrange`)
+- time: `GRect(8, 58, 184, 48)`
+  (`FONT_KEY_BITHAM_42_BOLD`, `GColorSunsetOrange`)
 - rule: line from `(8, 114)` to `(192, 114)`
-- heart icon: `GRect(16, 122, 28, 28)` (resource `ICON_BPM`)
-- bpm text: `GRect(48, 122, 34, 28)` (`FONT_KEY_GOTHIC_28`)
-- steps icon: `GRect(109, 122, 28, 28)` (custom drawn paw glyph)
-- steps text: `GRect(141, 122, 51, 28)` (`FONT_KEY_GOTHIC_28`)
-- temp text: `GRect(8, 196, 43, 24)` (`FONT_KEY_GOTHIC_24_BOLD`)
-- battery icon: `GRect(117, 194, 28, 28)` (custom drawn AA battery)
-- battery text: `GRect(149, 196, 43, 24)`
-  (`FONT_KEY_GOTHIC_24_BOLD`)
+- heart icon: `GRect(8, 118, 28, 28)` (resource `ICON_BPM`,
+  with fallback procedural heart)
+- bpm text: `GRect(38, 122, 28, 20)` (`FONT_KEY_GOTHIC_18`)
+- steps icon: `GRect(122, 118, 28, 28)` (custom drawn paw glyph)
+- steps text: `GRect(152, 122, 40, 20)` (`FONT_KEY_GOTHIC_18`)
+- weather icon: `GRect(8, 196, 28, 28)` (procedural weather glyph)
+- temp text: `GRect(38, 200, 40, 20)` (`FONT_KEY_GOTHIC_18`)
+- battery icon: `GRect(128, 196, 28, 28)` (custom horizontal battery)
+- battery text: `GRect(158, 200, 34, 20)`
+  (`FONT_KEY_GOTHIC_18_BOLD`)
 
 Color/semantic rules that must remain documented when changed:
 
 - unavailable text token is `---`.
 - dark mode uses black background, light gray primary text, Windsor Tan
-  unavailable text, white text debug backgrounds, Rich Brilliant Lavender date,
+  unavailable text on color displays, Rich Brilliant Lavender date,
   Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon.
 - light mode uses white background, black primary text, Light Gray
-  unavailable text, black text debug backgrounds, Imperial Purple date,
-  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon.
+  unavailable text on color displays, Imperial Purple date, Sunset Orange
+  time, Light Gray rule, and Chrome Yellow steps icon.
+- black-and-white displays use inverted unavailable backgrounds so missing
+  values remain legible without color.
+- unavailable icon backgrounds should match unavailable text backgrounds for
+  symmetry unless an explicit product decision says otherwise.
 - BPM color zones:
   - `<=0` or unavailable: current mode unavailable color
   - `1-99`: Jaeger Green
@@ -81,6 +99,12 @@ Color/semantic rules that must remain documented when changed:
   - not charging and `>50`: Cobalt Blue
   - not charging and `21-50`: Yellow
   - not charging and `<=20`: Red
+- weather state:
+  - PebbleKit JS sends raw Open-Meteo `weather_code`
+  - C maps codes into private weather glyph buckets in
+    `src/modules/weather.c`
+  - procedural glyphs are used instead of Carbon/IcoMoon or PDC weather
+    assets for now
 
 Clay configuration UI (must stay in sync across Clay, JS, C, docs):
 
@@ -111,6 +135,9 @@ Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 - Treat health, heart rate, color, screen shape, resources, and phone data as optional by platform unless verified.
 - Before broadening platform support, maintain a small platform matrix: bounds, shape, color capability, sensors, resources, and SDK constraints.
 - Separate platform geometry from product logic. Prefer named constants and values derived from layer bounds over magic numbers.
+- Avoid passing large structs by value in C and C++ paths added to this
+  project. Prefer scalar fields or pointers to caller-owned storage when the
+  function needs to fill or inspect larger state.
 
 ## Coding Style
 
@@ -132,6 +159,8 @@ Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 - Write readable JS with clean argument passing and semicolons.
 - Use braces and new lines for all conditionals, loops, and switch cases.
 - Keep AppMessage payloads compact, typed, and validated on both JS and C sides.
+- Weather payloads should stay numeric. Prefer passing raw or enum-like
+  integer weather codes over random strings.
 - AppMessage changes must update `package.json`, Clay config, JS send/receive code, C tuple handling, defaults, and docs together.
 - Handle network errors, timeouts, malformed JSON, missing fields, and fallback data explicitly.
 
