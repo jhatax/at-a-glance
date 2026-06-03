@@ -94,6 +94,9 @@ static inline void draw_weather_thunderstorm_icon(
 static inline void draw_weather_unknown_icon(
     GContext* ctx,
     const GSize* bounds_size);
+static inline void draw_weather_unavailable_icon(
+    GContext* ctx,
+    const GSize* bounds_size);
 static WeatherIconKind get_weather_icon_kind(
     int16_t weather_condition);
 static void draw_weather_icon(
@@ -442,6 +445,28 @@ static inline void draw_weather_unknown_icon(
                        1);
 }
 
+static inline void draw_weather_unavailable_icon(
+    GContext* ctx,
+    const GSize* bounds_size) {
+  graphics_context_set_stroke_width(ctx, 2);
+
+  graphics_draw_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 9, 15),
+      helper_scale_icon_coord(bounds_size, 4));
+  graphics_draw_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 15, 12),
+      helper_scale_icon_coord(bounds_size, 6));
+  graphics_draw_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 21, 15),
+      helper_scale_icon_coord(bounds_size, 4));
+  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 18, 11, 18);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 19, 18, 25, 18);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 23, 7, 6, 24);
+}
+
 static WeatherIconKind get_weather_icon_kind(
     int16_t weather_condition) {
   if (weather_condition == 0) {
@@ -537,12 +562,13 @@ static void weather_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, s_weather_icon_background_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  if (!s_weather_is_available) {
-    return;
-  }
-
   graphics_context_set_fill_color(ctx, s_weather_icon_color);
   graphics_context_set_stroke_color(ctx, s_weather_icon_color);
+
+  if (!s_weather_is_available) {
+    draw_weather_unavailable_icon(ctx, &bounds.size);
+    return;
+  }
 
   draw_weather_icon(
       ctx,
