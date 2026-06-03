@@ -25,12 +25,24 @@ def build(ctx):
         ctx.env = ctx.all_envs[platform]
         ctx.set_group(ctx.env.PLATFORM_NAME)
         app_elf = '{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
-        ctx.pbl_build(source=ctx.path.ant_glob('src/c/**/*.c'), target=app_elf, bin_type='app')
+        app_sources = ctx.path.ant_glob([
+            'src/c/**/*.c',
+            'src/modules/**/*.c',
+        ])
+        ctx.pbl_build(source=app_sources,
+                      target=app_elf,
+                      bin_type='app')
 
         if build_worker:
-            worker_elf = '{}/pebble-worker.elf'.format(ctx.env.BUILD_DIR)
-            binaries.append({'platform': platform, 'app_elf': app_elf, 'worker_elf': worker_elf})
-            ctx.pbl_build(source=ctx.path.ant_glob('worker_src/c/**/*.c'),
+            worker_elf = '{}/pebble-worker.elf'.format(
+                ctx.env.BUILD_DIR)
+            binaries.append({
+                'platform': platform,
+                'app_elf': app_elf,
+                'worker_elf': worker_elf,
+            })
+            worker_sources = ctx.path.ant_glob('worker_src/c/**/*.c')
+            ctx.pbl_build(source=worker_sources,
                           target=worker_elf,
                           bin_type='worker')
         else:

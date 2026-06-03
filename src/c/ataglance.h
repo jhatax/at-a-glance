@@ -95,6 +95,7 @@ typedef struct {
   GRect bpm_text_frame;
   GRect steps_icon_frame;
   GRect steps_text_frame;
+  GRect weather_icon_frame;
   GRect temp_text_frame;
   GRect battery_icon_frame;
   GRect battery_text_frame;

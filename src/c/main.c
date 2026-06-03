@@ -1,4 +1,5 @@
 #include "ataglance.h"
+#include "../modules/weather.h"
 
 static char s_text_buffers[BUF_TOTAL_COUNT][MAX_STR_LEN];
 
@@ -84,8 +85,6 @@ static void apply_hr_sample_period();
 #endif
 static void settings_load();
 static void settings_save();
-static inline int scale_down_20_percent(int value);
-static inline const VisualPalette* get_visual_palette();
 static inline void apply_visual_mode_cue();
 static inline void update_text_layer_display(
     TextLayer* layer,
@@ -93,12 +92,12 @@ static inline void update_text_layer_display(
     GColor text_color,
     GColor background_color);
 static char* get_text_buffer(TextBufferId id);
-static void uppercase_date(char* buf);
+static inline void uppercase_date(char* buf);
 static void format_time(char* buf, size_t buflen, const struct tm* t);
 static bool format_temp(char* buf, size_t buflen);
 static void background_update_proc(Layer* layer, GContext* ctx);
-static GColor calculate_bpm_color(int bpm);
-static GColor calculate_bpm_icon_color(int bpm);
+static inline GColor calculate_bpm_color(int bpm);
+static inline GColor calculate_bpm_icon_color(int bpm);
 static bool set_bpm_color_callback(
     GDrawCommand *cmd,
     uint32_t index,
@@ -148,7 +147,9 @@ static void update_steps();
 static void health_handler(HealthEventType event, void* context);
 #endif
 static void battery_handler(BatteryChargeState state);
-static void tick_handler(struct tm* tick_time, TimeUnits units_changed);
+static void tick_handler(
+    struct tm* tick_time,
+    TimeUnits units_changed);
 static int tuple_to_int(Tuple* tuple);
 static void inbox_received_callback(
     DictionaryIterator* iter,
@@ -193,8 +194,8 @@ static inline void init_battery_column(
     const WatchfaceLayout* layout);
 static void main_window_load(Window* window);
 static void main_window_unload(Window* window);
-static void init();
-static void deinit();
+static void init(void);
+static void deinit(void);
 
 static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
@@ -256,20 +257,12 @@ static void settings_save() {
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
 }
 
-static inline int scale_down_20_percent(int value) {
-  return ((value * 4) + 2) / 5;
-}
-
-static inline const VisualPalette* get_visual_palette() {
-  if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
-    return &c_light_palette;
-  }
-
-  return &c_dark_palette;
-}
-
 static inline void apply_visual_mode_cue() {
-  s_palette = get_visual_palette();
+  if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
+    s_palette = &c_light_palette;
+  } else {
+    s_palette = &c_dark_palette;
+  }
 }
 
 static inline void update_text_layer_display(
@@ -304,7 +297,7 @@ static char* get_text_buffer(TextBufferId id) {
   }
 }
 
-static void uppercase_date(char* buf) {
+static inline void uppercase_date(char* buf) {
   if (!buf || strlen(buf) == 0) {
     return;
   }
@@ -368,7 +361,7 @@ static void background_update_proc(Layer* layer, GContext* ctx) {
                      GPoint(s_layout.rule_right, s_layout.rule_y));
 }
 
-static GColor calculate_bpm_color(int bpm) {
+static inline GColor calculate_bpm_color(int bpm) {
   if (bpm <= 0) {
     // Not Available or Invalid
     return s_palette->unavailable_text;
@@ -386,7 +379,7 @@ static GColor calculate_bpm_color(int bpm) {
   }
 }
 
-static GColor calculate_bpm_icon_color(int bpm) {
+static inline GColor calculate_bpm_icon_color(int bpm) {
   if (bpm <= 0) {
     return s_palette->unavailable_text;
   }
@@ -562,6 +555,7 @@ static void refresh_watchface_display() {
   if (s_steps_icon_layer) {
     layer_mark_dirty(s_steps_icon_layer);
   }
+  weather_icon_mark_dirty();
 
   update_date();
   update_time();
@@ -765,7 +759,11 @@ static void update_bpm() {
           now,
           now);
 
-  GColor background_color = s_palette->unavailable_text_background;
+  GColor text_background_color = s_palette->unavailable_text_background;
+  s_bpm_color = s_palette->unavailable_text;
+  s_bpm_icon_color = s_palette->unavailable_text;
+  s_bpm_icon_background_color =
+      s_palette->unavailable_text_background;
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
     s_bpm = (int) health_service_peek_current_value(
@@ -776,27 +774,21 @@ static void update_bpm() {
       s_bpm_color = calculate_bpm_color(s_bpm);
       s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
       s_bpm_icon_background_color = s_palette->background;
-      background_color = s_palette->available_text_background;
+      text_background_color = s_palette->available_text_background;
     } else {
       snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
-      s_bpm_color = s_palette->unavailable_text;
-      s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
-      s_bpm_icon_background_color =
-          s_palette->unavailable_text_background;
     }
   } else {
     snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     s_bpm_color = s_palette->unavailable_text;
     s_bpm_icon_color = calculate_bpm_icon_color(0);
-    s_bpm_icon_background_color =
-        s_palette->unavailable_text_background;
   }
 
   update_text_layer_display(
       s_bpm_layer,
       bpm_buf,
       s_bpm_color,
-      background_color);
+      text_background_color);
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
@@ -885,6 +877,7 @@ static void update_temp() {
       buf,
       text_color,
       background_color);
+  weather_icon_update_display(is_temp_available, s_palette);
 }
 
 #if defined(PBL_HEALTH)
@@ -960,6 +953,14 @@ static void inbox_received_callback(
     s_settings.temp_celsius_tenths = (int16_t)tt->value->int32;
     update_temp();
     changed = true;
+  }
+
+  Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
+  if (tw && tw->type == TUPLE_INT) {
+    weather_icon_set_condition((int16_t)tw->value->int32);
+    weather_icon_update_display(
+        s_settings.temp_celsius_tenths != c_temp_invalid,
+        s_palette);
   }
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
@@ -1057,22 +1058,22 @@ static void calculate_watchface_layout(
   const int rule_left = content_x;
   const int rule_right = face_width - content_x;
 
-  const int date_height = scale_down_20_percent(36);
+  const int date_height = 20;
 
-  const int time_layer_height = scale_down_20_percent(60);
+  const int time_layer_height = 48;
   const int time_layer_top = rule_y - row_gap - time_layer_height;
 
   const int date_top = row_gap;
   const int metrics_row_top = rule_y + row_gap;
-  const int bottom_text_height = scale_down_20_percent(24);
+  const int bottom_text_height = 20;
   const int bottom_row_top =
       face_height - row_gap - bottom_text_height;
   const int icon_size = c_icon_size_as_drawn;
-  const int metrics_text_height = scale_down_20_percent(28);
-  const int metrics_left_text_width = scale_down_20_percent(34);
-  const int metrics_right_text_width = scale_down_20_percent(51);
-  const int environment_left_text_width = scale_down_20_percent(43);
-  const int environment_right_text_width = scale_down_20_percent(43);
+  const int metrics_text_height = 20;
+  const int metrics_left_text_width = 28;
+  const int metrics_right_text_width = 40;
+  const int bottom_row_left_text_width = 34;
+  const int bottom_row_right_text_width = 34;
   const int metrics_icon_top =
       metrics_row_top + ((metrics_text_height - icon_size) / 2);
   const int bottom_icon_top =
@@ -1083,10 +1084,13 @@ static void calculate_watchface_layout(
   const int right_value_x =
       face_width - content_x - metrics_right_text_width;
   const int right_icon_x = right_value_x - icon_text_gap - icon_size;
-  const int environment_right_value_x =
-      face_width - content_x - environment_right_text_width;
-  const int environment_right_icon_x =
-      environment_right_value_x - icon_text_gap - icon_size;
+  const int weather_icon_x = content_x;
+  const int temperature_value_x =
+      weather_icon_x + icon_size + icon_text_gap;
+  const int bottom_row_right_value_x =
+      face_width - content_x - bottom_row_right_text_width;
+  const int bottom_row_right_icon_x =
+      bottom_row_right_value_x - icon_text_gap - icon_size;
 
   layout->background_frame = GRect(0, 0, face_width, face_height);
   layout->rule_left = rule_left;
@@ -1123,17 +1127,21 @@ static void calculate_watchface_layout(
                                   metrics_row_top,
                                   metrics_right_text_width,
                                   metrics_text_height);
-  layout->temp_text_frame = GRect(content_x,
+  layout->weather_icon_frame = GRect(weather_icon_x,
+                                     bottom_icon_top,
+                                     icon_size,
+                                     icon_size);
+  layout->temp_text_frame = GRect(temperature_value_x,
                                  bottom_row_top,
-                                 environment_left_text_width,
+                                 bottom_row_left_text_width,
                                  bottom_text_height);
-  layout->battery_icon_frame = GRect(environment_right_icon_x,
+  layout->battery_icon_frame = GRect(bottom_row_right_icon_x,
                                     bottom_icon_top,
                                     icon_size,
                                     icon_size);
-  layout->battery_text_frame = GRect(environment_right_value_x,
+  layout->battery_text_frame = GRect(bottom_row_right_value_x,
                                     bottom_row_top,
-                                    environment_right_text_width,
+                                    bottom_row_right_text_width,
                                     bottom_text_height);
 }
 
@@ -1274,6 +1282,7 @@ static void main_window_load(Window* window) {
   init_steps_column(root, &s_layout);
 
   // Bottom row: environment metrics (temperature and battery).
+  weather_icon_create(root, &s_layout.weather_icon_frame, s_palette);
   init_temp_column(root, &s_layout);
   init_battery_column(root, &s_layout);
 
@@ -1323,6 +1332,8 @@ static void main_window_unload(Window* window) {
     s_temp_layer = NULL;
   }
 
+  weather_icon_destroy();
+
   if (s_battery_icon_layer) {
     layer_destroy(s_battery_icon_layer);
     s_battery_icon_layer = NULL;
@@ -1344,6 +1355,7 @@ static void init(void) {
     return;
   }
   settings_load();
+  weather_icon_init();
 
   s_font_date = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_font_value = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);

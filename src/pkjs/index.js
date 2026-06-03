@@ -6,8 +6,11 @@ const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
 const DEFAULT_LAT = 37.85626;
 const DEFAULT_LON = -122.21383;
 
-function sendTemperature(celsius) {
-  Pebble.sendAppMessage({ TEMPERATURE: Math.round(celsius * 10) });
+function sendWeather(celsius, weatherCode) {
+  Pebble.sendAppMessage({
+    TEMPERATURE: Math.round(celsius * 10),
+    WEATHER_CONDITION: weatherCode
+  });
 }
 
 function fetchWeather(lat, lon) {
@@ -16,7 +19,7 @@ function fetchWeather(lat, lon) {
     lat +
     "&longitude=" +
     lon +
-    "&current=temperature_2m&temperature_unit=celsius";
+    "&current=temperature_2m,weather_code&temperature_unit=celsius";
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
@@ -24,8 +27,13 @@ function fetchWeather(lat, lon) {
     if (xhr.readyState === 4 && xhr.status === 200) {
       try {
         var data = JSON.parse(xhr.responseText);
-        if (data.current && typeof data.current.temperature_2m === "number") {
-          sendTemperature(data.current.temperature_2m);
+        if (
+          data.current &&
+          typeof data.current.temperature_2m === "number" &&
+          typeof data.current.weather_code === "number"
+        ) {
+          sendWeather(data.current.temperature_2m,
+                      data.current.weather_code);
         }
       } catch (e) {
         console.log("AtAGlance: Weather parse error");
