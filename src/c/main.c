@@ -40,7 +40,9 @@ static struct {
 typedef struct {
   GColor background;
   GColor primary_text;
+  GColor available_text_background;
   GColor unavailable_text;
+  GColor unavailable_text_background;
   GColor date;
   GColor time;
   GColor rule;
@@ -71,7 +73,9 @@ static WatchfaceLayout s_layout;
 static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
   .primary_text = GColorLightGray,
+  .available_text_background = GColorClear,
   .unavailable_text = GColorWindsorTan,
+  .unavailable_text_background = GColorWhite,
   .date = GColorRichBrilliantLavender,
   .time = GColorSunsetOrange,
   .rule = GColorLightGray,
@@ -81,7 +85,9 @@ static const VisualPalette c_dark_palette = {
 static const VisualPalette c_light_palette = {
   .background = GColorWhite,
   .primary_text = GColorBlack,
+  .available_text_background = GColorClear,
   .unavailable_text = GColorLightGray,
+  .unavailable_text_background = GColorBlack,
   .date = GColorImperialPurple,
   .time = GColorSunsetOrange,
   .rule = GColorLightGray,
@@ -93,6 +99,12 @@ static const char c_unavailable_text[] = "---";
 
 static inline void select_visual_palette();
 static inline bool is_icon_fallback_enabled();
+static inline void update_text_layer_display(
+    TextLayer* layer,
+    const char* text,
+    GColor text_color,
+    GColor background_color);
+static bool format_temp(char* buf, size_t buflen);
 static void load_bpm_icon_assets();
 static void unload_bpm_icon_assets();
 static void refresh_watchface_display();
@@ -167,6 +179,16 @@ static inline void select_visual_palette() {
   s_palette = get_visual_palette();
 }
 
+static inline void update_text_layer_display(
+    TextLayer* layer,
+    const char* text,
+    GColor text_color,
+    GColor background_color) {
+  text_layer_set_background_color(layer, background_color);
+  text_layer_set_text_color(layer, text_color);
+  text_layer_set_text(layer, text);
+}
+
 static char* get_text_buffer(TextBufferId id) {
   switch (id) {
     case BUF_DATE:
@@ -214,26 +236,32 @@ static void format_time(char* buf, size_t buflen, const struct tm* t) {
   }
 }
 
-static void format_temp(char* buf, size_t buflen) {
-  if (buf && buflen > 0) {
-    int c_tenths = s_settings.temp_celsius_tenths;
-
-    if (c_tenths == TEMP_INVALID) {
-      // Temperature can be 3-digits, so we need to print 3 hyphens and the unit
-      snprintf(buf, buflen, "%s%s", c_unavailable_text, s_settings.temp_unit == TEMP_UNIT_C ? "°C" : "°F");
-      return;
-    }
-
-    if (s_settings.temp_unit == TEMP_UNIT_F) {
-    // Convert Celsius to Fahrenheit, add half the divisor to round up
-      int f_whole = ((c_tenths*  9 + 25) / 50) + 32;
-      snprintf(buf, buflen, "%d°F", f_whole);
-    } else {
-      // Add half the divisor to round up, in this case 10
-      int c_whole = (c_tenths >= 0) ? (c_tenths + 5) / 10 : (c_tenths - 5) / 10;
-      snprintf(buf, buflen, "%d°C", c_whole);
-    }
+static bool format_temp(char* buf, size_t buflen) {
+  if (!buf || buflen == 0) {
+    return false;
   }
+
+  int c_tenths = s_settings.temp_celsius_tenths;
+
+  if (c_tenths == TEMP_INVALID) {
+    // Temperature can be 3-digits, so print 3 hyphens and the unit
+    snprintf(buf, buflen, "%s%s", c_unavailable_text,
+             s_settings.temp_unit == TEMP_UNIT_C ? "°C" : "°F");
+    return false;
+  }
+
+  if (s_settings.temp_unit == TEMP_UNIT_F) {
+    // Convert Celsius to Fahrenheit, add half the divisor to round up
+    int f_whole = ((c_tenths * 9 + 25) / 50) + 32;
+    snprintf(buf, buflen, "%d°F", f_whole);
+  } else {
+    // Add half the divisor to round up, in this case 10
+    int c_whole = (c_tenths >= 0) ?
+        (c_tenths + 5) / 10 : (c_tenths - 5) / 10;
+    snprintf(buf, buflen, "%d°C", c_whole);
+  }
+
+  return true;
 }
 
 // This is a callback function, so no need to mark the layer as dirty.
@@ -513,8 +541,11 @@ static void update_date() {
   struct tm* t = localtime(&now);
   strftime(buf, MAX_STR_LEN, "%a · %d %b", t);
   uppercase_date(buf);
-  text_layer_set_text_color(s_date_layer, s_palette->date);
-  text_layer_set_text(s_date_layer, buf);
+  update_text_layer_display(
+      s_date_layer,
+      buf,
+      s_palette->date,
+      s_palette->available_text_background);
 }
 
 static void update_time() {
@@ -526,8 +557,11 @@ static void update_time() {
   time_t now = time(NULL);
   struct tm* t = localtime(&now);
   format_time(buf, MAX_STR_LEN, t);
-  text_layer_set_text_color(s_time_layer, s_palette->time);
-  text_layer_set_text(s_time_layer, buf);
+  update_text_layer_display(
+      s_time_layer,
+      buf,
+      s_palette->time,
+      s_palette->available_text_background);
 }
 
 static void update_bpm() {
@@ -543,12 +577,15 @@ static void update_bpm() {
       now,
       now);
 
+  GColor background_color = s_palette->unavailable_text_background;
+
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
     s_bpm = (int) health_service_peek_current_value(HealthMetricHeartRateBPM);
 
     if (s_bpm > 0) {
       snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
       s_bpm_color = calculate_bpm_color(s_bpm);
+      background_color = s_palette->available_text_background;
     } else {
       snprintf(bpm_buf, MAX_STR_LEN, "%s", c_unavailable_text);
       s_bpm_color = s_palette->unavailable_text;
@@ -558,8 +595,11 @@ static void update_bpm() {
     s_bpm_color = s_palette->unavailable_text;
   }
 
-  text_layer_set_text_color(s_bpm_layer, s_bpm_color);
-  text_layer_set_text(s_bpm_layer, bpm_buf);
+  update_text_layer_display(
+      s_bpm_layer,
+      bpm_buf,
+      s_bpm_color,
+      background_color);
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
@@ -575,6 +615,7 @@ static void update_steps() {
   }
 
   GColor text_color = s_palette->unavailable_text;
+  GColor background_color = s_palette->unavailable_text_background;
 
   HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(
       HealthMetricStepCount,
@@ -586,6 +627,7 @@ static void update_steps() {
     if (steps > 0) {
       snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
       text_color = s_palette->primary_text;
+      background_color = s_palette->available_text_background;
     } else {
       snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
     }
@@ -593,8 +635,11 @@ static void update_steps() {
     snprintf(steps_buf, MAX_STR_LEN, "%s", c_unavailable_text);
   }
 
-  text_layer_set_text_color(s_steps_layer, text_color);
-  text_layer_set_text(s_steps_layer, steps_buf);
+  update_text_layer_display(
+      s_steps_layer,
+      steps_buf,
+      text_color,
+      background_color);
 }
 
 static void update_battery() {
@@ -605,8 +650,11 @@ static void update_battery() {
   snprintf(buf, MAX_STR_LEN, "%d%%", s_battery_state.charge_percent);
 
   // Battery text is recolored based on current battery state
-  text_layer_set_text_color(s_battery_layer, get_battery_color_from_state());
-  text_layer_set_text(s_battery_layer, buf);
+  update_text_layer_display(
+      s_battery_layer,
+      buf,
+      get_battery_color_from_state(),
+      s_palette->available_text_background);
   layer_mark_dirty(s_battery_icon_layer);
 }
 
@@ -615,9 +663,18 @@ static void update_temp() {
   if (!buf || !s_temp_layer) {
     return;
   }
-  format_temp(buf, MAX_STR_LEN);
-  text_layer_set_text_color(s_temp_layer, s_palette->primary_text);
-  text_layer_set_text(s_temp_layer, buf);
+  bool is_temp_available = format_temp(buf, MAX_STR_LEN);
+  GColor text_color = is_temp_available ?
+      s_palette->primary_text : s_palette->unavailable_text;
+  GColor background_color = is_temp_available ?
+      s_palette->available_text_background :
+      s_palette->unavailable_text_background;
+
+  update_text_layer_display(
+      s_temp_layer,
+      buf,
+      text_color,
+      background_color);
 }
 
 static void health_handler(HealthEventType event, void* context) {

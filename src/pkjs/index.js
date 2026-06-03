@@ -1,7 +1,6 @@
 var Clay = require("pebble-clay");
 var clayConfig = require("./config.json");
 var clay = new Clay(clayConfig);
-console.log("AtAGlance: JS app INIT start");
 
 const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
 const DEFAULT_LAT = 37.85626;
@@ -29,12 +28,12 @@ function fetchWeather(lat, lon) {
           sendTemperature(data.current.temperature_2m);
         }
       } catch (e) {
-        console.log("MM Watchface: weather parse error");
+        console.log("AtAGlance: Weather parse error");
       }
     }
   };
   xhr.onerror = function () {
-    console.log("MM Watchface: weather request failed");
+    console.log("AtAGlance: Weather request failed");
   };
   xhr.send(null);
 }
@@ -48,7 +47,7 @@ function updateWeather() {
       function () {
         fetchWeather(DEFAULT_LAT, DEFAULT_LON);
       },
-      { timeout: 10000, maximumAge: WEATHER_INTERVAL_MS }
+      { timeout: WEATHER_INTERVAL_MS, maximumAge: WEATHER_INTERVAL_MS }
     );
   } else {
     fetchWeather(DEFAULT_LAT, DEFAULT_LON);
@@ -59,5 +58,3 @@ Pebble.addEventListener("ready", function () {
   updateWeather();
   setInterval(updateWeather, WEATHER_INTERVAL_MS);
 });
-
-console.log("AtAGlance: JS app INIT end");
