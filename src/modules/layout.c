@@ -14,7 +14,7 @@ void layout_calculate(
   #else
   const int layout_spacing = 8;
   #endif
-  const int content_x = layout_spacing;
+  const int content_x = 2;
   const int row_gap = layout_spacing;
   const int column_gap = layout_spacing;
   const int icon_text_gap = 2;
