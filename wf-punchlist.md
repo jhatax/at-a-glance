@@ -7,37 +7,27 @@ so they can be reviewed deliberately.
 
 ## Active Work
 
-1. Plan platform-agnostic layout expansion before further code changes.
+1. Plan round-display layout separately before adding `chalk` or `gabbro`.
    - Preserve the inspect, identify, audit, confirm, execute, validate cycle.
-   - Keep rectangular, monochrome, and round support as separate slices.
-
-2. Add monochrome/BW display-mode support plan.
-   - Start with a hidden Emery preview option.
-   - Decide how dark/light mode maps onto B/W displays.
-   - Replace color-only BPM and battery semantics with readable monochrome
-     fallbacks before enabling real B/W targets.
-
-3. Expand rectangular platform support after bounds-derived layout validation.
-   - Rectangular content widths are the same for date, time, health, and
-     environment rows.
-   - Derive the boundary margin, horizontal row gaps, and vertical column gaps
-     from display height divided by 28. This yields 8px on Emery and 6px on
-     144x168 platforms such as Basalt.
-   - Replace remaining fixed column anchors with derived spacing values when
-     the layout math is generalized beyond Emery.
-   - Validate on smaller rectangular bounds before changing package targets.
-
-4. Plan round-display layout separately.
+   - Research Pebble/Rebble round-display guidance and community examples.
    - Keep `content_width_date`, `content_width_time`,
      `content_width_health`, and `content_width_environment` separate so
      round layouts can shrink widths by row later.
    - Do not assume a scaled rectangular layout is enough for round displays.
 
-5. Expand `package.json` target platforms only after rendering and config
-   semantics are validated.
+2. Plan `main.c` modularization before moving more code.
+   - Use the weather module as the model for a real ownership boundary.
+   - Candidate modules: settings, layout, palette/display, messaging,
+     health, and battery.
+   - Extract helpers only when they clarify a real seam or reduce meaningful
+     duplication.
+
+3. Keep rectangular support validation visible.
+   - Current rectangular targets are `aplite`, `basalt`, `diorite`, `emery`,
+     and `flint`.
+   - Revalidate smaller rectangular bounds after future layout or typography
+     changes.
    - Keep `sdkVersion: "3"` unless Pebble tooling requirements change.
-   - Update package metadata, Clay config, JS, C, docs, and defaults together
-     for any new AppMessage keys.
 
 ## Cleanup And Refactoring Candidates
 
@@ -50,25 +40,20 @@ so they can be reviewed deliberately.
    - Candidate buckets: settings, runtime metrics, layout, and render state.
    - Keep the first split small and behavior-preserving.
 
-3. Centralize text layer updates.
-   - Add a `static inline void` helper that sets text-layer background color,
-     text color, and text in one place.
-   - Pass `GColorClear` for text layers without a visible background.
-   - Use this helper before adding unavailable-value background treatments.
-
-4. Preserve fixed static text-buffer discipline.
+3. Preserve fixed static text-buffer discipline.
    - Keep `MAX_STR_LEN` and `TextBufferId` centralized.
    - Re-check buffer cleanup if state or lifecycle code is split.
 
-5. Review phone weather fallback configurability.
+4. Review phone weather fallback configurability.
    - Current fallback behavior should be verified in `src/pkjs/index.js`.
-   - Decide whether SFO/OAK should be configurable or simply documented.
+   - Decide whether fixed coordinates should become configurable,
+     documented, or replaced by a localStorage cache-first fallback.
 
-6. Audit GitHub-facing naming and artifacts before initial publish prep.
+5. Audit GitHub-facing naming and artifacts before initial publish prep.
    - Check app/package names, generated bundle name, README, screenshots,
      `.gitignore`, and private-data hygiene.
 
-7. Keep system font cleanup simple.
+6. Keep system font cleanup simple.
    - System fonts from `fonts_get_system_font()` do not need unloading.
    - If custom fonts are added later, unload them after layers are destroyed.
 
@@ -85,6 +70,28 @@ so they can be reviewed deliberately.
 8. README and AGENTS geometry were updated for the resulting Emery layout.
 9. Stale rail constants were removed after the horizontal-rule layout
    decision.
+10. Text layer updates were centralized through `update_text_layer_display()`.
+11. `CONTENT_X` was removed from the layout code.
+12. Rectangular spacing now derives from display height in
+    `calculate_watchface_layout()`.
+13. `calculate_watchface_layout()` now fills caller-owned
+    `WatchfaceLayout` storage.
+14. Battery icon drawing is horizontal and bounds-derived.
+15. Fallback heart icon drawing uses the named icon drawing grid.
+16. Rebble Clay is wired through `@rebble/clay`.
+17. Rectangular target platforms now include `aplite`, `basalt`, `diorite`,
+    `emery`, and `flint`.
+18. Color and black-and-white display palettes use `PBL_IF_COLOR_ELSE()`
+    fallbacks where appropriate.
+19. Weather condition rendering was moved into `src/modules/weather.c`.
+20. PebbleKit JS sends raw Open-Meteo `weather_code` values to C.
+21. Weather codes are mapped into private procedural glyph buckets in C.
+22. Weather glyphs are lightweight file-local `static inline` renderers.
+23. Snow grains are folded into snow, freezing drizzle and freezing rain
+    share one glyph, and unknown conditions render as a question mark.
+24. BPM, steps, and temperature use `FONT_KEY_GOTHIC_18`; battery keeps
+    `FONT_KEY_GOTHIC_18_BOLD`.
+25. Temperature text width was expanded to 40px for 3-digit Fahrenheit values.
 
 ## Validation Reminders
 
