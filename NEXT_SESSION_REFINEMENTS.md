@@ -31,7 +31,8 @@
 - Rename `update_step_count()` to `update_steps()` and fix nearby formatting.
 - Revisit `init_background_layer()` using root bounds instead of
   `GRect(0, 0, 200, 228)`.
-- Decide whether `RULE_RIGHT` should be derived from bounds and `CONTENT_X`.
+- Decide whether remaining column anchors should be derived from bounds before
+  adding non-Emery rectangular targets.
 - Clean up stale rail constants if no vertical rail is planned soon.
 - Review whether `settings_load()` should tolerate persisted struct shape
   changes more defensively before platform expansion.

@@ -20,6 +20,11 @@ so they can be reviewed deliberately.
 3. Expand rectangular platform support after bounds-derived layout validation.
    - Rectangular content widths are the same for date, time, health, and
      environment rows.
+   - Derive the boundary margin, horizontal row gaps, and vertical column gaps
+     from display height divided by 28. This yields 8px on Emery and 6px on
+     144x168 platforms such as Basalt.
+   - Replace remaining fixed column anchors with derived spacing values when
+     the layout math is generalized beyond Emery.
    - Validate on smaller rectangular bounds before changing package targets.
 
 4. Plan round-display layout separately.
@@ -49,19 +54,25 @@ so they can be reviewed deliberately.
    - Candidate buckets: settings, runtime metrics, layout, and render state.
    - Keep the first split small and behavior-preserving.
 
-4. Preserve fixed static text-buffer discipline.
+4. Centralize text layer updates.
+   - Add a `static inline void` helper that sets text-layer background color,
+     text color, and text in one place.
+   - Pass `GColorClear` for text layers without a visible background.
+   - Use this helper before adding unavailable-value background treatments.
+
+5. Preserve fixed static text-buffer discipline.
    - Keep `MAX_STR_LEN` and `TextBufferId` centralized.
    - Re-check buffer cleanup if state or lifecycle code is split.
 
-5. Review phone weather fallback configurability.
+6. Review phone weather fallback configurability.
    - Current fallback behavior should be verified in `src/pkjs/index.js`.
    - Decide whether SFO/OAK should be configurable or simply documented.
 
-6. Audit GitHub-facing naming and artifacts before initial publish prep.
+7. Audit GitHub-facing naming and artifacts before initial publish prep.
    - Check app/package names, generated bundle name, README, screenshots,
      `.gitignore`, and private-data hygiene.
 
-7. Keep system font cleanup simple.
+8. Keep system font cleanup simple.
    - System fonts from `fonts_get_system_font()` do not need unloading.
    - If custom fonts are added later, unload them after layers are destroyed.
 
@@ -73,7 +84,7 @@ so they can be reviewed deliberately.
 3. `WatchfaceLayout` was extracted to group current layer frames.
 4. `update_step_count()` was renamed to `update_steps()`.
 5. Background layer frame now derives from root bounds.
-6. Rule right edge and rule y-position now derive from bounds.
+6. Rule left edge, right edge, and y-position now derive from layout state.
 7. Time and health row placement now uses a derived row gap.
 8. README and AGENTS geometry were updated for the resulting Emery layout.
 

@@ -6,6 +6,8 @@ static GFont s_font_gothic_28;
 static GFont s_font_time;
 static GFont s_font_gothic_24_bold;
 
+static const int16_t c_icon_dimensions_as_drawn = 28;
+
 static Window* s_window;
 static Layer* s_background_layer;
 
@@ -15,6 +17,15 @@ static TextLayer* s_time_layer;
 static Layer* s_bpm_icon_layer;
 static GDrawCommandImage* s_bpm_icon_image;
 static GPath* s_bpm_icon_fallback_path;
+static GPoint s_bpm_icon_fallback_points[] = {
+  GPoint(0, 0),
+  GPoint(0, 0),
+  GPoint(0, 0),
+};
+static GPathInfo s_bpm_icon_fallback_path_info = {
+  .num_points = 3,
+  .points = s_bpm_icon_fallback_points,
+};
 
 static TextLayer* s_bpm_layer;
 static int s_bpm;
@@ -60,8 +71,12 @@ typedef struct {
   GRect temp_text_frame;
   GRect battery_icon_frame;
   GRect battery_text_frame;
+  int16_t rule_left;
   int16_t rule_y;
   int16_t rule_right;
+  int16_t content_x;
+  int16_t row_gap;
+  int16_t column_gap;
   int16_t content_width_date;
   int16_t content_width_time;
   int16_t content_width_health;
@@ -114,6 +129,10 @@ static void update_bpm();
 static void update_steps();
 static void update_battery();
 static void update_temp();
+static void calculate_watchface_layout(
+  int16_t face_width,
+  int16_t face_height,
+  WatchfaceLayout* layout);
 
 static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
@@ -147,7 +166,10 @@ static void settings_load() {
   s_settings.temp_celsius_tenths = TEMP_INVALID;
 
   if (persist_exists(PERSIST_SETTINGS)) {
-    persist_read_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
+    persist_read_data(
+        PERSIST_SETTINGS,
+        &s_settings,
+        sizeof(s_settings));
   }
   if (!TEMP_UNIT_VALID(s_settings.temp_unit)) {
     s_settings.temp_unit = TEMP_UNIT_DEFAULT;
@@ -271,7 +293,7 @@ static void background_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_stroke_color(ctx, s_palette->rule);
   graphics_context_set_stroke_width(ctx, 2);
   graphics_draw_line(ctx,
-                     GPoint(CONTENT_X, s_layout.rule_y),
+                     GPoint(s_layout.rule_left, s_layout.rule_y),
                      GPoint(s_layout.rule_right, s_layout.rule_y));
 }
 
@@ -308,7 +330,16 @@ static inline int get_icon_draw_size(GRect bounds) {
 }
 
 static inline int scale_icon_coord(GRect bounds, int coord) {
-  return (coord * get_icon_draw_size(bounds)) / 28;
+  int draw_size = get_icon_draw_size(bounds);
+  return (coord * draw_size) / c_icon_dimensions_as_drawn;
+}
+
+static inline int scale_icon_x(GRect bounds, int coord) {
+  return (coord * bounds.size.w) / c_icon_dimensions_as_drawn;
+}
+
+static inline int scale_icon_y(GRect bounds, int coord) {
+  return (coord * bounds.size.h) / c_icon_dimensions_as_drawn;
 }
 
 static inline GPoint scale_icon_point(GRect bounds, int x, int y) {
@@ -320,11 +351,26 @@ static inline GPoint scale_icon_point(GRect bounds, int x, int y) {
                 y_offset + scale_icon_coord(bounds, y));
 }
 
+static inline GPoint scale_icon_point_full(GRect bounds, int x, int y) {
+  return GPoint(scale_icon_x(bounds, x), scale_icon_y(bounds, y));
+}
+
+static inline void update_bpm_fallback_points(GRect bounds) {
+  s_bpm_icon_fallback_points[0] =
+      scale_icon_point_full(bounds, 4, 13);
+  s_bpm_icon_fallback_points[1] =
+      scale_icon_point_full(bounds, 23, 13);
+  s_bpm_icon_fallback_points[2] =
+      scale_icon_point_full(bounds, 14, 24);
+}
+
 static void draw_fallback_bpm_icon(
     GContext* ctx,
     GColor color,
     GRect bounds) {
   int radius = scale_icon_coord(bounds, 5);
+  GPoint left_lobe = scale_icon_point_full(bounds, 9, 10);
+  GPoint right_lobe = scale_icon_point_full(bounds, 18, 10);
 
   if (!ctx) {
     return;
@@ -335,10 +381,11 @@ static void draw_fallback_bpm_icon(
   }
 
   graphics_context_set_fill_color(ctx, color);
-  graphics_fill_circle(ctx, scale_icon_point(bounds, 9, 10), radius);
-  graphics_fill_circle(ctx, scale_icon_point(bounds, 18, 10), radius);
+  graphics_fill_circle(ctx, left_lobe, radius);
+  graphics_fill_circle(ctx, right_lobe, radius);
 
   if (s_bpm_icon_fallback_path) {
+    update_bpm_fallback_points(bounds);
     gpath_draw_filled(ctx, s_bpm_icon_fallback_path);
   }
 }
@@ -415,20 +462,8 @@ static void refresh_watchface_display() {
 }
 
 static inline void create_bpm_fallback_icon(GRect bounds) {
-  static GPoint s_bpm_icon_fallback_points[] = {
-    GPoint(0, 0),
-    GPoint(0, 0),
-    GPoint(0, 0),
-  };
-  static GPathInfo s_bpm_icon_fallback_path_info = {
-    .num_points = 3,
-    .points = s_bpm_icon_fallback_points,
-  };
-
   if (!s_bpm_icon_fallback_path) {
-    s_bpm_icon_fallback_points[0] = scale_icon_point(bounds, 4, 13);
-    s_bpm_icon_fallback_points[1] = scale_icon_point(bounds, 23, 13);
-    s_bpm_icon_fallback_points[2] = scale_icon_point(bounds, 14, 24);
+    update_bpm_fallback_points(bounds);
     s_bpm_icon_fallback_path = gpath_create(
         &s_bpm_icon_fallback_path_info);
   }
@@ -440,7 +475,9 @@ static inline void create_bpm_fallback_icon(GRect bounds) {
 
 static void load_bpm_icon_assets() {
   bool use_fallback = is_icon_fallback_enabled();
-  GRect bounds = GRect(0, 0, 28, 28);
+  GRect bounds = GRect(0, 0,
+                       c_icon_dimensions_as_drawn,
+                       c_icon_dimensions_as_drawn);
 
   if (s_bpm_icon_layer) {
     bounds = layer_get_bounds(s_bpm_icon_layer);
@@ -479,30 +516,46 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   (void)layer;
   graphics_context_set_fill_color(ctx, s_palette->steps_icon);
-  // --- THE MAIN HEEL PAD (Centered and unified) ---
-    // A clean, central oval-like base anchoring the bottom of the 24x24 frame
-    graphics_fill_circle(ctx, GPoint(13, 18), 5); // Main pad center
-    graphics_fill_circle(ctx, GPoint(10, 19), 4); // Left swell
-    graphics_fill_circle(ctx, GPoint(16, 19), 4); // Right swell
 
-    // --- THE 4 SMALL TOE PADS (Arcing cleanly above the heel) ---
-    graphics_fill_circle(ctx, GPoint(6, 12), 2);   // Far Left Toe
-    graphics_fill_circle(ctx, GPoint(10, 8), 2.5); // Center Left Toe
-    graphics_fill_circle(ctx, GPoint(16, 8), 2.5); // Center Right Toe
-    graphics_fill_circle(ctx, GPoint(20, 12), 2);  // Far Right Toe
+  graphics_fill_circle(ctx, GPoint(13, 18), 5);
+  graphics_fill_circle(ctx, GPoint(10, 19), 4);
+  graphics_fill_circle(ctx, GPoint(16, 19), 4);
+
+  graphics_fill_circle(ctx, GPoint(6, 12), 2);
+  graphics_fill_circle(ctx, GPoint(10, 8), 2.5);
+  graphics_fill_circle(ctx, GPoint(16, 8), 2.5);
+  graphics_fill_circle(ctx, GPoint(20, 12), 2);
 }
 
 static inline GColor get_battery_color_from_state() {
-  // Battery health color profile based on percentage remaining
-  // Green if charging, CobaltBlue for >50%, Yellow for 20-50%, Red otherwise
-  // 1. Fetch live system battery metrics
   int percent = s_battery_state.charge_percent;
-  return ((s_battery_state.is_charging) ? GColorJaegerGreen :
-    ((percent > 50) ? GColorCobaltBlue : ((percent > 20) ? GColorYellow : GColorRed)));
+
+  if (s_battery_state.is_charging) {
+    return GColorJaegerGreen;
+  }
+  if (percent > 50) {
+    return GColorCobaltBlue;
+  }
+  if (percent > 20) {
+    return GColorYellow;
+  }
+  return GColorRed;
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
-  (void)layer;
+  if (!layer || !ctx) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+  int body_w = scale_icon_x(bounds, 28);
+  int body_h = scale_icon_y(bounds, 20);
+  int body_x = (bounds.size.w - body_w) / 2;
+  int body_y = (bounds.size.h - body_h) / 2;
+  int fill_x = body_x + scale_icon_x(bounds, 2);
+  int fill_y = body_y + scale_icon_y(bounds, 2);
+  int max_fill_w = body_w - scale_icon_x(bounds, 4);
+  int fill_h = body_h - scale_icon_y(bounds, 4);
 
   // 1. Fetch live system battery metrics
   int percent = s_battery_state.charge_percent;
@@ -510,25 +563,19 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   // 2. Determine battery health color profiles
   GColor draw_color = get_battery_color_from_state();
 
-  // 3. Draw the outer AA Battery shell (Centered inside the 25x25 canvas)
   graphics_context_set_stroke_color(ctx, draw_color);
   graphics_context_set_stroke_width(ctx, 2);
 
-  // Main cylinder body shell (Width: 14px, Height: 20px)
-  graphics_draw_rect(ctx, GRect(4, 5, 14, 20));
+  graphics_draw_rect(ctx, GRect(body_x, body_y, body_w, body_h));
 
-  // The positive (+) contact terminal nub on the very top of the AA battery
+  int fill_w = ((percent * max_fill_w) / 100) + 1;
+  if (fill_w > max_fill_w) {
+    fill_w = max_fill_w;
+  }
+
   graphics_context_set_fill_color(ctx, draw_color);
-  graphics_fill_rect(ctx, GRect(8, 2, 6, 3), 0, GCornerNone);
-
-  // 4. Calculate the vertical fuel cell height from the percentage variable
-  // Total interior cylinder height is 16 pixels (from Y = 6 to Y = 22)
-  int fill_height = (int) (((percent * 16) / 100) + 1);
-  fill_height = (fill_height > 16) ? 16 : fill_height; // Cap the height at 16px max
-
-  // 5. Draw the inner fluid level (Fills upwards from the bottom base plate)
-  int fill_y = 23 - fill_height;
-  graphics_fill_rect(ctx, GRect(6, fill_y, 10, fill_height), 0, GCornerNone);
+  graphics_fill_rect(ctx, GRect(fill_x, fill_y, fill_w, fill_h),
+                     0, GCornerNone);
 }
 
 static void update_date() {
@@ -572,15 +619,17 @@ static void update_bpm() {
   }
 
   time_t now = time(NULL);
-  HealthServiceAccessibilityMask hr_mask = health_service_metric_accessible(
-      HealthMetricHeartRateBPM,
-      now,
-      now);
+  HealthServiceAccessibilityMask hr_mask =
+      health_service_metric_accessible(
+          HealthMetricHeartRateBPM,
+          now,
+          now);
 
   GColor background_color = s_palette->unavailable_text_background;
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
-    s_bpm = (int) health_service_peek_current_value(HealthMetricHeartRateBPM);
+    s_bpm = (int) health_service_peek_current_value(
+        HealthMetricHeartRateBPM);
 
     if (s_bpm > 0) {
       snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
@@ -617,10 +666,11 @@ static void update_steps() {
   GColor text_color = s_palette->unavailable_text;
   GColor background_color = s_palette->unavailable_text_background;
 
-  HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(
-      HealthMetricStepCount,
-      time_start_of_today(),
-      time(NULL));
+  HealthServiceAccessibilityMask steps_mask =
+      health_service_metric_accessible(
+          HealthMetricStepCount,
+          time_start_of_today(),
+          time(NULL));
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue steps = health_service_sum_today(HealthMetricStepCount);
@@ -678,10 +728,12 @@ static void update_temp() {
 }
 
 static void health_handler(HealthEventType event, void* context) {
-  if (event == HealthEventSignificantUpdate || event == HealthEventMovementUpdate) {
+  bool significant_update = event == HealthEventSignificantUpdate;
+
+  if (significant_update || event == HealthEventMovementUpdate) {
     update_steps();
   }
-  if (event == HealthEventSignificantUpdate || event == HealthEventHeartRateUpdate) {
+  if (significant_update || event == HealthEventHeartRateUpdate) {
     update_bpm();
   }
 }
@@ -691,7 +743,9 @@ static void battery_handler(BatteryChargeState state) {
   update_battery();
 }
 
-static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
+static void tick_handler(
+    struct tm* tick_time,
+    TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     update_time();
   }
@@ -714,7 +768,9 @@ static int tuple_to_int(Tuple* tuple) {
   }
 }
 
-static void inbox_received_callback(DictionaryIterator* iter, void* context) {
+static void inbox_received_callback(
+    DictionaryIterator* iter,
+    void* context) {
   // context is unused in this function
   if (!iter) {
     return;
@@ -778,15 +834,22 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   }
 }
 
-static void inbox_dropped_callback(AppMessageResult reason, void* context) {
+static void inbox_dropped_callback(
+    AppMessageResult reason,
+    void* context) {
   APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage dropped: %d", reason);
 }
 
-static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+static void outbox_failed_callback(
+    DictionaryIterator *iterator,
+    AppMessageResult reason,
+    void *context) {
   APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
 }
 
-static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
+static void outbox_sent_callback(
+    DictionaryIterator *iterator,
+    void *context) {
   return;
 }
 
@@ -808,75 +871,98 @@ static inline TextLayer* create_and_initialize_text_layer(
   return layer;
 }
 
-static WatchfaceLayout get_watchface_layout(GRect bounds) {
-  const int row_gap = bounds.size.h / 28;
-  const int content_width = bounds.size.w - (2 * CONTENT_X);
-  const int rule_y = bounds.size.h / 2;
-  const int rule_right = bounds.size.w - CONTENT_X;
+static void calculate_watchface_layout(
+    int16_t face_width,
+    int16_t face_height,
+    WatchfaceLayout* layout) {
+  const int layout_spacing = LAYOUT_SPACING;
+  const int content_x = layout_spacing;
+  const int row_gap = layout_spacing;
+  const int column_gap = layout_spacing;
+  const int icon_text_gap = 2;
+  const int content_width = face_width - (2 * content_x);
+  const int rule_y = face_height / 2;
+  const int rule_left = content_x;
+  const int rule_right = face_width - content_x;
 
-  const int date_top = 10;
   const int date_height = 36;
 
-  const int time_layer_top = 46;
-  const int time_layer_height = rule_y - row_gap - time_layer_top;
+  const int time_layer_height = 60;
+  const int time_layer_top = rule_y - row_gap - time_layer_height;
 
+  const int date_top = row_gap;
   const int metrics_row_top = rule_y + row_gap;
-  const int bottom_row_top = 184;
+  const int bottom_text_height = 24;
+  const int bottom_row_top =
+      face_height - row_gap - bottom_text_height;
+  const int icon_size = c_icon_dimensions_as_drawn;
+  const int metrics_text_height = 28;
+  const int metrics_left_text_width = 34;
+  const int metrics_right_text_width = 51;
+  const int environment_left_text_width = 43;
+  const int environment_right_text_width = 43;
+  const int metrics_icon_top =
+      metrics_row_top + ((metrics_text_height - icon_size) / 2);
+  const int bottom_icon_top =
+      bottom_row_top + ((bottom_text_height - icon_size) / 2);
 
-  const int left_icon_x = CONTENT_X + 8;
-  const int left_value_x = 44 + 8;
-  const int right_icon_x = 86 + 8;
-  const int right_value_x = 118 + 8;
+  const int left_icon_x = content_x;
+  const int left_value_x = left_icon_x + icon_size + icon_text_gap;
+  const int right_value_x =
+      face_width - content_x - metrics_right_text_width;
+  const int right_icon_x = right_value_x - icon_text_gap - icon_size;
+  const int environment_right_value_x =
+      face_width - content_x - environment_right_text_width;
+  const int environment_right_icon_x =
+      environment_right_value_x - icon_text_gap - icon_size;
 
-  const int icon_size = 28;
-  const int metrics_text_height = 36;
-  const int bottom_text_height = 30;
-
-  WatchfaceLayout layout;
-  layout.background_frame = bounds;
-  layout.rule_y = rule_y;
-  layout.rule_right = rule_right;
-  layout.content_width_date = content_width;
-  layout.content_width_time = content_width;
-  layout.content_width_health = content_width;
-  layout.content_width_environment = content_width;
-  layout.date_frame = GRect(CONTENT_X,
+  layout->background_frame = GRect(0, 0, face_width, face_height);
+  layout->rule_left = rule_left;
+  layout->rule_y = rule_y;
+  layout->rule_right = rule_right;
+  layout->content_x = content_x;
+  layout->row_gap = row_gap;
+  layout->column_gap = column_gap;
+  layout->content_width_date = content_width;
+  layout->content_width_time = content_width;
+  layout->content_width_health = content_width;
+  layout->content_width_environment = content_width;
+  layout->date_frame = GRect(content_x,
                             date_top,
-                            layout.content_width_date,
+                            layout->content_width_date,
                             date_height);
-  layout.time_frame = GRect(CONTENT_X,
+  layout->time_frame = GRect(content_x,
                             time_layer_top,
-                            layout.content_width_time,
+                            layout->content_width_time,
                             time_layer_height);
-  layout.bpm_icon_frame = GRect(left_icon_x,
-                                metrics_row_top,
+  layout->bpm_icon_frame = GRect(left_icon_x,
+                                metrics_icon_top,
                                 icon_size,
                                 icon_size);
-  layout.bpm_text_frame = GRect(left_value_x,
+  layout->bpm_text_frame = GRect(left_value_x,
                                 metrics_row_top,
-                                58,
+                                metrics_left_text_width,
                                 metrics_text_height);
-  layout.steps_icon_frame = GRect(right_icon_x,
-                                  metrics_row_top,
+  layout->steps_icon_frame = GRect(right_icon_x,
+                                  metrics_icon_top,
                                   icon_size,
                                   icon_size);
-  layout.steps_text_frame = GRect(right_value_x,
+  layout->steps_text_frame = GRect(right_value_x,
                                   metrics_row_top,
-                                  54,
+                                  metrics_right_text_width,
                                   metrics_text_height);
-  layout.temp_text_frame = GRect(44,
+  layout->temp_text_frame = GRect(content_x,
                                  bottom_row_top,
-                                 64,
+                                 environment_left_text_width,
                                  bottom_text_height);
-  layout.battery_icon_frame = GRect(86,
-                                    bottom_row_top,
+  layout->battery_icon_frame = GRect(environment_right_icon_x,
+                                    bottom_icon_top,
                                     icon_size,
                                     icon_size);
-  layout.battery_text_frame = GRect(118,
+  layout->battery_text_frame = GRect(environment_right_value_x,
                                     bottom_row_top,
-                                    54,
+                                    environment_right_text_width,
                                     bottom_text_height);
-  return layout;
 }
 
 static inline void init_background_layer(Layer* root, GRect frame) {
@@ -961,7 +1047,9 @@ static inline void init_battery_column(
     const WatchfaceLayout* layout) {
   s_battery_icon_layer = layer_create(layout->battery_icon_frame);
   if (s_battery_icon_layer) {
-    layer_set_update_proc(s_battery_icon_layer, battery_icon_update_proc);
+    layer_set_update_proc(
+        s_battery_icon_layer,
+        battery_icon_update_proc);
     layer_add_child(root, s_battery_icon_layer);
   }
 
@@ -975,7 +1063,8 @@ static inline void init_battery_column(
 
 static void main_window_load(Window* window) {
   if (!window) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Main window load received NULL window");
     return;
   }
 
@@ -986,7 +1075,7 @@ static void main_window_load(Window* window) {
   }
 
   GRect bounds = layer_get_bounds(root);
-  s_layout = get_watchface_layout(bounds);
+  calculate_watchface_layout(bounds.size.w, bounds.size.h, &s_layout);
 
   // Background rule spanning across the content region.
   init_background_layer(root, s_layout.background_frame);
@@ -1062,7 +1151,7 @@ static void main_window_unload(Window* window) {
 }
 
 static void init(void) {
-  // Lifecycle rule: do not initialize app state/services before window creation.
+  // Create the window before initializing app state and services.
   s_window = window_create();
   if (!s_window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create main window");
@@ -1072,7 +1161,8 @@ static void init(void) {
 
   s_font_gothic_28 = fonts_get_system_font(FONT_KEY_GOTHIC_28);
   s_font_time = fonts_get_system_font(FONT_KEY_ROBOTO_BOLD_SUBSET_49);
-  s_font_gothic_24_bold = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+  s_font_gothic_24_bold = fonts_get_system_font(
+      FONT_KEY_GOTHIC_24_BOLD);
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,
@@ -1084,12 +1174,16 @@ static void init(void) {
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
+  app_message_open(
+      app_message_inbox_size_maximum(),
+      app_message_outbox_size_maximum());
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
   #if defined(PBL_HEALTH)
-    bool health_available = health_service_events_subscribe(health_handler, NULL);
+    bool health_available = health_service_events_subscribe(
+        health_handler,
+        NULL);
     if (!health_available) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
     } else {

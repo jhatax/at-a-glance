@@ -45,31 +45,32 @@ Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/co
   - icon fallback mode: disabled
   - display mode: dark
 
-Layout geometry (current frames/anchors):
+Rectangular `PBL_RECT` layout geometry (current frames/anchors on Emery):
 
-- date: `GRect(12, 10, 176, 36)` (`FONT_KEY_GOTHIC_24_BOLD`,
+- derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
+- date: `GRect(8, 8, 184, 36)` (`FONT_KEY_GOTHIC_24_BOLD`,
   `GColorRichBrilliantLavender`)
-- time: `GRect(12, 46, 176, 60)`
+- time: `GRect(8, 46, 184, 60)`
   (`FONT_KEY_ROBOTO_BOLD_SUBSET_49`, `GColorSunsetOrange`)
-- rule: line from `(12, 114)` to `(188, 114)`
-- heart icon: `GRect(20, 122, 28, 28)` (resource `ICON_BPM`)
-- bpm text: `GRect(52, 122, 58, 36)` (`FONT_KEY_GOTHIC_28`)
-- steps icon: `GRect(94, 122, 28, 28)` (custom drawn paw glyph)
-- steps text: `GRect(126, 122, 54, 36)` (`FONT_KEY_GOTHIC_28`)
-- temp text: `GRect(44, 184, 64, 30)` (`FONT_KEY_GOTHIC_24_BOLD`)
-- battery icon: `GRect(86, 184, 28, 28)` (custom drawn AA battery)
-- battery text: `GRect(118, 184, 54, 30)`
+- rule: line from `(8, 114)` to `(192, 114)`
+- heart icon: `GRect(16, 122, 28, 28)` (resource `ICON_BPM`)
+- bpm text: `GRect(48, 122, 34, 28)` (`FONT_KEY_GOTHIC_28`)
+- steps icon: `GRect(109, 122, 28, 28)` (custom drawn paw glyph)
+- steps text: `GRect(141, 122, 51, 28)` (`FONT_KEY_GOTHIC_28`)
+- temp text: `GRect(8, 196, 43, 24)` (`FONT_KEY_GOTHIC_24_BOLD`)
+- battery icon: `GRect(117, 194, 28, 28)` (custom drawn AA battery)
+- battery text: `GRect(149, 196, 43, 24)`
   (`FONT_KEY_GOTHIC_24_BOLD`)
 
 Color/semantic rules that must remain documented when changed:
 
 - unavailable text token is `---`.
 - dark mode uses black background, light gray primary text, Windsor Tan
-  unavailable text, Rich Brilliant Lavender date, Sunset Orange time,
-  Light Gray rule, and Chrome Yellow steps icon.
+  unavailable text, white text debug backgrounds, Rich Brilliant Lavender date,
+  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon.
 - light mode uses white background, black primary text, Light Gray
-  unavailable text, Imperial Purple date, Sunset Orange time, Light Gray
-  rule, and Chrome Yellow steps icon.
+  unavailable text, black text debug backgrounds, Imperial Purple date,
+  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon.
 - BPM color zones:
   - `<=0` or unavailable: current mode unavailable color
   - `1-99`: Jaeger Green
@@ -96,7 +97,8 @@ At A Glance: Configuration
 Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
 
 - date and hero time are fitting at sampled values (`MON · 01 JUN`, `14:50`).
-- bottom row sample (`90°F`, `80%`) fits without clipping.
+- bottom row sample (`90°F`, `80%`) fit still needs visual
+  revalidation after the rectangular spacing update.
 - unavailable health values render as `---`.
 - current implementation does not draw a vertical rail; it uses a
   horizontal rule at `y=114`.

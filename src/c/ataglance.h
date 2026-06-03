@@ -6,7 +6,11 @@
 #define RAIL_TOP 12
 #define RAIL_BOTTOM 216
 
-#define CONTENT_X 12
+#if defined(PBL_RECT)
+#define LAYOUT_SPACING (PBL_DISPLAY_HEIGHT / 28)
+#else
+#define LAYOUT_SPACING 8
+#endif
 
 #define PERSIST_SETTINGS 2
 

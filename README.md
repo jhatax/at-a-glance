@@ -32,18 +32,20 @@ HEART ICON + BPM        STEPS ICON + STEPS
 TEMP              BATTERY ICON + BATTERY %
 ```
 
-Key geometry from `src/c/main.c` and `src/c/ataglance.h`:
+Rectangular `PBL_RECT` geometry from `src/c/main.c` and
+`src/c/ataglance.h` on Emery:
 
-- Date layer: `GRect(12, 10, 176, 36)`
-- Time layer: `GRect(12, 46, 176, 60)`
-- Horizontal rule: from `(12, 114)` to `(188, 114)`
-- Heart icon: `GRect(20, 122, 28, 28)`
-- BPM value: `GRect(52, 122, 58, 36)`
-- Steps icon: `GRect(94, 122, 28, 28)`
-- Steps value: `GRect(126, 122, 54, 36)`
-- Temperature: `GRect(44, 184, 64, 30)`
-- Battery icon: `GRect(86, 184, 28, 28)`
-- Battery value: `GRect(118, 184, 54, 30)`
+- Derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
+- Date layer: `GRect(8, 8, 184, 36)`
+- Time layer: `GRect(8, 46, 184, 60)`
+- Horizontal rule: from `(8, 114)` to `(192, 114)`
+- Heart icon: `GRect(16, 122, 28, 28)`
+- BPM value: `GRect(48, 122, 34, 28)`
+- Steps icon: `GRect(109, 122, 28, 28)`
+- Steps value: `GRect(141, 122, 51, 28)`
+- Temperature: `GRect(8, 196, 43, 24)`
+- Battery icon: `GRect(117, 194, 28, 28)`
+- Battery value: `GRect(149, 196, 43, 24)`
 
 ## Typography And Color
 
@@ -62,6 +64,7 @@ Color usage:
   - Date: `GColorRichBrilliantLavender`
   - Primary data text: `GColorLightGray`
   - Unavailable data fallback (`---`): `GColorWindsorTan`
+  - Available and unavailable text background: `GColorWhite`
   - Rule: `GColorLightGray`
 - Light mode:
   - Background: `GColorWhite`
@@ -69,6 +72,7 @@ Color usage:
   - Date: `GColorImperialPurple`
   - Primary data text: `GColorBlack`
   - Unavailable data fallback (`---`): `GColorLightGray`
+  - Available and unavailable text background: `GColorBlack`
   - Rule: `GColorLightGray`
 - Steps icon: `GColorChromeYellow`
 - Heart icon and BPM text:
