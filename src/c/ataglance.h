@@ -4,8 +4,6 @@
 
 #define PERSIST_SETTINGS 2
 
-#define TEMP_INVALID INT16_MIN
-
 typedef enum {
   TEMP_UNIT_F = 0,
   TEMP_UNIT_C,
@@ -55,6 +53,15 @@ typedef enum {
 #define HR_SAMPLE_MINUTES_VALID(value) \
   ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
 
+typedef struct {
+  uint8_t temp_unit;
+  uint8_t time_format;
+  uint8_t hr_sample_minutes;
+  uint8_t icon_fallback_mode;
+  uint8_t display_mode;
+  int16_t temp_celsius_tenths;
+} WatchfaceSettings;
+
 typedef enum {
   BUF_DATE = 0,
   BUF_TIME,
@@ -67,3 +74,38 @@ typedef enum {
 } TextBufferId;
 
 #define MAX_STR_LEN 16
+
+typedef struct {
+  GColor background;
+  GColor primary_text;
+  GColor available_text_background;
+  GColor unavailable_text;
+  GColor unavailable_text_background;
+  GColor date;
+  GColor time;
+  GColor rule;
+  GColor steps_icon;
+} VisualPalette;
+
+typedef struct {
+  GRect background_frame;
+  GRect date_frame;
+  GRect time_frame;
+  GRect bpm_icon_frame;
+  GRect bpm_text_frame;
+  GRect steps_icon_frame;
+  GRect steps_text_frame;
+  GRect temp_text_frame;
+  GRect battery_icon_frame;
+  GRect battery_text_frame;
+  int16_t rule_left;
+  int16_t rule_y;
+  int16_t rule_right;
+  int16_t content_x;
+  int16_t row_gap;
+  int16_t column_gap;
+  int16_t content_width_date;
+  int16_t content_width_time;
+  int16_t content_width_health;
+  int16_t content_width_environment;
+} WatchfaceLayout;
