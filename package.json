@@ -9,7 +9,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "pebble-clay": "^1.0.4"
+    "@rebble/clay": "^1.0.4"
   },
   "pebble": {
     "displayName": "At A Glance",
@@ -20,7 +20,8 @@
       "aplite",
       "basalt",
       "diorite",
-      "emery"
+      "emery",
+      "flint"
     ],
     "watchapp": {
       "watchface": true

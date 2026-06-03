@@ -1,174 +1,259 @@
 # Life at a Glance
 
-Swiss-Rail Inspired watchface for **Pebble Time 2** (emery).
+A glanceable Pebble watchface inspired by Swiss railway signage.
+
+Life at a Glance keeps the screen focused on the essentials: date, time,
+heart rate, steps, temperature, and battery. The layout is tuned for
+rectangular Pebble displays and supports color and monochrome devices.
+
+Screenshots will be added before publishing once the final color and
+monochrome emulator captures are selected.
 
 ## Features
 
-- Left-aligned typographic layout with a mid-screen horizontal rule
-- Time (12h or 24h) and short date (`THU · 28 MAY`)
-- Heart rate and full step count from Pebble Health
-- Temperature from phone (Open-Meteo) in °F or °C
-- Battery percentage (bottom-right)
-- Settings: time format, temperature unit, display mode, bpm sampling interval
+- Large hero time with a compact date row
+- Heart rate and step count from Pebble Health when available
+- Temperature from Open-Meteo through the phone companion app
+- Battery icon and percentage
+- Dark and light display modes
+- Color-aware and monochrome-aware visual palette
+- Procedural fallback icons for black-and-white devices
+- Rebble Clay configuration page
 
-## Target And Capabilities
+## Supported Watches
 
-- Platform target: `emery` (Pebble Time 2), `200x228`, color.
-- Pebble SDK metadata: `sdkVersion: "3"` (Pebble SDK 4+ compatible workflow in this repo).
-- Required Pebble capabilities from `package.json`:
-  - `configurable` for Clay settings page.
-  - `location` for weather lookup via phone geolocation.
-  - `health` for step count and heart-rate metrics.
+The current build targets rectangular Pebble platforms:
 
-## Layout Spec (Current Implementation)
+- `aplite` - Pebble / Pebble Steel, black and white
+- `basalt` - Pebble Time / Pebble Time Steel, color
+- `diorite` - Pebble 2, black and white
+- `emery` - Pebble Time 2, color
+- `flint` - Pebble 2 Duo, black and white
+
+Round platforms such as Chalk and Gabbro are not supported by this layout
+pass.
+
+## Layout
+
+The rectangular layout is computed from the display bounds instead of fixed
+Emery-only coordinates. Rectangular spacing is:
+
+```c
+PBL_DISPLAY_HEIGHT / 28
+```
 
 Screen hierarchy:
 
 ```text
-DATE
-TIME
----------------------- (rule at y=114)
-HEART ICON + BPM        STEPS ICON + STEPS
-TEMP              BATTERY ICON + BATTERY %
+top boundary
+  spacing
+date row
+
+time row
+  spacing
+horizontal rule
+  spacing
+health metrics row
+
+environment row
+  spacing
+bottom boundary
 ```
 
-Rectangular `PBL_RECT` geometry from `src/c/main.c` and
-`src/c/ataglance.h` on Emery:
+All text columns are left-aligned. The left health and environment columns
+start at the content margin. The right health and environment columns are
+positioned by column math, but their text alignment remains left.
 
-- Derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
-- Date layer: `GRect(8, 8, 184, 36)`
-- Time layer: `GRect(8, 46, 184, 60)`
-- Horizontal rule: from `(8, 114)` to `(192, 114)`
-- Heart icon: `GRect(16, 122, 28, 28)`
-- BPM value: `GRect(48, 122, 34, 28)`
-- Steps icon: `GRect(109, 122, 28, 28)`
-- Steps value: `GRect(141, 122, 51, 28)`
-- Temperature: `GRect(8, 196, 43, 24)`
-- Battery icon: `GRect(117, 194, 28, 28)`
-- Battery value: `GRect(149, 196, 43, 24)`
+Current fonts:
 
-## Typography And Color
+- Date: `FONT_KEY_GOTHIC_18_BOLD`
+- Time: `FONT_KEY_BITHAM_42_BOLD`
+- BPM: `FONT_KEY_GOTHIC_18_BOLD`
+- Steps: `FONT_KEY_GOTHIC_18_BOLD`
+- Temperature: `FONT_KEY_GOTHIC_18_BOLD`
+- Battery: `FONT_KEY_GOTHIC_18_BOLD`
 
-Fonts used:
+The horizontal rule is 1 pixel wide. Value text frames for BPM, steps,
+temperature, and battery use compact rectangular sizing to preserve negative
+space on 144x168 displays.
 
-- Hero time: `FONT_KEY_ROBOTO_BOLD_SUBSET_49`
-- Date: `FONT_KEY_GOTHIC_24_BOLD`
-- BPM and steps values: `FONT_KEY_GOTHIC_28`
-- Temperature and battery values: `FONT_KEY_GOTHIC_24_BOLD`
+## Icons
 
-Color usage:
+- BPM uses a vector resource on color displays when available.
+- BPM falls back to a procedural heart on monochrome displays or when fallback
+  mode is enabled.
+- Steps uses a procedural paw-style icon.
+- Battery uses a horizontal procedural icon drawn inside a 28x28 layer.
+- Battery fill moves left to right and uses the same color state as the
+  battery percentage.
 
-- Dark mode:
-  - Background: `GColorBlack`
-  - Time: `GColorSunsetOrange`
-  - Date: `GColorRichBrilliantLavender`
-  - Primary data text: `GColorLightGray`
-  - Unavailable data fallback (`---`): `GColorWindsorTan`
-  - Available and unavailable text background: `GColorWhite`
-  - Rule: `GColorLightGray`
-- Light mode:
-  - Background: `GColorWhite`
-  - Time: `GColorSunsetOrange`
-  - Date: `GColorImperialPurple`
-  - Primary data text: `GColorBlack`
-  - Unavailable data fallback (`---`): `GColorLightGray`
-  - Available and unavailable text background: `GColorBlack`
-  - Rule: `GColorLightGray`
-- Steps icon: `GColorChromeYellow`
-- Heart icon and BPM text:
-  - `<= 0` or unavailable: mode unavailable color
-  - `1-99`: `GColorJaegerGreen`
-  - `100-120`: `GColorMagenta`
-  - `>120`: `GColorRed`
-- Battery icon and battery `%`:
-  - Charging: `GColorJaegerGreen`
-  - Not charging, `>50%`: `GColorCobaltBlue`
-  - Not charging, `21-50%`: `GColorYellow`
-  - Not charging, `<=20%`: `GColorRed`
+When BPM or steps data is unavailable, the corresponding icon layer uses the
+same unavailable background treatment as the text layer for visual symmetry.
 
-## Icons Used
+## Colors
 
-- Heart icon: vector resource `ICON_BPM`
-  (`resources/images/bpm_option-tick.pdc`), recolored in C by BPM zone.
-- Steps icon: custom-drawn paw/footprint using `graphics_fill_circle`
-  calls (no bitmap resource).
-- Battery icon: custom-drawn AA-style battery in a 28x28 layer.
-- App/menu icon: `resources/images/icon.png` (`MENU_ICON`).
-- Hidden `ICON_FALLBACK_MODE` defaults disabled and can force procedural icons
-  for testing.
+Dark mode:
 
-## Configuration Page (Clay) Mockup
+- Background: black
+- Date: lavender on color, white on monochrome
+- Time: sunset orange on color, white on monochrome
+- Primary text: light gray on color, white on monochrome
+- Rule: light gray on color, white on monochrome
+- Unavailable text: Windsor Tan on color, black on monochrome
 
-Current `src/pkjs/config.json`:
+Light mode:
 
-```text
-At A Glance: Configuration
-Select units and update frequencies for key capabilities.
+- Background: white
+- Date: imperial purple on color, black on monochrome
+- Time: sunset orange on color, black on monochrome
+- Primary text: black
+- Rule: light gray on color, black on monochrome
+- Unavailable text: light gray on color, white on monochrome
 
-Time format
-  ( ) 24-hour
-  ( ) 12-hour
+BPM zones:
 
-Temperature unit
-  ( ) Fahrenheit (°F)
-  ( ) Celsius (°C)
+- Unavailable or invalid: unavailable color
+- `1-99`: Jaeger Green on color
+- `100-120`: Magenta on color
+- `>120`: Red on color
+- Monochrome devices use the current primary text color for available BPM
+  values.
 
-Display mode
-  ( ) Dark mode
-  ( ) Light mode
+Battery zones:
 
-HR Sampling Frequency
-  ( ) Every 10-minutes
-  ( ) Every 15-minutes
-  ( ) Every 30-minutes
-  ( ) Every 60-minutes
-  ( ) Every 120-minutes
+- Charging: Jaeger Green on color
+- `>50%`: Cobalt Blue on color
+- `21-50%`: Yellow on color
+- `<=20%`: Red on color
+- Monochrome devices use the current primary text color.
 
-[ Save Settings ]
+## Configuration
 
-Hidden input:
-  ICON_FALLBACK_MODE = 0 (disabled)
+Configuration is powered by Rebble Clay:
+
+```json
+"dependencies": {
+  "@rebble/clay": "^1.0.4"
+}
 ```
+
+The companion JavaScript initializes Clay from `src/pkjs/config.json`.
+
+Settings:
+
+- Time format: 24-hour or 12-hour
+- Temperature unit: Fahrenheit or Celsius
+- Display mode: dark or light
+- Heart rate sampling: 10, 15, 30, 60, or 120 minutes
+
+The hidden `ICON_FALLBACK_MODE` setting defaults to disabled and is kept for
+testing procedural icon rendering.
+
+## Weather
+
+The phone companion app requests weather from Open-Meteo every 30 minutes.
+It uses phone geolocation when available and falls back to bundled default
+coordinates when location is unavailable.
+
+Temperature is sent to the watch in Celsius tenths and rendered as Fahrenheit
+or Celsius according to the selected setting.
 
 ## Build
 
-```bash
-cd life-at-a-glance-emery-wf
+### Prerequisites
+
+- [Pebble SDK](https://developer.repebble.com/sdk/)
+- Node.js for PebbleKit JS dependencies
+
+### Build the PBW
+
+```sh
 npm install
 pebble build
 ```
 
-Output: `build/life-at-a-glance-emery-wf.pbw`
+The build output is:
 
-## Install
+```text
+build/life-at-a-glance-emery-wf.pbw
+```
 
-```bash
+## Run In An Emulator
+
+```sh
+# Pebble Time 2, color, 200x228
 pebble install --emulator emery
-# or on hardware via phone:
+
+# Pebble 2 Duo, black and white, 144x168
+pebble install --emulator flint
+
+# Pebble 2, black and white, 144x168
+pebble install --emulator diorite
+
+# Original Pebble, black and white, 144x168
+pebble install --emulator aplite
+```
+
+To test the config page in an emulator:
+
+```sh
+pebble emu-app-config
+```
+
+## Install On Hardware
+
+For hardware:
+
+```sh
 pebble install --phone YOUR_PHONE_IP
 ```
 
-## Settings
+You can also use the Pebble SDK login flow and CloudPebble install path if
+that is how your local SDK is configured.
 
-In the Pebble app on your phone: Life at a Glance → Settings
+## To Do
 
-- **Time format:** 24-hour or 12-hour
-- **Temperature unit:** Fahrenheit or Celsius
-- **Display mode:** dark or light mode
-- **Heart rate sampling:** every 10, 15, 30, 60, or 120 minutes (default: 10)
+- Add final README screenshots for color and monochrome rectangular devices.
+- Run an emulator screenshot pass for Emery, Diorite, Aplite, and Flint.
+- Decide whether round platforms need a separate future layout.
+- Publish release PBW once the visual pass is complete.
 
-Temperature uses your phone’s location (falls back to NYC if unavailable). Weather refreshes every 30 minutes while the companion app is active.
+## Project Structure
 
-## Layout
+```text
+resources/      Static image and raw vector resources
+src/
+  c/            Native Pebble C watchface code
+  pkjs/         Phone-side weather and Clay configuration code
+package.json    Platforms, capabilities, message keys, and resources
+wscript         Pebble build entrypoint
+```
 
-See [DESIGN.md](DESIGN.md) for the full spec.
+## Development Notes
 
-## Visual Validation Notes (Emulator)
+- `sdkVersion` remains `"3"` for the Pebble SDK workflow used by this repo.
+- The watchface is designed for SDK 4+ APIs where available, with platform
+  guards for optional capabilities.
+- Keep runtime behavior, visual layout, and documentation changes in coherent
+  commits when possible.
 
-Validated against emulator screenshot from June 1, 2026 (`14:50` runtime sample):
+## Publish README Target
 
-- Date (`MON · 01 JUN`) and hero time (`14:50`) render without clipping.
-- Mid horizontal rule is visible and aligns with the complication row.
-- Health placeholders (`---`) display correctly when BPM/steps are unavailable.
-- Bottom row (`90°F`, battery icon, `80%`) fits within bounds with visible right/bottom padding.
-- No vertical rail is currently rendered in this implementation.
+Before publishing, use the
+[Carbon README](https://github.com/cr0ybot/carbon/blob/main/README.md) as
+the structural target:
+
+- Badges only when release and store URLs exist.
+- Project title and one-sentence product description.
+- Color and monochrome screenshots near the top.
+- Short rationale for the watchface.
+- Feature list.
+- To-do/status list.
+- Development prerequisites.
+- Build and emulator commands.
+- Project structure.
+- License.
+
+## License
+
+[MIT](LICENSE)
