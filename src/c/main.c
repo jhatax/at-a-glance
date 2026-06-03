@@ -85,7 +85,7 @@ typedef struct {
 
 static WatchfaceLayout s_layout;
 
-static const VisualPalette c_dark_palette = {
+static const VisualPalette c_dark_color_palette = {
   .background = GColorBlack,
   .primary_text = GColorLightGray,
   .available_text_background = GColorClear,
@@ -97,7 +97,7 @@ static const VisualPalette c_dark_palette = {
   .steps_icon = GColorChromeYellow,
 };
 
-static const VisualPalette c_light_palette = {
+static const VisualPalette c_light_color_palette = {
   .background = GColorWhite,
   .primary_text = GColorBlack,
   .available_text_background = GColorClear,
@@ -109,10 +109,38 @@ static const VisualPalette c_light_palette = {
   .steps_icon = GColorChromeYellow,
 };
 
-static const VisualPalette* s_palette = &c_dark_palette;
+static const VisualPalette c_dark_bw_palette = {
+  .background = GColorBlack,
+  .primary_text = GColorWhite,
+  .available_text_background = GColorClear,
+  .unavailable_text = GColorBlack,
+  .unavailable_text_background = GColorWhite,
+  .date = GColorWhite,
+  .time = GColorWhite,
+  .rule = GColorWhite,
+  .steps_icon = GColorWhite,
+};
+
+static const VisualPalette c_light_bw_palette = {
+  .background = GColorWhite,
+  .primary_text = GColorBlack,
+  .available_text_background = GColorClear,
+  .unavailable_text = GColorWhite,
+  .unavailable_text_background = GColorBlack,
+  .date = GColorBlack,
+  .time = GColorBlack,
+  .rule = GColorBlack,
+  .steps_icon = GColorBlack,
+};
+
+#if defined(PBL_COLOR)
+static const VisualPalette* s_palette = &c_dark_color_palette;
+#else
+static const VisualPalette* s_palette = &c_dark_bw_palette;
+#endif
 static const char c_unavailable_text[] = "---";
 
-static inline void select_visual_palette();
+static inline void apply_visual_mode_cue();
 static inline bool is_icon_fallback_enabled();
 static inline void update_text_layer_display(
     TextLayer* layer,
@@ -125,8 +153,10 @@ static void unload_bpm_icon_assets();
 static void refresh_watchface_display();
 static void update_date();
 static void update_time();
+#if defined(PBL_HEALTH)
 static void update_bpm();
 static void update_steps();
+#endif
 static void update_battery();
 static void update_temp();
 static void calculate_watchface_layout(
@@ -151,11 +181,13 @@ static inline uint8_t get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   }
 }
 
+#if defined(PBL_HEALTH)
 static void apply_hr_sample_period() {
   uint8_t minutes = get_hr_sample_minutes(s_settings.hr_sample_minutes);
   uint16_t interval_sec = (uint16_t)minutes * 60;
   health_service_set_heart_rate_sample_period(interval_sec);
 }
+#endif
 
 static void settings_load() {
   s_settings.temp_unit = TEMP_UNIT_DEFAULT;
@@ -192,12 +224,29 @@ static void settings_save() {
   persist_write_data(PERSIST_SETTINGS, &s_settings, sizeof(s_settings));
 }
 
-static inline const VisualPalette* get_visual_palette() {
-  return (s_settings.display_mode == DISPLAY_MODE_LIGHT) ?
-      &c_light_palette : &c_dark_palette;
+static inline bool is_color_platform() {
+#if defined(PBL_COLOR)
+  return true;
+#else
+  return false;
+#endif
 }
 
-static inline void select_visual_palette() {
+static inline const VisualPalette* get_visual_palette() {
+  if (s_settings.display_mode == DISPLAY_MODE_LIGHT) {
+    if (is_color_platform()) {
+      return &c_light_color_palette;
+    }
+    return &c_light_bw_palette;
+  }
+
+  if (is_color_platform()) {
+    return &c_dark_color_palette;
+  }
+  return &c_dark_bw_palette;
+}
+
+static inline void apply_visual_mode_cue() {
   s_palette = get_visual_palette();
 }
 
@@ -301,6 +350,7 @@ static GColor calculate_bpm_color(int bpm) {
   if (bpm <= 0) {
     // Not Available or Invalid
     return s_palette->unavailable_text;
+#if defined(PBL_COLOR)
   } else if (bpm > 120) {
     // Peak Cardiorespiratory Zone
     return GColorRed;
@@ -311,6 +361,11 @@ static GColor calculate_bpm_color(int bpm) {
     // Healthy Resting Zone
     return GColorJaegerGreen;
   }
+#else
+  }
+
+  return s_palette->primary_text;
+#endif
 }
 
 static bool set_bpm_color_callback(
@@ -440,7 +495,7 @@ static void refresh_watchface_display() {
     return;
   }
 
-  select_visual_palette();
+  apply_visual_mode_cue();
   window_set_background_color(s_window, s_palette->background);
 
   if (s_background_layer) {
@@ -531,8 +586,17 @@ static inline GColor get_battery_color_from_state() {
   int percent = s_battery_state.charge_percent;
 
   if (s_battery_state.is_charging) {
+#if defined(PBL_COLOR)
     return GColorJaegerGreen;
+#else
+    return s_palette->primary_text;
+#endif
   }
+
+#if !defined(PBL_COLOR)
+  return s_palette->primary_text;
+#endif
+
   if (percent > 50) {
     return GColorCobaltBlue;
   }
@@ -611,6 +675,7 @@ static void update_time() {
       s_palette->available_text_background);
 }
 
+#if defined(PBL_HEALTH)
 static void update_bpm() {
   char* bpm_buf = get_text_buffer(BUF_BPM);
 
@@ -691,6 +756,7 @@ static void update_steps() {
       text_color,
       background_color);
 }
+#endif
 
 static void update_battery() {
   char* buf = get_text_buffer(BUF_BATTERY);
@@ -727,6 +793,7 @@ static void update_temp() {
       background_color);
 }
 
+#if defined(PBL_HEALTH)
 static void health_handler(HealthEventType event, void* context) {
   bool significant_update = event == HealthEventSignificantUpdate;
 
@@ -737,6 +804,7 @@ static void health_handler(HealthEventType event, void* context) {
     update_bpm();
   }
 }
+#endif
 
 static void battery_handler(BatteryChargeState state) {
   s_battery_state = state;
@@ -804,7 +872,9 @@ static void inbox_received_callback(
   int hr_minutes = tuple_to_int(th);
   if (HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
     s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
+    #if defined(PBL_HEALTH)
     apply_hr_sample_period();
+    #endif
     changed = true;
   }
 
