@@ -1,7 +1,9 @@
 #include "ataglance.h"
 #include "../modules/battery.h"
 #include "../modules/display.h"
+#if defined(PBL_HEALTH)
 #include "../modules/health.h"
+#endif
 #include "../modules/layout.h"
 #include "../modules/settings.h"
 #include "../modules/weather.h"
@@ -184,7 +186,9 @@ static void refresh_watchface_display() {
   if (s_background_layer) {
     layer_mark_dirty(s_background_layer);
   }
+  #if defined(PBL_HEALTH)
   health_module_refresh(s_palette);
+  #endif
   weather_icon_mark_dirty();
 
   update_date();
@@ -455,11 +459,13 @@ static void main_window_load(Window* window) {
   init_top_layers(root, &s_layout);
 
   // Middle row: health metrics (BPM and steps).
+  #if defined(PBL_HEALTH)
   health_module_create(
       root,
       &s_layout,
       s_font_secondary_value,
       s_palette);
+  #endif
 
   // Bottom row: temperature and battery.
   weather_icon_create(root, &s_layout.weather_icon_frame, s_palette);
@@ -491,7 +497,9 @@ static void main_window_unload(Window* window) {
     s_time_layer = NULL;
   }
 
+  #if defined(PBL_HEALTH)
   health_module_destroy();
+  #endif
 
   if (s_temp_layer) {
     text_layer_destroy(s_temp_layer);

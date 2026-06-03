@@ -1,7 +1,15 @@
+#if defined(PBL_HEALTH)
 #include "health.h"
 #include "helper.h"
 #include "settings.h"
 #include "../c/ataglance.h"
+#else
+#include <pebble.h>
+#include "display.h"
+#include "layout.h"
+#endif
+
+#if defined(PBL_HEALTH)
 
 typedef enum {
   HEALTH_BUF_BPM = 0,
@@ -366,10 +374,8 @@ void health_module_refresh(const VisualPalette* palette) {
     s_palette = palette;
   }
 
-  #if defined(PBL_HEALTH)
   update_steps();
   update_bpm();
-  #endif
 }
 
 #if defined(PBL_HEALTH)
@@ -383,4 +389,26 @@ void health_module_handle_event(HealthEventType event) {
     update_bpm();
   }
 }
+#endif
+
+#else
+
+void health_module_create(
+    Layer* root,
+    const WatchfaceLayout* layout,
+    GFont value_font,
+    const VisualPalette* palette) {
+  (void)root;
+  (void)layout;
+  (void)value_font;
+  (void)palette;
+}
+
+void health_module_destroy(void) {
+}
+
+void health_module_refresh(const VisualPalette* palette) {
+  (void)palette;
+}
+
 #endif
