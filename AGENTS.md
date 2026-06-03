@@ -1,110 +1,67 @@
-# Agent Instructions
+# Agent Guidelines: Life at a Glance Watchface
 
-This repo is for Pebble SDK 4+ watchfaces and apps. The current rectangular
-targets are `aplite`, `basalt`, `diorite`, `emery`, and `flint`; round
-platforms still require a separate layout plan before support is added.
+**Inherits from:**
 
-## Working Style
+- [Universal development principles](../AGENTS.md)
+- [Pebble platform guidelines](../agent-templates/AGENTS-PEBBLE.md)
 
-- Spend most effort on architecture, design, testability, constraints, and look-and-feel before coding.
-- Aim before acting: understand the goal, constraints, platform target, and likely failure modes before changing files.
-- Measure twice, cut once: verify assumptions and inspect diffs before commits, publishing steps, or broad refactors.
-- Think like an architect before editing. Slow down, identify the real
-  boundary, and resist broad helper extraction that only hides simple
-  arithmetic or spreads context across files.
-- Review your own code with a code-review mindset before and after patches:
-  prioritize bugs, missing state updates, declaration-definition drift,
-  platform regressions, and missing validation.
-- Use an inspect, identify, audit, confirm, execute, validate cycle for
-  substantive changes. Before proposing or implementing changes, inspect the
-  relevant code paths, identify affected state and layers, audit all
-  dependents, confirm the intended behavior, execute the smallest coherent
-  patch, and validate with build/runtime checks.
-- Use progressive disclosure: discover only the files needed, identify entry points, suggest changes, then edit.
-- Do not guess Pebble behavior. Verify SDK 4+ APIs, generated resources, AppMessage keys, emulator behavior, and build output when they matter.
-- Keep changes focused. Suggest cleanups and stylistic changes before making them unless they are required for the task.
-- Keep slices small: audit one coherent change, patch it, inspect the diff,
-  build when code changed, commit it, then move to the next slice.
-- After meaningful work, critique the result: call out misses, uncertain assumptions, platform risks, verification gaps, and what could get dropped in later iterations.
+Before applying this file, read the inherited files above in order. There is
+no agent-wide `--force` flag that guarantees hierarchy loading; this directive
+is the project rule. If an agent cannot read an inherited file, it must say so
+before making changes.
+
+This repo is for the Pebble SDK 4+ watchface "Life at a Glance", a
+Swiss-Rail-inspired, glanceable rectangular watchface. Keep this file focused
+on project facts, product decisions, visual baseline, and watchface-specific
+validation. Put platform-wide Pebble rules in `../agent-templates/AGENTS-PEBBLE.md`
+and universal engagement rules in `../AGENTS.md`.
+
+---
 
 ## Project Facts
 
 - Native C: `src/c`
+- Modules: `src/modules`
 - PebbleKit JS and Clay config: `src/pkjs`
-- Metadata, target platforms, resources, capabilities, and message keys: `package.json`
+- Metadata, target platforms, resources, capabilities, and message keys:
+  `package.json`
 - Build entry: `wscript`
 - Current design reference: `DESIGN.md`
-- Current product: "Life at a Glance", a Swiss-Rail-inspired glanceable watchface.
-
-## Current Watchface Implementation Snapshot
-
-Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/config.json`, and `package.json`.
-
-- Target platforms: `aplite`, `basalt`, `diorite`, `emery`, and `flint`.
-  Round platforms such as `chalk` and `gabbro` still need a separate layout
+- Current rectangular targets: `aplite`, `basalt`, `diorite`, `emery`,
+  and `flint`
+- Round platforms such as `chalk` and `gabbro` require a separate layout
   plan before support is added.
-- Pebble manifest capabilities currently required:
-  - `configurable` (Clay settings page)
-  - `location` (weather via geolocation)
-  - `health` (BPM + steps)
-- AppMessage keys currently required:
-  - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `WEATHER_CONDITION`
-  - `HR_SAMPLE_MINUTES`, `DISPLAY_MODE`
-- Persisted settings defaults:
-  - time format: `24h`
-  - temperature unit: `°F`
-  - HR sampling: `10` minutes
-  - display mode: dark
 
-Rectangular `PBL_RECT` layout geometry (current frames/anchors on Emery):
+---
 
-- derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
-- date: `GRect(8, 8, 184, 20)` (`FONT_KEY_GOTHIC_18_BOLD`,
-  `GColorRichBrilliantLavender`)
-- time: `GRect(8, 58, 184, 48)`
-  (`FONT_KEY_BITHAM_42_BOLD`, `GColorSunsetOrange`)
-- rule: line from `(8, 114)` to `(192, 114)`
-- heart icon: `GRect(8, 118, 28, 28)` (procedural heart)
-- bpm text: `GRect(38, 122, 28, 20)` (`FONT_KEY_GOTHIC_18`)
-- steps icon: `GRect(122, 118, 28, 28)` (custom drawn paw glyph)
-- steps text: `GRect(152, 122, 40, 20)` (`FONT_KEY_GOTHIC_18`)
-- weather icon: `GRect(8, 196, 28, 28)` (procedural weather glyph)
-- temp text: `GRect(38, 200, 40, 20)` (`FONT_KEY_GOTHIC_18`)
-- battery icon: `GRect(128, 196, 28, 28)` (custom horizontal battery)
-- battery text: `GRect(158, 200, 34, 20)`
-  (`FONT_KEY_GOTHIC_18_BOLD`)
+## Current Watchface Snapshot
 
-Color/semantic rules that must remain documented when changed:
+Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`,
+`src/modules/*.h`, `src/pkjs/config.json`, and `package.json`.
 
-- unavailable text token is `---`.
-- dark mode uses black background, light gray primary text, Windsor Tan
-  unavailable text on color displays, Rich Brilliant Lavender date,
-  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon.
-- light mode uses white background, black primary text, Light Gray
-  unavailable text on color displays, Imperial Purple date, Sunset Orange
-  time, Light Gray rule, and Chrome Yellow steps icon.
-- black-and-white displays use inverted unavailable backgrounds so missing
-  values remain legible without color.
-- unavailable icon backgrounds should match unavailable text backgrounds for
-  symmetry unless an explicit product decision says otherwise.
-- BPM color zones:
-  - `<=0` or unavailable: current mode unavailable color
-  - `1-99`: Jaeger Green
-  - `100-120`: Magenta
-  - `>120`: Red
-- battery text/icon colors:
-  - charging: Jaeger Green
-  - not charging and `>50`: Cobalt Blue
-  - not charging and `21-50`: Yellow
-  - not charging and `<=20`: Red
-- weather state:
-  - PebbleKit JS sends raw Open-Meteo `weather_code`
-  - C maps codes into private weather glyph buckets in
-    `src/modules/weather.c`
-  - procedural glyphs are used instead of Carbon/IcoMoon or PDC weather
-    assets for now
+Pebble manifest capabilities currently required:
 
-Clay configuration UI (must stay in sync across Clay, JS, C, docs):
+- `configurable` for the Clay settings page
+- `location` for weather geolocation
+- `health` for BPM and steps
+
+AppMessage keys currently required:
+
+- `TIME_FORMAT`
+- `TEMP_UNIT`
+- `TEMPERATURE`
+- `WEATHER_CONDITION`
+- `HR_SAMPLE_MINUTES`
+- `DISPLAY_MODE`
+
+Persisted settings defaults:
+
+- time format: `24h`
+- temperature unit: `°F`
+- HR sampling: `10` minutes
+- display mode: dark
+
+Clay configuration UI:
 
 ```text
 At A Glance: Configuration
@@ -115,109 +72,189 @@ At A Glance: Configuration
   - Submit: Save Settings
 ```
 
-Visual baseline from emulator snapshot (June 1, 2026, 14:50 sample):
+---
 
-- date and hero time are fitting at sampled values (`MON · 01 JUN`, `14:50`).
-- bottom row sample (`90°F`, `80%`) fit still needs visual
-  revalidation after the rectangular spacing update.
-- unavailable health values render as `---`.
-- current implementation does not draw a vertical rail; it uses a
-  horizontal rule at `y=114`.
+## Module Boundaries
 
-## Pebble Platform Rules
+Use these boundaries when reviewing or extending the code:
 
-- Use only Pebble SDK 4+ APIs. If an API is platform-specific, guard it and document the fallback.
-- Treat Pebble as an embedded environment: small memory, limited CPU, limited battery, small display, and platform-specific capabilities.
-- Keep rendering callbacks lightweight. Do not allocate, fetch, parse JSON, or do expensive formatting in layer update procs.
-- Treat health, heart rate, color, screen shape, resources, and phone data as optional by platform unless verified.
-- Before broadening platform support, maintain a small platform matrix: bounds, shape, color capability, sensors, resources, and SDK constraints.
-- Separate platform geometry from product logic. Prefer named constants and values derived from layer bounds over magic numbers.
-- Avoid passing large structs by value in C and C++ paths added to this
-  project. Prefer scalar fields or pointers to caller-owned storage when the
-  function needs to fill or inspect larger state.
+- `src/c/main.c`: window lifecycle, service subscriptions, top date/time
+  layers, temperature text, AppMessage receive flow, and high-level refresh
+  order.
+- `src/modules/layout.c`: rectangular frame calculation through
+  `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
+- `src/modules/display.c`: palette selection, unavailable token, and common
+  text-layer display updates.
+- `src/modules/settings.c`: persisted settings defaults, validation, load,
+  save, and HR sampling interval mapping.
+- `src/modules/helper.h`: shared static inline icon-scaling helpers.
+- `src/modules/weather.c`: raw Open-Meteo weather-code mapping and
+  procedural weather glyph rendering.
+- `src/modules/health.c`: BPM and steps layers, procedural health icons,
+  health text buffers, colors, and health-service update handling.
+- `src/modules/battery.c`: battery icon/text layers, battery state, battery
+  colors, procedural battery drawing, and battery callback state updates.
 
-## Coding Style
+Do not move behavior across these boundaries unless the new boundary is
+cleaner and behavior-preserving.
 
-- Align naming, formatting, and structure with Pebble C conventions. This is important.
-- Stick to standard C supported by the Pebble toolchain. Avoid unsupported extensions and desktop-only assumptions.
-- Use spaces, not tabs. Remove trailing spaces.
-- Keep source lines at 72 characters max across all programming files.
-- Use braces and new lines for all `if`, `else`, `switch`, `case`, `for`, `while`, and similar blocks, even for one statement.
-- Keep variables in the narrowest practical local scope.
-- Prefer readability over unnecessary optimization.
-- Document succinctly: explain intent, contracts, non-obvious platform constraints, and manual test notes. Avoid comments that restate the line of code.
-- Preserve fixed-size buffer discipline. Use `snprintf`; do not introduce unsafe string handling.
-- Avoid heap allocation unless the Pebble API requires it. Pair allocations with clear destroy paths.
-- Use `APP_LOG` sparingly. Remove or gate noisy logs before commit.
+---
 
-## JavaScript Bridge
+## Rectangular Layout Baseline
 
-- PebbleKit JS must remain compatible with the Pebble/Rebble JS runtime.
-- Write readable JS with clean argument passing and semicolons.
-- Use braces and new lines for all conditionals, loops, and switch cases.
-- Keep AppMessage payloads compact, typed, and validated on both JS and C sides.
-- Weather payloads should stay numeric. Prefer passing raw or enum-like
-  integer weather codes over random strings.
-- AppMessage changes must update `package.json`, Clay config, JS send/receive code, C tuple handling, defaults, and docs together.
-- Handle network errors, timeouts, malformed JSON, missing fields, and fallback data explicitly.
+Rectangular layout is calculated in `layout_calculate()`.
+Future layout work must derive frames from root or unobstructed bounds and
+known platform invariants. Do not introduce new hard-coded screen positions
+when bounds-derived calculations can express the layout.
 
-## Build Discipline
+For Emery (`200x228`):
 
-- Build with the strictest settings available for the Pebble SDK/toolchain. Do not add flags that the SDK cannot support.
-- Use this command for normal builds:
+- derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
+- date: `GRect(8, 8, 184, 20)`, `FONT_KEY_GOTHIC_18_BOLD`
+- time: `GRect(8, 58, 184, 48)`, `FONT_KEY_BITHAM_42_BOLD`
+- rule: line from `(8, 114)` to `(192, 114)`
+- heart icon: `GRect(8, 118, 28, 28)`, procedural heart
+- BPM text: `GRect(38, 122, 28, 20)`, `FONT_KEY_GOTHIC_18`
+- steps icon: `GRect(122, 118, 28, 28)`, procedural paw glyph
+- steps text: `GRect(152, 122, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- weather icon: `GRect(8, 196, 28, 28)`, procedural weather glyph
+- temperature text: `GRect(38, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- battery icon: `GRect(128, 196, 28, 28)`, procedural horizontal battery
+- battery text: `GRect(158, 200, 34, 20)`,
+  `FONT_KEY_GOTHIC_18_BOLD`
 
-```sh
-pebble build
-```
+Text alignment is intentionally left-aligned across all columns.
 
-- If the build fails, stop and report the failure before moving toward commit or publish.
+Current implementation does not draw a vertical rail. It uses a horizontal
+rule at `y=114`.
 
-## Run And Debug
+---
 
-- Test with the Pebble emulator for visual or runtime changes.
-- Confirm install command:
+## Visual Semantics
 
-```sh
-pebble install --emulator emery
-```
+- unavailable text token is `---`
+- dark mode uses black background, light gray primary text, Windsor Tan
+  unavailable text on color displays, Rich Brilliant Lavender date,
+  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon
+- light mode uses white background, black primary text, Light Gray
+  unavailable text on color displays, Imperial Purple date, Sunset Orange
+  time, Light Gray rule, and Chrome Yellow steps icon
+- black-and-white displays use inverted unavailable backgrounds so missing
+  values remain legible without color
+- unavailable icon backgrounds should match unavailable text backgrounds
+  unless an explicit product decision says otherwise
 
-- Keep logs visible in a shell session during emulator debugging:
+BPM color zones:
 
-```sh
-pebble logs --emulator emery
-```
+- `<=0` or unavailable: current mode unavailable color
+- `1-99`: Jaeger Green
+- `100-120`: Magenta
+- `>120`: Red
 
-- Use logs to debug real behavior, then remove noisy diagnostic logging before commit.
+Battery text/icon colors:
 
-## Design And Docs
+- charging: Jaeger Green
+- not charging and `>50`: Cobalt Blue
+- not charging and `21-50`: Yellow
+- not charging and `<=20`: Red
 
-- Optimize for a one-second glance on a small watch display.
-- Preserve hierarchy: date, hero time, rule, complications, bottom metrics.
-- Validate visual changes against actual screen bounds, not only desktop intuition.
-- Text must not clip at likely extremes such as `WED · 30 SEP`, `12:59`, `100`, `99999`, `---F`, and `100%`.
-- Document entry points and user-facing behavior in `README.md`.
-- Keep `README.md` simple, direct, and Markdown-native. Include screenshots when visual behavior changes.
-- Avoid AI-generated slop: vague filler, overexplaining, contradiction phrases, double-dash constructions, and inflated claims.
+Weather state:
 
-## GitHub Publishing
+- PebbleKit JS sends raw Open-Meteo `weather_code`
+- C maps codes into private weather glyph buckets in
+  `src/modules/weather.c`
+- procedural glyphs are used instead of Carbon/IcoMoon or PDC weather
+  assets for now
 
-- Everything here should be treated as eventually publishable to GitHub.
-- New projects start in a private GitHub repo unless the user says otherwise.
-- Never commit secrets, tokens, API keys, credentials, private device addresses, personal location data, signing artifacts, or machine-specific config.
-- Before committing, inspect diffs, untracked files, ignored files, generated output, and docs.
-- When a commit includes new functions or non-trivial behavior, use a detailed
-  commit message body with a bulleted list instead of prose.
-- If something will not build, is wrong for GitHub, contains private data, has broken metadata, or is misleading, tell the user and fix it before commit.
-- Do not publish generated build artifacts unless intentionally releasing them and the user agrees.
-- This folder is not yet on GitHub. The next repo task should prep the initial private GitHub commit: build check, secret audit, `.gitignore`, SDK/platform metadata, README, screenshots if available, and a clear initial commit.
+---
 
-## Final Checklist
+## Watchface Visual Quality
+
+- Optimize for a one-second glance. The user should read time first, then
+  supporting facts without searching.
+- Preserve the visual hierarchy: date, hero time, rule, health metrics, and
+  bottom metrics.
+- Keep the Swiss-Rail influence quiet and precise: strong alignment, restrained
+  color, deliberate spacing, and no decorative clutter.
+- Prefer fewer, clearer visual elements over dense information.
+- Keep the time visually dominant. Secondary metrics must not compete with it.
+- Use iconography only when it improves recognition at watch scale.
+- Keep icons simple enough to remain legible at 28px and on black-and-white
+  displays.
+- Use stable frame sizes for icon layers and text layers so values such as
+  `---`, `100`, `99999`, `90°F`, and `100%` do not shift layout.
+- Validate optical alignment, not only mathematical alignment. Small glyphs,
+  icons, and baselines may need visual review against screenshots.
+- Preserve negative space around the rule and between rows; do not fill every
+  available pixel.
+- Validate contrast in dark mode, light mode, monochrome, direct sunlight, and
+  low light.
+- Avoid thin decorative strokes that disappear on monochrome or low-contrast
+  screens.
+- Avoid hidden assumptions from desktop previews. Use emulator captures for
+  visual changes.
+
+---
+
+## Round Display Planning
+
+Do not add `chalk` or `gabbro` until there is a separate layout plan.
+
+The plan must account for:
+
+- circular clipping by vertical row position
+- each row's available text width at its own y-position, not only global
+  screen width
+- row-specific content widths
+- shape-specific margins
+- date and time text extremes
+- health-row and bottom-row differences
+- icon legibility near curved edges
+- color and monochrome variants
+- platform capabilities and missing sensors
+
+Do not scale the rectangular layout wholesale and call it round support.
+
+---
+
+## Validation Checklist
 
 - Current target platform set is explicit.
 - SDK 4+ API availability is verified or uncertainty is stated.
 - Platform-specific behavior has a fallback.
 - Resource filenames and generated IDs match.
-- AppMessage keys match across package metadata, Clay, JS, and C.
-- Defaults match across C, Clay, README, and persisted settings.
-- `pebble build` was run, or the reason it could not run is reported.
-- Emulator install/log verification was run for runtime or visual changes, or the gap is reported.
+- Resource references were audited after any `package.json` resource or media
+  change.
+- AppMessage keys match across package metadata, Clay, JS, C, docs, and
+  manual test commands.
+- Manual AppMessage numeric keys were checked after any `package.json`
+  message-key removal or reordering.
+- Defaults match across C, Clay, README, docs, and persisted settings.
+- Text does not clip at likely extremes: `WED · 30 SEP`, `12:59`, `100`,
+  `99999`, `---F`, and `100%`.
+- Visual QA sample set was considered: dark and light modes, color and
+  black-and-white displays, available and unavailable health values, weather
+  unavailable, long date, `99999` steps, and `100%` battery.
+- Ephemeral files such as screenshots and temporary buffers are deleted after
+  validation, or when a chat-generated buffer has served its purpose. Confirm
+  deletion before acting; this overrides any prior blanket permission to
+  delete files or folders.
+- Inherited Pebble build/runtime validation was run, or the gap is reported.
+
+---
+
+## Publishing Notes
+
+This folder is not yet on GitHub. The next repo task should prep the initial
+private GitHub commit:
+
+- build check
+- secret audit
+- `.gitignore`
+- SDK/platform metadata
+- README review
+- screenshots if useful and approved
+- clear initial commit
+
+Do not publish generated build artifacts unless intentionally releasing them
+and the user agrees.
