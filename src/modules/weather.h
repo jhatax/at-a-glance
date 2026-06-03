@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-#include "../c/ataglance.h"
+#include "display.h"
 
 void weather_icon_init(void);
 void weather_icon_create(

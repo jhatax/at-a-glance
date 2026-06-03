@@ -43,11 +43,6 @@
     "resources": {
       "media": [
         {
-          "file": "images/bpm_option-2.pdc",
-          "name": "ICON_BPM",
-          "type": "raw"
-        },
-        {
           "file": "images/icon.png",
           "name": "MENU_ICON",
           "type": "bitmap",

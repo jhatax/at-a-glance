@@ -85,15 +85,6 @@
             "label": "Every 120-minutes"
           }
         ]
-      },
-      {
-        "type": "input",
-        "messageKey": "ICON_FALLBACK_MODE",
-        "defaultValue": "0",
-        "label": "",
-        "attributes": {
-          "type": "hidden"
-        }
       }
     ]
   },

@@ -49,12 +49,11 @@ Keep this section aligned with `src/c/main.c`, `src/c/ataglance.h`, `src/pkjs/co
   - `health` (BPM + steps)
 - AppMessage keys currently required:
   - `TIME_FORMAT`, `TEMP_UNIT`, `TEMPERATURE`, `WEATHER_CONDITION`
-  - `HR_SAMPLE_MINUTES`, `ICON_FALLBACK_MODE`, `DISPLAY_MODE`
+  - `HR_SAMPLE_MINUTES`, `DISPLAY_MODE`
 - Persisted settings defaults:
   - time format: `24h`
   - temperature unit: `°F`
   - HR sampling: `10` minutes
-  - icon fallback mode: disabled
   - display mode: dark
 
 Rectangular `PBL_RECT` layout geometry (current frames/anchors on Emery):
@@ -65,8 +64,7 @@ Rectangular `PBL_RECT` layout geometry (current frames/anchors on Emery):
 - time: `GRect(8, 58, 184, 48)`
   (`FONT_KEY_BITHAM_42_BOLD`, `GColorSunsetOrange`)
 - rule: line from `(8, 114)` to `(192, 114)`
-- heart icon: `GRect(8, 118, 28, 28)` (resource `ICON_BPM`,
-  with fallback procedural heart)
+- heart icon: `GRect(8, 118, 28, 28)` (procedural heart)
 - bpm text: `GRect(38, 122, 28, 20)` (`FONT_KEY_GOTHIC_18`)
 - steps icon: `GRect(122, 118, 28, 28)` (custom drawn paw glyph)
 - steps text: `GRect(152, 122, 40, 20)` (`FONT_KEY_GOTHIC_18`)
@@ -114,7 +112,6 @@ At A Glance: Configuration
   - Temperature unit: Fahrenheit, Celsius
   - Display mode: Dark mode, Light mode
   - HR Sampling Frequency: 10, 15, 30, 60, 120 minutes
-  - Hidden icon fallback mode: hidden input, default disabled
   - Submit: Save Settings
 ```
 

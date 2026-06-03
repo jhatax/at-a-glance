@@ -17,7 +17,7 @@ monochrome emulator captures are selected.
 - Battery icon and percentage
 - Dark and light display modes
 - Color-aware and monochrome-aware visual palette
-- Procedural fallback icons for black-and-white devices
+- Procedural icons for health, weather, and battery
 - Rebble Clay configuration page
 
 ## Supported Watches
@@ -55,13 +55,13 @@ horizontal rule
   spacing
 health metrics row
 
-environment row
+bottom row
   spacing
 bottom boundary
 ```
 
-All text columns are left-aligned. The left health and environment columns
-start at the content margin. The right health and environment columns are
+All text columns are left-aligned. The left health and bottom columns
+start at the content margin. The right health and bottom columns are
 positioned by column math, but their text alignment remains left.
 
 Current fonts:
@@ -79,9 +79,7 @@ space on 144x168 displays.
 
 ## Icons
 
-- BPM uses a vector resource on color displays when available.
-- BPM falls back to a procedural heart on monochrome displays or when fallback
-  mode is enabled.
+- BPM uses a procedural heart icon.
 - Steps uses a procedural paw-style icon.
 - Battery uses a horizontal procedural icon drawn inside a 28x28 layer.
 - Battery fill moves left to right and uses the same color state as the
@@ -145,9 +143,6 @@ Settings:
 - Temperature unit: Fahrenheit or Celsius
 - Display mode: dark or light
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
-
-The hidden `ICON_FALLBACK_MODE` setting defaults to disabled and is kept for
-testing procedural icon rendering.
 
 ## Weather
 
@@ -221,7 +216,7 @@ that is how your local SDK is configured.
 ## Project Structure
 
 ```text
-resources/      Static image and raw vector resources
+resources/      Static image resources
 src/
   c/            Native Pebble C watchface code
   pkjs/         Phone-side weather and Clay configuration code

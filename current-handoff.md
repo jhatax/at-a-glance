@@ -13,11 +13,11 @@
   - `043cca4` `Add weather condition icon support`
   - `c34396c` `Add Flint support through Rebble Clay`
   - `6e2b9c0` `Tighten embedded geometry helper boundaries`
-- Last known build status: `pebble build` passed after the weather glyph
-  and typography slices. Linker RWX segment warnings are known non-fatal
-  Pebble toolchain noise.
-- Working tree at handoff: `wf-punchlist.md` has a pending docs-only
-  update. Do not assume it is ready to commit without inspecting it.
+- Last known build status: `pebble build` passed after the helper, layout,
+  display, settings, health, and battery-module slices. Linker RWX warnings
+  are known non-fatal Pebble toolchain noise.
+- Working tree at handoff: module extraction work is staged in slices while
+  the active slice is reviewed and built.
 
 ## Collaboration Directives
 
@@ -60,7 +60,6 @@ Settings and AppMessage keys:
 - `TEMPERATURE`: Celsius tenths from PebbleKit JS
 - `WEATHER_CONDITION`: raw Open-Meteo `weather_code`
 - `HR_SAMPLE_MINUTES`: enum-backed sampling interval
-- `ICON_FALLBACK_MODE`: hidden, `0` disabled, `1` enabled
 - `DISPLAY_MODE`: `0` dark, `1` light
 
 Current PebbleKit JS weather behavior:
@@ -73,7 +72,7 @@ Current PebbleKit JS weather behavior:
 
 ## Current Layout Snapshot
 
-Rectangular layout is calculated in `calculate_watchface_layout()`.
+Rectangular layout is calculated in `layout_calculate()`.
 
 For Emery (`200x228`):
 
@@ -95,7 +94,7 @@ Text alignment is intentionally left-aligned across all columns.
 
 ## Palette And Unavailable State
 
-Palette definitions live in `src/c/main.c` as `VisualPalette`.
+Palette definitions live in `src/modules/display.c` as `VisualPalette`.
 
 Unavailable text token: `---`.
 
@@ -136,6 +135,25 @@ Current model:
 
 Do not move weather drawing back into `main.c`.
 
+## Current Module Boundaries
+
+- `src/modules/helper.h`: small static inline icon-scaling helpers shared by
+  procedural glyph modules.
+- `src/modules/layout.c`: rectangular frame calculation through
+  `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
+- `src/modules/display.c`: palette selection, unavailable token, and common
+  text-layer display updates.
+- `src/modules/settings.c`: persisted settings defaults, validation, load,
+  save, and HR sampling interval mapping.
+- `src/modules/health.c`: BPM and steps layers, procedural health icons,
+  health text buffers, health colors, and health-service update handling.
+- `src/modules/battery.c`: battery icon and text layers, current battery
+  state, battery colors, procedural battery drawing, and battery callbacks.
+
+`main.c` still owns the window, top/date/time layers, temperature text,
+weather AppMessage handling, service subscriptions, and high-level refresh
+order.
+
 ## Recent Lessons
 
 - Screenshots and emulator automation have been flaky. Build validation is
@@ -159,9 +177,10 @@ Immediate planning topics:
    - Do not assume the rectangular layout can simply scale.
 
 2. Main-module architecture plan.
-   - Review `main.c` for low-dependency extraction seams.
-   - Likely modules: settings, layout, palette/display, health, battery,
-     messaging, and weather.
+   - Settings, layout, palette/display, health, battery, helper, and weather
+     now have module boundaries.
+   - Remaining candidates are narrower: messaging/weather receive flow,
+     temperature formatting/display, and top-row time/date.
    - Extract only when the boundary is real and behavior-preserving.
 
 3. State hygiene plan.

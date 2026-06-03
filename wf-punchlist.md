@@ -11,14 +11,15 @@ so they can be reviewed deliberately.
    - Preserve the inspect, identify, audit, confirm, execute, validate cycle.
    - Research Pebble/Rebble round-display guidance and community examples.
    - Keep `content_width_date`, `content_width_time`,
-     `content_width_health`, and `content_width_environment` separate so
+     `content_width_health`, and `content_width_bottom` separate so
      round layouts can shrink widths by row later.
    - Do not assume a scaled rectangular layout is enough for round displays.
 
-2. Plan `main.c` modularization before moving more code.
-   - Use the weather module as the model for a real ownership boundary.
-   - Candidate modules: settings, layout, palette/display, messaging,
-     health, and battery.
+2. Continue `main.c` modularization only where a real boundary remains.
+   - Settings, layout, palette/display, helper, health, battery, and weather
+     have been split out.
+   - Remaining candidates are narrower: messaging/weather receive flow,
+     temperature formatting/display, and top-row time/date.
    - Extract helpers only when they clarify a real seam or reduce meaningful
      duplication.
 
@@ -73,8 +74,8 @@ so they can be reviewed deliberately.
 10. Text layer updates were centralized through `update_text_layer_display()`.
 11. `CONTENT_X` was removed from the layout code.
 12. Rectangular spacing now derives from display height in
-    `calculate_watchface_layout()`.
-13. `calculate_watchface_layout()` now fills caller-owned
+    `layout_calculate()`.
+13. `layout_calculate()` now fills caller-owned
     `WatchfaceLayout` storage.
 14. Battery icon drawing is horizontal and bounds-derived.
 15. Fallback heart icon drawing uses the named icon drawing grid.
@@ -92,15 +93,25 @@ so they can be reviewed deliberately.
 24. BPM, steps, and temperature use `FONT_KEY_GOTHIC_18`; battery keeps
     `FONT_KEY_GOTHIC_18_BOLD`.
 25. Temperature text width was expanded to 40px for 3-digit Fahrenheit values.
+26. Shared icon scaling moved to `src/modules/helper.h`.
+27. `WatchfaceLayout` moved to `src/modules/layout.c`.
+28. Palette and text-layer display helpers moved to
+    `src/modules/display.c`.
+29. Persisted settings defaults, validation, load, and save moved to
+    `src/modules/settings.c`.
+30. BPM and steps moved to `src/modules/health.c`, and BPM now uses only a
+    procedural heart icon.
+31. The BPM PDC resource and hidden icon fallback AppMessage setting were
+    removed.
+32. Battery state, rendering, and text updates moved to
+    `src/modules/battery.c`.
 
 ## Validation Reminders
 
 1. Run `pebble build` after each committed slice.
 2. For visual changes, install to Emery and toggle:
-   - `10005=0` dark mode
-   - `10005=1` light mode
-   - `10004=0` normal icon mode
-   - `10004=1` fallback icon mode
+   - `10006=0` dark mode
+   - `10006=1` light mode
 3. For display refresh changes, explicitly audit:
    - every `layer_set_update_proc`
    - every `layer_mark_dirty`

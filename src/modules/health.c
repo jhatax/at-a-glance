@@ -1,0 +1,386 @@
+#include "health.h"
+#include "helper.h"
+#include "settings.h"
+#include "../c/ataglance.h"
+
+typedef enum {
+  HEALTH_BUF_BPM = 0,
+  HEALTH_BUF_STEPS,
+  HEALTH_BUF_COUNT,
+} HealthTextBufferId;
+
+static char s_text_buffers[HEALTH_BUF_COUNT][MAX_STR_LEN];
+
+static Layer* s_bpm_icon_layer;
+static TextLayer* s_bpm_layer;
+static int s_bpm;
+static GColor s_bpm_color;
+static GColor s_bpm_icon_color;
+static GColor s_bpm_icon_background_color;
+
+static Layer* s_steps_icon_layer;
+static TextLayer* s_steps_layer;
+static GColor s_steps_icon_color;
+static GColor s_steps_icon_background_color;
+
+static const VisualPalette* s_palette;
+
+static inline TextLayer* create_health_text_layer(
+    Layer* parent,
+    const GRect* frame,
+    GFont font);
+static char* get_text_buffer(HealthTextBufferId id);
+static inline GColor calculate_bpm_color(int bpm);
+static inline GColor calculate_bpm_icon_color(int bpm);
+static void draw_bpm_icon_with_color(
+    GContext* ctx,
+    GColor color,
+    const GSize* bounds_size);
+static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
+static void steps_icon_update_proc(Layer* layer, GContext* ctx);
+#if defined(PBL_HEALTH)
+static void update_bpm(void);
+static void update_steps(void);
+#endif
+
+static inline TextLayer* create_health_text_layer(
+    Layer* parent,
+    const GRect* frame,
+    GFont font) {
+  if (!parent || !frame) {
+    return NULL;
+  }
+
+  TextLayer* layer = text_layer_create(*frame);
+  if (!layer) {
+    return NULL;
+  }
+
+  text_layer_set_background_color(layer, GColorClear);
+  text_layer_set_font(layer, font);
+  text_layer_set_text_alignment(layer, GTextAlignmentLeft);
+  layer_add_child(parent, text_layer_get_layer(layer));
+  return layer;
+}
+
+static char* get_text_buffer(HealthTextBufferId id) {
+  switch (id) {
+    case HEALTH_BUF_BPM:
+    case HEALTH_BUF_STEPS:
+      return s_text_buffers[id];
+
+    case HEALTH_BUF_COUNT: {
+        for (size_t i = 0; i < HEALTH_BUF_COUNT; ++i) {
+          s_text_buffers[i][0] = '\0';
+        }
+        return NULL;
+    }
+
+    default:
+      return NULL;
+  }
+}
+
+static inline GColor calculate_bpm_color(int bpm) {
+  if (!s_palette) {
+    return GColorWhite;
+  }
+  if (bpm <= 0) {
+    return s_palette->unavailable_text;
+  } else if (bpm > 120) {
+    return PBL_IF_COLOR_ELSE(GColorRed, s_palette->primary_text);
+  } else if (bpm >= 100) {
+    return PBL_IF_COLOR_ELSE(GColorMagenta, s_palette->primary_text);
+  } else {
+    return PBL_IF_COLOR_ELSE(
+        GColorJaegerGreen,
+        s_palette->primary_text);
+  }
+}
+
+static inline GColor calculate_bpm_icon_color(int bpm) {
+  if (bpm <= 0 && s_palette) {
+    return s_palette->unavailable_text;
+  }
+
+  return calculate_bpm_color(bpm);
+}
+
+static void draw_bpm_icon_with_color(
+    GContext* ctx,
+    GColor color,
+    const GSize* bounds_size) {
+  int16_t radius = helper_scale_icon_coord(bounds_size, 5);
+  GPoint left_lobe;
+  GPoint right_lobe;
+
+  if (!ctx || !bounds_size) {
+    return;
+  }
+
+  left_lobe = helper_get_scaled_icon_point(bounds_size, 9, 10);
+  right_lobe = helper_get_scaled_icon_point(bounds_size, 18, 10);
+
+  if (radius < 1) {
+    radius = 1;
+  }
+
+  graphics_context_set_fill_color(ctx, color);
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_fill_circle(ctx, left_lobe, radius);
+  graphics_fill_circle(ctx, right_lobe, radius);
+
+  helper_draw_scaled_icon_line(ctx, bounds_size, 4, 13, 23, 13);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 14, 22, 14);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 6, 15, 21, 15);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 7, 16, 20, 16);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 17, 19, 17);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 9, 18, 18, 18);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 19, 17, 19);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 20, 16, 20);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 21, 15, 21);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 22, 14, 22);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 23, 14, 23);
+}
+
+static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
+  if (!layer || !ctx) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+
+  graphics_context_set_fill_color(ctx, s_bpm_icon_background_color);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  draw_bpm_icon_with_color(
+      ctx,
+      s_bpm_icon_color,
+      &bounds.size);
+}
+
+static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
+  if (!layer || !ctx) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+
+  graphics_context_set_fill_color(ctx, s_steps_icon_background_color);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  graphics_context_set_fill_color(ctx, s_steps_icon_color);
+
+  graphics_fill_circle(ctx, GPoint(13, 18), 5);
+  graphics_fill_circle(ctx, GPoint(10, 19), 4);
+  graphics_fill_circle(ctx, GPoint(16, 19), 4);
+
+  graphics_fill_circle(ctx, GPoint(6, 12), 2);
+  graphics_fill_circle(ctx, GPoint(10, 8), 2.5);
+  graphics_fill_circle(ctx, GPoint(16, 8), 2.5);
+  graphics_fill_circle(ctx, GPoint(20, 12), 2);
+}
+
+#if defined(PBL_HEALTH)
+static void update_bpm(void) {
+  char* bpm_buf = get_text_buffer(HEALTH_BUF_BPM);
+
+  if (!bpm_buf || !s_bpm_layer || !s_palette) {
+    return;
+  }
+
+  time_t now = time(NULL);
+  HealthServiceAccessibilityMask hr_mask =
+      health_service_metric_accessible(
+          HealthMetricHeartRateBPM,
+          now,
+          now);
+
+  GColor text_background_color = s_palette->unavailable_text_background;
+  s_bpm_color = s_palette->unavailable_text;
+  s_bpm_icon_color = s_palette->unavailable_text;
+  s_bpm_icon_background_color =
+      s_palette->unavailable_text_background;
+
+  if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
+    s_bpm = (int) health_service_peek_current_value(
+        HealthMetricHeartRateBPM);
+
+    if (s_bpm > 0) {
+      snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
+      s_bpm_color = calculate_bpm_color(s_bpm);
+      s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+      s_bpm_icon_background_color = s_palette->background;
+      text_background_color = s_palette->available_text_background;
+    } else {
+      snprintf(
+          bpm_buf,
+          MAX_STR_LEN,
+          "%s",
+          display_unavailable_text());
+    }
+  } else {
+    snprintf(
+        bpm_buf,
+        MAX_STR_LEN,
+        "%s",
+        display_unavailable_text());
+    s_bpm_color = s_palette->unavailable_text;
+    s_bpm_icon_color = calculate_bpm_icon_color(0);
+  }
+
+  display_update_text_layer(
+      s_bpm_layer,
+      bpm_buf,
+      s_bpm_color,
+      text_background_color);
+
+  if (s_bpm_icon_layer) {
+    layer_mark_dirty(s_bpm_icon_layer);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "BPM icon layer is unavailable");
+  }
+}
+
+static void update_steps(void) {
+  char* steps_buf = get_text_buffer(HEALTH_BUF_STEPS);
+  if (!steps_buf || !s_steps_layer || !s_palette) {
+    return;
+  }
+
+  GColor text_color = s_palette->unavailable_text;
+  GColor background_color = s_palette->unavailable_text_background;
+  s_steps_icon_color = s_palette->unavailable_text;
+  s_steps_icon_background_color =
+      s_palette->unavailable_text_background;
+
+  HealthServiceAccessibilityMask steps_mask =
+      health_service_metric_accessible(
+          HealthMetricStepCount,
+          time_start_of_today(),
+          time(NULL));
+
+  if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
+    HealthValue steps = health_service_sum_today(HealthMetricStepCount);
+    if (steps > 0) {
+      snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
+      text_color = s_palette->primary_text;
+      background_color = s_palette->available_text_background;
+      s_steps_icon_color = s_palette->steps_icon;
+      s_steps_icon_background_color = s_palette->background;
+    } else {
+      snprintf(
+          steps_buf,
+          MAX_STR_LEN,
+          "%s",
+          display_unavailable_text());
+    }
+  } else {
+    snprintf(
+        steps_buf,
+        MAX_STR_LEN,
+        "%s",
+        display_unavailable_text());
+  }
+
+  display_update_text_layer(
+      s_steps_layer,
+      steps_buf,
+      text_color,
+      background_color);
+
+  if (s_steps_icon_layer) {
+    layer_mark_dirty(s_steps_icon_layer);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Steps icon layer is unavailable");
+  }
+}
+#endif
+
+void health_module_create(
+    Layer* root,
+    const WatchfaceLayout* layout,
+    GFont value_font,
+    const VisualPalette* palette) {
+  if (!root || !layout || !palette) {
+    return;
+  }
+
+  s_palette = palette;
+
+  s_bpm = 0;
+  s_bpm_color = calculate_bpm_color(s_bpm);
+  s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+  s_bpm_icon_background_color = s_palette->unavailable_text_background;
+
+  s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
+  if (s_bpm_icon_layer) {
+    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
+    layer_add_child(root, s_bpm_icon_layer);
+  }
+
+  s_bpm_layer = create_health_text_layer(
+      root,
+      &layout->bpm_text_frame,
+      value_font);
+
+  s_steps_icon_color = s_palette->unavailable_text;
+  s_steps_icon_background_color =
+      s_palette->unavailable_text_background;
+
+  s_steps_icon_layer = layer_create(layout->steps_icon_frame);
+  if (s_steps_icon_layer) {
+    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
+    layer_add_child(root, s_steps_icon_layer);
+  }
+
+  s_steps_layer = create_health_text_layer(
+      root,
+      &layout->steps_text_frame,
+      value_font);
+}
+
+void health_module_destroy(void) {
+  if (s_bpm_icon_layer) {
+    layer_destroy(s_bpm_icon_layer);
+    s_bpm_icon_layer = NULL;
+  }
+  if (s_bpm_layer) {
+    text_layer_destroy(s_bpm_layer);
+    s_bpm_layer = NULL;
+  }
+  if (s_steps_layer) {
+    text_layer_destroy(s_steps_layer);
+    s_steps_layer = NULL;
+  }
+  if (s_steps_icon_layer) {
+    layer_destroy(s_steps_icon_layer);
+    s_steps_icon_layer = NULL;
+  }
+
+  get_text_buffer(HEALTH_BUF_COUNT);
+}
+
+void health_module_refresh(const VisualPalette* palette) {
+  if (palette) {
+    s_palette = palette;
+  }
+
+  #if defined(PBL_HEALTH)
+  update_steps();
+  update_bpm();
+  #endif
+}
+
+#if defined(PBL_HEALTH)
+void health_module_handle_event(HealthEventType event) {
+  bool significant_update = event == HealthEventSignificantUpdate;
+
+  if (significant_update || event == HealthEventMovementUpdate) {
+    update_steps();
+  }
+  if (significant_update || event == HealthEventHeartRateUpdate) {
+    update_bpm();
+  }
+}
+#endif
