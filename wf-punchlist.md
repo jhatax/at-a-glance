@@ -41,38 +41,34 @@ so they can be reviewed deliberately.
 
 ## Cleanup And Refactoring Candidates
 
-1. Clean up stale rail constants if no vertical rail is planned soon.
-   - Review `RAIL_X`, `RAIL_TOP`, and `RAIL_BOTTOM`.
-   - Keep or remove them based on an explicit layout decision.
-
-2. Review `settings_load()` persisted-struct tolerance.
+1. Review `settings_load()` persisted-struct tolerance.
    - Current code reads the persisted settings struct directly.
    - Before platform expansion, decide whether to handle older struct shapes
      or version persisted settings.
 
-3. Split state into explicit structs when it improves clarity.
+2. Split state into explicit structs when it improves clarity.
    - Candidate buckets: settings, runtime metrics, layout, and render state.
    - Keep the first split small and behavior-preserving.
 
-4. Centralize text layer updates.
+3. Centralize text layer updates.
    - Add a `static inline void` helper that sets text-layer background color,
      text color, and text in one place.
    - Pass `GColorClear` for text layers without a visible background.
    - Use this helper before adding unavailable-value background treatments.
 
-5. Preserve fixed static text-buffer discipline.
+4. Preserve fixed static text-buffer discipline.
    - Keep `MAX_STR_LEN` and `TextBufferId` centralized.
    - Re-check buffer cleanup if state or lifecycle code is split.
 
-6. Review phone weather fallback configurability.
+5. Review phone weather fallback configurability.
    - Current fallback behavior should be verified in `src/pkjs/index.js`.
    - Decide whether SFO/OAK should be configurable or simply documented.
 
-7. Audit GitHub-facing naming and artifacts before initial publish prep.
+6. Audit GitHub-facing naming and artifacts before initial publish prep.
    - Check app/package names, generated bundle name, README, screenshots,
      `.gitignore`, and private-data hygiene.
 
-8. Keep system font cleanup simple.
+7. Keep system font cleanup simple.
    - System fonts from `fonts_get_system_font()` do not need unloading.
    - If custom fonts are added later, unload them after layers are destroyed.
 
@@ -87,6 +83,8 @@ so they can be reviewed deliberately.
 6. Rule left edge, right edge, and y-position now derive from layout state.
 7. Time and health row placement now uses a derived row gap.
 8. README and AGENTS geometry were updated for the resulting Emery layout.
+9. Stale rail constants were removed after the horizontal-rule layout
+   decision.
 
 ## Validation Reminders
 

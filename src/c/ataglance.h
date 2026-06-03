@@ -2,16 +2,6 @@
 
 #include <pebble.h>
 
-#define RAIL_X 14
-#define RAIL_TOP 12
-#define RAIL_BOTTOM 216
-
-#if defined(PBL_RECT)
-#define LAYOUT_SPACING (PBL_DISPLAY_HEIGHT / 28)
-#else
-#define LAYOUT_SPACING 8
-#endif
-
 #define PERSIST_SETTINGS 2
 
 #define TEMP_INVALID INT16_MIN

@@ -875,7 +875,11 @@ static void calculate_watchface_layout(
     int16_t face_width,
     int16_t face_height,
     WatchfaceLayout* layout) {
-  const int layout_spacing = LAYOUT_SPACING;
+  #if defined(PBL_RECT)
+  const int layout_spacing = PBL_DISPLAY_HEIGHT / 28;
+  #else
+  const int layout_spacing = 8;
+  #endif
   const int content_x = layout_spacing;
   const int row_gap = layout_spacing;
   const int column_gap = layout_spacing;
