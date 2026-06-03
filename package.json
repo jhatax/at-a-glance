@@ -37,7 +37,6 @@
       "TEMPERATURE",
       "WEATHER_CONDITION",
       "HR_SAMPLE_MINUTES",
-      "ICON_FALLBACK_MODE",
       "DISPLAY_MODE"
     ],
     "resources": {
