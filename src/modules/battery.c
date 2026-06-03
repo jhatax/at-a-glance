@@ -76,6 +76,9 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   int percent = s_battery_state.charge_percent;
   GColor draw_color = get_battery_color_from_state();
 
+  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
   graphics_context_set_stroke_color(ctx, draw_color);
   graphics_context_set_stroke_width(ctx, stroke_width);
 
@@ -105,8 +108,7 @@ static void update_battery(void) {
   display_update_text_layer(
       s_battery_layer,
       s_battery_buffer,
-      get_battery_color_from_state(),
-      s_palette->available_text_background);
+      get_battery_color_from_state());
   layer_mark_dirty(s_battery_icon_layer);
 }
 

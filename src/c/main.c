@@ -210,8 +210,7 @@ static void update_date() {
   display_update_text_layer(
       s_date_layer,
       buf,
-      s_palette->date,
-      s_palette->available_text_background);
+      s_palette->date);
 }
 
 static void update_time() {
@@ -226,8 +225,7 @@ static void update_time() {
   display_update_text_layer(
       s_time_layer,
       buf,
-      s_palette->time,
-      s_palette->available_text_background);
+      s_palette->time);
 }
 
 static void update_temp() {
@@ -238,15 +236,11 @@ static void update_temp() {
   bool is_temp_available = format_temp(buf, MAX_STR_LEN);
   GColor text_color = is_temp_available ?
       s_palette->primary_text : s_palette->unavailable_text;
-  GColor background_color = is_temp_available ?
-      s_palette->available_text_background :
-      s_palette->unavailable_text_background;
 
   display_update_text_layer(
       s_temp_layer,
       buf,
-      text_color,
-      background_color);
+      text_color);
   weather_icon_update_display(is_temp_available, s_palette);
 }
 

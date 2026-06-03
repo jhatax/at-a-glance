@@ -20,7 +20,6 @@ typedef enum {
 static Layer* s_weather_icon_layer;
 static int16_t s_weather_condition;
 static GColor s_weather_icon_color;
-static GColor s_weather_icon_background_color;
 static const VisualPalette* s_weather_palette;
 static bool s_weather_is_available;
 
@@ -559,7 +558,11 @@ static void weather_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 
   GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_fill_color(ctx, s_weather_icon_background_color);
+  if (!s_weather_palette) {
+    return;
+  }
+
+  graphics_context_set_fill_color(ctx, s_weather_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   graphics_context_set_fill_color(ctx, s_weather_icon_color);
@@ -580,7 +583,6 @@ void weather_icon_init(void) {
   s_weather_icon_layer = NULL;
   s_weather_condition = c_weather_condition_unknown;
   s_weather_icon_color = GColorClear;
-  s_weather_icon_background_color = GColorClear;
   s_weather_palette = NULL;
   s_weather_is_available = false;
 }
@@ -595,8 +597,6 @@ void weather_icon_create(
 
   s_weather_palette = palette;
   s_weather_icon_color = palette->unavailable_text;
-  s_weather_icon_background_color =
-      palette->unavailable_text_background;
 
   s_weather_icon_layer = layer_create(*frame);
   if (s_weather_icon_layer) {
@@ -637,9 +637,6 @@ void weather_icon_update_display(
           GColorChromeYellow,
           s_weather_palette->primary_text) :
       s_weather_palette->unavailable_text;
-  s_weather_icon_background_color = s_weather_is_available ?
-      s_weather_palette->background :
-      s_weather_palette->unavailable_text_background;
 
   weather_icon_mark_dirty();
 }

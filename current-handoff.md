@@ -100,23 +100,15 @@ Unavailable text token: `---`.
 
 Color displays:
 
-- available text background is `GColorClear`
-- unavailable text background is `GColorClear`
+- text-layer backgrounds stay `GColorClear`
 - unavailable text is mode-specific
-- weather, BPM, and steps icons use unavailable icon backgrounds only when
-  their paired text value is unavailable
+- unavailable icons use the current background and draw a visible data-gap
+  mark instead of switching to an inverse tile
 
 Black-and-white displays:
 
-- unavailable backgrounds invert against the current display mode so hidden
-  state remains readable without color.
+- unavailable text is white in dark mode and black in light mode.
 - color-specific semantic choices fall back to primary text.
-
-Important symmetry rule:
-
-- If an unavailable text value gets an unavailable background, its icon layer
-  should get the matching unavailable background unless there is an explicit
-  product decision otherwise.
 
 ## Weather Module State
 

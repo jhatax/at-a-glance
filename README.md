@@ -85,8 +85,8 @@ space on 144x168 displays.
 - Battery fill moves left to right and uses the same color state as the
   battery percentage.
 
-When BPM or steps data is unavailable, the corresponding icon layer uses the
-same unavailable background treatment as the text layer for visual symmetry.
+When BPM or steps data is unavailable on health-capable watches, the
+corresponding icon uses a diagonal data-gap slash and unavailable text color.
 
 ## Colors
 
@@ -97,7 +97,7 @@ Dark mode:
 - Time: sunset orange on color, white on monochrome
 - Primary text: light gray on color, white on monochrome
 - Rule: light gray on color, white on monochrome
-- Unavailable text: Windsor Tan on color, black on monochrome
+- Unavailable text: Windsor Tan on color, white on monochrome
 
 Light mode:
 
@@ -106,7 +106,7 @@ Light mode:
 - Time: sunset orange on color, black on monochrome
 - Primary text: black
 - Rule: light gray on color, black on monochrome
-- Unavailable text: light gray on color, white on monochrome
+- Unavailable text: light gray on color, black on monochrome
 
 BPM zones:
 

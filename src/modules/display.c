@@ -4,11 +4,7 @@
 static const VisualPalette c_dark_palette = {
   .background = GColorBlack,
   .primary_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .available_text_background = GColorClear,
-  .unavailable_text = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
-  .unavailable_text_background = PBL_IF_COLOR_ELSE(
-      GColorClear,
-      GColorWhite),
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorWhite),
   .date = PBL_IF_COLOR_ELSE(GColorRichBrilliantLavender, GColorWhite),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
   .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
@@ -18,11 +14,7 @@ static const VisualPalette c_dark_palette = {
 static const VisualPalette c_light_palette = {
   .background = GColorWhite,
   .primary_text = GColorBlack,
-  .available_text_background = GColorClear,
-  .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .unavailable_text_background = PBL_IF_COLOR_ELSE(
-      GColorClear,
-      GColorBlack),
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
   .date = PBL_IF_COLOR_ELSE(GColorImperialPurple, GColorBlack),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
   .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
@@ -46,9 +38,8 @@ const char* display_unavailable_text(void) {
 void display_update_text_layer(
     TextLayer* layer,
     const char* text,
-    GColor text_color,
-    GColor background_color) {
-  text_layer_set_background_color(layer, background_color);
+    GColor text_color) {
+  text_layer_set_background_color(layer, GColorClear);
   text_layer_set_text_color(layer, text_color);
   text_layer_set_text(layer, text);
 }
