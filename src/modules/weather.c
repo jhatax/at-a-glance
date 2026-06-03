@@ -1,6 +1,6 @@
 #include "weather.h"
+#include "helper.h"
 
-static const int16_t c_icon_size_as_drawn = 28;
 static const int16_t c_weather_condition_unknown = -1;
 
 typedef enum {
@@ -24,27 +24,6 @@ static GColor s_weather_icon_background_color;
 static const VisualPalette* s_weather_palette;
 static bool s_weather_is_available;
 
-static inline int16_t get_icon_draw_size(const GSize* bounds_size);
-static inline int16_t scale_icon_coord(
-    const GSize* bounds_size,
-    int16_t coord);
-static inline int16_t scale_icon_x(
-    const GSize* bounds_size,
-    int16_t coord);
-static inline int16_t scale_icon_y(
-    const GSize* bounds_size,
-    int16_t coord);
-static inline void draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
-static inline GPoint get_scaled_point(
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y);
 static void draw_weather_sun(
     GContext* ctx,
     const GSize* bounds_size,
@@ -60,7 +39,15 @@ static void draw_weather_rain(
     GContext* ctx,
     const GSize* bounds_size,
     bool heavy);
+static void draw_weather_drop(
+    GContext* ctx,
+    const GSize* bounds_size,
+    int16_t x,
+    int16_t y);
 static void draw_weather_drizzle(
+    GContext* ctx,
+    const GSize* bounds_size);
+static void draw_weather_sleet(
     GContext* ctx,
     const GSize* bounds_size);
 static void draw_weather_snowflake(
@@ -68,6 +55,12 @@ static void draw_weather_snowflake(
     const GSize* bounds_size,
     int16_t center_x,
     int16_t center_y);
+static void draw_weather_snow_dots(
+    GContext* ctx,
+    const GSize* bounds_size);
+static void draw_weather_lightning(
+    GContext* ctx,
+    const GSize* bounds_size);
 static inline void draw_weather_clear_icon(
     GContext* ctx,
     const GSize* bounds_size);
@@ -109,77 +102,78 @@ static void draw_weather_icon(
     WeatherIconKind icon_kind);
 static void weather_icon_update_proc(Layer* layer, GContext* ctx);
 
-static inline int16_t get_icon_draw_size(const GSize* bounds_size) {
-  if (!bounds_size) {
-    return 0;
-  }
-
-  return bounds_size->w < bounds_size->h ?
-      bounds_size->w : bounds_size->h;
-}
-
-static inline int16_t scale_icon_coord(
-    const GSize* bounds_size,
-    int16_t coord) {
-  int16_t draw_size = get_icon_draw_size(bounds_size);
-  return (coord * draw_size) / c_icon_size_as_drawn;
-}
-
-static inline int16_t scale_icon_x(
-    const GSize* bounds_size,
-    int16_t coord) {
-  if (!bounds_size) {
-    return 0;
-  }
-
-  return (coord * bounds_size->w) / c_icon_size_as_drawn;
-}
-
-static inline int16_t scale_icon_y(
-    const GSize* bounds_size,
-    int16_t coord) {
-  if (!bounds_size) {
-    return 0;
-  }
-
-  return (coord * bounds_size->h) / c_icon_size_as_drawn;
-}
-
-static inline void draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  graphics_draw_line(ctx,
-                     get_scaled_point(bounds_size, x0, y0),
-                     get_scaled_point(bounds_size, x1, y1));
-}
-
-static inline GPoint get_scaled_point(
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y) {
-  return GPoint(scale_icon_x(bounds_size, x),
-                scale_icon_y(bounds_size, y));
-}
-
 static void draw_weather_sun(
     GContext* ctx,
     const GSize* bounds_size,
     int16_t center_x,
     int16_t center_y,
     int16_t radius) {
-  GPoint center = get_scaled_point(bounds_size, center_x, center_y);
-  int16_t scaled_radius = scale_icon_coord(bounds_size, radius);
+  GPoint center = helper_get_scaled_icon_point(
+      bounds_size,
+      center_x,
+      center_y);
+  int16_t scaled_radius = helper_scale_icon_coord(
+      bounds_size,
+      radius);
 
   graphics_context_set_stroke_width(ctx, 2);
   graphics_fill_circle(ctx, center, scaled_radius);
-  draw_scaled_line(ctx, bounds_size, center_x, 2, center_x, 6);
-  draw_scaled_line(ctx, bounds_size, center_x, 22, center_x, 26);
-  draw_scaled_line(ctx, bounds_size, 2, center_y, 6, center_y);
-  draw_scaled_line(ctx, bounds_size, 22, center_y, 26, center_y);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x,
+      center_y - radius - 6,
+      center_x,
+      center_y - radius - 2);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x,
+      center_y + radius + 2,
+      center_x,
+      center_y + radius + 6);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x - radius - 6,
+      center_y,
+      center_x - radius - 2,
+      center_y);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x + radius + 2,
+      center_y,
+      center_x + radius + 6,
+      center_y);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x - radius - 4,
+      center_y - radius - 4,
+      center_x - radius - 1,
+      center_y - radius - 1);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x + radius + 1,
+      center_y - radius - 1,
+      center_x + radius + 4,
+      center_y - radius - 4);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x - radius - 4,
+      center_y + radius + 4,
+      center_x - radius - 1,
+      center_y + radius + 1);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      center_x + radius + 1,
+      center_y + radius + 1,
+      center_x + radius + 4,
+      center_y + radius + 4);
 }
 
 static void draw_weather_cloud(
@@ -187,61 +181,114 @@ static void draw_weather_cloud(
     const GSize* bounds_size,
     int16_t x,
     int16_t y) {
-  int cloud_x = scale_icon_x(bounds_size, x);
-  int cloud_y = scale_icon_y(bounds_size, y);
-  int cloud_w = scale_icon_x(bounds_size, 18);
-  int cloud_h = scale_icon_y(bounds_size, 7);
-  int small_radius = scale_icon_coord(bounds_size, 4);
-  int medium_radius = scale_icon_coord(bounds_size, 5);
-  int large_radius = scale_icon_coord(bounds_size, 6);
+  int upper_x = helper_scale_icon_x(bounds_size, x + 3);
+  int upper_y = helper_scale_icon_y(bounds_size, y + 3);
+  int upper_w = helper_scale_icon_x(bounds_size, 17);
+  int upper_h = helper_scale_icon_y(bounds_size, 8);
+  int base_x = helper_scale_icon_x(bounds_size, x + 1);
+  int base_y = helper_scale_icon_y(bounds_size, y + 8);
+  int base_w = helper_scale_icon_x(bounds_size, 22);
+  int base_h = helper_scale_icon_y(bounds_size, 5);
+  int left_radius = helper_scale_icon_coord(bounds_size, 5);
+  int crown_radius = helper_scale_icon_coord(bounds_size, 7);
+  int right_radius = helper_scale_icon_coord(bounds_size, 5);
 
   graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, x + 5, y),
-                       medium_radius);
+                       helper_get_scaled_icon_point(
+                           bounds_size,
+                           x + 6,
+                           y + 6),
+                       left_radius);
   graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, x + 11, y - 2),
-                       large_radius);
+                       helper_get_scaled_icon_point(
+                           bounds_size,
+                           x + 12,
+                           y + 3),
+                       crown_radius);
   graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, x + 16, y + 1),
-                       small_radius);
-  graphics_fill_rect(ctx, GRect(cloud_x,
-                                cloud_y,
-                                cloud_w,
-                                cloud_h),
+                       helper_get_scaled_icon_point(
+                           bounds_size,
+                           x + 19,
+                           y + 7),
+                       right_radius);
+  graphics_fill_rect(ctx, GRect(upper_x,
+                                upper_y,
+                                upper_w,
+                                upper_h),
                      0,
                      GCornerNone);
+  graphics_fill_rect(ctx, GRect(base_x,
+                                base_y,
+                                base_w,
+                                base_h),
+                     0,
+                     GCornerNone);
+}
+
+static void draw_weather_drop(
+    GContext* ctx,
+    const GSize* bounds_size,
+    int16_t x,
+    int16_t y) {
+  int radius = helper_scale_icon_coord(bounds_size, 1);
+
+  if (radius < 1) {
+    radius = 1;
+  }
+
+  graphics_context_set_stroke_width(ctx, 2);
+  helper_draw_scaled_icon_line(
+      ctx,
+      bounds_size,
+      x + 1,
+      y,
+      x - 1,
+      y + 5);
+  graphics_fill_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, x - 1, y + 5),
+      radius);
 }
 
 static void draw_weather_rain(
     GContext* ctx,
     const GSize* bounds_size,
     bool heavy) {
-  graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line(ctx, bounds_size, 9, 20, 7, 25);
-  draw_scaled_line(ctx, bounds_size, 15, 20, 13, 25);
+  draw_weather_drop(ctx, bounds_size, 8, 19);
+  draw_weather_drop(ctx, bounds_size, 15, 20);
   if (heavy) {
-    draw_scaled_line(ctx, bounds_size, 21, 20, 19, 25);
+    draw_weather_drop(ctx, bounds_size, 22, 19);
   }
 }
 
 static void draw_weather_drizzle(
     GContext* ctx,
     const GSize* bounds_size) {
-  int radius = scale_icon_coord(bounds_size, 1);
+  graphics_context_set_stroke_width(ctx, 1);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 22, 7, 24);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 22, 13, 24);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 20, 22, 19, 24);
+}
+
+static void draw_weather_sleet(
+    GContext* ctx,
+    const GSize* bounds_size) {
+  int radius = helper_scale_icon_coord(bounds_size, 2);
 
   if (radius < 1) {
     radius = 1;
   }
 
-  graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, 9, 23),
-                       radius);
-  graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, 15, 23),
-                       radius);
-  graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, 21, 23),
-                       radius);
+  draw_weather_drop(ctx, bounds_size, 8, 19);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 17, 23),
+      radius);
+  graphics_draw_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 23, 22),
+      radius);
 }
 
 static void draw_weather_snowflake(
@@ -249,9 +296,10 @@ static void draw_weather_snowflake(
     const GSize* bounds_size,
     int16_t center_x,
     int16_t center_y) {
-  int x = scale_icon_x(bounds_size, center_x);
-  int y = scale_icon_y(bounds_size, center_y);
-  int r = scale_icon_coord(bounds_size, 3);
+  int x = helper_scale_icon_x(bounds_size, center_x);
+  int y = helper_scale_icon_y(bounds_size, center_y);
+  int r = helper_scale_icon_coord(bounds_size, 4);
+  int branch = helper_scale_icon_coord(bounds_size, 2);
 
   graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_line(ctx, GPoint(x - r, y), GPoint(x + r, y));
@@ -260,97 +308,137 @@ static void draw_weather_snowflake(
                      GPoint(x + r, y + r));
   graphics_draw_line(ctx, GPoint(x - r, y + r),
                      GPoint(x + r, y - r));
+  graphics_draw_line(ctx, GPoint(x - r, y),
+                     GPoint(x - r + branch, y - branch));
+  graphics_draw_line(ctx, GPoint(x + r, y),
+                     GPoint(x + r - branch, y + branch));
+}
+
+static void draw_weather_snow_dots(
+    GContext* ctx,
+    const GSize* bounds_size) {
+  int radius = helper_scale_icon_coord(bounds_size, 1);
+
+  if (radius < 1) {
+    radius = 1;
+  }
+
+  graphics_fill_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 7, 24),
+      radius);
+  graphics_fill_circle(
+      ctx,
+      helper_get_scaled_icon_point(bounds_size, 22, 24),
+      radius);
+}
+
+static void draw_weather_lightning(
+    GContext* ctx,
+    const GSize* bounds_size) {
+  graphics_context_set_stroke_width(ctx, 1);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 15, 16, 19, 16);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 17, 18, 17);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 18, 17, 18);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 19, 17, 19);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 20, 21, 20);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 21, 20, 21);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 22, 18, 22);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 23, 18, 23);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 24, 17, 24);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 25, 16, 25);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 26, 15, 26);
 }
 
 static inline void draw_weather_clear_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 14, 14, 6);
+  draw_weather_sun(ctx, bounds_size, 14, 14, 5);
 }
 
 static inline void draw_weather_cloud_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 14);
+  draw_weather_cloud(ctx, bounds_size, 2, 9);
 }
 
 static inline void draw_weather_fog_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 11);
+  draw_weather_cloud(ctx, bounds_size, 2, 6);
   graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line(ctx, bounds_size, 5, 20, 23, 20);
-  draw_scaled_line(ctx, bounds_size, 8, 24, 20, 24);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 3, 18, 25, 18);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 6, 22, 26, 22);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 2, 26, 20, 26);
 }
 
 static inline void draw_weather_drizzle_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 11);
+  draw_weather_cloud(ctx, bounds_size, 2, 7);
   draw_weather_drizzle(ctx, bounds_size);
 }
 
 static inline void draw_weather_rain_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 11);
+  draw_weather_cloud(ctx, bounds_size, 2, 6);
   draw_weather_rain(ctx, bounds_size, true);
 }
 
 static inline void draw_weather_frozen_rain_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 10);
-  draw_weather_rain(ctx, bounds_size, false);
-  draw_weather_snowflake(ctx, bounds_size, 21, 23);
+  draw_weather_cloud(ctx, bounds_size, 2, 6);
+  draw_weather_sleet(ctx, bounds_size);
 }
 
 static inline void draw_weather_snow_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 10);
-  draw_weather_snowflake(ctx, bounds_size, 9, 23);
-  draw_weather_snowflake(ctx, bounds_size, 19, 23);
+  draw_weather_cloud(ctx, bounds_size, 2, 6);
+  draw_weather_snowflake(ctx, bounds_size, 15, 22);
+  draw_weather_snow_dots(ctx, bounds_size);
 }
 
 static inline void draw_weather_showers_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 8, 8, 3);
-  draw_weather_cloud(ctx, bounds_size, 6, 11);
+  draw_weather_sun(ctx, bounds_size, 9, 9, 3);
+  draw_weather_cloud(ctx, bounds_size, 3, 7);
   draw_weather_rain(ctx, bounds_size, true);
 }
 
 static inline void draw_weather_snow_showers_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 8, 8, 3);
-  draw_weather_cloud(ctx, bounds_size, 6, 10);
-  draw_weather_snowflake(ctx, bounds_size, 10, 23);
-  draw_weather_snowflake(ctx, bounds_size, 20, 23);
+  draw_weather_sun(ctx, bounds_size, 9, 9, 3);
+  draw_weather_cloud(ctx, bounds_size, 3, 6);
+  draw_weather_snowflake(ctx, bounds_size, 15, 22);
+  draw_weather_snow_dots(ctx, bounds_size);
 }
 
 static inline void draw_weather_thunderstorm_icon(
     GContext* ctx,
     const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 5, 9);
-  graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line(ctx, bounds_size, 15, 17, 11, 23);
-  draw_scaled_line(ctx, bounds_size, 11, 23, 18, 22);
-  draw_scaled_line(ctx, bounds_size, 18, 22, 14, 27);
+  draw_weather_cloud(ctx, bounds_size, 2, 5);
+  draw_weather_lightning(ctx, bounds_size);
 }
 
 static inline void draw_weather_unknown_icon(
     GContext* ctx,
     const GSize* bounds_size) {
   graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line(ctx, bounds_size, 11, 9, 14, 6);
-  draw_scaled_line(ctx, bounds_size, 14, 6, 18, 8);
-  draw_scaled_line(ctx, bounds_size, 18, 8, 18, 12);
-  draw_scaled_line(ctx, bounds_size, 18, 12, 14, 16);
-  draw_scaled_line(ctx, bounds_size, 14, 16, 14, 20);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 9, 14, 6);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 6, 18, 8);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 18, 8, 18, 12);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 18, 12, 14, 16);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 16, 14, 20);
   graphics_fill_circle(ctx,
-                       get_scaled_point(bounds_size, 14, 24),
+                       helper_get_scaled_icon_point(
+                           bounds_size,
+                           14,
+                           24),
                        1);
 }
 
