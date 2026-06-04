@@ -1,0 +1,27 @@
+{
+  "name": "glyph-lab",
+  "author": "Manoj Mehta",
+  "description": "Procedural glyph review harness.",
+  "version": "0.1.0",
+  "keywords": [
+    "pebble",
+    "glyphs"
+  ],
+  "license": "MIT",
+  "pebble": {
+    "displayName": "Glyph Lab",
+    "uuid": "C4F9090C-0348-4A1A-90A2-EE6F575EED35",
+    "sdkVersion": "3",
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "diorite",
+      "emery",
+      "flint"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "capabilities": []
+  }
+}

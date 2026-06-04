@@ -5,13 +5,16 @@ static const int16_t c_weather_condition_unknown = -1;
 
 typedef enum {
   WEATHER_ICON_CLEAR = 0,
+  WEATHER_ICON_PARTLY_CLOUDY,
   WEATHER_ICON_CLOUD,
   WEATHER_ICON_FOG,
   WEATHER_ICON_DRIZZLE,
   WEATHER_ICON_RAIN,
-  WEATHER_ICON_FROZEN_RAIN,
+  WEATHER_ICON_HEAVY_RAIN,
+  WEATHER_ICON_SLEET,
   WEATHER_ICON_SNOW,
   WEATHER_ICON_SHOWERS,
+  WEATHER_ICON_HEAVY_SHOWERS,
   WEATHER_ICON_SNOW_SHOWERS,
   WEATHER_ICON_THUNDERSTORM,
   WEATHER_ICON_UNKNOWN,
@@ -19,462 +22,379 @@ typedef enum {
 
 static Layer* s_weather_icon_layer;
 static int16_t s_weather_condition;
-static GColor s_weather_icon_color;
 static const VisualPalette* s_weather_palette;
 static bool s_weather_is_available;
 
-static void draw_weather_sun(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t center_x,
-    int16_t center_y,
-    int16_t radius);
-static void draw_weather_cloud(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y);
-static void draw_weather_rain(
-    GContext* ctx,
-    const GSize* bounds_size,
-    bool heavy);
-static void draw_weather_drop(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y);
-static void draw_weather_drizzle(
-    GContext* ctx,
-    const GSize* bounds_size);
-static void draw_weather_sleet(
-    GContext* ctx,
-    const GSize* bounds_size);
-static void draw_weather_snowflake(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t center_x,
-    int16_t center_y);
-static void draw_weather_snow_dots(
-    GContext* ctx,
-    const GSize* bounds_size);
-static void draw_weather_lightning(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_clear_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_cloud_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_fog_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_drizzle_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_rain_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_frozen_rain_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_snow_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_showers_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_snow_showers_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_thunderstorm_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_unknown_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static inline void draw_weather_unavailable_icon(
-    GContext* ctx,
-    const GSize* bounds_size);
-static WeatherIconKind get_weather_icon_kind(
-    int16_t weather_condition);
-static void draw_weather_icon(
-    GContext* ctx,
-    const GSize* bounds_size,
-    WeatherIconKind icon_kind);
-static void weather_icon_update_proc(Layer* layer, GContext* ctx);
-
-static void draw_weather_sun(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t center_x,
-    int16_t center_y,
-    int16_t radius) {
-  GPoint center = helper_get_scaled_icon_point(
-      bounds_size,
-      center_x,
-      center_y);
-  int16_t scaled_radius = helper_scale_icon_coord(
-      bounds_size,
-      radius);
-
-  graphics_context_set_stroke_width(ctx, 2);
-  graphics_fill_circle(ctx, center, scaled_radius);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x,
-      center_y - radius - 6,
-      center_x,
-      center_y - radius - 2);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x,
-      center_y + radius + 2,
-      center_x,
-      center_y + radius + 6);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x - radius - 6,
-      center_y,
-      center_x - radius - 2,
-      center_y);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x + radius + 2,
-      center_y,
-      center_x + radius + 6,
-      center_y);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x - radius - 4,
-      center_y - radius - 4,
-      center_x - radius - 1,
-      center_y - radius - 1);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x + radius + 1,
-      center_y - radius - 1,
-      center_x + radius + 4,
-      center_y - radius - 4);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x - radius - 4,
-      center_y + radius + 4,
-      center_x - radius - 1,
-      center_y + radius + 1);
-  helper_draw_scaled_icon_line(
-      ctx,
-      bounds_size,
-      center_x + radius + 1,
-      center_y + radius + 1,
-      center_x + radius + 4,
-      center_y + radius + 4);
+static int16_t weather_scale_x(
+    const GRect* frame,
+    int16_t value) {
+  return frame->origin.x + ((value * frame->size.w) /
+      HELPER_ICON_GRID_SIZE);
 }
 
-static void draw_weather_cloud(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y) {
-  int upper_x = helper_scale_icon_x(bounds_size, x + 3);
-  int upper_y = helper_scale_icon_y(bounds_size, y + 3);
-  int upper_w = helper_scale_icon_x(bounds_size, 17);
-  int upper_h = helper_scale_icon_y(bounds_size, 8);
-  int base_x = helper_scale_icon_x(bounds_size, x + 1);
-  int base_y = helper_scale_icon_y(bounds_size, y + 8);
-  int base_w = helper_scale_icon_x(bounds_size, 22);
-  int base_h = helper_scale_icon_y(bounds_size, 5);
-  int left_radius = helper_scale_icon_coord(bounds_size, 5);
-  int crown_radius = helper_scale_icon_coord(bounds_size, 7);
-  int right_radius = helper_scale_icon_coord(bounds_size, 5);
-
-  graphics_fill_circle(ctx,
-                       helper_get_scaled_icon_point(
-                           bounds_size,
-                           x + 6,
-                           y + 6),
-                       left_radius);
-  graphics_fill_circle(ctx,
-                       helper_get_scaled_icon_point(
-                           bounds_size,
-                           x + 12,
-                           y + 3),
-                       crown_radius);
-  graphics_fill_circle(ctx,
-                       helper_get_scaled_icon_point(
-                           bounds_size,
-                           x + 19,
-                           y + 7),
-                       right_radius);
-  graphics_fill_rect(ctx, GRect(upper_x,
-                                upper_y,
-                                upper_w,
-                                upper_h),
-                     0,
-                     GCornerNone);
-  graphics_fill_rect(ctx, GRect(base_x,
-                                base_y,
-                                base_w,
-                                base_h),
-                     0,
-                     GCornerNone);
+static int16_t weather_scale_y(
+    const GRect* frame,
+    int16_t value) {
+  return frame->origin.y + ((value * frame->size.h) /
+      HELPER_ICON_GRID_SIZE);
 }
 
-static void draw_weather_drop(
-    GContext* ctx,
-    const GSize* bounds_size,
+static int16_t weather_scale_coord(
+    const GRect* frame,
+    int16_t value) {
+  int16_t draw_size = frame->size.w < frame->size.h ?
+      frame->size.w : frame->size.h;
+  return (value * draw_size) / HELPER_ICON_GRID_SIZE;
+}
+
+static GPoint weather_point(
+    const GRect* frame,
     int16_t x,
     int16_t y) {
-  int radius = helper_scale_icon_coord(bounds_size, 1);
+  return GPoint(weather_scale_x(frame, x), weather_scale_y(frame, y));
+}
 
-  if (radius < 1) {
-    radius = 1;
-  }
+static void weather_subframe(
+    const GRect* frame,
+    GRect* out,
+    int16_t x,
+    int16_t y,
+    int16_t w,
+    int16_t h) {
+  out->origin.x = weather_scale_x(frame, x);
+  out->origin.y = weather_scale_y(frame, y);
+  out->size.w = (w * frame->size.w) / HELPER_ICON_GRID_SIZE;
+  out->size.h = (h * frame->size.h) / HELPER_ICON_GRID_SIZE;
+}
 
-  graphics_context_set_stroke_width(ctx, 2);
-  helper_draw_scaled_icon_line(
+static void weather_line(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  graphics_draw_line(
       ctx,
-      bounds_size,
-      x + 1,
-      y,
-      x - 1,
-      y + 5);
+      weather_point(frame, x0, y0),
+      weather_point(frame, x1, y1));
+}
+
+static void weather_fill_rect(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t w,
+    int16_t h) {
+  graphics_fill_rect(
+      ctx,
+      GRect(weather_scale_x(frame, x),
+            weather_scale_y(frame, y),
+            (w * frame->size.w) / HELPER_ICON_GRID_SIZE,
+            (h * frame->size.h) / HELPER_ICON_GRID_SIZE),
+      0,
+      GCornerNone);
+}
+
+static void weather_fill_circle(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
   graphics_fill_circle(
       ctx,
-      helper_get_scaled_icon_point(bounds_size, x - 1, y + 5),
-      radius);
+      weather_point(frame, x, y),
+      weather_scale_coord(frame, r));
 }
 
-static void draw_weather_rain(
+static void weather_draw_circle(
     GContext* ctx,
-    const GSize* bounds_size,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
+  graphics_draw_circle(
+      ctx,
+      weather_point(frame, x, y),
+      weather_scale_coord(frame, r));
+}
+
+static GColor weather_legible_color(void) {
+  return display_legible_over_background(s_weather_palette);
+}
+
+static GColor weather_subtle_color(void) {
+  if (!s_weather_palette ||
+      gcolor_equal(s_weather_palette->background, GColorWhite)) {
+    return GColorDarkGray;
+  }
+
+  return GColorLightGray;
+}
+
+static GColor weather_clear_ring_color(void) {
+  return weather_subtle_color();
+}
+
+static GColor weather_clear_fill_color(void) {
+  return weather_legible_color();
+}
+
+static GColor weather_color_for_kind(WeatherIconKind kind) {
+  GColor fallback = weather_legible_color();
+
+  switch (kind) {
+    case WEATHER_ICON_THUNDERSTORM:
+      return PBL_IF_COLOR_ELSE(GColorChromeYellow, fallback);
+    case WEATHER_ICON_SNOW:
+    case WEATHER_ICON_SNOW_SHOWERS:
+    case WEATHER_ICON_SLEET:
+      return PBL_IF_COLOR_ELSE(GColorPictonBlue, fallback);
+    case WEATHER_ICON_DRIZZLE:
+    case WEATHER_ICON_RAIN:
+    case WEATHER_ICON_HEAVY_RAIN:
+    case WEATHER_ICON_SHOWERS:
+    case WEATHER_ICON_HEAVY_SHOWERS:
+      return PBL_IF_COLOR_ELSE(GColorVividCerulean, fallback);
+    case WEATHER_ICON_CLOUD:
+    case WEATHER_ICON_PARTLY_CLOUDY:
+    case WEATHER_ICON_FOG:
+    case WEATHER_ICON_CLEAR:
+    case WEATHER_ICON_UNKNOWN:
+      return PBL_IF_COLOR_ELSE(GColorCobaltBlue, fallback);
+  }
+
+  return fallback;
+}
+
+static void draw_weather_sun(
+    GContext* ctx,
+    const GRect* frame,
+    GColor color) {
+  graphics_context_set_fill_color(ctx, color);
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 2);
+  weather_fill_circle(ctx, frame, 10, 10, 5);
+  weather_line(ctx, frame, 10, 0, 10, 3);
+  weather_line(ctx, frame, 10, 17, 10, 20);
+  weather_line(ctx, frame, 0, 10, 3, 10);
+  weather_line(ctx, frame, 17, 10, 20, 10);
+  weather_line(ctx, frame, 3, 3, 6, 6);
+  weather_line(ctx, frame, 14, 6, 17, 3);
+  weather_line(ctx, frame, 3, 17, 6, 14);
+  weather_line(ctx, frame, 14, 14, 17, 17);
+}
+
+static void draw_weather_cloud(
+    GContext* ctx,
+    const GRect* frame,
+    GColor color) {
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_fill_color(ctx, s_weather_palette->background);
+  graphics_context_set_stroke_width(ctx, 3);
+
+  weather_draw_circle(ctx, frame, 8, 16, 5);
+  weather_draw_circle(ctx, frame, 14, 11, 6);
+  weather_draw_circle(ctx, frame, 19, 15, 5);
+
+  weather_fill_circle(ctx, frame, 8, 16, 4);
+  weather_fill_circle(ctx, frame, 14, 11, 5);
+  weather_fill_circle(ctx, frame, 19, 15, 4);
+  weather_fill_rect(ctx, frame, 6, 13, 15, 7);
+
+  weather_line(ctx, frame, 4, 20, 23, 20);
+}
+
+static void draw_weather_clear_icon(
+    GContext* ctx,
+    const GRect* frame) {
+  graphics_context_set_stroke_color(ctx, weather_clear_ring_color());
+  graphics_context_set_stroke_width(ctx, 1);
+  weather_draw_circle(ctx, frame, 14, 14, 11);
+
+  graphics_context_set_fill_color(ctx, weather_clear_fill_color());
+  weather_fill_circle(ctx, frame, 14, 14, 9);
+}
+
+static void draw_weather_partly_cloudy_icon(
+    GContext* ctx,
+    const GRect* frame) {
+  GRect cloud_frame;
+  GRect sun_frame;
+  GColor color = weather_color_for_kind(WEATHER_ICON_PARTLY_CLOUDY);
+
+  weather_subframe(frame, &sun_frame, 0, 0, 22, 22);
+  draw_weather_sun(ctx, &sun_frame, weather_legible_color());
+
+  weather_subframe(frame, &cloud_frame, 5, 10, 23, 17);
+  draw_weather_cloud(ctx, &cloud_frame, color);
+}
+
+static void draw_weather_fog_icon(
+    GContext* ctx,
+    const GRect* frame) {
+  graphics_context_set_stroke_color(ctx, weather_color_for_kind(
+      WEATHER_ICON_FOG));
+  graphics_context_set_stroke_width(ctx, 3);
+  weather_line(ctx, frame, 5, 10, 23, 10);
+  weather_line(ctx, frame, 2, 15, 26, 15);
+  weather_line(ctx, frame, 7, 20, 21, 20);
+}
+
+static void draw_weather_drizzle_icon(
+    GContext* ctx,
+    const GRect* frame) {
+  graphics_context_set_stroke_color(ctx, weather_color_for_kind(
+      WEATHER_ICON_DRIZZLE));
+  graphics_context_set_stroke_width(ctx, 1);
+  weather_line(ctx, frame, 7, 7, 5, 14);
+  weather_line(ctx, frame, 14, 6, 12, 13);
+  weather_line(ctx, frame, 21, 7, 19, 14);
+}
+
+static void draw_weather_rain_marks(
+    GContext* ctx,
+    const GRect* frame,
+    GColor color,
     bool heavy) {
-  draw_weather_drop(ctx, bounds_size, 8, 19);
-  draw_weather_drop(ctx, bounds_size, 15, 20);
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 3);
+
   if (heavy) {
-    draw_weather_drop(ctx, bounds_size, 22, 19);
-  }
-}
-
-static void draw_weather_drizzle(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  graphics_context_set_stroke_width(ctx, 1);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 22, 7, 24);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 22, 13, 24);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 20, 22, 19, 24);
-}
-
-static void draw_weather_sleet(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  int radius = helper_scale_icon_coord(bounds_size, 2);
-
-  if (radius < 1) {
-    radius = 1;
+    weather_line(ctx, frame, 6, 3, 2, 25);
+    weather_line(ctx, frame, 12, 2, 8, 24);
+    weather_line(ctx, frame, 18, 4, 14, 26);
+    weather_line(ctx, frame, 24, 2, 20, 24);
+    return;
   }
 
-  draw_weather_drop(ctx, bounds_size, 8, 19);
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_circle(
+  weather_line(ctx, frame, 8, 7, 5, 21);
+  weather_line(ctx, frame, 15, 7, 12, 21);
+  weather_line(ctx, frame, 22, 7, 19, 21);
+}
+
+static void draw_weather_rain_icon(
+    GContext* ctx,
+    const GRect* frame,
+    bool heavy) {
+  draw_weather_rain_marks(
       ctx,
-      helper_get_scaled_icon_point(bounds_size, 17, 23),
-      radius);
-  graphics_draw_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 23, 22),
-      radius);
+      frame,
+      weather_color_for_kind(heavy ?
+          WEATHER_ICON_HEAVY_RAIN : WEATHER_ICON_RAIN),
+      heavy);
 }
 
 static void draw_weather_snowflake(
     GContext* ctx,
-    const GSize* bounds_size,
-    int16_t center_x,
-    int16_t center_y) {
-  int x = helper_scale_icon_x(bounds_size, center_x);
-  int y = helper_scale_icon_y(bounds_size, center_y);
-  int r = helper_scale_icon_coord(bounds_size, 4);
-  int branch = helper_scale_icon_coord(bounds_size, 2);
-
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_line(ctx, GPoint(x - r, y), GPoint(x + r, y));
-  graphics_draw_line(ctx, GPoint(x, y - r), GPoint(x, y + r));
-  graphics_draw_line(ctx, GPoint(x - r, y - r),
-                     GPoint(x + r, y + r));
-  graphics_draw_line(ctx, GPoint(x - r, y + r),
-                     GPoint(x + r, y - r));
-  graphics_draw_line(ctx, GPoint(x - r, y),
-                     GPoint(x - r + branch, y - branch));
-  graphics_draw_line(ctx, GPoint(x + r, y),
-                     GPoint(x + r - branch, y + branch));
-}
-
-static void draw_weather_snow_dots(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  int radius = helper_scale_icon_coord(bounds_size, 1);
-
-  if (radius < 1) {
-    radius = 1;
-  }
-
-  graphics_fill_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 7, 24),
-      radius);
-  graphics_fill_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 22, 24),
-      radius);
-}
-
-static void draw_weather_lightning(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  graphics_context_set_stroke_width(ctx, 1);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 15, 16, 19, 16);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 17, 18, 17);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 18, 17, 18);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 19, 17, 19);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 20, 21, 20);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 21, 20, 21);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 22, 18, 22);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 23, 18, 23);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 24, 17, 24);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 25, 16, 25);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 26, 15, 26);
-}
-
-static inline void draw_weather_clear_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 14, 14, 5);
-}
-
-static inline void draw_weather_cloud_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 9);
-}
-
-static inline void draw_weather_fog_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 6);
+    const GRect* frame,
+    GColor color) {
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_fill_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 3, 18, 25, 18);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 6, 22, 26, 22);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 2, 26, 20, 26);
+  weather_line(ctx, frame, 5, 14, 23, 14);
+  weather_line(ctx, frame, 14, 5, 14, 23);
+  weather_line(ctx, frame, 7, 7, 21, 21);
+  weather_line(ctx, frame, 7, 21, 21, 7);
+  weather_fill_circle(ctx, frame, 14, 14, 2);
 }
 
-static inline void draw_weather_drizzle_icon(
+static void draw_weather_sleet_icon(
     GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 7);
-  draw_weather_drizzle(ctx, bounds_size);
+    const GRect* frame) {
+  GRect snow_frame;
+  GColor color = weather_color_for_kind(WEATHER_ICON_SLEET);
+
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 3);
+  weather_line(ctx, frame, 7, 8, 4, 18);
+  weather_line(ctx, frame, 12, 10, 9, 20);
+
+  weather_subframe(frame, &snow_frame, 14, 6, 12, 18);
+  draw_weather_snowflake(ctx, &snow_frame, color);
 }
 
-static inline void draw_weather_rain_icon(
+static void draw_weather_snow_showers_icon(
     GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 6);
-  draw_weather_rain(ctx, bounds_size, true);
+    const GRect* frame) {
+  GRect cloud_frame;
+  GRect snow_frame;
+  GColor color = weather_color_for_kind(WEATHER_ICON_SNOW_SHOWERS);
+
+  weather_subframe(frame, &cloud_frame, 0, 2, 20, 15);
+  draw_weather_cloud(ctx, &cloud_frame, color);
+
+  weather_subframe(frame, &snow_frame, 10, 8, 18, 20);
+  draw_weather_snowflake(ctx, &snow_frame, color);
 }
 
-static inline void draw_weather_frozen_rain_icon(
+static void draw_weather_showers_icon(
     GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 6);
-  draw_weather_sleet(ctx, bounds_size);
+    const GRect* frame,
+    bool heavy) {
+  GRect cloud_frame;
+  GRect rain_frame;
+  GColor color = weather_color_for_kind(heavy ?
+      WEATHER_ICON_HEAVY_SHOWERS : WEATHER_ICON_SHOWERS);
+
+  weather_subframe(frame, &cloud_frame, 0, heavy ? 1 : 2, 20, 15);
+  draw_weather_cloud(ctx, &cloud_frame, color);
+
+  weather_subframe(frame, &rain_frame, 10, heavy ? 8 : 10, 18, 20);
+  draw_weather_rain_marks(ctx, &rain_frame, color, heavy);
 }
 
-static inline void draw_weather_snow_icon(
+static void draw_weather_bolt_icon(
     GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 6);
-  draw_weather_snowflake(ctx, bounds_size, 15, 22);
-  draw_weather_snow_dots(ctx, bounds_size);
-}
+    const GRect* frame) {
+  GColor color = weather_color_for_kind(WEATHER_ICON_THUNDERSTORM);
+  GColor border_color = PBL_IF_COLOR_ELSE(
+      weather_subtle_color(),
+      weather_legible_color());
 
-static inline void draw_weather_showers_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 9, 9, 3);
-  draw_weather_cloud(ctx, bounds_size, 3, 7);
-  draw_weather_rain(ctx, bounds_size, true);
-}
+  graphics_context_set_stroke_color(ctx, border_color);
+  graphics_context_set_stroke_width(ctx, 4);
+  weather_line(ctx, frame, 17, 4, 9, 15);
+  weather_line(ctx, frame, 9, 15, 15, 15);
+  weather_line(ctx, frame, 15, 15, 10, 25);
+  weather_line(ctx, frame, 10, 25, 22, 11);
+  weather_line(ctx, frame, 22, 11, 16, 11);
+  weather_line(ctx, frame, 16, 11, 17, 4);
 
-static inline void draw_weather_snow_showers_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_sun(ctx, bounds_size, 9, 9, 3);
-  draw_weather_cloud(ctx, bounds_size, 3, 6);
-  draw_weather_snowflake(ctx, bounds_size, 15, 22);
-  draw_weather_snow_dots(ctx, bounds_size);
-}
-
-static inline void draw_weather_thunderstorm_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  draw_weather_cloud(ctx, bounds_size, 2, 5);
-  draw_weather_lightning(ctx, bounds_size);
-}
-
-static inline void draw_weather_unknown_icon(
-    GContext* ctx,
-    const GSize* bounds_size) {
+  graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 9, 14, 6);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 6, 18, 8);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 18, 8, 18, 12);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 18, 12, 14, 16);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 16, 14, 20);
-  graphics_fill_circle(ctx,
-                       helper_get_scaled_icon_point(
-                           bounds_size,
-                           14,
-                           24),
-                       1);
+  weather_line(ctx, frame, 17, 4, 9, 15);
+  weather_line(ctx, frame, 9, 15, 15, 15);
+  weather_line(ctx, frame, 15, 15, 10, 25);
+  weather_line(ctx, frame, 10, 25, 22, 11);
+  weather_line(ctx, frame, 22, 11, 16, 11);
+  weather_line(ctx, frame, 16, 11, 17, 4);
 }
 
-static inline void draw_weather_unavailable_icon(
+static void draw_weather_unavailable_icon(
     GContext* ctx,
-    const GSize* bounds_size) {
-  graphics_context_set_stroke_width(ctx, 2);
+    const GRect* frame) {
+  draw_weather_cloud(ctx, frame, s_weather_palette->unavailable_text);
 
-  graphics_draw_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 9, 15),
-      helper_scale_icon_coord(bounds_size, 4));
-  graphics_draw_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 15, 12),
-      helper_scale_icon_coord(bounds_size, 6));
-  graphics_draw_circle(
-      ctx,
-      helper_get_scaled_icon_point(bounds_size, 21, 15),
-      helper_scale_icon_coord(bounds_size, 4));
-  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 18, 11, 18);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 19, 18, 25, 18);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 23, 7, 6, 24);
+  graphics_context_set_stroke_color(ctx, weather_legible_color());
+  graphics_context_set_stroke_width(ctx, 3);
+  weather_line(ctx, frame, 5, 3, 24, 26);
 }
 
 static WeatherIconKind get_weather_icon_kind(
     int16_t weather_condition) {
-  if (weather_condition == 0) {
-    return WEATHER_ICON_CLEAR;
-  }
   if (weather_condition < 0) {
     return WEATHER_ICON_UNKNOWN;
   }
-  if (weather_condition <= 3) {
+  if (weather_condition <= 1) {
+    return WEATHER_ICON_CLEAR;
+  }
+  if (weather_condition == 2) {
+    return WEATHER_ICON_PARTLY_CLOUDY;
+  }
+  if (weather_condition == 3) {
     return WEATHER_ICON_CLOUD;
   }
   if (weather_condition <= 48) {
@@ -484,22 +404,25 @@ static WeatherIconKind get_weather_icon_kind(
     return WEATHER_ICON_DRIZZLE;
   }
   if (weather_condition <= 57) {
-    return WEATHER_ICON_FROZEN_RAIN;
+    return WEATHER_ICON_SLEET;
   }
-  if (weather_condition <= 65) {
+  if (weather_condition <= 63) {
     return WEATHER_ICON_RAIN;
   }
-  if (weather_condition <= 67) {
-    return WEATHER_ICON_FROZEN_RAIN;
+  if (weather_condition <= 65) {
+    return WEATHER_ICON_HEAVY_RAIN;
   }
-  if (weather_condition <= 75) {
-    return WEATHER_ICON_SNOW;
+  if (weather_condition <= 67) {
+    return WEATHER_ICON_SLEET;
   }
   if (weather_condition <= 77) {
     return WEATHER_ICON_SNOW;
   }
-  if (weather_condition <= 82) {
+  if (weather_condition <= 81) {
     return WEATHER_ICON_SHOWERS;
+  }
+  if (weather_condition <= 82) {
+    return WEATHER_ICON_HEAVY_SHOWERS;
   }
   if (weather_condition <= 86) {
     return WEATHER_ICON_SNOW_SHOWERS;
@@ -513,76 +436,84 @@ static WeatherIconKind get_weather_icon_kind(
 
 static void draw_weather_icon(
     GContext* ctx,
-    const GSize* bounds_size,
+    const GRect* frame,
     WeatherIconKind icon_kind) {
   switch (icon_kind) {
     case WEATHER_ICON_CLEAR:
-      draw_weather_clear_icon(ctx, bounds_size);
+      draw_weather_clear_icon(ctx, frame);
+      break;
+    case WEATHER_ICON_PARTLY_CLOUDY:
+      draw_weather_partly_cloudy_icon(ctx, frame);
       break;
     case WEATHER_ICON_CLOUD:
-      draw_weather_cloud_icon(ctx, bounds_size);
+      draw_weather_cloud(
+          ctx,
+          frame,
+          weather_color_for_kind(WEATHER_ICON_CLOUD));
       break;
     case WEATHER_ICON_FOG:
-      draw_weather_fog_icon(ctx, bounds_size);
+      draw_weather_fog_icon(ctx, frame);
       break;
     case WEATHER_ICON_DRIZZLE:
-      draw_weather_drizzle_icon(ctx, bounds_size);
+      draw_weather_drizzle_icon(ctx, frame);
       break;
     case WEATHER_ICON_RAIN:
-      draw_weather_rain_icon(ctx, bounds_size);
+      draw_weather_rain_icon(ctx, frame, false);
       break;
-    case WEATHER_ICON_FROZEN_RAIN:
-      draw_weather_frozen_rain_icon(ctx, bounds_size);
+    case WEATHER_ICON_HEAVY_RAIN:
+      draw_weather_rain_icon(ctx, frame, true);
+      break;
+    case WEATHER_ICON_SLEET:
+      draw_weather_sleet_icon(ctx, frame);
       break;
     case WEATHER_ICON_SNOW:
-      draw_weather_snow_icon(ctx, bounds_size);
+      draw_weather_snowflake(
+          ctx,
+          frame,
+          weather_color_for_kind(WEATHER_ICON_SNOW));
       break;
     case WEATHER_ICON_SHOWERS:
-      draw_weather_showers_icon(ctx, bounds_size);
+      draw_weather_showers_icon(ctx, frame, false);
+      break;
+    case WEATHER_ICON_HEAVY_SHOWERS:
+      draw_weather_showers_icon(ctx, frame, true);
       break;
     case WEATHER_ICON_SNOW_SHOWERS:
-      draw_weather_snow_showers_icon(ctx, bounds_size);
+      draw_weather_snow_showers_icon(ctx, frame);
       break;
     case WEATHER_ICON_THUNDERSTORM:
-      draw_weather_thunderstorm_icon(ctx, bounds_size);
+      draw_weather_bolt_icon(ctx, frame);
       break;
     case WEATHER_ICON_UNKNOWN:
-      draw_weather_unknown_icon(ctx, bounds_size);
+      draw_weather_unavailable_icon(ctx, frame);
       break;
   }
 }
 
 static void weather_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx) {
+  if (!layer || !ctx || !s_weather_palette) {
     return;
   }
 
   GRect bounds = layer_get_bounds(layer);
-  if (!s_weather_palette) {
-    return;
-  }
 
   graphics_context_set_fill_color(ctx, s_weather_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  graphics_context_set_fill_color(ctx, s_weather_icon_color);
-  graphics_context_set_stroke_color(ctx, s_weather_icon_color);
-
   if (!s_weather_is_available) {
-    draw_weather_unavailable_icon(ctx, &bounds.size);
+    draw_weather_unavailable_icon(ctx, &bounds);
     return;
   }
 
   draw_weather_icon(
       ctx,
-      &bounds.size,
+      &bounds,
       get_weather_icon_kind(s_weather_condition));
 }
 
 void weather_icon_init(void) {
   s_weather_icon_layer = NULL;
   s_weather_condition = c_weather_condition_unknown;
-  s_weather_icon_color = GColorClear;
   s_weather_palette = NULL;
   s_weather_is_available = false;
 }
@@ -596,8 +527,6 @@ void weather_icon_create(
   }
 
   s_weather_palette = palette;
-  s_weather_icon_color = palette->unavailable_text;
-
   s_weather_icon_layer = layer_create(*frame);
   if (s_weather_icon_layer) {
     layer_set_update_proc(
@@ -631,12 +560,6 @@ void weather_icon_update_display(
   s_weather_is_available =
       is_temperature_available &&
       s_weather_condition != c_weather_condition_unknown;
-
-  s_weather_icon_color = s_weather_is_available ?
-      PBL_IF_COLOR_ELSE(
-          GColorChromeYellow,
-          s_weather_palette->primary_text) :
-      s_weather_palette->unavailable_text;
 
   weather_icon_mark_dirty();
 }

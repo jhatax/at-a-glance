@@ -99,13 +99,17 @@ static inline GColor calculate_bpm_color(int bpm) {
   if (bpm <= 0) {
     return s_palette->unavailable_text;
   } else if (bpm > 120) {
-    return PBL_IF_COLOR_ELSE(GColorRed, s_palette->primary_text);
+    return PBL_IF_COLOR_ELSE(
+        GColorRed,
+        display_legible_over_background(s_palette));
   } else if (bpm >= 100) {
-    return PBL_IF_COLOR_ELSE(GColorMagenta, s_palette->primary_text);
+    return PBL_IF_COLOR_ELSE(
+        GColorMagenta,
+        display_legible_over_background(s_palette));
   } else {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        s_palette->primary_text);
+        display_legible_over_background(s_palette));
   }
 }
 
@@ -121,45 +125,27 @@ static void draw_bpm_icon_with_color(
     GContext* ctx,
     GColor color,
     const GSize* bounds_size) {
-  int16_t radius = helper_scale_icon_coord(bounds_size, 5);
-  GPoint left_lobe;
-  GPoint right_lobe;
-
   if (!ctx || !bounds_size) {
     return;
   }
 
-  left_lobe = helper_get_scaled_icon_point(bounds_size, 9, 10);
-  right_lobe = helper_get_scaled_icon_point(bounds_size, 18, 10);
-
-  if (radius < 1) {
-    radius = 1;
-  }
-
-  graphics_context_set_fill_color(ctx, color);
   graphics_context_set_stroke_color(ctx, color);
-  graphics_fill_circle(ctx, left_lobe, radius);
-  graphics_fill_circle(ctx, right_lobe, radius);
-
-  helper_draw_scaled_icon_line(ctx, bounds_size, 4, 13, 23, 13);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 14, 22, 14);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 6, 15, 21, 15);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 7, 16, 20, 16);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 17, 19, 17);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 9, 18, 18, 18);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 19, 17, 19);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 20, 16, 20);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 12, 21, 15, 21);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 13, 22, 14, 22);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 14, 23, 14, 23);
+  graphics_context_set_stroke_width(ctx, 3);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 3, 15, 8, 15);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 15, 11, 8);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 8, 15, 22);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 15, 22, 19, 12);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 19, 12, 24, 12);
 }
 
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size) {
   graphics_context_set_stroke_width(ctx, 3);
-  graphics_context_set_stroke_color(ctx, s_palette->background);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 23, 6, 5, 24);
+  graphics_context_set_stroke_color(
+      ctx,
+      display_legible_over_background(s_palette));
+  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 3, 24, 26);
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -194,14 +180,26 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_context_set_fill_color(ctx, s_steps_icon_color);
 
-  graphics_fill_circle(ctx, GPoint(13, 18), 5);
-  graphics_fill_circle(ctx, GPoint(10, 19), 4);
-  graphics_fill_circle(ctx, GPoint(16, 19), 4);
+  graphics_fill_circle(
+      ctx,
+      helper_get_scaled_icon_point(&bounds.size, 14, 9),
+      helper_scale_icon_coord(&bounds.size, 7));
 
-  graphics_fill_circle(ctx, GPoint(6, 12), 2);
-  graphics_fill_circle(ctx, GPoint(10, 8), 2.5);
-  graphics_fill_circle(ctx, GPoint(16, 8), 2.5);
-  graphics_fill_circle(ctx, GPoint(20, 12), 2);
+  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_fill_rect(
+      ctx,
+      GRect(helper_scale_icon_x(&bounds.size, 6),
+            helper_scale_icon_y(&bounds.size, 15),
+            helper_scale_icon_x(&bounds.size, 16),
+            helper_scale_icon_y(&bounds.size, 4)),
+      0,
+      GCornerNone);
+
+  graphics_context_set_fill_color(ctx, s_steps_icon_color);
+  graphics_fill_circle(
+      ctx,
+      helper_get_scaled_icon_point(&bounds.size, 14, 22),
+      helper_scale_icon_coord(&bounds.size, 4));
 
   if (!s_steps_is_available) {
     draw_data_gap_slash(ctx, &bounds.size);

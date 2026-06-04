@@ -15,6 +15,10 @@ static inline TextLayer* create_battery_text_layer(
     const GRect* frame,
     GFont font);
 static inline GColor get_battery_color_from_state(void);
+static void draw_battery_charging_bolt(
+    GContext* ctx,
+    const GSize* bounds_size,
+    GColor color);
 static void battery_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_battery(void);
 
@@ -44,16 +48,45 @@ static inline GColor get_battery_color_from_state(void) {
   if (s_battery_state.is_charging) {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        s_palette->primary_text);
+        display_legible_over_background(s_palette));
   }
 
   if (percent > 50) {
-    return PBL_IF_COLOR_ELSE(GColorCobaltBlue, s_palette->primary_text);
+    return PBL_IF_COLOR_ELSE(
+        GColorCobaltBlue,
+        display_legible_over_background(s_palette));
   }
   if (percent > 20) {
-    return PBL_IF_COLOR_ELSE(GColorYellow, s_palette->primary_text);
+    return PBL_IF_COLOR_ELSE(
+        GColorRajah,
+        display_legible_over_background(s_palette));
   }
-  return PBL_IF_COLOR_ELSE(GColorRed, s_palette->primary_text);
+  return PBL_IF_COLOR_ELSE(
+      GColorRed,
+      display_legible_over_background(s_palette));
+}
+
+static void draw_battery_charging_bolt(
+    GContext* ctx,
+    const GSize* bounds_size,
+    GColor color) {
+  graphics_context_set_stroke_color(ctx, s_palette->background);
+  graphics_context_set_stroke_width(ctx, 5);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
+
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 2);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
+  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -63,35 +96,48 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   GRect bounds = layer_get_bounds(layer);
   const int stroke_width = 2;
-  int body_w = helper_scale_icon_x(&bounds.size, 28);
-  int body_h = helper_scale_icon_y(&bounds.size, 20);
-  int body_x = (bounds.size.w - body_w) / 2;
-  int body_y = bounds.size.h - body_h - stroke_width;
-  int fill_inset_x = helper_scale_icon_x(&bounds.size, 2);
-  int fill_inset_y = helper_scale_icon_y(&bounds.size, 2);
-  int fill_x = body_x + fill_inset_x;
-  int fill_y = body_y + fill_inset_y;
-  int max_fill_w = body_w - (2 * fill_inset_x);
-  int fill_h = body_h - (2 * fill_inset_y);
   int percent = s_battery_state.charge_percent;
   GColor draw_color = get_battery_color_from_state();
+  int fill_w = (percent * 18) / 100;
 
   graphics_context_set_fill_color(ctx, s_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   graphics_context_set_stroke_color(ctx, draw_color);
+  graphics_context_set_fill_color(ctx, draw_color);
   graphics_context_set_stroke_width(ctx, stroke_width);
 
-  graphics_draw_rect(ctx, GRect(body_x, body_y, body_w, body_h));
+  graphics_draw_rect(
+      ctx,
+      GRect(helper_scale_icon_x(&bounds.size, 2),
+            helper_scale_icon_y(&bounds.size, 8),
+            helper_scale_icon_x(&bounds.size, 22),
+            helper_scale_icon_y(&bounds.size, 13)));
+  graphics_fill_rect(
+      ctx,
+      GRect(helper_scale_icon_x(&bounds.size, 24),
+            helper_scale_icon_y(&bounds.size, 12),
+            helper_scale_icon_x(&bounds.size, 2),
+            helper_scale_icon_y(&bounds.size, 5)),
+      0,
+      GCornerNone);
 
-  int fill_w = ((percent * max_fill_w) / 100) + 1;
-  if (fill_w > max_fill_w) {
-    fill_w = max_fill_w;
+  if (fill_w < 1) {
+    fill_w = 1;
   }
 
-  graphics_context_set_fill_color(ctx, draw_color);
-  graphics_fill_rect(ctx, GRect(fill_x, fill_y, fill_w, fill_h),
-                     0, GCornerNone);
+  graphics_fill_rect(
+      ctx,
+      GRect(helper_scale_icon_x(&bounds.size, 5),
+            helper_scale_icon_y(&bounds.size, 11),
+            helper_scale_icon_x(&bounds.size, fill_w),
+            helper_scale_icon_y(&bounds.size, 7)),
+      0,
+      GCornerNone);
+
+  if (s_battery_state.is_charging) {
+    draw_battery_charging_bolt(ctx, &bounds.size, draw_color);
+  }
 }
 
 static void update_battery(void) {
