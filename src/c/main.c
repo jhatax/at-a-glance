@@ -10,10 +10,8 @@ static WatchfaceRuntimeState s_runtime = {0};
 static void apply_hr_sample_period();
 #endif
 static char* get_text_buffer(TextBufferId id);
-static void format_time(char* buf, size_t buflen, const struct tm* t);
 static bool format_temp(char* buf, size_t buflen);
 static void refresh_watchface_display();
-static void update_time();
 static void update_temp();
 #if defined(PBL_HEALTH)
 static void health_handler(HealthEventType event, void* context);
@@ -41,9 +39,6 @@ static inline TextLayer* create_and_initialize_text_layer(
     GColor background_color,
     GFont font,
     GTextAlignment alignment);
-static inline void init_time_layer(
-    Layer* root,
-    const WatchfaceLayout* layout);
 static inline void init_temp_column(
     Layer* root,
     const WatchfaceLayout* layout);
@@ -63,7 +58,6 @@ static void apply_hr_sample_period() {
 
 static char* get_text_buffer(TextBufferId id) {
   switch (id) {
-    case BUF_TIME:
     case BUF_TEMP:
       return s_text.buffers[id];
 
@@ -76,19 +70,6 @@ static char* get_text_buffer(TextBufferId id) {
 
     default:
       return NULL;
-  }
-}
-
-static void format_time(char* buf, size_t buflen, const struct tm* t) {
-  if (buf && buflen > 0) {
-    if (s_runtime.settings.time_format == TIME_FMT_12) {
-      strftime(buf, buflen, "%I:%M", t);
-      if (buf[0] == '0') {
-        memmove(buf, buf + 1, strlen(buf));
-      }
-    } else {
-      strftime(buf, buflen, "%H:%M", t);
-    }
   }
 }
 
@@ -146,24 +127,11 @@ static void refresh_watchface_display() {
   weather_icon_mark_dirty();
 
   date_module_refresh(s_runtime.palette);
-  update_time();
+  time_display_module_refresh(
+      s_runtime.settings.time_format,
+      s_runtime.palette);
   battery_module_refresh(s_runtime.palette);
   update_temp();
-}
-
-static void update_time() {
-  char* buf = get_text_buffer(BUF_TIME);
-  if (!buf || !s_layers.time_layer) {
-    return;
-  }
-
-  time_t now = time(NULL);
-  struct tm* t = localtime(&now);
-  format_time(buf, ATAGLANCE_MAX_STR_LEN, t);
-  display_update_text_layer(
-      s_layers.time_layer,
-      buf,
-      s_runtime.palette->time);
 }
 
 static void update_temp() {
@@ -200,7 +168,9 @@ static void tick_handler(
   (void)tick_time;
 
   if (units_changed & MINUTE_UNIT) {
-    update_time();
+    time_display_module_refresh(
+        s_runtime.settings.time_format,
+        s_runtime.palette);
   }
   if (units_changed & DAY_UNIT) {
     date_module_refresh(s_runtime.palette);
@@ -226,7 +196,9 @@ static void inbox_received_callback(
       TIME_FORMAT_VALID(time_fmt)) {
     s_runtime.settings.time_format = (uint8_t)time_fmt;
     changed = true;
-    update_time();
+    time_display_module_refresh(
+        s_runtime.settings.time_format,
+        s_runtime.palette);
   } else if (tf) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid TIME_FORMAT");
@@ -354,17 +326,6 @@ static inline TextLayer* create_and_initialize_text_layer(
   return layer;
 }
 
-static inline void init_time_layer(
-    Layer* root,
-    const WatchfaceLayout* layout) {
-  s_layers.time_layer = create_and_initialize_text_layer(
-      root,
-      &layout->time_frame,
-      GColorClear,
-      s_fonts.time,
-      GTextAlignmentLeft);
-}
-
 static inline void init_temp_column(
     Layer* root,
     const WatchfaceLayout* layout) {
@@ -397,7 +358,10 @@ static void main_window_load(Window* window) {
       root,
       &s_runtime.layout.date_frame,
       s_runtime.palette);
-  init_time_layer(root, &s_runtime.layout);
+  time_display_module_create(
+      root,
+      &s_runtime.layout.time_frame,
+      s_runtime.palette);
 
   // Middle row: health metrics (BPM and steps).
   #if defined(PBL_HEALTH)
@@ -427,11 +391,7 @@ static void main_window_unload(Window* window) {
   (void)window;
 
   date_module_destroy();
-
-  if (s_layers.time_layer) {
-    text_layer_destroy(s_layers.time_layer);
-    s_layers.time_layer = NULL;
-  }
+  time_display_module_destroy();
 
   #if defined(PBL_HEALTH)
   health_module_destroy();
@@ -470,7 +430,6 @@ static void init(void) {
   s_fonts.secondary_value = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_fonts.battery_value = fonts_get_system_font(
       FONT_KEY_GOTHIC_18_BOLD);
-  s_fonts.time = fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD);
 
   window_set_window_handlers(s_layers.window, (WindowHandlers) {
     .load = main_window_load,

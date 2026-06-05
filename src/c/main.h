@@ -10,11 +10,11 @@
 #endif
 #include "../modules/layout.h"
 #include "../modules/settings.h"
+#include "../modules/time_display.h"
 #include "../modules/weather.h"
 
 typedef enum {
-  BUF_TIME = 0,
-  BUF_TEMP,
+  BUF_TEMP = 0,
   BUF_TOTAL_COUNT,
   BUF_CLEANUP = BUF_TOTAL_COUNT
 } TextBufferId;
@@ -26,12 +26,10 @@ typedef struct {
 typedef struct {
   GFont secondary_value;
   GFont battery_value;
-  GFont time;
 } WatchfaceFontState;
 
 typedef struct {
   Window* window;
-  TextLayer* time_layer;
   TextLayer* temp_layer;
 } WatchfaceLayerState;
 
