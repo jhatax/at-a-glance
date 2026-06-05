@@ -1,4 +1,4 @@
-#include "time_display.h"
+#include "time.h"
 #include "settings.h"
 #include "../c/ataglance.h"
 
@@ -32,7 +32,7 @@ static void format_time(
   strftime(buf, buflen, "%H:%M", t);
 }
 
-void time_display_module_create(
+void time_module_create(
     Layer* root,
     const GRect* frame,
     const VisualPalette* palette) {
@@ -54,7 +54,7 @@ void time_display_module_create(
   layer_add_child(root, text_layer_get_layer(s_time_layer));
 }
 
-void time_display_module_destroy(void) {
+void time_module_destroy(void) {
   if (s_time_layer) {
     text_layer_destroy(s_time_layer);
     s_time_layer = NULL;
@@ -63,7 +63,7 @@ void time_display_module_destroy(void) {
   s_time_buffer[0] = '\0';
 }
 
-void time_display_module_refresh(
+void time_module_refresh(
     uint8_t time_format,
     const VisualPalette* palette) {
   if (palette) {

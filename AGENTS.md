@@ -92,7 +92,7 @@ Use these boundaries when reviewing or extending the code:
 - `src/modules/helper.h`: shared static inline icon-scaling helpers.
 - `src/modules/date.c`: date text layer, date buffer, uppercase date
   formatting, and date refresh.
-- `src/modules/time_display.c`: time text layer, time buffer,
+- `src/modules/time.c`: time text layer, time buffer,
   time-format rendering, and time refresh.
 - `src/modules/weather.c`: raw Open-Meteo weather-code mapping and
   procedural weather glyph rendering, plus temperature state, text

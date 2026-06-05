@@ -2,7 +2,7 @@
 #include "battery.h"
 #include "date.h"
 #include "layout.h"
-#include "time_display.h"
+#include "time.h"
 #include "weather.h"
 
 #if defined(PBL_HEALTH)
@@ -42,7 +42,7 @@ bool watchface_composer_create(
       root,
       &s_layout.date_frame,
       palette);
-  time_display_module_create(
+  time_module_create(
       root,
       &s_layout.time_frame,
       palette);
@@ -71,7 +71,7 @@ bool watchface_composer_create(
 
 void watchface_composer_destroy(void) {
   date_module_destroy();
-  time_display_module_destroy();
+  time_module_destroy();
 
   #if defined(PBL_HEALTH)
   health_module_destroy();
@@ -98,7 +98,7 @@ void watchface_composer_refresh(
   #endif
 
   date_module_refresh(palette);
-  time_display_module_refresh(settings->time_format, palette);
+  time_module_refresh(settings->time_format, palette);
   battery_module_refresh(palette);
   weather_module_refresh(settings->temp_unit, palette);
 }
@@ -114,7 +114,7 @@ void watchface_composer_handle_tick(
   }
 
   if (units_changed & MINUTE_UNIT) {
-    time_display_module_refresh(settings->time_format, palette);
+    time_module_refresh(settings->time_format, palette);
   }
   if (units_changed & DAY_UNIT) {
     date_module_refresh(palette);
