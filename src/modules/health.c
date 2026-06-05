@@ -3,13 +3,6 @@
 #include "helper.h"
 #include "settings.h"
 #include "../c/ataglance.h"
-#else
-#include <pebble.h>
-#include "display.h"
-#include "layout.h"
-#endif
-
-#if defined(PBL_HEALTH)
 
 typedef enum {
   HEALTH_BUF_BPM = 0,
@@ -49,10 +42,8 @@ static void draw_data_gap_slash(
     const GSize* bounds_size);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
-#if defined(PBL_HEALTH)
 static void update_bpm(void);
 static void update_steps(void);
-#endif
 
 static inline TextLayer* create_health_text_layer(
     Layer* parent,
@@ -206,7 +197,6 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 }
 
-#if defined(PBL_HEALTH)
 static void update_bpm(void) {
   char* bpm_buf = get_text_buffer(HEALTH_BUF_BPM);
 
@@ -312,7 +302,6 @@ static void update_steps(void) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Steps icon layer is unavailable");
   }
 }
-#endif
 
 void health_module_create(
     Layer* root,
@@ -386,7 +375,6 @@ void health_module_refresh(const VisualPalette* palette) {
   update_bpm();
 }
 
-#if defined(PBL_HEALTH)
 void health_module_handle_event(HealthEventType event) {
   bool significant_update = event == HealthEventSignificantUpdate;
 
@@ -397,9 +385,12 @@ void health_module_handle_event(HealthEventType event) {
     update_bpm();
   }
 }
-#endif
 
 #else
+
+#include <pebble.h>
+#include "display.h"
+#include "layout.h"
 
 void health_module_create(
     Layer* root,
