@@ -13,16 +13,6 @@
 #include "../modules/time_display.h"
 #include "../modules/weather.h"
 
-typedef enum {
-  BUF_TEMP = 0,
-  BUF_TOTAL_COUNT,
-  BUF_CLEANUP = BUF_TOTAL_COUNT
-} TextBufferId;
-
-typedef struct {
-  char buffers[BUF_TOTAL_COUNT][ATAGLANCE_MAX_STR_LEN];
-} WatchfaceTextState;
-
 typedef struct {
   GFont secondary_value;
   GFont battery_value;
@@ -30,12 +20,10 @@ typedef struct {
 
 typedef struct {
   Window* window;
-  TextLayer* temp_layer;
 } WatchfaceLayerState;
 
 typedef struct {
   WatchfaceSettings settings;
   WatchfaceLayout layout;
   const VisualPalette* palette;
-  int16_t temp_celsius_tenths;
 } WatchfaceRuntimeState;

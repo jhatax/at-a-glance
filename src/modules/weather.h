@@ -3,19 +3,27 @@
 #include <pebble.h>
 
 #include "display.h"
+#include "layout.h"
 
 // JS sends these same sentinel values when weather is unavailable.
 #define WEATHER_TEMP_INVALID INT16_MIN
 #define WEATHER_CONDITION_UNKNOWN -1
 
-void weather_icon_init(void);
-void weather_icon_create(
+void weather_module_init(void);
+void weather_module_create(
     Layer* root,
-    const GRect* frame,
+    const WatchfaceLayout* layout,
+    uint8_t temp_unit,
     const VisualPalette* palette);
-void weather_icon_destroy(void);
-void weather_icon_set_condition(int16_t weather_condition);
-void weather_icon_update_display(
-    bool is_temperature_available,
+void weather_module_destroy(void);
+void weather_module_refresh(
+    uint8_t temp_unit,
     const VisualPalette* palette);
-void weather_icon_mark_dirty(void);
+void weather_module_set_temperature(
+    int16_t celsius_tenths,
+    uint8_t temp_unit,
+    const VisualPalette* palette);
+void weather_module_set_condition(
+    int16_t weather_condition,
+    uint8_t temp_unit,
+    const VisualPalette* palette);
