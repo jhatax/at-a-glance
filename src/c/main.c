@@ -276,17 +276,20 @@ static void inbox_received_callback(
   }
 
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
+  bool weather_changed = false;
   if (tt && tt->type == TUPLE_INT) {
     s_runtime.temp_celsius_tenths = (int16_t)tt->value->int32;
-    update_temp();
+    weather_changed = true;
   }
 
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
     weather_icon_set_condition((int16_t)tw->value->int32);
-    weather_icon_update_display(
-        s_runtime.temp_celsius_tenths != WEATHER_TEMP_INVALID,
-        s_runtime.palette);
+    weather_changed = true;
+  }
+
+  if (weather_changed) {
+    update_temp();
   }
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);

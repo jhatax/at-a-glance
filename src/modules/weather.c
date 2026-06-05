@@ -2,8 +2,6 @@
 #include "helper.h"
 #include "layout.h"
 
-static const int16_t c_weather_condition_unknown = -1;
-
 typedef enum {
   WEATHER_ICON_CLEAR = 0,
   WEATHER_ICON_PARTLY_CLOUDY,
@@ -388,6 +386,10 @@ static void draw_weather_unavailable_icon(
   weather_line(ctx, frame, 5, 3, 24, 26);
 }
 
+static bool weather_condition_is_known(void) {
+  return s_weather_condition != WEATHER_CONDITION_UNKNOWN;
+}
+
 static WeatherIconKind get_weather_icon_kind(
     int16_t weather_condition) {
   if (weather_condition < 0) {
@@ -518,7 +520,7 @@ static void weather_icon_update_proc(Layer* layer, GContext* ctx) {
 
 void weather_icon_init(void) {
   s_weather_icon_layer = NULL;
-  s_weather_condition = c_weather_condition_unknown;
+  s_weather_condition = WEATHER_CONDITION_UNKNOWN;
   s_weather_palette = NULL;
   s_weather_is_available = false;
 }
@@ -564,7 +566,7 @@ void weather_icon_update_display(
 
   s_weather_is_available =
       is_temperature_available &&
-      s_weather_condition != c_weather_condition_unknown;
+      weather_condition_is_known();
 
   weather_icon_mark_dirty();
 }

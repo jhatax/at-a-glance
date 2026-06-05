@@ -4,7 +4,9 @@
 
 #include "display.h"
 
+// JS sends these same sentinel values when weather is unavailable.
 #define WEATHER_TEMP_INVALID INT16_MIN
+#define WEATHER_CONDITION_UNKNOWN -1
 
 void weather_icon_init(void);
 void weather_icon_create(
