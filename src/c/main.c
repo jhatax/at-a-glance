@@ -326,13 +326,16 @@ static void outbox_failed_callback(
     DictionaryIterator *iterator,
     AppMessageResult reason,
     void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed!");
+  (void)iterator;
+  (void)context;
+  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed: %d", reason);
 }
 
 static void outbox_sent_callback(
     DictionaryIterator *iterator,
     void *context) {
-  return;
+  (void)iterator;
+  (void)context;
 }
 
 static inline TextLayer* create_and_initialize_text_layer(

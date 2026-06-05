@@ -12,18 +12,30 @@ const OAK_WEATHER_LATITUDE = 37.85626;
 const OAK_WEATHER_LONGITUDE = -122.21383;
 
 function sendWeather(celsius, weatherCode) {
-  Pebble.sendAppMessage({
-    TEMPERATURE: Math.round(celsius * 10),
-    WEATHER_CONDITION: weatherCode
-  });
+  Pebble.sendAppMessage(
+    {
+      TEMPERATURE: Math.round(celsius * 10),
+      WEATHER_CONDITION: weatherCode
+    },
+    null,
+    function (e) {
+      console.log("AtAGlance: Weather send failed: " + e.error);
+    }
+  );
 }
 
 function sendWeatherUnavailable(reason) {
   console.log("AtAGlance: Weather unavailable: " + reason);
-  Pebble.sendAppMessage({
-    TEMPERATURE: WEATHER_TEMP_INVALID,
-    WEATHER_CONDITION: WEATHER_CONDITION_UNKNOWN
-  });
+  Pebble.sendAppMessage(
+    {
+      TEMPERATURE: WEATHER_TEMP_INVALID,
+      WEATHER_CONDITION: WEATHER_CONDITION_UNKNOWN
+    },
+    null,
+    function (e) {
+      console.log("AtAGlance: Weather unavailable send failed: " + e.error);
+    }
+  );
 }
 
 function fetchWeather(lat, lon) {
