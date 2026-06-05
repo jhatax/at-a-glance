@@ -1,16 +1,7 @@
 #include "settings.h"
 
-// Settings Related Decisions
-// The ID / key that specifies where in storage I can find the
-// current storage_version
-const uint32_t c_key_storage_version = 3;
-
-// For this product, we have decided to persist settings
-// and start with persisted settings across product launches
-const int32_t c_value_storage_version = 1;
-
 // The ID / key that specifies where settings are persisted in storage
-const uint32_t c_key_persisted_settings = 2;
+static const uint32_t c_key_persisted_settings = 2;
 
 void settings_apply_defaults(WatchfaceSettings* settings) {
   if (!settings) {
@@ -46,19 +37,16 @@ static void settings_read_stored(WatchfaceSettings* settings) {
     return;
   }
 
-  if (!persist_exists(c_key_persisted_settings) ||
-      !persist_exists(c_key_storage_version)) {
-    settings_apply_defaults(settings);
+  if (!persist_exists(c_key_persisted_settings)) {
     return;
   }
 
   int stored_size = persist_get_size(c_key_persisted_settings);
   if (stored_size <= 0) {
-    settings_apply_defaults(settings);
     return;
   }
 
-  WatchfaceSettings stored = {0};
+  WatchfaceSettings stored = *settings;
 
   int read_size = stored_size;
   if (read_size > (int)sizeof(stored)) {
@@ -104,6 +92,5 @@ void settings_save(const WatchfaceSettings* settings) {
   }
 
   persist_write_data(c_key_persisted_settings, settings, sizeof(*settings));
-  persist_write_int(c_key_storage_version, c_value_storage_version);
 }
 // End "API" block

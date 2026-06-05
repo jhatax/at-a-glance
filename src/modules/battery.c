@@ -140,7 +140,7 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void update_battery(void) {
-  if (!s_battery_layer || !s_battery_icon_layer || !s_palette) {
+  if (!s_battery_layer || !s_palette) {
     return;
   }
 
@@ -154,7 +154,10 @@ static void update_battery(void) {
       s_battery_layer,
       s_battery_buffer,
       get_battery_color_from_state());
-  layer_mark_dirty(s_battery_icon_layer);
+
+  if (s_battery_icon_layer) {
+    layer_mark_dirty(s_battery_icon_layer);
+  }
 }
 
 void battery_module_create(
@@ -169,18 +172,20 @@ void battery_module_create(
   s_palette = palette;
   s_battery_state = battery_state_service_peek();
 
-  s_battery_icon_layer = layer_create(layout->battery_icon_frame);
-  if (s_battery_icon_layer) {
-    layer_set_update_proc(
-        s_battery_icon_layer,
-        battery_icon_update_proc);
-    layer_add_child(root, s_battery_icon_layer);
-  }
-
   s_battery_layer = create_battery_text_layer(
       root,
       &layout->battery_text_frame,
       value_font);
+
+  if (s_battery_layer) {
+    s_battery_icon_layer = layer_create(layout->battery_icon_frame);
+    if (s_battery_icon_layer) {
+      layer_set_update_proc(
+          s_battery_icon_layer,
+          battery_icon_update_proc);
+      layer_add_child(root, s_battery_icon_layer);
+    }
+  }
 }
 
 void battery_module_destroy(void) {

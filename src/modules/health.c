@@ -1,7 +1,6 @@
 #if defined(PBL_HEALTH)
 #include "health.h"
 #include "helper.h"
-#include "settings.h"
 #include "../c/ataglance.h"
 
 typedef enum {
@@ -15,13 +14,10 @@ static char s_text_buffers[HEALTH_BUF_COUNT][ATAGLANCE_MAX_STR_LEN];
 static Layer* s_bpm_icon_layer;
 static TextLayer* s_bpm_layer;
 static int s_bpm;
-static GColor s_bpm_color;
-static GColor s_bpm_icon_color;
 static bool s_bpm_is_available;
 
 static Layer* s_steps_icon_layer;
 static TextLayer* s_steps_layer;
-static GColor s_steps_icon_color;
 static bool s_steps_is_available;
 
 static const VisualPalette* s_palette;
@@ -32,7 +28,6 @@ static inline TextLayer* create_health_text_layer(
     GFont font);
 static char* get_text_buffer(HealthTextBufferId id);
 static inline GColor calculate_bpm_color(int bpm);
-static inline GColor calculate_bpm_icon_color(int bpm);
 static void draw_bpm_icon_with_color(
     GContext* ctx,
     GColor color,
@@ -104,14 +99,6 @@ static inline GColor calculate_bpm_color(int bpm) {
   }
 }
 
-static inline GColor calculate_bpm_icon_color(int bpm) {
-  if (bpm <= 0 && s_palette) {
-    return s_palette->unavailable_text;
-  }
-
-  return calculate_bpm_color(bpm);
-}
-
 static void draw_bpm_icon_with_color(
     GContext* ctx,
     GColor color,
@@ -151,7 +138,7 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
 
   draw_bpm_icon_with_color(
       ctx,
-      s_bpm_icon_color,
+      calculate_bpm_color(s_bpm),
       &bounds.size);
 
   if (!s_bpm_is_available) {
@@ -169,7 +156,10 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, s_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  graphics_context_set_fill_color(ctx, s_steps_icon_color);
+  GColor steps_icon_color = s_steps_is_available ?
+      s_palette->steps_icon : s_palette->unavailable_text;
+
+  graphics_context_set_fill_color(ctx, steps_icon_color);
 
   graphics_fill_circle(
       ctx,
@@ -186,7 +176,7 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
       0,
       GCornerNone);
 
-  graphics_context_set_fill_color(ctx, s_steps_icon_color);
+  graphics_context_set_fill_color(ctx, steps_icon_color);
   graphics_fill_circle(
       ctx,
       layout_scaled_icon_point(&bounds.size, 14, 22),
@@ -211,8 +201,8 @@ static void update_bpm(void) {
           now,
           now);
 
-  s_bpm_color = s_palette->unavailable_text;
-  s_bpm_icon_color = s_palette->unavailable_text;
+  GColor text_color = s_palette->unavailable_text;
+  s_bpm = 0;
   s_bpm_is_available = false;
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
@@ -221,8 +211,7 @@ static void update_bpm(void) {
 
     if (s_bpm > 0) {
       snprintf(bpm_buf, ATAGLANCE_MAX_STR_LEN, "%d", s_bpm);
-      s_bpm_color = calculate_bpm_color(s_bpm);
-      s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
+      text_color = calculate_bpm_color(s_bpm);
       s_bpm_is_available = true;
     } else {
       snprintf(
@@ -237,14 +226,12 @@ static void update_bpm(void) {
         ATAGLANCE_MAX_STR_LEN,
         "%s",
         DISPLAY_UNAVAILABLE_TEXT);
-    s_bpm_color = s_palette->unavailable_text;
-    s_bpm_icon_color = calculate_bpm_icon_color(0);
   }
 
   display_update_text_layer(
       s_bpm_layer,
       bpm_buf,
-      s_bpm_color);
+      text_color);
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
@@ -258,7 +245,6 @@ static void update_steps(void) {
   }
 
   GColor text_color = s_palette->unavailable_text;
-  s_steps_icon_color = s_palette->unavailable_text;
   s_steps_is_available = false;
 
   HealthServiceAccessibilityMask steps_mask =
@@ -272,7 +258,6 @@ static void update_steps(void) {
     if (steps >= 0) {
       snprintf(steps_buf, ATAGLANCE_MAX_STR_LEN, "%d", (int)steps);
       text_color = s_palette->primary_text;
-      s_steps_icon_color = s_palette->steps_icon;
       s_steps_is_available = true;
     } else {
       snprintf(
@@ -311,34 +296,35 @@ void health_module_create(
   s_palette = palette;
 
   s_bpm = 0;
-  s_bpm_color = calculate_bpm_color(s_bpm);
-  s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
   s_bpm_is_available = false;
-
-  s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
-  if (s_bpm_icon_layer) {
-    layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
-    layer_add_child(root, s_bpm_icon_layer);
-  }
 
   s_bpm_layer = create_health_text_layer(
       root,
       &layout->bpm_text_frame,
       value_font);
 
-  s_steps_icon_color = s_palette->unavailable_text;
-  s_steps_is_available = false;
-
-  s_steps_icon_layer = layer_create(layout->steps_icon_frame);
-  if (s_steps_icon_layer) {
-    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
-    layer_add_child(root, s_steps_icon_layer);
+  if (s_bpm_layer) {
+    s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
+    if (s_bpm_icon_layer) {
+      layer_set_update_proc(s_bpm_icon_layer, bpm_icon_update_proc);
+      layer_add_child(root, s_bpm_icon_layer);
+    }
   }
+
+  s_steps_is_available = false;
 
   s_steps_layer = create_health_text_layer(
       root,
       &layout->steps_text_frame,
       value_font);
+
+  if (s_steps_layer) {
+    s_steps_icon_layer = layer_create(layout->steps_icon_frame);
+    if (s_steps_icon_layer) {
+      layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
+      layer_add_child(root, s_steps_icon_layer);
+    }
+  }
 }
 
 void health_module_destroy(void) {
