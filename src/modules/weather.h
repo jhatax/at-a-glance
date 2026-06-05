@@ -4,6 +4,8 @@
 
 #include "display.h"
 
+#define WEATHER_TEMP_INVALID INT16_MIN
+
 void weather_icon_init(void);
 void weather_icon_create(
     Layer* root,

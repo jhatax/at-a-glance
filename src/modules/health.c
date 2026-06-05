@@ -17,7 +17,7 @@ typedef enum {
   HEALTH_BUF_COUNT,
 } HealthTextBufferId;
 
-static char s_text_buffers[HEALTH_BUF_COUNT][MAX_STR_LEN];
+static char s_text_buffers[HEALTH_BUF_COUNT][ATAGLANCE_MAX_STR_LEN];
 
 static Layer* s_bpm_icon_layer;
 static TextLayer* s_bpm_layer;
@@ -230,23 +230,23 @@ static void update_bpm(void) {
         HealthMetricHeartRateBPM);
 
     if (s_bpm > 0) {
-      snprintf(bpm_buf, MAX_STR_LEN, "%d", s_bpm);
+      snprintf(bpm_buf, ATAGLANCE_MAX_STR_LEN, "%d", s_bpm);
       s_bpm_color = calculate_bpm_color(s_bpm);
       s_bpm_icon_color = calculate_bpm_icon_color(s_bpm);
       s_bpm_is_available = true;
     } else {
       snprintf(
           bpm_buf,
-          MAX_STR_LEN,
+          ATAGLANCE_MAX_STR_LEN,
           "%s",
-          display_unavailable_text());
+          DISPLAY_UNAVAILABLE_TEXT);
     }
   } else {
     snprintf(
         bpm_buf,
-        MAX_STR_LEN,
+        ATAGLANCE_MAX_STR_LEN,
         "%s",
-        display_unavailable_text());
+        DISPLAY_UNAVAILABLE_TEXT);
     s_bpm_color = s_palette->unavailable_text;
     s_bpm_icon_color = calculate_bpm_icon_color(0);
   }
@@ -282,23 +282,23 @@ static void update_steps(void) {
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue steps = health_service_sum_today(HealthMetricStepCount);
     if (steps > 0) {
-      snprintf(steps_buf, MAX_STR_LEN, "%d", (int)steps);
+      snprintf(steps_buf, ATAGLANCE_MAX_STR_LEN, "%d", (int)steps);
       text_color = s_palette->primary_text;
       s_steps_icon_color = s_palette->steps_icon;
       s_steps_is_available = true;
     } else {
       snprintf(
           steps_buf,
-          MAX_STR_LEN,
+          ATAGLANCE_MAX_STR_LEN,
           "%s",
-          display_unavailable_text());
+          DISPLAY_UNAVAILABLE_TEXT);
     }
   } else {
     snprintf(
         steps_buf,
-        MAX_STR_LEN,
+        ATAGLANCE_MAX_STR_LEN,
         "%s",
-        display_unavailable_text());
+        DISPLAY_UNAVAILABLE_TEXT);
   }
 
   display_update_text_layer(

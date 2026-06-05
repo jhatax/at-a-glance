@@ -21,8 +21,6 @@ static const VisualPalette c_light_palette = {
   .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
 };
 
-static const char c_unavailable_text[] = "---";
-
 GColor display_legible_over_background(const VisualPalette* palette) {
   if (!palette) {
     return GColorWhite;
@@ -37,10 +35,6 @@ const VisualPalette* display_get_palette(uint8_t display_mode) {
   }
 
   return &c_dark_palette;
-}
-
-const char* display_unavailable_text(void) {
-  return c_unavailable_text;
 }
 
 void display_update_text_layer(

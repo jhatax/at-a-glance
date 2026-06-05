@@ -30,21 +30,24 @@ static int16_t weather_scale_x(
     const GRect* frame,
     int16_t value) {
   return frame->origin.x + ((value * frame->size.w) /
-      DESIGN_ICON_SIZE);
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 static int16_t weather_scale_y(
     const GRect* frame,
     int16_t value) {
   return frame->origin.y + ((value * frame->size.h) /
-      DESIGN_ICON_SIZE);
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 static int16_t weather_scale_coord(
     const GRect* frame,
     int16_t value) {
   int16_t draw_size = helper_min(frame->size.w, frame->size.h);
-  return helper_scale_round(value, draw_size, DESIGN_ICON_SIZE);
+  return helper_scale_round(
+      value,
+      draw_size,
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 static GPoint weather_point(
@@ -63,8 +66,10 @@ static void weather_subframe(
     int16_t h) {
   out->origin.x = weather_scale_x(frame, x);
   out->origin.y = weather_scale_y(frame, y);
-  out->size.w = (w * frame->size.w) / DESIGN_ICON_SIZE;
-  out->size.h = (h * frame->size.h) / DESIGN_ICON_SIZE;
+  out->size.w = (w * frame->size.w) /
+      ATAGLANCE_DESIGN_ICON_SIZE;
+  out->size.h = (h * frame->size.h) /
+      ATAGLANCE_DESIGN_ICON_SIZE;
 }
 
 static void weather_line(
@@ -91,8 +96,8 @@ static void weather_fill_rect(
       ctx,
       GRect(weather_scale_x(frame, x),
             weather_scale_y(frame, y),
-            (w * frame->size.w) / DESIGN_ICON_SIZE,
-            (h * frame->size.h) / DESIGN_ICON_SIZE),
+            (w * frame->size.w) / ATAGLANCE_DESIGN_ICON_SIZE,
+            (h * frame->size.h) / ATAGLANCE_DESIGN_ICON_SIZE),
       0,
       GCornerNone);
 }

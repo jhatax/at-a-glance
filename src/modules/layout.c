@@ -4,13 +4,19 @@
 static int16_t layout_scale_coord_y(
     int16_t design_y,
     int16_t face_height) {
-  return helper_scale_round(design_y, face_height, DESIGN_FACE_HEIGHT);
+  return helper_scale_round(
+      design_y,
+      face_height,
+      ATAGLANCE_DESIGN_FACE_HEIGHT);
 }
 
 static int16_t layout_scale_coord_x(
     int16_t design_x,
     int16_t face_width) {
-  return helper_scale_round(design_x, face_width, DESIGN_FACE_WIDTH);
+  return helper_scale_round(
+      design_x,
+      face_width,
+      ATAGLANCE_DESIGN_FACE_WIDTH);
 }
 
 static int16_t layout_scale_height(
@@ -19,13 +25,16 @@ static int16_t layout_scale_height(
   return helper_scale_round(
       design_height,
       face_height,
-      DESIGN_FACE_HEIGHT);
+      ATAGLANCE_DESIGN_FACE_HEIGHT);
 }
 
 static int16_t layout_scale_width(
     int16_t design_width,
     int16_t face_width) {
-  return helper_scale_round(design_width, face_width, DESIGN_FACE_WIDTH);
+  return helper_scale_round(
+      design_width,
+      face_width,
+      ATAGLANCE_DESIGN_FACE_WIDTH);
 }
 
 int16_t layout_scale_icon_x(const GSize* bounds_size, int16_t coord) {
@@ -33,7 +42,10 @@ int16_t layout_scale_icon_x(const GSize* bounds_size, int16_t coord) {
     return 0;
   }
 
-  return helper_scale_round(coord, bounds_size->w, DESIGN_ICON_SIZE);
+  return helper_scale_round(
+      coord,
+      bounds_size->w,
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 int16_t layout_scale_icon_y(const GSize* bounds_size, int16_t coord) {
@@ -41,7 +53,10 @@ int16_t layout_scale_icon_y(const GSize* bounds_size, int16_t coord) {
     return 0;
   }
 
-  return helper_scale_round(coord, bounds_size->h, DESIGN_ICON_SIZE);
+  return helper_scale_round(
+      coord,
+      bounds_size->h,
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 int16_t layout_scale_icon_coord(
@@ -54,7 +69,7 @@ int16_t layout_scale_icon_coord(
   return helper_scale_round(
       coord,
       helper_min(bounds_size->w, bounds_size->h),
-      DESIGN_ICON_SIZE);
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 GPoint layout_scaled_icon_point(
@@ -97,11 +112,11 @@ void layout_calculate(
 
   #if defined(PBL_RECT)
   const int16_t x_content_start = layout_scale_coord_x(
-      DESIGN_CONTENT_MARGIN,
+      ATAGLANCE_DESIGN_CONTENT_MARGIN,
       face_width);
   const int16_t x_content_end = face_width - x_content_start;
   const int16_t y_content_start = layout_scale_coord_y(
-      DESIGN_CONTENT_MARGIN,
+      ATAGLANCE_DESIGN_CONTENT_MARGIN,
       face_height);
   const int16_t y_content_end = face_height - y_content_start;
   const int16_t content_width = face_width - (2 * x_content_start);
@@ -110,8 +125,8 @@ void layout_calculate(
   const int16_t rule_right = x_content_end;
   #else
   // Keeping these defaults for now, might change for circular displays
-  const int16_t x_content_start = DESIGN_CONTENT_MARGIN;
-  const int16_t y_content_start = DESIGN_CONTENT_MARGIN;
+  const int16_t x_content_start = ATAGLANCE_DESIGN_CONTENT_MARGIN;
+  const int16_t y_content_start = ATAGLANCE_DESIGN_CONTENT_MARGIN;
   const int16_t y_content_end = face_height - y_content_start;
   const int16_t content_width = face_width - (2 * x_content_start);
   const int16_t display_center = face_height / 2;
@@ -121,17 +136,19 @@ void layout_calculate(
 
   // Scale all of these based on face_height
   // Start with icons
-  int16_t icon_size = layout_scale_height(DESIGN_ICON_SIZE, face_height);
+  int16_t icon_size = layout_scale_height(
+      ATAGLANCE_DESIGN_ICON_SIZE,
+      face_height);
   const int16_t icon_text_gap = layout_scale_width(
-      DESIGN_ICON_TEXT_GAP,
+      ATAGLANCE_DESIGN_ICON_TEXT_GAP,
       face_width);
 
   // Row and column gaps
   const int16_t row_gap = layout_scale_height(
-      DESIGN_ROW_GAP,
+      ATAGLANCE_DESIGN_ROW_GAP,
       face_height);
   const int16_t column_gap = layout_scale_width(
-      DESIGN_COLUMN_GAP,
+      ATAGLANCE_DESIGN_COLUMN_GAP,
       face_width);
 
   // Top-Row: Date

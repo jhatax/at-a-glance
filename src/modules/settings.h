@@ -1,9 +1,7 @@
 #pragma once
 
 #include <pebble.h>
-
-#define PERSIST_SETTINGS 2
-#define SETTINGS_TEMP_INVALID INT16_MIN
+#include "weather.h"
 
 typedef enum {
   TEMP_UNIT_F = 0,
@@ -46,10 +44,10 @@ typedef enum {
   ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
 
 typedef struct {
+  // Add persisted fields at the bottom
   uint8_t temp_unit;
   uint8_t time_format;
   uint8_t hr_sample_minutes;
-  uint8_t reserved_icon_mode;
   uint8_t display_mode;
   int16_t temp_celsius_tenths;
 } WatchfaceSettings;
@@ -57,3 +55,4 @@ typedef struct {
 void settings_load(WatchfaceSettings* settings);
 void settings_save(const WatchfaceSettings* settings);
 uint8_t settings_get_hr_sample_minutes(uint8_t hr_sample_minutes);
+void settings_apply_defaults(WatchfaceSettings* settings);

@@ -1,17 +1,7 @@
 #pragma once
 
 #include <pebble.h>
-
-// Reference display used for all layout decisions and icon styling
-#define DESIGN_FACE_HEIGHT 228
-#define DESIGN_FACE_WIDTH 200
-
-// Layout Decisions
-#define DESIGN_CONTENT_MARGIN 2
-#define DESIGN_ICON_TEXT_GAP 2
-#define DESIGN_ROW_GAP 8
-#define DESIGN_COLUMN_GAP 8
-#define DESIGN_ICON_SIZE 28
+#include "../c/ataglance.h"
 
 typedef struct {
   GRect background_frame;

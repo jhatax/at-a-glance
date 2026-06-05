@@ -2,6 +2,8 @@
 
 #include <pebble.h>
 
+#define DISPLAY_UNAVAILABLE_TEXT "---"
+
 typedef struct {
   GColor background;
   GColor primary_text;
@@ -14,7 +16,6 @@ typedef struct {
 
 GColor display_legible_over_background(const VisualPalette* palette);
 const VisualPalette* display_get_palette(uint8_t display_mode);
-const char* display_unavailable_text(void);
 void display_update_text_layer(
     TextLayer* layer,
     const char* text,

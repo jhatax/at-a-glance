@@ -1,7 +1,7 @@
 #include "battery.h"
 #include "../c/ataglance.h"
 
-static char s_battery_buffer[MAX_STR_LEN];
+static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN];
 
 static Layer* s_battery_icon_layer;
 static TextLayer* s_battery_layer;
@@ -146,7 +146,7 @@ static void update_battery(void) {
 
   snprintf(
       s_battery_buffer,
-      MAX_STR_LEN,
+      ATAGLANCE_MAX_STR_LEN,
       "%d%%",
       s_battery_state.charge_percent);
 
