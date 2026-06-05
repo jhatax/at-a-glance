@@ -1,4 +1,5 @@
 #include "main.h"
+#include <limits.h>
 
 static WatchfaceTextState s_text;
 static WatchfaceFontState s_fonts;
@@ -23,7 +24,7 @@ static void battery_handler(BatteryChargeState state);
 static void tick_handler(
     struct tm* tick_time,
     TimeUnits units_changed);
-static int tuple_to_int(Tuple* tuple);
+static bool tuple_to_int(Tuple* tuple, int* value);
 static void inbox_received_callback(
     DictionaryIterator* iter,
     void* context);
@@ -236,17 +237,38 @@ static void tick_handler(
   }
 }
 
-static int tuple_to_int(Tuple* tuple) {
-  if (!tuple) {
-    return -1;
+static bool tuple_to_int(Tuple* tuple, int* value) {
+  if (!tuple || !value) {
+    return false;
   }
+
   switch (tuple->type) {
     case TUPLE_INT:
-      return (int)tuple->value->int32;
-    case TUPLE_CSTRING:
-      return atoi(tuple->value->cstring);
+      *value = (int)tuple->value->int32;
+      return true;
+
+    case TUPLE_CSTRING: {
+        const char* text = tuple->value->cstring;
+        int parsed = 0;
+        if (!text || text[0] == '\0') {
+          return false;
+        }
+        for (const char* p = text; *p; ++p) {
+          if (*p < '0' || *p > '9') {
+            return false;
+          }
+          int digit = *p - '0';
+          if (parsed > (INT_MAX - digit) / 10) {
+            return false;
+          }
+          parsed = (parsed * 10) + digit;
+        }
+        *value = parsed;
+        return true;
+      }
+
     default:
-      return -1;
+      return false;
   }
 }
 
@@ -260,16 +282,16 @@ static void inbox_received_callback(
   bool changed = false;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
-  int time_fmt = tuple_to_int(tf);
-  if (TIME_FORMAT_VALID(time_fmt)) {
+  int time_fmt = 0;
+  if (tuple_to_int(tf, &time_fmt) && TIME_FORMAT_VALID(time_fmt)) {
     s_runtime.settings.time_format = (uint8_t)time_fmt;
     changed = true;
     update_time();
   }
 
   Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
-  int temp_unit = tuple_to_int(tu);
-  if (TEMP_UNIT_VALID(temp_unit)) {
+  int temp_unit = 0;
+  if (tuple_to_int(tu, &temp_unit) && TEMP_UNIT_VALID(temp_unit)) {
     s_runtime.settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
     update_temp();
@@ -293,8 +315,9 @@ static void inbox_received_callback(
   }
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
-  int hr_minutes = tuple_to_int(th);
-  if (HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
+  int hr_minutes = 0;
+  if (tuple_to_int(th, &hr_minutes) &&
+      HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
     s_runtime.settings.hr_sample_minutes = (uint8_t)hr_minutes;
     #if defined(PBL_HEALTH)
     apply_hr_sample_period();
@@ -303,8 +326,9 @@ static void inbox_received_callback(
   }
 
   Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
-  int display_mode = tuple_to_int(td);
-  if (DISPLAY_MODE_VALID(display_mode) &&
+  int display_mode = 0;
+  if (tuple_to_int(td, &display_mode) &&
+      DISPLAY_MODE_VALID(display_mode) &&
       s_runtime.settings.display_mode != (uint8_t)display_mode) {
     s_runtime.settings.display_mode = (uint8_t)display_mode;
     refresh_watchface_display();
