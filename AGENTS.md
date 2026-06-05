@@ -100,6 +100,61 @@ cleaner and behavior-preserving.
 
 ---
 
+## Engineering Directives
+
+Use the stricter loop before writing code:
+
+1. Inspect current symbols and call paths.
+2. Identify existing vocabulary, ownership, platform guards, and state.
+3. State the intended patch shape before editing.
+4. Edit only after terms and branches line up.
+5. Build and review the diff against the stated intent.
+
+Prevent drift:
+
+- Reuse existing sentinels, enum names, macros, message keys, and product
+  vocabulary. Do not introduce adjacent names for an existing concept.
+- When changing a platform-bound header or API, audit every include and every
+  caller for required platform guards. In particular, `health.h` and any
+  `Health*` symbols must remain behind `PBL_HEALTH` guardrails.
+- Audit C, PebbleKit JS, Clay config, `package.json`, README, AGENTS, and
+  manual AppMessage assumptions together when message shape changes.
+- Prefer existing module-owned contracts over new variables or helper
+  functions. Add a new variable only when no existing source of truth already
+  expresses the state.
+
+State and rendering:
+
+- Store source state, not redundant derived render state, unless the derived
+  value is expensive or impossible to recompute.
+- Derive text/icon colors from value, availability, and palette at update or
+  render time where practical.
+- Avoid storing separate icon color globals when the color can be cheaply and
+  clearly derived from module-owned source state.
+- If palette resolution ever fails, data display should degrade to a simple
+  black-and-white presentation instead of blocking the watchface.
+
+Text-first controls:
+
+- Text is the primary glance surface. Icons are secondary visual support.
+- If a metric's text layer cannot be created, do not create or depend on that
+  metric's icon. A text-only metric is acceptable; an icon-only metric is not.
+- If an icon layer cannot be created, continue updating the corresponding text.
+- Log layer creation failures once where creation happens. Avoid repeated
+  refresh-time log spam for known-missing layers.
+
+Main boundary:
+
+- Keep `main.c` moving toward lifecycle and dispatch only: window lifecycle,
+  root layer discovery, module initialization/deinitialization order, service
+  subscription/unsubscription, and AppMessage callback entry points.
+- Move buffers, formatting, rendering state, and module-owned data contracts
+  out of `main.c` when a clean behavior-preserving boundary exists.
+- Temperature, battery, steps, BPM, and date/time display state should be
+  owned by their cohesive modules rather than by `main.c`.
+
+---
+
 ## Rectangular Layout Baseline
 
 Rectangular layout is calculated in `layout_calculate()`.

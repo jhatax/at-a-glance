@@ -4,52 +4,57 @@
 
 - Workspace: `/Users/manomeht/Code/life-at-a-glance-emery-wf`
 - Product: Pebble SDK watchface, "Life at a Glance".
-- Date: June 3, 2026.
+- Date: June 5, 2026.
 - Current target platforms in `package.json`: `aplite`, `basalt`,
   `diorite`, `emery`, and `flint`.
-- Latest commits:
-  - `f82682c` `Tune secondary metric typography`
-  - `db7de61` `Expand weather condition glyph rendering`
-  - `043cca4` `Add weather condition icon support`
-  - `c34396c` `Add Flint support through Rebble Clay`
-  - `6e2b9c0` `Tighten embedded geometry helper boundaries`
-- Last known build status: `pebble build` passed after the helper, layout,
-  display, settings, health, and battery-module slices. Linker RWX warnings
-  are known non-fatal Pebble toolchain noise.
-- Working tree at handoff: module extraction work is staged in slices while
-  the active slice is reviewed and built.
+- Last known build status: `pebble build` passed after cleanup commits #9
+  and #10. Linker RWX warnings are known non-fatal Pebble toolchain noise.
+- Working tree at handoff: clean after `38028bd`.
+
+Latest cleanup-series commits:
+
+- `38028bd` `Code clean-up #10: Parse settings tuples strictly`
+- `f051b30` `Code clean-up #9: Improve AppMessage diagnostics`
+- `1e6d3ca` `Code clean-up #8: Collapse health platform guards`
+- `ae2f6e0` `Code clean-up #7: Document OAK weather fallback`
+- `43589e3` `Code clean-up #6: Show zero steps`
+- `15a53fe` `Code clean-up #5: Send unavailable weather explicitly`
+- `749a86e` `Code clean-up #4: Stop persisting temperature`
+- `ab7ced1` `Code clean-up #3: Clarify product and module contracts`
+- `0e48214` `Code clean-up #2: Move helper bodies out of headers`
+- `140bc59` `Code clean-up #1: Use macro for text buffer size`
 
 ## Collaboration Directives
 
-This repo has produced the best results when the agent slows down and thinks
-like an architect before editing. The recurring failure mode is jumping into
-code too early, creating broad helpers, or making layout decisions without
-auditing their visual and platform ramifications.
+Use the strict loop before writing code:
 
-Use this cycle for substantive work:
+1. Inspect current symbols and call paths.
+2. Identify existing vocabulary, ownership, and platform guards.
+3. State the intended patch shape before editing.
+4. Edit only after the terms and branches line up.
+5. Build and review the diff against the stated intent.
 
-1. Inspect the live code, package metadata, build rules, generated resources,
-   and dirty tree.
-2. Identify every affected state variable, layer, update proc, AppMessage key,
-   persisted field, and platform guard.
-3. Audit call-sites and declaration-definition pairs before proposing edits.
-4. Confirm product/layout decisions with the user when they affect placement,
-   alignment, hierarchy, or visible behavior.
-5. Execute the smallest coherent slice.
-6. Review the diff as if doing a code review, then build and commit the slice.
+Hard lessons from the latest cleanup thread:
 
-Be self-critical:
-
-- Use a review mindset before and after editing. Findings should be grounded
-  in files, functions, and behavior, not vibes.
-- Do not create helpers just to avoid basic arithmetic. Extract helpers only
-  when they clarify a real boundary, reduce meaningful duplication, or match
-  an established module seam.
-- Embedded C constraints matter. Avoid large struct pass-by-value when scalar
-  fields or caller-owned pointer outputs are practical.
-- Rendering callbacks must stay lightweight. Avoid allocation, I/O, parsing,
-  or complicated formatting inside update procs.
-- Keep code slices small: audit, patch, build, commit, then move on.
+- Prevent drift before adding code. Reuse existing sentinels, enum names,
+  macros, and product vocabulary instead of creating adjacent names.
+- Audit every include of a platform-bound header when changing its API or
+  guard shape. This is especially important for `PBL_HEALTH` and
+  `health.h`, because unguarded `HealthEventType` references break
+  non-health platforms.
+- Store source state, not redundant derived render state, unless the derived
+  value is expensive or impossible to recompute. Derived text/icon colors
+  should come from value, availability, and palette at render/update time.
+- Do not add state variables or helper functions just because they are
+  convenient. First check whether an existing variable, macro, enum, or
+  module-owned contract already expresses the concept.
+- Text is the primary glance surface. Icons are secondary support. Missing
+  icon controls must not suppress text updates.
+- If a required text control for a metric cannot be created, do not create
+  or depend on that metric's icon. A text-only metric is acceptable; an
+  icon-only metric is not a useful product state.
+- Log creation failures once where they happen. Avoid refresh-time log spam
+  for missing layers that were already known to be absent.
 
 ## Current Runtime Model
 
@@ -57,137 +62,151 @@ Settings and AppMessage keys:
 
 - `TIME_FORMAT`: `0` 24-hour, `1` 12-hour
 - `TEMP_UNIT`: `0` Fahrenheit, `1` Celsius
-- `TEMPERATURE`: Celsius tenths from PebbleKit JS
+- `TEMPERATURE`: runtime-only Celsius tenths from PebbleKit JS
 - `WEATHER_CONDITION`: raw Open-Meteo `weather_code`
 - `HR_SAMPLE_MINUTES`: enum-backed sampling interval
 - `DISPLAY_MODE`: `0` dark, `1` light
 
-Current PebbleKit JS weather behavior:
+Persisted settings:
+
+- `WatchfaceSettings` owns user preferences only: time format, temperature
+  unit, HR sample interval, and display mode.
+- Temperature is no longer persisted.
+- Weather condition is not persisted.
+- There is no offline weather cache and no weather timestamp model.
+
+PebbleKit JS weather behavior:
 
 - `src/pkjs/index.js` fetches `temperature_2m` and `weather_code` from
-  Open-Meteo.
-- JS sends the raw numeric weather code to C. Do not convert it to strings.
-- If geolocation fails, JS currently falls back to fixed coordinates in
-  `DEFAULT_LAT` and `DEFAULT_LON`. This needs a deliberate follow-up.
+  Open-Meteo every 30 minutes.
+- JS sends raw numeric weather codes to C. Do not convert them to strings.
+- If weather cannot be fetched or parsed, JS sends:
+  - `TEMPERATURE = WEATHER_TEMP_INVALID`
+  - `WEATHER_CONDITION = WEATHER_CONDITION_UNKNOWN`
+- If phone geolocation is unavailable, JS falls back to OAK, the product
+  home location: `37.85626, -122.21383`.
+
+AppMessage parsing:
+
+- Clay currently sends select values as numeric strings.
+- C accepts integer tuples and all-digit string tuples.
+- C rejects empty, malformed, signed, partially numeric, and overflowing
+  setting strings before range validation.
+
+## Main Boundary Direction
+
+Current reality:
+
+- `main.c` still owns window lifecycle, service subscriptions, top date/time
+  layers, temperature text, AppMessage receive flow, and high-level refresh
+  order.
+- `battery.c` owns battery state, text, icon, color, callback-state updates,
+  and rendering.
+- `health.c` owns BPM/steps state, text buffers, icons, colors, and health
+  service update handling.
+- `weather.c` owns weather condition glyph rendering and unavailable glyph
+  rendering. Temperature text is still in `main.c`.
+- `settings.c` owns persisted settings defaults, validation, load, save, and
+  HR sampling interval mapping.
+
+Target direction through initial GitHub release:
+
+- Hold `main.c` to lifecycle and dispatch only.
+- Move date/time buffers and formatting into a clock/time-display module.
+- Move temperature text, formatting, and weather AppMessage handling into
+  the weather module.
+- Keep settings tuple parsing/application narrow and explicit.
+- Do not move behavior across modules unless the new boundary is cleaner and
+  behavior-preserving.
+
+## Visual Contract
+
+Text-first hierarchy:
+
+- Date/time text are core watchface controls.
+- Battery percentage text is more important than the battery icon.
+- Temperature text is more important than the weather icon.
+- BPM and steps text are more important than their icons on `PBL_HEALTH`
+  builds.
+- Icons are helpful affordances, not required for glanceability.
+
+Must-initialize controls for a useful launched watchface:
+
+- window and root layer
+- date text layer
+- time text layer
+- battery text layer
+- temperature text layer
+- on `PBL_HEALTH` builds: BPM and steps text layers
+
+Optional controls:
+
+- battery, weather, BPM, and steps icons
+- color-specific palette richness beyond black/white fallback
+- live weather data
+- live health values
+- phone/AppMessage availability
+
+Palette fallback:
+
+- `display_get_palette()` should be treated as the palette owner.
+- If palette resolution ever fails, the product should degrade to a simple
+  black-and-white display rather than blocking data display.
+
+Icon/render-state simplification:
+
+- Prefer source state over derived render globals.
+- Battery icon/text color should derive from `BatteryChargeState`.
+- BPM text/icon color should derive from BPM value plus availability.
+- Steps icon color should derive from steps availability and palette.
+- Avoid separate stored icon color globals when render-time calculation is
+  clear and cheap.
 
 ## Current Layout Snapshot
 
-Rectangular layout is calculated in `layout_calculate()`.
+Rectangular layout is calculated in `layout_calculate()` from display
+dimensions and At A Glance product constants in `src/c/ataglance.h`.
 
-For Emery (`200x228`):
+Current implementation no longer draws the horizontal rule. Some README and
+AGENTS layout text still needs a full drift cleanup after code behavior
+stabilizes.
 
-- spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
-- date: `GRect(8, 8, 184, 20)`, `FONT_KEY_GOTHIC_18_BOLD`
-- time: `GRect(8, 58, 184, 48)`, `FONT_KEY_BITHAM_42_BOLD`
-- rule: line from `(8, 114)` to `(192, 114)`, 1px stroke
-- BPM icon: `GRect(8, 118, 28, 28)`
-- BPM text: `GRect(38, 122, 28, 20)`, `FONT_KEY_GOTHIC_18`
-- steps icon: `GRect(122, 118, 28, 28)`
-- steps text: `GRect(152, 122, 40, 20)`, `FONT_KEY_GOTHIC_18`
-- weather icon: `GRect(8, 196, 28, 28)`
-- temperature text: `GRect(38, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
-- battery icon: `GRect(128, 196, 28, 28)`
-- battery text: `GRect(158, 200, 34, 20)`,
-  `FONT_KEY_GOTHIC_18_BOLD`
+For Emery (`200x228`), the current rectangular model is still organized as:
+
+- date row
+- hero time row
+- health metrics row
+- bottom weather/battery row
 
 Text alignment is intentionally left-aligned across all columns.
 
-## Palette And Unavailable State
+## Remaining Cleanup Tracker
 
-Palette definitions live in `src/modules/display.c` as `VisualPalette`.
+1. Battery/health partial refresh policy.
+   - Apply the text-first contract.
+   - If text creation fails for a metric, do not create/depend on that
+     metric's icon.
+   - If icon creation fails, continue updating text.
+   - Log creation failures once.
 
-Unavailable text token: `---`.
+2. Main ownership reduction.
+   - Move temperature display and weather tuple application out of `main.c`.
+   - Move date/time display out of `main.c`.
+   - Keep main to lifecycle, subscriptions, and dispatch.
 
-Color displays:
+3. Docs drift cleanup.
+   - README and AGENTS still contain stale layout/rule/glyph details.
+   - Reconcile against `src/c/main.c`, `src/c/ataglance.h`,
+     `src/modules/*.h`, `src/pkjs/config.json`, and `package.json`.
 
-- text-layer backgrounds stay `GColorClear`
-- unavailable text is mode-specific
-- unavailable icons use the current background and draw a visible data-gap
-  mark instead of switching to an inverse tile
-
-Black-and-white displays:
-
-- unavailable text is white in dark mode and black in light mode.
-- color-specific semantic choices fall back to primary text.
-
-## Weather Module State
-
-Weather icon rendering now lives in `src/modules/weather.c`.
-
-Current model:
-
-- JS sends raw Open-Meteo weather codes.
-- C maps codes into private `WeatherIconKind` buckets.
-- Glyphs are procedural and lightweight. No Carbon/IcoMoon font and no PDC
-  weather asset set yet.
-- Weather glyph wrappers are file-local `static inline` functions.
-- Snow grains are folded into snow.
-- Freezing drizzle and freezing rain share the frozen-rain glyph.
-- Unknown maps to a question-mark glyph.
-
-Do not move weather drawing back into `main.c`.
-
-## Current Module Boundaries
-
-- `src/modules/helper.h`: small static inline icon-scaling helpers shared by
-  procedural glyph modules.
-- `src/modules/layout.c`: rectangular frame calculation through
-  `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
-- `src/modules/display.c`: palette selection, unavailable token, and common
-  text-layer display updates.
-- `src/modules/settings.c`: persisted settings defaults, validation, load,
-  save, and HR sampling interval mapping.
-- `src/modules/health.c`: BPM and steps layers, procedural health icons,
-  health text buffers, health colors, and health-service update handling.
-- `src/modules/battery.c`: battery icon and text layers, current battery
-  state, battery colors, procedural battery drawing, and battery callbacks.
-
-`main.c` still owns the window, top/date/time layers, temperature text,
-weather AppMessage handling, service subscriptions, and high-level refresh
-order.
-
-## Recent Lessons
-
-- Screenshots and emulator automation have been flaky. Build validation is
-  still required; screenshots are optional when the user says to skip them.
-- The user has repeatedly corrected unplanned layout changes. Treat x/y
-  placement, alignment, font hierarchy, and row density as product decisions.
-- `PBL_IF_COLOR_ELSE()` keeps monochrome/color palette choices cleaner than
-  open-coded `#if defined(PBL_COLOR)` in many value assignments.
-- Large by-value structs in embedded C are a non-negotiable concern for this
-  project.
-- Commit messages for non-trivial code should have a precise header and a
-  bulleted body naming key functions and behavior changes.
-
-## Pending Punchlist
-
-Immediate planning topics:
-
-1. Round-watchface layout plan.
-   - Research Pebble/Rebble round-display guidance before coding.
-   - Account for row-specific clipping on circular screens.
-   - Do not assume the rectangular layout can simply scale.
-
-2. Main-module architecture plan.
-   - Settings, layout, palette/display, health, battery, helper, and weather
-     now have module boundaries.
-   - Remaining candidates are narrower: messaging/weather receive flow,
-     temperature formatting/display, and top-row time/date.
-   - Extract only when the boundary is real and behavior-preserving.
-
-3. State hygiene plan.
-   - Split state into explicit structs only where it improves clarity.
-   - Avoid a giant app-state struct if it only hides globals without reducing
-     coupling.
-
-4. Persisted settings tolerance.
-   - Current `settings_load()` reads the whole struct directly.
-   - Investigate `persist_get_size()` and versioned migration patterns.
-   - Take cues from TimeStyle and Carbon, but keep the first patch small.
-
-5. Phone weather fallback configurability.
-   - Current fixed-coordinate fallback is a product/privacy decision.
-   - Consider localStorage cache-first fallback before adding Clay settings.
+4. Publish-prep audit.
+   - build check
+   - secret/private-data audit
+   - `.gitignore`
+   - SDK/platform metadata
+   - README review
+   - screenshots only if useful and approved
+   - clear initial private GitHub commit
 
 ## Validation Checklist For Next Agent
 
@@ -196,6 +215,6 @@ Before any commit:
 1. Run `git status --short`.
 2. Inspect diffs, including docs and generated files.
 3. Run `pebble build` for code changes.
-4. Confirm no untracked screenshots, build artifacts, or private data are
-   staged.
+4. Confirm no untracked screenshots, build artifacts, scratch buffers, or
+   private data are staged.
 5. Use a detailed commit body for non-trivial changes.
