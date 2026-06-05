@@ -71,7 +71,7 @@ static void draw_battery_charging_bolt(
     const GSize* bounds_size,
     GColor color) {
   graphics_context_set_stroke_color(ctx, s_palette->background);
-  graphics_context_set_stroke_width(ctx, 5);
+  graphics_context_set_stroke_width(ctx, 1);
   helper_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
   helper_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
   helper_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);

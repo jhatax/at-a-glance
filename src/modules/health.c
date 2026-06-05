@@ -130,7 +130,7 @@ static void draw_bpm_icon_with_color(
   }
 
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 3);
+  graphics_context_set_stroke_width(ctx, 2);
   helper_draw_scaled_icon_line(ctx, bounds_size, 3, 15, 8, 15);
   helper_draw_scaled_icon_line(ctx, bounds_size, 8, 15, 11, 8);
   helper_draw_scaled_icon_line(ctx, bounds_size, 11, 8, 15, 22);

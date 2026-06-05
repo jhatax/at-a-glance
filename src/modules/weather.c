@@ -193,7 +193,7 @@ static void draw_weather_cloud(
     GColor color) {
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_fill_color(ctx, s_weather_palette->background);
-  graphics_context_set_stroke_width(ctx, 3);
+  graphics_context_set_stroke_width(ctx, 2);
 
   weather_draw_circle(ctx, frame, 8, 16, 5);
   weather_draw_circle(ctx, frame, 14, 11, 6);
@@ -237,7 +237,7 @@ static void draw_weather_fog_icon(
     const GRect* frame) {
   graphics_context_set_stroke_color(ctx, weather_color_for_kind(
       WEATHER_ICON_FOG));
-  graphics_context_set_stroke_width(ctx, 3);
+  graphics_context_set_stroke_width(ctx, 2);
   weather_line(ctx, frame, 5, 10, 23, 10);
   weather_line(ctx, frame, 2, 15, 26, 15);
   weather_line(ctx, frame, 7, 20, 21, 20);
@@ -260,7 +260,7 @@ static void draw_weather_rain_marks(
     GColor color,
     bool heavy) {
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 3);
+  graphics_context_set_stroke_width(ctx, 2);
 
   if (heavy) {
     weather_line(ctx, frame, 6, 3, 2, 25);
@@ -308,7 +308,7 @@ static void draw_weather_sleet_icon(
   GColor color = weather_color_for_kind(WEATHER_ICON_SLEET);
 
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 3);
+  graphics_context_set_stroke_width(ctx, 2);
   weather_line(ctx, frame, 7, 8, 4, 18);
   weather_line(ctx, frame, 12, 10, 9, 20);
 
@@ -355,7 +355,7 @@ static void draw_weather_bolt_icon(
       weather_legible_color());
 
   graphics_context_set_stroke_color(ctx, border_color);
-  graphics_context_set_stroke_width(ctx, 4);
+  graphics_context_set_stroke_width(ctx, 1);
   weather_line(ctx, frame, 17, 4, 9, 15);
   weather_line(ctx, frame, 9, 15, 15, 15);
   weather_line(ctx, frame, 15, 15, 10, 25);
