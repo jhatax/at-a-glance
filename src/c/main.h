@@ -3,6 +3,7 @@
 #include <pebble.h>
 #include "ataglance.h"
 #include "../modules/battery.h"
+#include "../modules/date.h"
 #include "../modules/display.h"
 #if defined(PBL_HEALTH)
 #include "../modules/health.h"
@@ -12,8 +13,7 @@
 #include "../modules/weather.h"
 
 typedef enum {
-  BUF_DATE = 0,
-  BUF_TIME,
+  BUF_TIME = 0,
   BUF_TEMP,
   BUF_TOTAL_COUNT,
   BUF_CLEANUP = BUF_TOTAL_COUNT
@@ -24,7 +24,6 @@ typedef struct {
 } WatchfaceTextState;
 
 typedef struct {
-  GFont date;
   GFont secondary_value;
   GFont battery_value;
   GFont time;
@@ -32,7 +31,6 @@ typedef struct {
 
 typedef struct {
   Window* window;
-  TextLayer* date_layer;
   TextLayer* time_layer;
   TextLayer* temp_layer;
 } WatchfaceLayerState;

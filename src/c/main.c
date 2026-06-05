@@ -10,11 +10,9 @@ static WatchfaceRuntimeState s_runtime = {0};
 static void apply_hr_sample_period();
 #endif
 static char* get_text_buffer(TextBufferId id);
-static inline void uppercase_date(char* buf);
 static void format_time(char* buf, size_t buflen, const struct tm* t);
 static bool format_temp(char* buf, size_t buflen);
 static void refresh_watchface_display();
-static void update_date();
 static void update_time();
 static void update_temp();
 #if defined(PBL_HEALTH)
@@ -43,7 +41,7 @@ static inline TextLayer* create_and_initialize_text_layer(
     GColor background_color,
     GFont font,
     GTextAlignment alignment);
-static inline void init_top_layers(
+static inline void init_time_layer(
     Layer* root,
     const WatchfaceLayout* layout);
 static inline void init_temp_column(
@@ -65,7 +63,6 @@ static void apply_hr_sample_period() {
 
 static char* get_text_buffer(TextBufferId id) {
   switch (id) {
-    case BUF_DATE:
     case BUF_TIME:
     case BUF_TEMP:
       return s_text.buffers[id];
@@ -79,18 +76,6 @@ static char* get_text_buffer(TextBufferId id) {
 
     default:
       return NULL;
-  }
-}
-
-static inline void uppercase_date(char* buf) {
-  if (!buf || strlen(buf) == 0) {
-    return;
-  }
-  int distance = 'a' - 'A';
-  for (char* p = buf;* p; ++p) {
-    if (*p >= 'a' &&* p <= 'z') {
-     *p = (char)(*p - distance);
-    }
   }
 }
 
@@ -160,26 +145,10 @@ static void refresh_watchface_display() {
   #endif
   weather_icon_mark_dirty();
 
-  update_date();
+  date_module_refresh(s_runtime.palette);
   update_time();
   battery_module_refresh(s_runtime.palette);
   update_temp();
-}
-
-static void update_date() {
-  char* buf = get_text_buffer(BUF_DATE);
-  if (!buf || !s_layers.date_layer) {
-    return;
-  }
-
-  time_t now = time(NULL);
-  struct tm* t = localtime(&now);
-  strftime(buf, ATAGLANCE_MAX_STR_LEN, "%a · %d %b", t);
-  uppercase_date(buf);
-  display_update_text_layer(
-      s_layers.date_layer,
-      buf,
-      s_runtime.palette->date);
 }
 
 static void update_time() {
@@ -234,7 +203,7 @@ static void tick_handler(
     update_time();
   }
   if (units_changed & DAY_UNIT) {
-    update_date();
+    date_module_refresh(s_runtime.palette);
   }
 }
 
@@ -385,16 +354,9 @@ static inline TextLayer* create_and_initialize_text_layer(
   return layer;
 }
 
-static inline void init_top_layers(
+static inline void init_time_layer(
     Layer* root,
     const WatchfaceLayout* layout) {
-  s_layers.date_layer = create_and_initialize_text_layer(
-      root,
-      &layout->date_frame,
-      GColorClear,
-      s_fonts.date,
-      GTextAlignmentLeft);
-
   s_layers.time_layer = create_and_initialize_text_layer(
       root,
       &layout->time_frame,
@@ -431,7 +393,11 @@ static void main_window_load(Window* window) {
   layout_calculate(bounds.size.w, bounds.size.h, &s_runtime.layout);
 
   // Top row: date and hero time.
-  init_top_layers(root, &s_runtime.layout);
+  date_module_create(
+      root,
+      &s_runtime.layout.date_frame,
+      s_runtime.palette);
+  init_time_layer(root, &s_runtime.layout);
 
   // Middle row: health metrics (BPM and steps).
   #if defined(PBL_HEALTH)
@@ -460,10 +426,7 @@ static void main_window_load(Window* window) {
 static void main_window_unload(Window* window) {
   (void)window;
 
-  if (s_layers.date_layer) {
-    text_layer_destroy(s_layers.date_layer);
-    s_layers.date_layer = NULL;
-  }
+  date_module_destroy();
 
   if (s_layers.time_layer) {
     text_layer_destroy(s_layers.time_layer);
@@ -504,7 +467,6 @@ static void init(void) {
       s_runtime.settings.display_mode);
   weather_icon_init();
 
-  s_fonts.date = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   s_fonts.secondary_value = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_fonts.battery_value = fonts_get_system_font(
       FONT_KEY_GOTHIC_18_BOLD);
