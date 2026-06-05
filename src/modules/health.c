@@ -281,7 +281,7 @@ static void update_steps(void) {
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue steps = health_service_sum_today(HealthMetricStepCount);
-    if (steps > 0) {
+    if (steps >= 0) {
       snprintf(steps_buf, ATAGLANCE_MAX_STR_LEN, "%d", (int)steps);
       text_color = s_palette->primary_text;
       s_steps_icon_color = s_palette->steps_icon;
