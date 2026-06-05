@@ -53,7 +53,10 @@ static void settings_read_stored(WatchfaceSettings* settings) {
     read_size = (int)sizeof(stored);
   }
 
-  if (persist_read_data(c_key_persisted_settings, &stored, read_size) > 0) {
+  if (persist_read_data(
+      c_key_persisted_settings,
+      &stored,
+      read_size) > 0) {
     *settings = stored;
   }
 }
@@ -91,6 +94,9 @@ void settings_save(const WatchfaceSettings* settings) {
     return;
   }
 
-  persist_write_data(c_key_persisted_settings, settings, sizeof(*settings));
+  persist_write_data(
+      c_key_persisted_settings,
+      settings,
+      sizeof(*settings));
 }
 // End "API" block
