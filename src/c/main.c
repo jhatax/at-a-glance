@@ -1,14 +1,19 @@
-#include "main.h"
+#include <pebble.h>
+
+#include "ataglance.h"
 #include "../modules/battery.h"
+#include "../modules/display.h"
 #include "../modules/helper.h"
 #if defined(PBL_HEALTH)
 #include "../modules/health.h"
 #endif
+#include "../modules/settings.h"
 #include "../modules/watchface_composer.h"
 #include "../modules/weather.h"
 
-static WatchfaceLayerState s_layers;
-static WatchfaceRuntimeState s_runtime = {0};
+static Window* s_window;
+static WatchfaceSettings s_settings;
+static const VisualPalette* s_palette;
 
 #if defined(PBL_HEALTH)
 static void apply_hr_sample_period();
@@ -42,25 +47,24 @@ static void deinit(void);
 #if defined(PBL_HEALTH)
 static void apply_hr_sample_period() {
   uint8_t minutes = settings_get_hr_sample_minutes(
-      s_runtime.settings.hr_sample_minutes);
+      s_settings.hr_sample_minutes);
   uint16_t interval_sec = (uint16_t)minutes * 60;
   health_service_set_heart_rate_sample_period(interval_sec);
 }
 #endif
 
 static void refresh_watchface_display() {
-  if (!s_layers.window) {
+  if (!s_window) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot refresh watchface display without a window");
     return;
   }
 
-  s_runtime.palette = display_get_palette(
-      s_runtime.settings.display_mode);
+  s_palette = display_get_palette(s_settings.display_mode);
   watchface_composer_refresh(
-      s_layers.window,
-      &s_runtime.settings,
-      s_runtime.palette);
+      s_window,
+      &s_settings,
+      s_palette);
 }
 
 #if defined(PBL_HEALTH)
@@ -81,8 +85,8 @@ static void tick_handler(
 
   watchface_composer_handle_tick(
       units_changed,
-      &s_runtime.settings,
-      s_runtime.palette);
+      &s_settings,
+      s_palette);
 }
 
 static void inbox_received_callback(
@@ -102,7 +106,7 @@ static void inbox_received_callback(
   if (tf &&
       helper_tuple_to_int(tf, &time_fmt) &&
       TIME_FORMAT_VALID(time_fmt)) {
-    s_runtime.settings.time_format = (uint8_t)time_fmt;
+    s_settings.time_format = (uint8_t)time_fmt;
     changed = true;
     refresh_watchface_display();
   } else if (tf) {
@@ -115,7 +119,7 @@ static void inbox_received_callback(
   if (tu &&
       helper_tuple_to_int(tu, &temp_unit) &&
       TEMP_UNIT_VALID(temp_unit)) {
-    s_runtime.settings.temp_unit = (uint8_t)temp_unit;
+    s_settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
     refresh_watchface_display();
   } else if (tu) {
@@ -127,8 +131,8 @@ static void inbox_received_callback(
   if (tt && tt->type == TUPLE_INT) {
     weather_module_set_temperature(
         (int16_t)tt->value->int32,
-        s_runtime.settings.temp_unit,
-        s_runtime.palette);
+        s_settings.temp_unit,
+        s_palette);
   } else if (tt) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid TEMPERATURE");
@@ -138,8 +142,8 @@ static void inbox_received_callback(
   if (tw && tw->type == TUPLE_INT) {
     weather_module_set_condition(
         (int16_t)tw->value->int32,
-        s_runtime.settings.temp_unit,
-        s_runtime.palette);
+        s_settings.temp_unit,
+        s_palette);
   } else if (tw) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid WEATHER_CONDITION");
@@ -150,7 +154,7 @@ static void inbox_received_callback(
   if (th &&
       helper_tuple_to_int(th, &hr_minutes) &&
       HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
-    s_runtime.settings.hr_sample_minutes = (uint8_t)hr_minutes;
+    s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
     #if defined(PBL_HEALTH)
     apply_hr_sample_period();
     #endif
@@ -167,8 +171,8 @@ static void inbox_received_callback(
         helper_tuple_to_int(td, &display_mode) &&
         DISPLAY_MODE_VALID(display_mode);
     if (display_mode_is_valid &&
-        s_runtime.settings.display_mode != (uint8_t)display_mode) {
-      s_runtime.settings.display_mode = (uint8_t)display_mode;
+        s_settings.display_mode != (uint8_t)display_mode) {
+      s_settings.display_mode = (uint8_t)display_mode;
       refresh_watchface_display();
       changed = true;
     } else if (!display_mode_is_valid) {
@@ -178,7 +182,7 @@ static void inbox_received_callback(
   }
 
   if (changed) {
-    settings_save(&s_runtime.settings);
+    settings_save(&s_settings);
   }
 }
 
@@ -218,8 +222,8 @@ static void main_window_load(Window* window) {
 
   if (watchface_composer_create(
       window,
-      &s_runtime.settings,
-      s_runtime.palette)) {
+      &s_settings,
+      s_palette)) {
     refresh_watchface_display();
   }
 }
@@ -232,26 +236,25 @@ static void main_window_unload(Window* window) {
 
 static void init(void) {
   // Create the window before initializing app state and services.
-  s_layers.window = window_create();
-  if (!s_layers.window) {
+  s_window = window_create();
+  if (!s_window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create main window");
     return;
   }
 
   if (ATAGLANCE_USE_AND_PERSIST_SETTINGS) {
-    settings_load(&s_runtime.settings);
+    settings_load(&s_settings);
   } else {
-    settings_apply_defaults(&s_runtime.settings);
+    settings_apply_defaults(&s_settings);
   }
-  s_runtime.palette = display_get_palette(
-      s_runtime.settings.display_mode);
+  s_palette = display_get_palette(s_settings.display_mode);
   watchface_composer_init();
 
-  window_set_window_handlers(s_layers.window, (WindowHandlers) {
+  window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,
     .unload = main_window_unload,
   });
-  window_stack_push(s_layers.window, true);
+  window_stack_push(s_window, true);
 
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -277,7 +280,7 @@ static void init(void) {
 }
 
 static void deinit(void) {
-  if (!s_layers.window) {
+  if (!s_window) {
     return;
   }
   tick_timer_service_unsubscribe();
@@ -286,10 +289,10 @@ static void deinit(void) {
   #endif
   battery_state_service_unsubscribe();
   if (ATAGLANCE_USE_AND_PERSIST_SETTINGS) {
-    settings_save(&s_runtime.settings);
+    settings_save(&s_settings);
   }
-  window_destroy(s_layers.window);
-  s_layers.window = NULL;
+  window_destroy(s_window);
+  s_window = NULL;
 }
 
 int main(void) {
