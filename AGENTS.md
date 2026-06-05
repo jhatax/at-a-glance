@@ -78,9 +78,11 @@ At A Glance: Configuration
 
 Use these boundaries when reviewing or extending the code:
 
-- `src/c/main.c`: window lifecycle, service subscriptions, top date/time
-  layers, temperature text, AppMessage receive flow, and high-level refresh
-  order.
+- `src/c/main.c`: window lifecycle, service subscriptions,
+  settings/palette selection, AppMessage receive flow, and event routing.
+- `src/modules/watchface_composer.c`: screen assembly, root layer
+  discovery, shared system fonts, module creation/destruction order, and
+  full-display refresh coordination.
 - `src/modules/layout.c`: rectangular frame calculation through
   `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
 - `src/modules/display.c`: palette selection, unavailable token, and common
@@ -88,8 +90,13 @@ Use these boundaries when reviewing or extending the code:
 - `src/modules/settings.c`: persisted settings defaults, validation, load,
   save, and HR sampling interval mapping.
 - `src/modules/helper.h`: shared static inline icon-scaling helpers.
+- `src/modules/date.c`: date text layer, date buffer, uppercase date
+  formatting, and date refresh.
+- `src/modules/time_display.c`: time text layer, time buffer,
+  time-format rendering, and time refresh.
 - `src/modules/weather.c`: raw Open-Meteo weather-code mapping and
-  procedural weather glyph rendering.
+  procedural weather glyph rendering, plus temperature state, text
+  layer, formatting, and weather availability.
 - `src/modules/health.c`: BPM and steps layers, procedural health icons,
   health text buffers, colors, and health-service update handling.
 - `src/modules/battery.c`: battery icon/text layers, battery state, battery

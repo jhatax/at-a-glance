@@ -1,7 +1,14 @@
 #include "main.h"
+#include "../modules/battery.h"
+#include "../modules/date.h"
 #include "../modules/helper.h"
+#if defined(PBL_HEALTH)
+#include "../modules/health.h"
+#endif
+#include "../modules/time_display.h"
+#include "../modules/watchface_composer.h"
+#include "../modules/weather.h"
 
-static WatchfaceFontState s_fonts;
 static WatchfaceLayerState s_layers;
 static WatchfaceRuntimeState s_runtime = {0};
 
@@ -23,9 +30,9 @@ static void inbox_dropped_callback(
     AppMessageResult reason,
     void* context);
 static void outbox_failed_callback(
-    DictionaryIterator *iterator,
+    DictionaryIterator* iterator,
     AppMessageResult reason,
-    void *context);
+    void* context);
 static void outbox_sent_callback(
     DictionaryIterator* iterator,
     void* context);
@@ -52,21 +59,9 @@ static void refresh_watchface_display() {
 
   s_runtime.palette = display_get_palette(
       s_runtime.settings.display_mode);
-  window_set_background_color(
+  watchface_composer_refresh(
       s_layers.window,
-      s_runtime.palette->background);
-
-  #if defined(PBL_HEALTH)
-  health_module_refresh(s_runtime.palette);
-  #endif
-
-  date_module_refresh(s_runtime.palette);
-  time_display_module_refresh(
-      s_runtime.settings.time_format,
-      s_runtime.palette);
-  battery_module_refresh(s_runtime.palette);
-  weather_module_refresh(
-      s_runtime.settings.temp_unit,
+      &s_runtime.settings,
       s_runtime.palette);
 }
 
@@ -231,62 +226,18 @@ static void main_window_load(Window* window) {
     return;
   }
 
-  Layer* root = window_get_root_layer(window);
-  if (!root) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
-    return;
+  if (watchface_composer_create(
+      window,
+      &s_runtime.settings,
+      s_runtime.palette)) {
+    refresh_watchface_display();
   }
-
-  GRect bounds = layer_get_bounds(root);
-  layout_calculate(bounds.size.w, bounds.size.h, &s_runtime.layout);
-
-  // Top row: date and hero time.
-  date_module_create(
-      root,
-      &s_runtime.layout.date_frame,
-      s_runtime.palette);
-  time_display_module_create(
-      root,
-      &s_runtime.layout.time_frame,
-      s_runtime.palette);
-
-  // Middle row: health metrics (BPM and steps).
-  #if defined(PBL_HEALTH)
-  health_module_create(
-      root,
-      &s_runtime.layout,
-      s_fonts.secondary_value,
-      s_runtime.palette);
-  #endif
-
-  // Bottom row: temperature/weather and battery.
-  weather_module_create(
-      root,
-      &s_runtime.layout,
-      s_runtime.settings.temp_unit,
-      s_runtime.palette);
-  battery_module_create(
-      root,
-      &s_runtime.layout,
-      s_fonts.battery_value,
-      s_runtime.palette);
-
-  refresh_watchface_display();
 }
 
 static void main_window_unload(Window* window) {
   (void)window;
 
-  date_module_destroy();
-  time_display_module_destroy();
-
-  #if defined(PBL_HEALTH)
-  health_module_destroy();
-  #endif
-
-  weather_module_destroy();
-
-  battery_module_destroy();
+  watchface_composer_destroy();
 }
 
 static void init(void) {
@@ -304,11 +255,7 @@ static void init(void) {
   }
   s_runtime.palette = display_get_palette(
       s_runtime.settings.display_mode);
-  weather_module_init();
-
-  s_fonts.secondary_value = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  s_fonts.battery_value = fonts_get_system_font(
-      FONT_KEY_GOTHIC_18_BOLD);
+  watchface_composer_init();
 
   window_set_window_handlers(s_layers.window, (WindowHandlers) {
     .load = main_window_load,
