@@ -41,4 +41,5 @@ typedef struct {
   WatchfaceSettings settings;
   WatchfaceLayout layout;
   const VisualPalette* palette;
+  int16_t temp_celsius_tenths;
 } WatchfaceRuntimeState;

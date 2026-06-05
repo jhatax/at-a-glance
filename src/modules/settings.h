@@ -1,7 +1,6 @@
 #pragma once
 
 #include <pebble.h>
-#include "weather.h"
 
 typedef enum {
   TEMP_UNIT_F = 0,
@@ -49,7 +48,6 @@ typedef struct {
   uint8_t time_format;
   uint8_t hr_sample_minutes;
   uint8_t display_mode;
-  int16_t temp_celsius_tenths;
 } WatchfaceSettings;
 
 void settings_load(WatchfaceSettings* settings);

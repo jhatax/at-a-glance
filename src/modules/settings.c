@@ -21,7 +21,6 @@ void settings_apply_defaults(WatchfaceSettings* settings) {
   settings->time_format = TIME_FMT_DEFAULT;
   settings->hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   settings->display_mode = DISPLAY_MODE_DEFAULT;
-  settings->temp_celsius_tenths = WEATHER_TEMP_INVALID;
 }
 
 static void settings_sanitize(WatchfaceSettings* settings) {
@@ -60,7 +59,6 @@ static void settings_read_stored(WatchfaceSettings* settings) {
   }
 
   WatchfaceSettings stored = {0};
-  stored.temp_celsius_tenths = WEATHER_TEMP_INVALID;
 
   int read_size = stored_size;
   if (read_size > (int)sizeof(stored)) {

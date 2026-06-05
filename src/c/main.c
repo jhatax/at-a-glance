@@ -112,7 +112,7 @@ static bool format_temp(char* buf, size_t buflen) {
     return false;
   }
 
-  int c_tenths = s_runtime.settings.temp_celsius_tenths;
+  int c_tenths = s_runtime.temp_celsius_tenths;
 
   if (c_tenths == WEATHER_TEMP_INVALID) {
     // Temperature can be 3-digits, so print 3 hyphens and the unit
@@ -277,16 +277,15 @@ static void inbox_received_callback(
 
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
   if (tt && tt->type == TUPLE_INT) {
-    s_runtime.settings.temp_celsius_tenths = (int16_t)tt->value->int32;
+    s_runtime.temp_celsius_tenths = (int16_t)tt->value->int32;
     update_temp();
-    changed = true;
   }
 
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
     weather_icon_set_condition((int16_t)tw->value->int32);
     weather_icon_update_display(
-        s_runtime.settings.temp_celsius_tenths != WEATHER_TEMP_INVALID,
+        s_runtime.temp_celsius_tenths != WEATHER_TEMP_INVALID,
         s_runtime.palette);
   }
 
@@ -469,6 +468,7 @@ static void init(void) {
   } else {
     settings_apply_defaults(&s_runtime.settings);
   }
+  s_runtime.temp_celsius_tenths = WEATHER_TEMP_INVALID;
   s_runtime.palette = display_get_palette(
       s_runtime.settings.display_mode);
   weather_icon_init();
