@@ -10,3 +10,5 @@ int16_t helper_scale_round(
     int16_t input_value,
     int16_t numerator,
     int16_t denominator);
+
+bool helper_tuple_to_int(Tuple* tuple, int* value);

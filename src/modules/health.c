@@ -248,8 +248,6 @@ static void update_bpm(void) {
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
-  } else {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "BPM icon layer is unavailable");
   }
 }
 
@@ -298,8 +296,6 @@ static void update_steps(void) {
 
   if (s_steps_icon_layer) {
     layer_mark_dirty(s_steps_icon_layer);
-  } else {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Steps icon layer is unavailable");
   }
 }
 

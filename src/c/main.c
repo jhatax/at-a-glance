@@ -1,5 +1,5 @@
 #include "main.h"
-#include <limits.h>
+#include "../modules/helper.h"
 
 static WatchfaceTextState s_text;
 static WatchfaceFontState s_fonts;
@@ -24,7 +24,6 @@ static void battery_handler(BatteryChargeState state);
 static void tick_handler(
     struct tm* tick_time,
     TimeUnits units_changed);
-static bool tuple_to_int(Tuple* tuple, int* value);
 static void inbox_received_callback(
     DictionaryIterator* iter,
     void* context);
@@ -229,6 +228,8 @@ static void battery_handler(BatteryChargeState state) {
 static void tick_handler(
     struct tm* tick_time,
     TimeUnits units_changed) {
+  (void)tick_time;
+
   if (units_changed & MINUTE_UNIT) {
     update_time();
   }
@@ -237,64 +238,42 @@ static void tick_handler(
   }
 }
 
-static bool tuple_to_int(Tuple* tuple, int* value) {
-  if (!tuple || !value) {
-    return false;
-  }
-
-  switch (tuple->type) {
-    case TUPLE_INT:
-      *value = (int)tuple->value->int32;
-      return true;
-
-    case TUPLE_CSTRING: {
-        const char* text = tuple->value->cstring;
-        int parsed = 0;
-        if (!text || text[0] == '\0') {
-          return false;
-        }
-        for (const char* p = text; *p; ++p) {
-          if (*p < '0' || *p > '9') {
-            return false;
-          }
-          int digit = *p - '0';
-          if (parsed > (INT_MAX - digit) / 10) {
-            return false;
-          }
-          parsed = (parsed * 10) + digit;
-        }
-        *value = parsed;
-        return true;
-      }
-
-    default:
-      return false;
-  }
-}
-
 static void inbox_received_callback(
     DictionaryIterator* iter,
     void* context) {
-  // context is unused in this function
+  (void)context;
+
   if (!iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox received NULL iterator");
     return;
   }
   bool changed = false;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
   int time_fmt = 0;
-  if (tuple_to_int(tf, &time_fmt) && TIME_FORMAT_VALID(time_fmt)) {
+  if (tf &&
+      helper_tuple_to_int(tf, &time_fmt) &&
+      TIME_FORMAT_VALID(time_fmt)) {
     s_runtime.settings.time_format = (uint8_t)time_fmt;
     changed = true;
     update_time();
+  } else if (tf) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid TIME_FORMAT");
   }
 
   Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
   int temp_unit = 0;
-  if (tuple_to_int(tu, &temp_unit) && TEMP_UNIT_VALID(temp_unit)) {
+  if (tu &&
+      helper_tuple_to_int(tu, &temp_unit) &&
+      TEMP_UNIT_VALID(temp_unit)) {
     s_runtime.settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
     update_temp();
+  } else if (tu) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid TEMP_UNIT");
   }
 
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
@@ -302,12 +281,18 @@ static void inbox_received_callback(
   if (tt && tt->type == TUPLE_INT) {
     s_runtime.temp_celsius_tenths = (int16_t)tt->value->int32;
     weather_changed = true;
+  } else if (tt) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid TEMPERATURE");
   }
 
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
     weather_icon_set_condition((int16_t)tw->value->int32);
     weather_changed = true;
+  } else if (tw) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid WEATHER_CONDITION");
   }
 
   if (weather_changed) {
@@ -316,23 +301,34 @@ static void inbox_received_callback(
 
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
   int hr_minutes = 0;
-  if (tuple_to_int(th, &hr_minutes) &&
+  if (th &&
+      helper_tuple_to_int(th, &hr_minutes) &&
       HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
     s_runtime.settings.hr_sample_minutes = (uint8_t)hr_minutes;
     #if defined(PBL_HEALTH)
     apply_hr_sample_period();
     #endif
     changed = true;
+  } else if (th) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
 
   Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
   int display_mode = 0;
-  if (tuple_to_int(td, &display_mode) &&
-      DISPLAY_MODE_VALID(display_mode) &&
-      s_runtime.settings.display_mode != (uint8_t)display_mode) {
-    s_runtime.settings.display_mode = (uint8_t)display_mode;
-    refresh_watchface_display();
-    changed = true;
+  if (td) {
+    bool display_mode_is_valid =
+        helper_tuple_to_int(td, &display_mode) &&
+        DISPLAY_MODE_VALID(display_mode);
+    if (display_mode_is_valid &&
+        s_runtime.settings.display_mode != (uint8_t)display_mode) {
+      s_runtime.settings.display_mode = (uint8_t)display_mode;
+      refresh_watchface_display();
+      changed = true;
+    } else if (!display_mode_is_valid) {
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+              "AppMessage inbox invalid DISPLAY_MODE");
+    }
   }
 
   if (changed) {
@@ -343,21 +339,26 @@ static void inbox_received_callback(
 static void inbox_dropped_callback(
     AppMessageResult reason,
     void* context) {
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage dropped: %d", reason);
+  (void)context;
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+          "AppMessage inbox dropped: reason=%d",
+          reason);
 }
 
 static void outbox_failed_callback(
-    DictionaryIterator *iterator,
+    DictionaryIterator* iterator,
     AppMessageResult reason,
-    void *context) {
+    void* context) {
   (void)iterator;
   (void)context;
-  APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed: %d", reason);
+  APP_LOG(APP_LOG_LEVEL_ERROR,
+          "AppMessage outbox failed: reason=%d",
+          reason);
 }
 
 static void outbox_sent_callback(
-    DictionaryIterator *iterator,
-    void *context) {
+    DictionaryIterator* iterator,
+    void* context) {
   (void)iterator;
   (void)context;
 }
@@ -530,12 +531,11 @@ static void init(void) {
         health_handler,
         NULL);
     if (!health_available) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+              "Health service subscription failed");
     } else {
       apply_hr_sample_period();
     }
-  #else
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Health not available!");
   #endif
 }
 
