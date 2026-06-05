@@ -1,5 +1,4 @@
 #include "battery.h"
-#include "helper.h"
 #include "../c/ataglance.h"
 
 static char s_battery_buffer[MAX_STR_LEN];
@@ -72,21 +71,21 @@ static void draw_battery_charging_bolt(
     GColor color) {
   graphics_context_set_stroke_color(ctx, s_palette->background);
   graphics_context_set_stroke_width(ctx, 1);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 17, 3, 10, 14);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 10, 14, 16, 14);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 16, 14, 11, 25);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 11, 25, 22, 11);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 22, 11, 16, 11);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 16, 11, 17, 3);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -109,16 +108,16 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_draw_rect(
       ctx,
-      GRect(helper_scale_icon_x(&bounds.size, 2),
-            helper_scale_icon_y(&bounds.size, 8),
-            helper_scale_icon_x(&bounds.size, 22),
-            helper_scale_icon_y(&bounds.size, 13)));
+      GRect(layout_scale_icon_x(&bounds.size, 2),
+            layout_scale_icon_y(&bounds.size, 8),
+            layout_scale_icon_x(&bounds.size, 22),
+            layout_scale_icon_y(&bounds.size, 13)));
   graphics_fill_rect(
       ctx,
-      GRect(helper_scale_icon_x(&bounds.size, 24),
-            helper_scale_icon_y(&bounds.size, 12),
-            helper_scale_icon_x(&bounds.size, 2),
-            helper_scale_icon_y(&bounds.size, 5)),
+      GRect(layout_scale_icon_x(&bounds.size, 24),
+            layout_scale_icon_y(&bounds.size, 12),
+            layout_scale_icon_x(&bounds.size, 2),
+            layout_scale_icon_y(&bounds.size, 5)),
       0,
       GCornerNone);
 
@@ -128,10 +127,10 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_fill_rect(
       ctx,
-      GRect(helper_scale_icon_x(&bounds.size, 5),
-            helper_scale_icon_y(&bounds.size, 11),
-            helper_scale_icon_x(&bounds.size, fill_w),
-            helper_scale_icon_y(&bounds.size, 7)),
+      GRect(layout_scale_icon_x(&bounds.size, 5),
+            layout_scale_icon_y(&bounds.size, 11),
+            layout_scale_icon_x(&bounds.size, fill_w),
+            layout_scale_icon_y(&bounds.size, 7)),
       0,
       GCornerNone);
 

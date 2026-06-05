@@ -131,11 +131,11 @@ static void draw_bpm_icon_with_color(
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 3, 15, 8, 15);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 8, 15, 11, 8);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 11, 8, 15, 22);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 15, 22, 19, 12);
-  helper_draw_scaled_icon_line(ctx, bounds_size, 19, 12, 24, 12);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 3, 15, 8, 15);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 8, 15, 11, 8);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 11, 8, 15, 22);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 15, 22, 19, 12);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 19, 12, 24, 12);
 }
 
 static void draw_data_gap_slash(
@@ -145,7 +145,7 @@ static void draw_data_gap_slash(
   graphics_context_set_stroke_color(
       ctx,
       display_legible_over_background(s_palette));
-  helper_draw_scaled_icon_line(ctx, bounds_size, 5, 3, 24, 26);
+  layout_draw_scaled_icon_line(ctx, bounds_size, 5, 3, 24, 26);
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -182,24 +182,24 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_fill_circle(
       ctx,
-      helper_get_scaled_icon_point(&bounds.size, 14, 9),
-      helper_scale_icon_coord(&bounds.size, 7));
+      layout_scaled_icon_point(&bounds.size, 14, 9),
+      layout_scale_icon_coord(&bounds.size, 7));
 
   graphics_context_set_fill_color(ctx, s_palette->background);
   graphics_fill_rect(
       ctx,
-      GRect(helper_scale_icon_x(&bounds.size, 6),
-            helper_scale_icon_y(&bounds.size, 15),
-            helper_scale_icon_x(&bounds.size, 16),
-            helper_scale_icon_y(&bounds.size, 4)),
+      GRect(layout_scale_icon_x(&bounds.size, 6),
+            layout_scale_icon_y(&bounds.size, 15),
+            layout_scale_icon_x(&bounds.size, 16),
+            layout_scale_icon_y(&bounds.size, 4)),
       0,
       GCornerNone);
 
   graphics_context_set_fill_color(ctx, s_steps_icon_color);
   graphics_fill_circle(
       ctx,
-      helper_get_scaled_icon_point(&bounds.size, 14, 22),
-      helper_scale_icon_coord(&bounds.size, 4));
+      layout_scaled_icon_point(&bounds.size, 14, 22),
+      layout_scale_icon_coord(&bounds.size, 4));
 
   if (!s_steps_is_available) {
     draw_data_gap_slash(ctx, &bounds.size);

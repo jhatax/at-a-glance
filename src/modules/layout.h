@@ -2,6 +2,17 @@
 
 #include <pebble.h>
 
+// Reference display used for all layout decisions and icon styling
+#define DESIGN_FACE_HEIGHT 228
+#define DESIGN_FACE_WIDTH 200
+
+// Layout Decisions
+#define DESIGN_CONTENT_MARGIN 2
+#define DESIGN_ICON_TEXT_GAP 2
+#define DESIGN_ROW_GAP 8
+#define DESIGN_COLUMN_GAP 8
+#define DESIGN_ICON_SIZE 28
+
 typedef struct {
   GRect background_frame;
   GRect date_frame;
@@ -30,3 +41,24 @@ void layout_calculate(
     int16_t face_width,
     int16_t face_height,
     WatchfaceLayout* layout);
+
+int16_t layout_scale_icon_x(const GSize* bounds_size, int16_t coord);
+
+int16_t layout_scale_icon_y(const GSize* bounds_size, int16_t coord);
+
+int16_t layout_scale_icon_coord(
+    const GSize* bounds_size,
+    int16_t coord);
+
+GPoint layout_scaled_icon_point(
+    const GSize* bounds_size,
+    int16_t x,
+    int16_t y);
+
+void layout_draw_scaled_icon_line(
+    GContext* ctx,
+    const GSize* bounds_size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1);

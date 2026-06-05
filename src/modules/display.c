@@ -23,6 +23,14 @@ static const VisualPalette c_light_palette = {
 
 static const char c_unavailable_text[] = "---";
 
+GColor display_legible_over_background(const VisualPalette* palette) {
+  if (!palette) {
+    return GColorWhite;
+  }
+
+  return gcolor_legible_over(palette->background);
+}
+
 const VisualPalette* display_get_palette(uint8_t display_mode) {
   if (display_mode == DISPLAY_MODE_LIGHT) {
     return &c_light_palette;
