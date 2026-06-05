@@ -35,6 +35,13 @@ static void draw_bpm_icon_with_color(
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size);
+static void health_draw_scaled_line(
+    GContext* ctx,
+    const GSize* bounds_size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_bpm(void);
@@ -109,11 +116,11 @@ static void draw_bpm_icon_with_color(
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  layout_draw_scaled_icon_line(ctx, bounds_size, 3, 15, 8, 15);
-  layout_draw_scaled_icon_line(ctx, bounds_size, 8, 15, 11, 8);
-  layout_draw_scaled_icon_line(ctx, bounds_size, 11, 8, 15, 22);
-  layout_draw_scaled_icon_line(ctx, bounds_size, 15, 22, 19, 12);
-  layout_draw_scaled_icon_line(ctx, bounds_size, 19, 12, 24, 12);
+  health_draw_scaled_line(ctx, bounds_size, 3, 15, 8, 15);
+  health_draw_scaled_line(ctx, bounds_size, 8, 15, 11, 8);
+  health_draw_scaled_line(ctx, bounds_size, 11, 8, 15, 22);
+  health_draw_scaled_line(ctx, bounds_size, 15, 22, 19, 12);
+  health_draw_scaled_line(ctx, bounds_size, 19, 12, 24, 12);
 }
 
 static void draw_data_gap_slash(
@@ -123,7 +130,24 @@ static void draw_data_gap_slash(
   graphics_context_set_stroke_color(
       ctx,
       display_legible_over_background(s_palette));
-  layout_draw_scaled_icon_line(ctx, bounds_size, 5, 3, 24, 26);
+  health_draw_scaled_line(ctx, bounds_size, 5, 3, 24, 26);
+}
+
+static void health_draw_scaled_line(
+    GContext* ctx,
+    const GSize* bounds_size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  if (!ctx || !bounds_size) {
+    return;
+  }
+
+  graphics_draw_line(
+      ctx,
+      layout_scaled_icon_point(bounds_size, x0, y0),
+      layout_scaled_icon_point(bounds_size, x1, y1));
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {

@@ -85,23 +85,6 @@ GPoint layout_scaled_icon_point(
       layout_scale_icon_y(bounds_size, y));
 }
 
-void layout_draw_scaled_icon_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!ctx || !bounds_size) {
-    return;
-  }
-
-  graphics_draw_line(
-      ctx,
-      layout_scaled_icon_point(bounds_size, x0, y0),
-      layout_scaled_icon_point(bounds_size, x1, y1));
-}
-
 void layout_calculate(
     int16_t face_width,
     int16_t face_height,
@@ -158,13 +141,17 @@ void layout_calculate(
   const int16_t time_row_height = layout_scale_height(48, face_height);
 
   // Third-Row: Health Metrics
-  const int16_t metrics_text_height = layout_scale_height(20, face_height);
+  const int16_t metrics_text_height = layout_scale_height(
+      20,
+      face_height);
   const int16_t metrics_row_height = helper_max(
       icon_size,
       metrics_text_height);
 
   // Fourth-Row: Temp & Battery
-  const int16_t bottom_text_height = layout_scale_height(20, face_height);
+  const int16_t bottom_text_height = layout_scale_height(
+      20,
+      face_height);
   const int16_t bottom_row_height = helper_max(
       icon_size,
       bottom_text_height);
@@ -175,15 +162,23 @@ void layout_calculate(
   const int16_t date_top = y_content_start;
   const int16_t metrics_row_top = display_center + row_gap;
   const int16_t bottom_row_top = y_content_end - bottom_row_height;
-  const int16_t metrics_left_text_width = layout_scale_width(28, face_width);
-  const int16_t metrics_right_text_width = layout_scale_width(40, face_width);
-  const int16_t bottom_row_left_text_width = layout_scale_width(40, face_width);
-  const int16_t bottom_row_right_text_width = layout_scale_width(34, face_width);
+  const int16_t metrics_left_text_width = layout_scale_width(
+      28,
+      face_width);
+  const int16_t metrics_right_text_width = layout_scale_width(
+      40,
+      face_width);
+  const int16_t bottom_row_left_text_width = layout_scale_width(
+      40,
+      face_width);
+  const int16_t bottom_row_right_text_width = layout_scale_width(
+      34,
+      face_width);
   const int16_t metrics_icon_top =
       metrics_row_top + ((metrics_row_height - icon_size) / 2);
 
-  const int16_t metric_text_top =
-      metrics_row_top + ((metrics_row_height - metrics_text_height) / 2);
+  const int16_t metric_text_top = metrics_row_top +
+      ((metrics_row_height - metrics_text_height) / 2);
   const int16_t bottom_icon_top =
       bottom_row_top + ((bottom_row_height - icon_size) / 2);
   const int16_t bottom_text_top =
@@ -193,7 +188,8 @@ void layout_calculate(
   const int16_t bpm_value_x = bpm_icon_x + icon_size + icon_text_gap;
   const int16_t right_value_x =
       face_width - x_content_start - metrics_right_text_width;
-  const int16_t right_icon_x = right_value_x - icon_text_gap - icon_size;
+  const int16_t right_icon_x =
+      right_value_x - icon_text_gap - icon_size;
   const int16_t weather_icon_x = x_content_start;
   const int16_t temperature_value_x =
       weather_icon_x + icon_size + icon_text_gap;

@@ -44,11 +44,3 @@ GPoint layout_scaled_icon_point(
     const GSize* bounds_size,
     int16_t x,
     int16_t y);
-
-void layout_draw_scaled_icon_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
