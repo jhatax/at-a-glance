@@ -161,6 +161,8 @@ Battery text/icon colors:
 Weather state:
 
 - PebbleKit JS sends raw Open-Meteo `weather_code`
+- PebbleKit JS uses phone geolocation when available and falls back to OAK,
+  the product home location, at `37.85626, -122.21383`
 - C maps codes into private weather glyph buckets in
   `src/modules/weather.c`
 - procedural glyphs are used instead of Carbon/IcoMoon or PDC weather

@@ -147,8 +147,9 @@ Settings:
 ## Weather
 
 The phone companion app requests weather from Open-Meteo every 30 minutes.
-It uses phone geolocation when available and falls back to bundled default
-coordinates when location is unavailable.
+It uses phone geolocation when available. When location is unavailable, it
+falls back to OAK, the home location for this watchface:
+`37.85626, -122.21383`.
 
 Temperature is sent to the watch in Celsius tenths and rendered as Fahrenheit
 or Celsius according to the selected setting.

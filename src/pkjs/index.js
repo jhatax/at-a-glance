@@ -7,8 +7,9 @@ const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
 const WEATHER_TEMP_INVALID = -32768;
 // Must match WEATHER_CONDITION_UNKNOWN in src/modules/weather.h.
 const WEATHER_CONDITION_UNKNOWN = -1;
-const DEFAULT_LAT = 37.85626;
-const DEFAULT_LON = -122.21383;
+// OAK is the product fallback location for this watchface.
+const OAK_WEATHER_LATITUDE = 37.85626;
+const OAK_WEATHER_LONGITUDE = -122.21383;
 
 function sendWeather(celsius, weatherCode) {
   Pebble.sendAppMessage({
@@ -69,12 +70,12 @@ function updateWeather() {
         fetchWeather(pos.coords.latitude, pos.coords.longitude);
       },
       function () {
-        fetchWeather(DEFAULT_LAT, DEFAULT_LON);
+        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
       },
       { timeout: WEATHER_INTERVAL_MS, maximumAge: WEATHER_INTERVAL_MS }
     );
   } else {
-    fetchWeather(DEFAULT_LAT, DEFAULT_LON);
+    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
   }
 }
 
