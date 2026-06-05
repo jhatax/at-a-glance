@@ -15,3 +15,7 @@ void watchface_composer_refresh(
     Window* window,
     const WatchfaceSettings* settings,
     const VisualPalette* palette);
+void watchface_composer_handle_tick(
+    TimeUnits units_changed,
+    const WatchfaceSettings* settings,
+    const VisualPalette* palette);

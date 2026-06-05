@@ -81,8 +81,8 @@ Use these boundaries when reviewing or extending the code:
 - `src/c/main.c`: window lifecycle, service subscriptions,
   settings/palette selection, AppMessage receive flow, and event routing.
 - `src/modules/watchface_composer.c`: screen assembly, root layer
-  discovery, shared system fonts, module creation/destruction order, and
-  full-display refresh coordination.
+  discovery, shared system fonts, module creation/destruction order,
+  full-display refresh coordination, and tick-driven date/time refresh.
 - `src/modules/layout.c`: rectangular frame calculation through
   `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
 - `src/modules/display.c`: palette selection, unavailable token, and common

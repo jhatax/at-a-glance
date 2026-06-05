@@ -1,11 +1,9 @@
 #include "main.h"
 #include "../modules/battery.h"
-#include "../modules/date.h"
 #include "../modules/helper.h"
 #if defined(PBL_HEALTH)
 #include "../modules/health.h"
 #endif
-#include "../modules/time_display.h"
 #include "../modules/watchface_composer.h"
 #include "../modules/weather.h"
 
@@ -81,14 +79,10 @@ static void tick_handler(
     TimeUnits units_changed) {
   (void)tick_time;
 
-  if (units_changed & MINUTE_UNIT) {
-    time_display_module_refresh(
-        s_runtime.settings.time_format,
-        s_runtime.palette);
-  }
-  if (units_changed & DAY_UNIT) {
-    date_module_refresh(s_runtime.palette);
-  }
+  watchface_composer_handle_tick(
+      units_changed,
+      &s_runtime.settings,
+      s_runtime.palette);
 }
 
 static void inbox_received_callback(
@@ -110,9 +104,7 @@ static void inbox_received_callback(
       TIME_FORMAT_VALID(time_fmt)) {
     s_runtime.settings.time_format = (uint8_t)time_fmt;
     changed = true;
-    time_display_module_refresh(
-        s_runtime.settings.time_format,
-        s_runtime.palette);
+    refresh_watchface_display();
   } else if (tf) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid TIME_FORMAT");
@@ -125,9 +117,7 @@ static void inbox_received_callback(
       TEMP_UNIT_VALID(temp_unit)) {
     s_runtime.settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
-    weather_module_refresh(
-        s_runtime.settings.temp_unit,
-        s_runtime.palette);
+    refresh_watchface_display();
   } else if (tu) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid TEMP_UNIT");

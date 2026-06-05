@@ -102,3 +102,21 @@ void watchface_composer_refresh(
   battery_module_refresh(palette);
   weather_module_refresh(settings->temp_unit, palette);
 }
+
+void watchface_composer_handle_tick(
+    TimeUnits units_changed,
+    const WatchfaceSettings* settings,
+    const VisualPalette* palette) {
+  if (!settings || !palette) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Cannot refresh tick display without composer inputs");
+    return;
+  }
+
+  if (units_changed & MINUTE_UNIT) {
+    time_display_module_refresh(settings->time_format, palette);
+  }
+  if (units_changed & DAY_UNIT) {
+    date_module_refresh(palette);
+  }
+}
