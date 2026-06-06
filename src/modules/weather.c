@@ -634,13 +634,13 @@ void weather_module_init(void) {
   s_weather_is_available = false;
 }
 
-void weather_module_create(
+bool weather_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     uint8_t temp_unit,
     const VisualPalette* palette) {
   if (!root || !layout || !palette) {
-    return;
+    return false;
   }
 
   s_weather_palette = palette;
@@ -648,7 +648,7 @@ void weather_module_create(
   if (!s_temperature_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create weather temperature layer");
-    return;
+    return false;
   }
 
   text_layer_set_background_color(s_temperature_layer, GColorClear);
@@ -663,7 +663,7 @@ void weather_module_create(
   s_weather_icon_layer = layer_create(layout->weather_icon_frame);
   if (!s_weather_icon_layer) {
     weather_module_update_display(temp_unit);
-    return;
+    return true;
   }
 
   layer_set_update_proc(
@@ -671,6 +671,7 @@ void weather_module_create(
       weather_icon_update_proc);
   layer_add_child(root, s_weather_icon_layer);
   weather_module_update_display(temp_unit);
+  return true;
 }
 
 void weather_module_destroy(void) {

@@ -5,7 +5,7 @@
 #include "display.h"
 #include "layout.h"
 
-void battery_module_create(
+bool battery_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     GFont value_font,

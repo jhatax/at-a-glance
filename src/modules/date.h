@@ -4,7 +4,7 @@
 
 #include "display.h"
 
-void date_module_create(
+bool date_module_create(
     Layer* root,
     const GRect* frame,
     const VisualPalette* palette);

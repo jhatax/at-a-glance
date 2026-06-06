@@ -4,7 +4,7 @@
 
 #include "display.h"
 
-void time_module_create(
+bool time_module_create(
     Layer* root,
     const GRect* frame,
     const VisualPalette* palette);

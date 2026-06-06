@@ -32,18 +32,20 @@ static void format_time(
   strftime(buf, buflen, "%H:%M", t);
 }
 
-void time_module_create(
+bool time_module_create(
     Layer* root,
     const GRect* frame,
     const VisualPalette* palette) {
   if (!root || !frame || !palette) {
-    return;
+    return false;
   }
 
   s_palette = palette;
   s_time_layer = text_layer_create(*frame);
   if (!s_time_layer) {
-    return;
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Failed to create time text layer");
+    return false;
   }
 
   text_layer_set_background_color(s_time_layer, GColorClear);
@@ -52,6 +54,7 @@ void time_module_create(
       fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(s_time_layer, GTextAlignmentLeft);
   layer_add_child(root, text_layer_get_layer(s_time_layer));
+  return true;
 }
 
 void time_module_destroy(void) {

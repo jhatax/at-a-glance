@@ -20,18 +20,20 @@ static void uppercase_date(char* buf) {
   }
 }
 
-void date_module_create(
+bool date_module_create(
     Layer* root,
     const GRect* frame,
     const VisualPalette* palette) {
   if (!root || !frame || !palette) {
-    return;
+    return false;
   }
 
   s_palette = palette;
   s_date_layer = text_layer_create(*frame);
   if (!s_date_layer) {
-    return;
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Failed to create date text layer");
+    return false;
   }
 
   text_layer_set_background_color(s_date_layer, GColorClear);
@@ -40,6 +42,7 @@ void date_module_create(
       fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentLeft);
   layer_add_child(root, text_layer_get_layer(s_date_layer));
+  return true;
 }
 
 void date_module_destroy(void) {

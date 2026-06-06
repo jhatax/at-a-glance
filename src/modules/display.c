@@ -21,6 +21,26 @@ static const VisualPalette c_light_palette = {
   .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
 };
 
+static const VisualPalette c_fallback_dark_palette = {
+  .background = GColorBlack,
+  .primary_text = GColorWhite,
+  .unavailable_text = GColorWhite,
+  .date = GColorWhite,
+  .time = GColorWhite,
+  .rule = GColorWhite,
+  .steps_icon = GColorWhite,
+};
+
+static const VisualPalette c_fallback_light_palette = {
+  .background = GColorWhite,
+  .primary_text = GColorBlack,
+  .unavailable_text = GColorBlack,
+  .date = GColorBlack,
+  .time = GColorBlack,
+  .rule = GColorBlack,
+  .steps_icon = GColorBlack,
+};
+
 GColor display_legible_over_background(const VisualPalette* palette) {
   if (!palette) {
     return GColorWhite;
@@ -35,6 +55,20 @@ const VisualPalette* display_get_palette(uint8_t display_mode) {
   }
 
   return &c_dark_palette;
+}
+
+const VisualPalette* display_resolve_palette(
+    const VisualPalette* palette,
+    uint8_t display_mode) {
+  if (palette) {
+    return palette;
+  }
+
+  if (display_mode == DISPLAY_MODE_LIGHT) {
+    return &c_fallback_light_palette;
+  }
+
+  return &c_fallback_dark_palette;
 }
 
 void display_update_text_layer(

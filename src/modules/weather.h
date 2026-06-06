@@ -10,7 +10,7 @@
 #define WEATHER_CONDITION_UNKNOWN -1
 
 void weather_module_init(void);
-void weather_module_create(
+bool weather_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     uint8_t temp_unit,

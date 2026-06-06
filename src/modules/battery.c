@@ -184,13 +184,13 @@ static void update_battery(void) {
   }
 }
 
-void battery_module_create(
+bool battery_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     GFont value_font,
     const VisualPalette* palette) {
   if (!root || !layout || !palette) {
-    return;
+    return false;
   }
 
   s_palette = palette;
@@ -201,15 +201,21 @@ void battery_module_create(
       &layout->battery_text_frame,
       value_font);
 
-  if (s_battery_layer) {
-    s_battery_icon_layer = layer_create(layout->battery_icon_frame);
-    if (s_battery_icon_layer) {
-      layer_set_update_proc(
-          s_battery_icon_layer,
-          battery_icon_update_proc);
-      layer_add_child(root, s_battery_icon_layer);
-    }
+  if (!s_battery_layer) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Failed to create battery text layer");
+    return false;
   }
+
+  s_battery_icon_layer = layer_create(layout->battery_icon_frame);
+  if (s_battery_icon_layer) {
+    layer_set_update_proc(
+        s_battery_icon_layer,
+        battery_icon_update_proc);
+    layer_add_child(root, s_battery_icon_layer);
+  }
+
+  return true;
 }
 
 void battery_module_destroy(void) {

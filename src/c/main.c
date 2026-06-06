@@ -17,6 +17,11 @@
 static Window* s_window;
 static WatchfaceSettings s_settings;
 static const VisualPalette* s_palette;
+static bool s_watchface_created;
+static bool s_services_started;
+#if defined(PBL_HEALTH)
+static bool s_health_events_subscribed;
+#endif
 
 #if defined(PBL_HEALTH)
 static void apply_hr_sample_period();
@@ -269,12 +274,17 @@ static void main_window_load(Window* window) {
     return;
   }
 
-  if (watchface_composer_create(
+  s_watchface_created = watchface_composer_create(
       window,
       &s_settings,
-      s_palette)) {
-    refresh_watchface_display();
+      s_palette);
+  if (!s_watchface_created) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Watchface composer create failed");
+    return;
   }
+
+  refresh_watchface_display();
 }
 
 static void main_window_unload(Window* window) {
@@ -285,6 +295,12 @@ static void main_window_unload(Window* window) {
 
 static void init(void) {
   // Create the window before initializing app state and services.
+  s_watchface_created = false;
+  s_services_started = false;
+  #if defined(PBL_HEALTH)
+  s_health_events_subscribed = false;
+  #endif
+
   s_window = window_create();
   if (!s_window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create main window");
@@ -304,6 +320,10 @@ static void init(void) {
     .unload = main_window_unload,
   });
   window_stack_push(s_window, true);
+  if (!s_watchface_created) {
+    window_stack_pop(false);
+    return;
+  }
 
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -313,6 +333,7 @@ static void init(void) {
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
+  s_services_started = true;
   #if defined(PBL_HEALTH)
     bool health_available = health_service_events_subscribe(
         health_handler,
@@ -321,6 +342,7 @@ static void init(void) {
       APP_LOG(APP_LOG_LEVEL_WARNING,
               "Health service subscription failed");
     } else {
+      s_health_events_subscribed = true;
       apply_hr_sample_period();
     }
   #endif
@@ -330,11 +352,18 @@ static void deinit(void) {
   if (!s_window) {
     return;
   }
-  tick_timer_service_unsubscribe();
+  if (s_services_started) {
+    tick_timer_service_unsubscribe();
+    battery_state_service_unsubscribe();
+    app_message_deregister_callbacks();
+    s_services_started = false;
+  }
   #if defined(PBL_HEALTH)
-    health_service_events_unsubscribe();
+    if (s_health_events_subscribed) {
+      health_service_events_unsubscribe();
+      s_health_events_subscribed = false;
+    }
   #endif
-  battery_state_service_unsubscribe();
   if (ATAGLANCE_USE_AND_PERSIST_SETTINGS) {
     settings_save(&s_settings);
   }

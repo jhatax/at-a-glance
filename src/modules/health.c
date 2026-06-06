@@ -308,13 +308,13 @@ static void update_steps(void) {
   }
 }
 
-void health_module_create(
+bool health_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     GFont value_font,
     const VisualPalette* palette) {
   if (!root || !layout || !palette) {
-    return;
+    return false;
   }
 
   s_palette = palette;
@@ -326,6 +326,11 @@ void health_module_create(
       root,
       &layout->bpm_text_frame,
       value_font);
+
+  if (!s_bpm_layer) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Failed to create BPM text layer");
+  }
 
   if (s_bpm_layer) {
     s_bpm_icon_layer = layer_create(layout->bpm_icon_frame);
@@ -342,6 +347,11 @@ void health_module_create(
       &layout->steps_text_frame,
       value_font);
 
+  if (!s_steps_layer) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Failed to create steps text layer");
+  }
+
   if (s_steps_layer) {
     s_steps_icon_layer = layer_create(layout->steps_icon_frame);
     if (s_steps_icon_layer) {
@@ -349,6 +359,8 @@ void health_module_create(
       layer_add_child(root, s_steps_icon_layer);
     }
   }
+
+  return s_bpm_layer && s_steps_layer;
 }
 
 void health_module_destroy(void) {
@@ -398,7 +410,7 @@ void health_module_handle_event(HealthEventType event) {
 #include "display.h"
 #include "layout.h"
 
-void health_module_create(
+bool health_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
     GFont value_font,
@@ -407,6 +419,7 @@ void health_module_create(
   (void)layout;
   (void)value_font;
   (void)palette;
+  return true;
 }
 
 void health_module_destroy(void) {

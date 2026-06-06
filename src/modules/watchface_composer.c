@@ -23,11 +23,14 @@ bool watchface_composer_create(
     Window* window,
     const WatchfaceSettings* settings,
     const VisualPalette* palette) {
-  if (!window || !settings || !palette) {
+  if (!window || !settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot create watchface without composer inputs");
     return false;
   }
+
+  const VisualPalette* resolved_palette =
+      display_resolve_palette(palette, settings->display_mode);
 
   Layer* root = window_get_root_layer(window);
   if (!root) {
@@ -38,35 +41,50 @@ bool watchface_composer_create(
   GRect bounds = layer_get_bounds(root);
   layout_calculate(bounds.size.w, bounds.size.h, &s_layout);
 
-  date_module_create(
+  bool date_created = date_module_create(
       root,
       &s_layout.date_frame,
-      palette);
-  time_module_create(
+      resolved_palette);
+  bool time_created = time_module_create(
       root,
       &s_layout.time_frame,
-      palette);
+      resolved_palette);
 
   #if defined(PBL_HEALTH)
-  health_module_create(
+  bool health_created = health_module_create(
       root,
       &s_layout,
       s_secondary_value_font,
-      palette);
+      resolved_palette);
+  #else
+  bool health_created = true;
   #endif
 
-  weather_module_create(
+  bool weather_created = weather_module_create(
       root,
       &s_layout,
       settings->temp_unit,
-      palette);
-  battery_module_create(
+      resolved_palette);
+  bool battery_created = battery_module_create(
       root,
       &s_layout,
       s_battery_value_font,
-      palette);
+      resolved_palette);
 
-  return true;
+  bool created = date_created &&
+      time_created &&
+      health_created &&
+      weather_created &&
+      battery_created;
+
+  if (!created) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "Watchface must-initialize controls failed");
+    watchface_composer_destroy();
+    return false;
+  }
+
+  return created;
 }
 
 void watchface_composer_destroy(void) {
@@ -85,38 +103,44 @@ void watchface_composer_refresh(
     Window* window,
     const WatchfaceSettings* settings,
     const VisualPalette* palette) {
-  if (!window || !settings || !palette) {
+  if (!window || !settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot refresh watchface without composer inputs");
     return;
   }
 
-  window_set_background_color(window, palette->background);
+  const VisualPalette* resolved_palette =
+      display_resolve_palette(palette, settings->display_mode);
+
+  window_set_background_color(window, resolved_palette->background);
 
   #if defined(PBL_HEALTH)
-  health_module_refresh(palette);
+  health_module_refresh(resolved_palette);
   #endif
 
-  date_module_refresh(palette);
-  time_module_refresh(settings->time_format, palette);
-  battery_module_refresh(palette);
-  weather_module_refresh(settings->temp_unit, palette);
+  date_module_refresh(resolved_palette);
+  time_module_refresh(settings->time_format, resolved_palette);
+  battery_module_refresh(resolved_palette);
+  weather_module_refresh(settings->temp_unit, resolved_palette);
 }
 
 void watchface_composer_handle_tick(
     TimeUnits units_changed,
     const WatchfaceSettings* settings,
     const VisualPalette* palette) {
-  if (!settings || !palette) {
+  if (!settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot refresh tick display without composer inputs");
     return;
   }
 
+  const VisualPalette* resolved_palette =
+      display_resolve_palette(palette, settings->display_mode);
+
   if (units_changed & MINUTE_UNIT) {
-    time_module_refresh(settings->time_format, palette);
+    time_module_refresh(settings->time_format, resolved_palette);
   }
   if (units_changed & DAY_UNIT) {
-    date_module_refresh(palette);
+    date_module_refresh(resolved_palette);
   }
 }
