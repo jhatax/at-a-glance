@@ -63,6 +63,14 @@ This cannot be carried onto Chalk unchanged. The bottom row is the hard
 failure: a two-column icon-plus-value row near the lower curve does not
 have enough horizontal width on a `180x180` circular screen.
 
+The current module boundary makes the right product rule clearer:
+`layout.c` owns geometry, `watchface_composer.c` creates modules from
+that geometry, and each metric module owns its text and optional icon
+layers. Round support should preserve that boundary. The layout must
+describe the frames and optional icon policy; the composer should not
+invent geometry, and individual modules should not decide global round
+placement.
+
 ## Round Geometry Rule
 
 Round layout needs row-band safe spans, not one global content width.
@@ -96,16 +104,20 @@ Use a round-native centered layout as the starting hypothesis:
 4. Compact complication rows below the rule.
 
 The complication layout is the important design question. The first
-Chalk prototype should preserve all four data points with two compact
-horizontal rows:
+Chalk prototype should preserve all four text data points with two
+compact horizontal rows:
 
 - row 1: BPM and steps
 - row 2: weather/temperature and battery
 
-This is not proven for Chalk. The row geometry is tight and needs a real
-round prototype before production layout code. The rejected option is a
-vertical `2x2` icon-over-value grid, which is too tall near the bottom
-curve with the current value font.
+The health row may keep small icons because `62` and `4218` are not
+self-labeling. The bottom row should be text-first on Chalk: temperature
+and battery percentage already carry `°F`/`°C` and `%`, so their icons
+are optional and should be omitted if they force crowding near the lower
+curve.
+
+The rejected option is a vertical `2x2` icon-over-value grid, which is
+too tall near the bottom curve with the current value font.
 
 For Gabbro, reuse the same layout model and safe-span calculation.
 Because Gabbro is `260x260`, it can allow more breathing room, but it
@@ -129,15 +141,15 @@ At those y-positions, the round safe span becomes too narrow for two
 useful columns.
 
 The same problem appears horizontally. The lower row can narrow to
-roughly a two-cell width where `99999` steps or `100%` battery cannot
-fit beside even a small icon without clipping or crowding.
+roughly a two-cell width where `90°F` and `100%` can fit as text, but
+full icon-plus-value pairs have almost no slack.
 
 Conclusion: do not add a dormant `PBL_ROUND` branch until we choose one
 of these tradeoffs:
 
 - reduce or change the round value font
-- show fewer than four complications on Chalk
-- use icon-only cells with values elsewhere
+- show fewer than four text values on Chalk
+- omit optional icons where text is already self-labeling
 - use a single-column complication stack
 - use a `2x2` grid only on Gabbro and a different Chalk layout
 - move some complications above or around the rule instead of below it
@@ -145,9 +157,10 @@ of these tradeoffs:
 ## Prototype Finding
 
 The first production round layout should not use icon-over-value cells
-on Chalk. It should try compact horizontal pairs first.
+on Chalk. It should use compact horizontal rows with text as the
+must-initialize surface.
 
-Candidate Chalk model:
+Recommended Chalk model:
 
 - date centered near `y=18`
 - time centered near `y=52`
@@ -155,7 +168,9 @@ Candidate Chalk model:
 - health row at about `y=110`
 - bottom row at about `y=132`
 - complication rows use 20px text height
-- complication icons shrink to about 16px
+- health icons shrink to about 16px
+- bottom-row icons are omitted on Chalk unless a prototype proves there
+  is comfortable slack
 - row content is centered inside the round safe span
 
 The important safe-span estimates for Chalk:
@@ -173,27 +188,47 @@ BPM:      16 icon + 1 gap + 28 value = 45px
 steps:    16 icon + 1 gap + 40 value = 57px
 health:   45 + 4 column gap + 57 = 106px
 
-weather:  16 icon + 1 gap + 40 value = 57px
-battery:  16 icon + 1 gap + 34 value = 51px
-bottom:   57 + 4 column gap + 51 = 112px
+temp:     40 value
+battery:  34 value
+bottom:   40 + 20 column gap + 34 = 94px
 ```
 
-This gives the bottom row only about 6px of slack on Chalk, so it is
-a tight candidate, not a proven layout. Still, it is more plausible than
-the stacked `2x2` model because it preserves the current text font and
-all four complications.
+This gives the bottom row roughly 24px of slack on Chalk, which is much
+more realistic than the full icon-plus-value candidate. It preserves the
+current text font and all four data values while accepting the product
+hierarchy: text is essential, icons are support.
 
-For Gabbro, start with the same layout model before inventing a separate
-one. Its larger safe spans should make the same model breathe better.
+For Gabbro, start with the same model before inventing a separate one.
+The larger safe spans should allow the bottom weather and battery icons
+to return, likely at a larger round-specific icon size, while keeping
+the row order and text-first contract identical to Chalk.
+
+## Module-Aware Layout Contract
+
+The current composer and module split changes the implementation shape:
+
+- `layout.c` should calculate round frames and optional icon policy.
+- `watchface_composer.c` should pass those frames to the modules and
+  keep enforcing must-initialize text creation.
+- Date, time, battery, weather, and health modules should keep owning
+  their layer creation, update procs, buffers, and destroy paths.
+- Optional icon suppression must be explicit. Do not rely on failed
+  `layer_create()` calls or zero-sized accidental frames as control
+  flow.
+- If `WatchfaceLayout` needs round-specific icon visibility flags, add
+  named fields rather than a generic cell array.
+- Text alignment may need to become layout-provided metadata. Round date
+  and time should be centered; rectangular alignment should remain
+  unchanged.
 
 ## Implementation Plan
 
 Phase 1: decide the round information model.
 
-- Decide whether Chalk must show all four complications at once.
+- Chalk should show all four text values at once.
 - Decide whether Chalk may use smaller or different value fonts.
-- Decide whether Chalk and Gabbro may use different complication
-  layouts.
+- Decide whether Gabbro re-enables bottom-row icons within the same
+  two-row model.
 - Do not write a dormant round branch until this decision is made.
 
 Phase 2: geometry only.
@@ -207,8 +242,8 @@ Phase 2: geometry only.
 
 Phase 3: layout data shape.
 
-- Extend `WatchfaceLayout` only if needed for round-specific alignment
-  or cell frames.
+- Extend `WatchfaceLayout` only if needed for round-specific alignment,
+  icon visibility, or cell frames.
 - Prefer explicit fields over an opaque generic array.
 - Keep existing rectangular fields stable for current platforms.
 - If round needs text alignment changes, make that explicit instead of
@@ -218,7 +253,10 @@ Phase 4: round rendering behavior.
 
 - Center date and time on round displays.
 - Keep rectangular left alignment unchanged.
-- For round complication cells, evaluate icon-over-value first.
+- For Chalk, keep health icons small and omit bottom-row icons unless
+  screenshots prove the row has comfortable slack.
+- For Gabbro, evaluate restoring all four icons within the same two-row
+  text-first model.
 - Keep icon frames stable within each cell.
 - Use current glyph modules; do not redesign glyphs as part of round
   layout.
@@ -247,12 +285,12 @@ Use `pebble kill --force` for emulator recovery.
 
 ## Open Decisions
 
-1. Confirm that Chalk may use smaller complication icons than
-   rectangular platforms.
+1. Confirm that Chalk may use 16px health icons and omit bottom-row
+   icons.
 2. Decide whether round date/time remain the same fonts or receive
    round-specific font choices after screenshots.
-3. Decide whether Gabbro uses the same compact rows as Chalk or a
-   roomier round-specific grid.
+3. Decide whether Gabbro uses the same compact rows with all icons
+   restored or a roomier round-specific grid.
 4. Verify whether this workspace's SDK can build and emulate `gabbro`.
 5. Decide whether the first patch targets Chalk only, then Gabbro, or
    both round platforms together after SDK verification.
@@ -264,8 +302,9 @@ production layout code:
 
 - create a small frame-calculation prototype or temporary layout lab
 - model Chalk `180x180` and Gabbro `260x260`
-- test the candidate complication layouts with the exact current font
-  heights
+- test the recommended Chalk layout: centered date/time, small health
+  icons, bottom text-only row
+- test the Gabbro variant that restores bottom weather/battery icons
 - prove text extremes before touching production `layout.c`
 
 After that decision is reviewed, the first production code patch should

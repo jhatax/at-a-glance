@@ -10,6 +10,8 @@ glyphs that work on both color and black-and-white Pebble displays.
 ## Principles
 
 - Design for one-second recognition.
+- Treat text as the primary glance surface. Icons support recognition,
+  but they do not carry the product alone.
 - Prefer solid filled silhouettes over hollow outlines.
 - Use line art only when the line itself is the message.
 - When using lines, use heavy strokes that survive watch scale.
@@ -21,6 +23,8 @@ glyphs that work on both color and black-and-white Pebble displays.
 - Keep glyphs stable inside a fixed 28x28 frame.
 - Keep value/state changes from shifting the visual footprint.
 - Create review variants in `glyph-lab` before porting into production code.
+- A text-only metric is acceptable when an icon cannot be created or
+  does not fit the platform. An icon-only metric is not acceptable.
 
 ## Implementation Rules
 
@@ -41,6 +45,33 @@ For line-based marks:
 - Use 3px for primary weather strokes unless a specific glyph needs a
   thinner exception.
 - Keep stroke/gap choices explicit and review them on `aplite` and `emery`.
+
+Layer creation follows the same hierarchy:
+
+- Text layers are must-initialize controls.
+- Icon layers are optional support.
+- If a text layer fails, do not create or depend on that metric's icon.
+- If an icon layer fails or is intentionally omitted for a smaller
+  platform, continue updating the text.
+
+## Palette Fallback
+
+The normal visual palette is selected by display mode and color
+capability. If palette resolution ever fails, the watchface degrades to
+a simple black-and-white palette instead of blocking data display.
+
+Fallback rules:
+
+- dark mode fallback: black background, white text, white rule, white
+  icons
+- light mode fallback: white background, black text, black rule, black
+  icons
+- no accent colors are required for the fallback path
+- unavailable text and icons use the same foreground color as other data
+  in fallback mode
+
+This is a product decision: showing legible data in black and white is
+more important than preserving the richer accent palette.
 
 ## Unavailable Data
 
@@ -287,6 +318,19 @@ States:
 
 Charging state should not rely on green alone.
 
+## Round Displays
+
+Round displays should preserve the text-first hierarchy.
+
+For Chalk `180x180`, bottom-row weather and battery icons are optional
+because temperature and battery percentage are self-labeling through
+`°F`/`°C` and `%`. Health icons are more useful on Chalk because BPM
+and steps values are otherwise unlabeled numbers.
+
+For larger round displays such as Gabbro, use the same row order and
+text-first model first. Restore additional icons only when the row safe
+span leaves comfortable slack.
+
 ## Review Workflow
 
 Use `glyph-lab` for broad vocabulary work.
@@ -308,6 +352,11 @@ glyph vocabulary changes.
 ## Current Decisions
 
 - Unavailable data is currently testing a high-contrast `\` slash.
+- Text layers are the must-initialize visual controls; icons are
+  subordinate and optional.
+- Palette resolution has a black-and-white fallback: black background
+  with white foreground in dark mode, white background with black
+  foreground in light mode.
 - Steps use the station-style footprint primitive.
 - Weather uses bold line/outline first in black-and-white.
 - Color weather glyphs may add fills or accents.
