@@ -2,6 +2,7 @@
 
 // The ID / key that specifies where settings are persisted in storage
 static const uint32_t c_key_persisted_settings = 2;
+static const size_t c_settings_read_size = sizeof(WatchfaceSettings);
 
 void settings_apply_defaults(WatchfaceSettings* settings) {
   if (!settings) {
@@ -49,16 +50,32 @@ static void settings_read_stored(WatchfaceSettings* settings) {
   WatchfaceSettings stored = *settings;
 
   int read_size = stored_size;
-  if (read_size > (int)sizeof(stored)) {
-    read_size = (int)sizeof(stored);
+  if (read_size > (int)c_settings_read_size) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Persisted settings truncated: size=%d max=%d",
+            stored_size,
+            (int)c_settings_read_size);
+    read_size = (int)c_settings_read_size;
+  } else if (read_size < (int)c_settings_read_size) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Persisted settings partial: size=%d expected=%d",
+            stored_size,
+            (int)c_settings_read_size);
   }
 
-  if (persist_read_data(
+  int bytes_read = persist_read_data(
       c_key_persisted_settings,
       &stored,
-      read_size) > 0) {
-    *settings = stored;
+      read_size);
+  if (bytes_read != read_size) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Persisted settings read failed: result=%d expected=%d",
+            bytes_read,
+            read_size);
+    return;
   }
+
+  *settings = stored;
 }
 
 // This "API" block is called by other modules or main
@@ -89,14 +106,23 @@ void settings_load(WatchfaceSettings* settings) {
   settings_sanitize(settings);
 }
 
-void settings_save(const WatchfaceSettings* settings) {
+bool settings_save(const WatchfaceSettings* settings) {
   if (!settings) {
-    return;
+    return false;
   }
 
-  persist_write_data(
+  int bytes_written = persist_write_data(
       c_key_persisted_settings,
       settings,
       sizeof(*settings));
+  if (bytes_written != (int)sizeof(*settings)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Persisted settings write failed: result=%d expected=%d",
+            bytes_written,
+            (int)sizeof(*settings));
+    return false;
+  }
+
+  return true;
 }
 // End "API" block

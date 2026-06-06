@@ -41,6 +41,10 @@ void display_update_text_layer(
     TextLayer* layer,
     const char* text,
     GColor text_color) {
+  if (!layer || !text) {
+    return;
+  }
+
   text_layer_set_background_color(layer, GColorClear);
   text_layer_set_text_color(layer, text_color);
   text_layer_set_text(layer, text);

@@ -144,6 +144,11 @@ Settings:
 - Display mode: dark or light
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 
+Settings persistence is best-effort Pebble persistent storage. If a
+write fails, the current in-memory setting still applies for the running
+watchface, but the value may not survive restart. Persistence failures
+are logged for debugging rather than shown on the watchface.
+
 ## Weather
 
 The phone companion app requests weather from Open-Meteo every 30 minutes.

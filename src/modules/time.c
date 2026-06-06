@@ -75,6 +75,10 @@ void time_module_refresh(
 
   time_t now = time(NULL);
   struct tm* t = localtime(&now);
+  if (!t) {
+    return;
+  }
+
   format_time(
       s_time_buffer,
       ATAGLANCE_MAX_STR_LEN,

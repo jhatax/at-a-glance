@@ -61,6 +61,10 @@ void date_module_refresh(const VisualPalette* palette) {
 
   time_t now = time(NULL);
   struct tm* t = localtime(&now);
+  if (!t) {
+    return;
+  }
+
   strftime(s_date_buffer, ATAGLANCE_MAX_STR_LEN, "%a · %d %b", t);
   uppercase_date(s_date_buffer);
   display_update_text_layer(

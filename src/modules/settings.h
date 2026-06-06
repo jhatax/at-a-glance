@@ -51,6 +51,6 @@ typedef struct {
 } WatchfaceSettings;
 
 void settings_load(WatchfaceSettings* settings);
-void settings_save(const WatchfaceSettings* settings);
+bool settings_save(const WatchfaceSettings* settings);
 uint8_t settings_get_hr_sample_minutes(uint8_t hr_sample_minutes);
 void settings_apply_defaults(WatchfaceSettings* settings);

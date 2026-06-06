@@ -20,6 +20,11 @@ typedef enum {
   WEATHER_ICON_UNKNOWN,
 } WeatherIconKind;
 
+#define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
+#define WEATHER_TEMP_MAX_CELSIUS_TENTHS 1000
+#define WEATHER_CONDITION_MIN 0
+#define WEATHER_CONDITION_MAX 99
+
 static Layer* s_weather_icon_layer;
 static TextLayer* s_temperature_layer;
 static char s_temperature_buffer[ATAGLANCE_MAX_STR_LEN];
@@ -32,6 +37,8 @@ static bool format_temperature(
     char* buf,
     size_t buflen,
     uint8_t temp_unit);
+static inline bool weather_temperature_is_valid(int celsius_tenths);
+static inline bool weather_condition_is_valid(int weather_condition);
 static bool weather_condition_is_known(void);
 static void weather_module_update_display(uint8_t temp_unit);
 
@@ -68,6 +75,20 @@ static bool format_temperature(
   return true;
 }
 
+static inline bool weather_temperature_is_valid(int celsius_tenths) {
+  return celsius_tenths == WEATHER_TEMP_INVALID ||
+      (
+          celsius_tenths >= WEATHER_TEMP_MIN_CELSIUS_TENTHS &&
+          celsius_tenths <= WEATHER_TEMP_MAX_CELSIUS_TENTHS);
+}
+
+static inline bool weather_condition_is_valid(int weather_condition) {
+  return weather_condition == WEATHER_CONDITION_UNKNOWN ||
+      (
+          weather_condition >= WEATHER_CONDITION_MIN &&
+          weather_condition <= WEATHER_CONDITION_MAX);
+}
+
 static void weather_module_update_display(uint8_t temp_unit) {
   if (!s_temperature_layer || !s_weather_palette) {
     return;
@@ -98,14 +119,18 @@ static void weather_module_update_display(uint8_t temp_unit) {
 static int16_t weather_scale_x(
     const GRect* frame,
     int16_t value) {
-  return frame->origin.x + ((value * frame->size.w) /
+  return frame->origin.x + helper_scale_round(
+      value,
+      frame->size.w,
       ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 static int16_t weather_scale_y(
     const GRect* frame,
     int16_t value) {
-  return frame->origin.y + ((value * frame->size.h) /
+  return frame->origin.y + helper_scale_round(
+      value,
+      frame->size.h,
       ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
@@ -135,10 +160,14 @@ static void weather_subframe(
     int16_t h) {
   out->origin.x = weather_scale_x(frame, x);
   out->origin.y = weather_scale_y(frame, y);
-  out->size.w = (w * frame->size.w) /
-      ATAGLANCE_DESIGN_ICON_SIZE;
-  out->size.h = (h * frame->size.h) /
-      ATAGLANCE_DESIGN_ICON_SIZE;
+  out->size.w = helper_scale_round(
+      w,
+      frame->size.w,
+      ATAGLANCE_DESIGN_ICON_SIZE);
+  out->size.h = helper_scale_round(
+      h,
+      frame->size.h,
+      ATAGLANCE_DESIGN_ICON_SIZE);
 }
 
 static void weather_line(
@@ -165,8 +194,14 @@ static void weather_fill_rect(
       ctx,
       GRect(weather_scale_x(frame, x),
             weather_scale_y(frame, y),
-            (w * frame->size.w) / ATAGLANCE_DESIGN_ICON_SIZE,
-            (h * frame->size.h) / ATAGLANCE_DESIGN_ICON_SIZE),
+            helper_scale_round(
+                w,
+                frame->size.w,
+                ATAGLANCE_DESIGN_ICON_SIZE),
+            helper_scale_round(
+                h,
+                frame->size.h,
+                ATAGLANCE_DESIGN_ICON_SIZE)),
       0,
       GCornerNone);
 }
@@ -662,17 +697,31 @@ void weather_module_refresh(
 }
 
 void weather_module_set_temperature(
-    int16_t celsius_tenths,
+    int celsius_tenths,
     uint8_t temp_unit,
     const VisualPalette* palette) {
+  if (!weather_temperature_is_valid(celsius_tenths)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Weather temperature invalid: value=%d",
+            celsius_tenths);
+    celsius_tenths = WEATHER_TEMP_INVALID;
+  }
+
   s_temp_celsius_tenths = celsius_tenths;
   weather_module_refresh(temp_unit, palette);
 }
 
 void weather_module_set_condition(
-    int16_t weather_condition,
+    int weather_condition,
     uint8_t temp_unit,
     const VisualPalette* palette) {
+  if (!weather_condition_is_valid(weather_condition)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Weather condition invalid: value=%d",
+            weather_condition);
+    weather_condition = WEATHER_CONDITION_UNKNOWN;
+  }
+
   s_weather_condition = weather_condition;
   weather_module_refresh(temp_unit, palette);
 }

@@ -11,6 +11,9 @@
 #include "../modules/watchface_composer.h"
 #include "../modules/weather.h"
 
+#define APP_MESSAGE_CONFIG_VALUE_SIZE 2
+#define APP_MESSAGE_OUTBOX_SIZE 64
+
 static Window* s_window;
 static WatchfaceSettings s_settings;
 static const VisualPalette* s_palette;
@@ -39,6 +42,8 @@ static void outbox_failed_callback(
 static void outbox_sent_callback(
     DictionaryIterator* iterator,
     void* context);
+static uint32_t app_message_inbox_size(void);
+static AppMessageResult open_app_message(void);
 static void main_window_load(Window* window);
 static void main_window_unload(Window* window);
 static void init(void);
@@ -130,7 +135,7 @@ static void inbox_received_callback(
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
   if (tt && tt->type == TUPLE_INT) {
     weather_module_set_temperature(
-        (int16_t)tt->value->int32,
+        (int)tt->value->int32,
         s_settings.temp_unit,
         s_palette);
   } else if (tt) {
@@ -141,7 +146,7 @@ static void inbox_received_callback(
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
     weather_module_set_condition(
-        (int16_t)tw->value->int32,
+        (int)tw->value->int32,
         s_settings.temp_unit,
         s_palette);
   } else if (tw) {
@@ -213,6 +218,50 @@ static void outbox_sent_callback(
   (void)context;
 }
 
+static uint32_t app_message_inbox_size(void) {
+  return dict_calc_buffer_size(
+      6,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE);
+}
+
+static AppMessageResult open_app_message(void) {
+  uint32_t inbox_size = app_message_inbox_size();
+  bool pebblekit_connected =
+      connection_service_peek_pebblekit_connection();
+  AppMessageResult result = app_message_open(
+      inbox_size,
+      APP_MESSAGE_OUTBOX_SIZE);
+  if (result == APP_MSG_OK) {
+    return result;
+  }
+
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+          "AppMessage open failed: result=%d inbox=%lu",
+          result,
+          inbox_size);
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+          "AppMessage sizes: outbox=%d kit=%d",
+          APP_MESSAGE_OUTBOX_SIZE,
+          pebblekit_connected);
+
+  result = app_message_open(
+      APP_MESSAGE_INBOX_SIZE_MINIMUM,
+      APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  if (result != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+            "AppMessage retry failed: result=%d kit=%d",
+            result,
+            pebblekit_connected);
+  }
+
+  return result;
+}
+
 static void main_window_load(Window* window) {
   if (!window) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -260,9 +309,7 @@ static void init(void) {
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  app_message_open(
-      app_message_inbox_size_maximum(),
-      app_message_outbox_size_maximum());
+  open_app_message();
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);

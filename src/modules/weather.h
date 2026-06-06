@@ -20,10 +20,10 @@ void weather_module_refresh(
     uint8_t temp_unit,
     const VisualPalette* palette);
 void weather_module_set_temperature(
-    int16_t celsius_tenths,
+    int celsius_tenths,
     uint8_t temp_unit,
     const VisualPalette* palette);
 void weather_module_set_condition(
-    int16_t weather_condition,
+    int weather_condition,
     uint8_t temp_unit,
     const VisualPalette* palette);

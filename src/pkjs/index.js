@@ -33,7 +33,8 @@ function sendWeatherUnavailable(reason) {
     },
     null,
     function (e) {
-      console.log("AtAGlance: Weather unavailable send failed: " + e.error);
+      console.log(
+        "AtAGlance: Weather unavailable send failed: " + e.error);
     }
   );
 }
@@ -48,6 +49,7 @@ function fetchWeather(lat, lon) {
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
+  xhr.timeout = WEATHER_INTERVAL_MS;
   xhr.onload = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
       try {
@@ -71,6 +73,9 @@ function fetchWeather(lat, lon) {
   };
   xhr.onerror = function () {
     sendWeatherUnavailable("request failed");
+  };
+  xhr.ontimeout = function () {
+    sendWeatherUnavailable("request timed out");
   };
   xhr.send(null);
 }
