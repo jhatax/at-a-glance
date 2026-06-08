@@ -4,32 +4,25 @@
 #include "../modules/battery.h"
 #include "../modules/display.h"
 #include "../modules/helper.h"
+#include "../modules/watchface_composer.h"
+#include "../modules/weather.h"
 #if defined(PBL_HEALTH)
 #include "../modules/health.h"
 #endif
-#include "../modules/settings.h"
-#include "../modules/watchface_composer.h"
-#include "../modules/weather.h"
 
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
 
 static Window* s_window;
-static WatchfaceSettings s_settings;
-static const VisualPalette* s_palette;
-static bool s_watchface_created;
-static bool s_services_started;
-#if defined(PBL_HEALTH)
-static bool s_health_events_subscribed;
-#endif
+static WatchfaceSettings s_settings = {0};
 
 #if defined(PBL_HEALTH)
+static bool s_health_events_subscribed = false;
 static void apply_hr_sample_period();
-#endif
-static void refresh_watchface_display();
-#if defined(PBL_HEALTH)
 static void health_handler(HealthEventType event, void* context);
 #endif
+
+static void refresh_watchface_display();
 static void battery_handler(BatteryChargeState state);
 static void tick_handler(
     struct tm* tick_time,
@@ -70,11 +63,7 @@ static void refresh_watchface_display() {
     return;
   }
 
-  s_palette = display_get_palette(s_settings.display_mode);
-  watchface_composer_refresh(
-      s_window,
-      &s_settings,
-      s_palette);
+  watchface_composer_refresh();
 }
 
 #if defined(PBL_HEALTH)
@@ -93,10 +82,7 @@ static void tick_handler(
     TimeUnits units_changed) {
   (void)tick_time;
 
-  watchface_composer_handle_tick(
-      units_changed,
-      &s_settings,
-      s_palette);
+  watchface_composer_handle_tick(units_changed);
 }
 
 static void inbox_received_callback(
@@ -139,10 +125,9 @@ static void inbox_received_callback(
 
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
   if (tt && tt->type == TUPLE_INT) {
-    weather_module_set_temperature(
+    watchface_composer_update_temp(
         (int)tt->value->int32,
-        s_settings.temp_unit,
-        s_palette);
+        s_settings.temp_unit);
   } else if (tt) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid TEMPERATURE");
@@ -150,10 +135,9 @@ static void inbox_received_callback(
 
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
-    weather_module_set_condition(
+    watchface_composer_update_weather_condition(
         (int)tw->value->int32,
-        s_settings.temp_unit,
-        s_palette);
+        s_settings.temp_unit);
   } else if (tw) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid WEATHER_CONDITION");
@@ -274,11 +258,7 @@ static void main_window_load(Window* window) {
     return;
   }
 
-  s_watchface_created = watchface_composer_create(
-      window,
-      &s_settings,
-      s_palette);
-  if (!s_watchface_created) {
+  if (!watchface_composer_create(window, &s_settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Watchface composer create failed");
     return;
@@ -295,8 +275,6 @@ static void main_window_unload(Window* window) {
 
 static void init(void) {
   // Create the window before initializing app state and services.
-  s_watchface_created = false;
-  s_services_started = false;
   #if defined(PBL_HEALTH)
   s_health_events_subscribed = false;
   #endif
@@ -312,28 +290,16 @@ static void init(void) {
   } else {
     settings_apply_defaults(&s_settings);
   }
-  s_palette = display_get_palette(s_settings.display_mode);
-  watchface_composer_init();
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,
     .unload = main_window_unload,
   });
   window_stack_push(s_window, true);
-  if (!s_watchface_created) {
-    window_stack_pop(false);
-    return;
-  }
 
-  app_message_register_inbox_received(inbox_received_callback);
-  app_message_register_inbox_dropped(inbox_dropped_callback);
-  app_message_register_outbox_failed(outbox_failed_callback);
-  app_message_register_outbox_sent(outbox_sent_callback);
-  open_app_message();
-
+  // Subscribe to services
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
-  s_services_started = true;
   #if defined(PBL_HEALTH)
     bool health_available = health_service_events_subscribe(
         health_handler,
@@ -346,18 +312,21 @@ static void init(void) {
       apply_hr_sample_period();
     }
   #endif
+
+  app_message_register_inbox_received(inbox_received_callback);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  open_app_message();
 }
 
 static void deinit(void) {
   if (!s_window) {
     return;
   }
-  if (s_services_started) {
-    tick_timer_service_unsubscribe();
-    battery_state_service_unsubscribe();
-    app_message_deregister_callbacks();
-    s_services_started = false;
-  }
+  tick_timer_service_unsubscribe();
+  battery_state_service_unsubscribe();
+  app_message_deregister_callbacks();
   #if defined(PBL_HEALTH)
     if (s_health_events_subscribed) {
       health_service_events_unsubscribe();

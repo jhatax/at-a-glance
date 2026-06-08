@@ -54,22 +54,22 @@ static inline GColor get_battery_color_from_state(void) {
   if (s_battery_state.is_charging) {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   }
 
   if (percent > 50) {
     return PBL_IF_COLOR_ELSE(
         GColorCobaltBlue,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   }
   if (percent > 20) {
     return PBL_IF_COLOR_ELSE(
         GColorRajah,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   }
   return PBL_IF_COLOR_ELSE(
       GColorRed,
-      display_legible_over_background(s_palette));
+      gcolor_legible_over(s_palette->background));
 }
 
 static void draw_battery_charging_bolt(
@@ -187,7 +187,6 @@ static void update_battery(void) {
 bool battery_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
-    GFont value_font,
     const VisualPalette* palette) {
   if (!root || !layout || !palette) {
     return false;
@@ -199,7 +198,8 @@ bool battery_module_create(
   s_battery_layer = create_battery_text_layer(
       root,
       &layout->battery_text_frame,
-      value_font);
+      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD)
+  );
 
   if (!s_battery_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,

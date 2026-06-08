@@ -51,3 +51,7 @@ bool helper_tuple_to_int(Tuple* tuple, int* value) {
       return false;
   }
 }
+
+bool helper_color_equal(GColor first, GColor second) {
+  return first.argb == second.argb;
+}

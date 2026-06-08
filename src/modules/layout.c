@@ -1,6 +1,8 @@
 #include "layout.h"
 #include "helper.h"
+#include "../c/ataglance.h"
 
+// Local functions
 static int16_t layout_scale_coord_y(
     int16_t design_y,
     int16_t face_height) {
@@ -20,80 +22,104 @@ static int16_t layout_scale_coord_x(
 }
 
 static int16_t layout_scale_height(
-    int16_t design_height,
-    int16_t face_height) {
+    int16_t design_widget_height,
+    int16_t current_face_height) {
   return helper_scale_round(
-      design_height,
-      face_height,
+      design_widget_height,
+      current_face_height,
       ATAGLANCE_DESIGN_FACE_HEIGHT);
 }
 
 static int16_t layout_scale_width(
-    int16_t design_width,
-    int16_t face_width) {
+    int16_t design_widget_width,
+    int16_t current_face_width) {
   return helper_scale_round(
-      design_width,
-      face_width,
+      design_widget_width,
+      current_face_width,
       ATAGLANCE_DESIGN_FACE_WIDTH);
 }
 
-int16_t layout_scale_icon_x(const GSize* bounds_size, int16_t coord) {
-  if (!bounds_size) {
+static inline bool is_valid_design_x_coord(int16_t x, int16_t design_width) {
+  return (x >=0 && x <=design_width);
+}
+
+static inline bool is_valid_design_y_coord(int16_t y, int16_t design_height) {
+  return (y >=0 && y <=design_height);
+}
+
+// Module APIs
+inline int16_t layout_scale_icon_x(
+  const GSize* size,
+  int16_t coord) {
+  if (!size || !is_valid_design_x_coord(coord, ATAGLANCE_DESIGN_ICON_WIDTH)) {
     return 0;
   }
 
   return helper_scale_round(
       coord,
-      bounds_size->w,
-      ATAGLANCE_DESIGN_ICON_SIZE);
+      size->w,
+      ATAGLANCE_DESIGN_ICON_WIDTH);
 }
 
-int16_t layout_scale_icon_y(const GSize* bounds_size, int16_t coord) {
-  if (!bounds_size) {
+inline int16_t layout_scale_icon_y(
+  const GSize* size,
+  int16_t coord) {
+  if (!size || !is_valid_design_y_coord(coord, ATAGLANCE_DESIGN_ICON_HEIGHT)) {
     return 0;
   }
 
   return helper_scale_round(
       coord,
-      bounds_size->h,
-      ATAGLANCE_DESIGN_ICON_SIZE);
+      size->h,
+      ATAGLANCE_DESIGN_ICON_HEIGHT
+  );
 }
 
-int16_t layout_scale_icon_coord(
-    const GSize* bounds_size,
-    int16_t coord) {
-  if (!bounds_size) {
+int16_t layout_scale_icon_coord(const GSize* size, int16_t coord) {
+  if (!size) {
     return 0;
   }
 
-  return helper_scale_round(
-      coord,
-      helper_min(bounds_size->w, bounds_size->h),
-      ATAGLANCE_DESIGN_ICON_SIZE);
-}
-
-GPoint layout_scaled_icon_point(
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y) {
-  if (!bounds_size) {
-    return GPoint(x, y);
+  if (!(is_valid_design_x_coord(coord, ATAGLANCE_DESIGN_ICON_WIDTH)
+    || is_valid_design_y_coord(coord, ATAGLANCE_DESIGN_ICON_HEIGHT))) {
+    return 0;
   }
 
-  return GPoint(
-      layout_scale_icon_x(bounds_size, x),
-      layout_scale_icon_y(bounds_size, y));
+  int16_t chosen_dimension = helper_min(size->w, size->h);
+  int16_t design_dimension = (chosen_dimension == size->w) ?
+    ATAGLANCE_DESIGN_ICON_WIDTH : ATAGLANCE_DESIGN_ICON_HEIGHT;
+  return helper_scale_round(
+      coord,
+      chosen_dimension,
+      design_dimension
+  );
 }
 
-void layout_calculate(
-    int16_t face_width,
-    int16_t face_height,
-    WatchfaceLayout* layout) {
+inline GPoint layout_scaled_icon_point(const GSize* size, int16_t x, int16_t y) {
+  // 1. Guard Clause: Invalid coordinates always fall back to (0,0)
+ if (!(is_valid_design_x_coord(x, ATAGLANCE_DESIGN_ICON_WIDTH) &&
+   is_valid_design_y_coord(y, ATAGLANCE_DESIGN_ICON_HEIGHT))) {
+   return GPoint(0, 0);
+ }
+
+ // 2. Rule: If size is provided, calculate the scaled point
+ if (size) {
+   return GPoint(
+       layout_scale_icon_x(size, x),
+       layout_scale_icon_y(size, y)
+   );
+ }
+
+ // 3. Rule: If size is NULL (and coordinates are valid), return unscaled point
+ return GPoint(x, y);
+}
+
+void layout_calculate(int16_t face_width, int16_t face_height, WatchfaceLayout* layout) {
   if (!layout) {
     return;
   }
 
-  #if defined(PBL_RECT)
+  #ifdef PBL_RECT
   const int16_t x_content_start = layout_scale_coord_x(
       ATAGLANCE_DESIGN_CONTENT_MARGIN,
       face_width);
@@ -120,7 +146,7 @@ void layout_calculate(
   // Scale all of these based on face_height
   // Start with icons
   int16_t icon_size = layout_scale_height(
-      ATAGLANCE_DESIGN_ICON_SIZE,
+      ATAGLANCE_DESIGN_ICON_HEIGHT,
       face_height);
   const int16_t icon_text_gap = layout_scale_width(
       ATAGLANCE_DESIGN_ICON_TEXT_GAP,

@@ -2,5 +2,8 @@ build/
 node_modules/
 .DS_Store
 .lock-waf_darwin_build
+.clangd
+compile_commands.json
+compile_flags.txt
 resources/images/backup-images/
 src/c/scratch.txt

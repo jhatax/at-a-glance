@@ -117,6 +117,16 @@ Use the stricter loop before writing code:
 4. Edit only after terms and branches line up.
 5. Build and review the diff against the stated intent.
 
+Code style:
+
+- Keep programming source lines at or below 80 characters where practical.
+
+Review and pushback:
+
+- Push back when a change deviates from established platform lifecycle,
+  module ownership, product semantics, or repository hygiene. Name the
+  deviation plainly and explain the safer local pattern.
+
 Prevent drift:
 
 - Reuse existing sentinels, enum names, macros, message keys, and product
@@ -150,6 +160,19 @@ Text-first controls:
 - Log layer creation failures once where creation happens. Avoid repeated
   refresh-time log spam for known-missing layers.
 
+Module ownership:
+
+- `watchface_composer` is the owner of screen composition state. Do not force
+  `main.c` to shuttle window, settings, palette, or layout state through every
+  module call when composer can own the composition boundary cleanly.
+- Keep weather state and procedural weather glyph drawing separate when the
+  drawing logic becomes too large to audit inside `weather.c`. The weather
+  module should pass explicit render inputs such as condition, frame, and
+  palette into glyph rendering rather than exposing weather-owned globals.
+- Optional modules should use product semantics for creation success. For
+  health, at least one created text layer is meaningfully available; do not
+  force arbitrary all-or-nothing success when the product accepts partial text.
+
 Main boundary:
 
 - Keep `main.c` moving toward lifecycle and dispatch only: window lifecycle,
@@ -159,6 +182,15 @@ Main boundary:
   out of `main.c` when a clean behavior-preserving boundary exists.
 - Temperature, battery, steps, BPM, and date/time display state should be
   owned by their cohesive modules rather than by `main.c`.
+
+Lifecycle and files:
+
+- Do not fight Pebble lifecycle. Verify official Pebble/Rebble patterns before
+  inventing lifecycle control flags or synchronous assumptions.
+- Failure semantics must be complete across all return paths, including rare
+  error branches, not only the common path.
+- Track new source files explicitly. Ignore local build/editor artifacts, but
+  do not hide new refactor source files in `.gitignore`.
 
 ---
 

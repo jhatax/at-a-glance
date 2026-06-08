@@ -1,7 +1,6 @@
 #pragma once
 
 #include <pebble.h>
-#include "../c/ataglance.h"
 
 typedef struct {
   GRect background_frame;

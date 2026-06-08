@@ -82,13 +82,6 @@ void time_module_refresh(
     return;
   }
 
-  format_time(
-      s_time_buffer,
-      ATAGLANCE_MAX_STR_LEN,
-      t,
-      time_format);
-  display_update_text_layer(
-      s_time_layer,
-      s_time_buffer,
-      s_palette->time);
+  format_time(s_time_buffer, ATAGLANCE_MAX_STR_LEN, t, time_format);
+  display_update_text_layer(s_time_layer, s_time_buffer, s_palette->time);
 }

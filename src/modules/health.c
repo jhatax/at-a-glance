@@ -94,15 +94,15 @@ static inline GColor calculate_bpm_color(int bpm) {
   } else if (bpm > 120) {
     return PBL_IF_COLOR_ELSE(
         GColorRed,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   } else if (bpm >= 100) {
     return PBL_IF_COLOR_ELSE(
         GColorMagenta,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   } else {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        display_legible_over_background(s_palette));
+        gcolor_legible_over(s_palette->background));
   }
 }
 
@@ -129,7 +129,7 @@ static void draw_data_gap_slash(
   graphics_context_set_stroke_width(ctx, 3);
   graphics_context_set_stroke_color(
       ctx,
-      display_legible_over_background(s_palette));
+      gcolor_legible_over(s_palette->background));
   health_draw_scaled_line(ctx, bounds_size, 5, 3, 24, 26);
 }
 
@@ -311,12 +311,11 @@ static void update_steps(void) {
 bool health_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
-    GFont value_font,
     const VisualPalette* palette) {
   if (!root || !layout || !palette) {
     return false;
   }
-
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   s_palette = palette;
 
   s_bpm = 0;
@@ -325,7 +324,7 @@ bool health_module_create(
   s_bpm_layer = create_health_text_layer(
       root,
       &layout->bpm_text_frame,
-      value_font);
+      font);
 
   if (!s_bpm_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -345,7 +344,7 @@ bool health_module_create(
   s_steps_layer = create_health_text_layer(
       root,
       &layout->steps_text_frame,
-      value_font);
+      font);
 
   if (!s_steps_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -360,7 +359,7 @@ bool health_module_create(
     }
   }
 
-  return s_bpm_layer && s_steps_layer;
+  return s_bpm_layer || s_steps_layer;
 }
 
 void health_module_destroy(void) {
@@ -413,11 +412,9 @@ void health_module_handle_event(HealthEventType event) {
 bool health_module_create(
     Layer* root,
     const WatchfaceLayout* layout,
-    GFont value_font,
     const VisualPalette* palette) {
   (void)root;
   (void)layout;
-  (void)value_font;
   (void)palette;
   return true;
 }

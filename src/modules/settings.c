@@ -2,7 +2,7 @@
 
 // The ID / key that specifies where settings are persisted in storage
 static const uint32_t c_key_persisted_settings = 2;
-static const size_t c_settings_read_size = sizeof(WatchfaceSettings);
+static const int c_settings_data_size = sizeof(WatchfaceSettings);
 
 void settings_apply_defaults(WatchfaceSettings* settings) {
   if (!settings) {
@@ -50,17 +50,17 @@ static void settings_read_stored(WatchfaceSettings* settings) {
   WatchfaceSettings stored = *settings;
 
   int read_size = stored_size;
-  if (read_size > (int)c_settings_read_size) {
+  if (read_size > c_settings_data_size) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Persisted settings truncated: size=%d max=%d",
             stored_size,
-            (int)c_settings_read_size);
-    read_size = (int)c_settings_read_size;
-  } else if (read_size < (int)c_settings_read_size) {
+            c_settings_data_size);
+    read_size = c_settings_data_size;
+  } else if (read_size < c_settings_data_size) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Persisted settings partial: size=%d expected=%d",
             stored_size,
-            (int)c_settings_read_size);
+            c_settings_data_size);
   }
 
   int bytes_read = persist_read_data(
@@ -114,12 +114,12 @@ bool settings_save(const WatchfaceSettings* settings) {
   int bytes_written = persist_write_data(
       c_key_persisted_settings,
       settings,
-      sizeof(*settings));
+      c_settings_data_size);
   if (bytes_written != (int)sizeof(*settings)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Persisted settings write failed: result=%d expected=%d",
             bytes_written,
-            (int)sizeof(*settings));
+            c_settings_data_size);
     return false;
   }
 

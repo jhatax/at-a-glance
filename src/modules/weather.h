@@ -9,7 +9,6 @@
 #define WEATHER_TEMP_INVALID INT16_MIN
 #define WEATHER_CONDITION_UNKNOWN -1
 
-void weather_module_init(void);
 bool weather_module_create(
     Layer* root,
     const WatchfaceLayout* layout,

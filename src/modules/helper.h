@@ -12,3 +12,4 @@ int16_t helper_scale_round(
     int16_t denominator);
 
 bool helper_tuple_to_int(Tuple* tuple, int* value);
+bool helper_color_equal(GColor first, GColor second);

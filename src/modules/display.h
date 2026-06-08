@@ -14,12 +14,5 @@ typedef struct {
   GColor steps_icon;
 } VisualPalette;
 
-GColor display_legible_over_background(const VisualPalette* palette);
 const VisualPalette* display_get_palette(uint8_t display_mode);
-const VisualPalette* display_resolve_palette(
-    const VisualPalette* palette,
-    uint8_t display_mode);
-void display_update_text_layer(
-    TextLayer* layer,
-    const char* text,
-    GColor text_color);
+void display_update_text_layer(TextLayer* layer, const char* text, GColor text_color);
