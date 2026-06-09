@@ -5,21 +5,23 @@
 
 static const ColorPalette c_dark_palette = {
   .background = GColorBlack,
+  .background_layer_background = GColorBlack,
+  .background_layer_line = GColorWhite,
   .primary_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorWhite),
   .date = PBL_IF_COLOR_ELSE(GColorRichBrilliantLavender, GColorWhite),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
-  .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
 };
 
 static const ColorPalette c_light_palette = {
   .background = GColorWhite,
+  .background_layer_background = GColorWhite,
+  .background_layer_line = GColorBlack,
   .primary_text = GColorBlack,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
   .date = PBL_IF_COLOR_ELSE(GColorImperialPurple, GColorBlack),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
-  .rule = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
   .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
 };
 
@@ -201,8 +203,6 @@ GColor layout_color_for_role(
       return palette->date;
     case WATCHFACE_COLOR_ROLE_TIME:
       return palette->time;
-    case WATCHFACE_COLOR_ROLE_RULE:
-      return palette->rule;
     case WATCHFACE_COLOR_ROLE_STEPS_ICON:
       return palette->steps_icon;
     case WATCHFACE_COLOR_ROLE_DYNAMIC:
@@ -265,8 +265,9 @@ void layout_calculate_surface(
   const int16_t y_content_end = face_height - y_content_start;
   const int16_t content_width = face_width - (2 * x_content_start);
   const int16_t display_center = face_height / 2;
-  const int16_t rule_left = x_content_start;
-  const int16_t rule_right = x_content_end;
+  const int16_t rule_x = x_content_start;
+  const int16_t rule_y = display_center;
+  const int16_t rule_width = x_content_end - rule_x;
   #else
   // Keeping these defaults for now, might change for circular displays
   const int16_t x_content_start = ATAGLANCE_DESIGN_CONTENT_MARGIN;
@@ -274,8 +275,9 @@ void layout_calculate_surface(
   const int16_t y_content_end = face_height - y_content_start;
   const int16_t content_width = face_width - (2 * x_content_start);
   const int16_t display_center = face_height / 2;
-  const int16_t rule_left = x_content_start;
-  const int16_t rule_right = face_width - x_content_start;
+  const int16_t rule_x = x_content_start;
+  const int16_t rule_y = display_center;
+  const int16_t rule_width = (face_width - x_content_start) - rule_x;
   #endif
 
   // Scale all of these based on face_height
@@ -339,7 +341,13 @@ void layout_calculate_surface(
 
   surface->face_width = face_width;
   surface->face_height = face_height;
-  surface->background_frame = GRect(0, 0, face_width, face_height);
+  surface->background = (WatchfaceBackgroundSubstratum) {
+    .frame = GRect(0, 0, face_width, face_height),
+    .line_enabled = true,
+    .line_x = rule_x,
+    .line_y = rule_y,
+    .line_width = rule_width,
+  };
   surface->content_x = x_content_start;
   surface->row_gap = row_gap;
   surface->column_gap = column_gap;
@@ -355,7 +363,7 @@ void layout_calculate_surface(
                    date_row_top,
                    surface->content_width_date,
                    date_row_height),
-    .alignment = GTextAlignmentLeft,
+    .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
@@ -364,7 +372,7 @@ void layout_calculate_surface(
                    time_row_top,
                    surface->content_width_time,
                    time_row_height),
-    .alignment = GTextAlignmentLeft,
+    .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_TIME,
     .color_role = WATCHFACE_COLOR_ROLE_TIME,
   };
@@ -427,11 +435,5 @@ void layout_calculate_surface(
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BATTERY,
     .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
-  };
-  surface->rule = (WatchfaceRuleSubstratum) {
-    .is_enabled = true,
-    .start = GPoint(rule_left, display_center),
-    .end = GPoint(rule_right, display_center),
-    .color_role = WATCHFACE_COLOR_ROLE_RULE,
   };
 }

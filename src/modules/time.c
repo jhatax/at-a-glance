@@ -49,6 +49,9 @@ bool time_module_create(
   }
 
   text_layer_set_background_color(s_time_layer, GColorClear);
+#ifdef DEBUG_ATAGLANCE
+  text_layer_set_background_color(s_time_layer, GColorLightGray);
+#endif
   text_layer_set_font(
       s_time_layer,
       surface->style.fonts[text->font_role]);
@@ -90,4 +93,7 @@ void time_module_refresh(
       layout_color_for_role(
           s_surface->style.palette,
           s_surface->time.text.color_role));
+#ifdef DEBUG_ATAGLANCE
+  text_layer_set_background_color(s_time_layer, GColorLightGray);
+#endif
 }

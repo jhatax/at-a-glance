@@ -19,18 +19,18 @@ typedef enum {
   WATCHFACE_COLOR_ROLE_UNAVAILABLE_TEXT,
   WATCHFACE_COLOR_ROLE_DATE,
   WATCHFACE_COLOR_ROLE_TIME,
-  WATCHFACE_COLOR_ROLE_RULE,
   WATCHFACE_COLOR_ROLE_STEPS_ICON,
   WATCHFACE_COLOR_ROLE_DYNAMIC
 } WatchfaceColorRole;
 
 typedef struct {
   GColor background;
+  GColor background_layer_background;
+  GColor background_layer_line;
   GColor primary_text;
   GColor unavailable_text;
   GColor date;
   GColor time;
-  GColor rule;
   GColor steps_icon;
 } ColorPalette;
 
@@ -49,11 +49,12 @@ typedef struct {
 } WatchfaceIconSubstratum;
 
 typedef struct {
-  bool is_enabled;
-  GPoint start;
-  GPoint end;
-  WatchfaceColorRole color_role;
-} WatchfaceRuleSubstratum;
+  GRect frame;
+  bool line_enabled;
+  int16_t line_x;
+  int16_t line_y;
+  int16_t line_width;
+} WatchfaceBackgroundSubstratum;
 
 typedef struct {
   WatchfaceTextSubstratum text;
@@ -72,7 +73,7 @@ typedef struct {
 typedef struct {
   int16_t face_width;
   int16_t face_height;
-  GRect background_frame;
+  WatchfaceBackgroundSubstratum background;
   int16_t content_x;
   int16_t row_gap;
   int16_t column_gap;
@@ -87,7 +88,6 @@ typedef struct {
   WatchfaceMetricStratum steps;
   WatchfaceMetricStratum battery;
   WatchfaceMetricStratum climate;
-  WatchfaceRuleSubstratum rule;
 } WatchfaceSurface;
 
 void layout_calculate_surface(
