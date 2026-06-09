@@ -9,8 +9,8 @@
 - Public APIs must be declared in headers and implemented as normal
   external functions. Do not make public APIs `static` or `inline`.
 - File-local private helpers may remain `static`; they are not APIs.
-- Composer is the clearing house. `main.c` dispatches platform/service
-  events to composer and should not call feature modules directly.
+- `watchface` is the clearing house. `main.c` dispatches platform/service
+  events to watchface and should not call feature modules directly.
 - Modules own their Pebble layers, buffers, update procs, refresh
   behavior, and destroy paths.
 - Layout owns calculated surface data: strata, substrata, color palette,
@@ -77,14 +77,14 @@ Rendering helpers that only need colors receive `const ColorPalette*`, not
 the full style or surface. For example, climate glyph drawing should take
 `const ColorPalette*`.
 
-Composer gets event-routing wrappers so `main.c` no longer calls feature
+Watchface gets event-routing wrappers so `main.c` no longer calls feature
 modules directly:
 
 ```c
-watchface_composer_update_battery(&state);
-watchface_composer_handle_health_event(event);
-watchface_composer_update_temp(celsius_tenths, temp_unit);
-watchface_composer_update_weather_condition(condition, temp_unit);
+watchface_update_battery(&state);
+watchface_handle_health_event(event);
+watchface_update_temp(celsius_tenths, temp_unit);
+watchface_update_weather_condition(condition, temp_unit);
 ```
 
 ## Implementation Sequence
@@ -101,7 +101,7 @@ watchface_composer_update_weather_condition(condition, temp_unit);
    Add surface calculation and style update functions. Use compact class
    by shape and baseline: rectangular compact below `200x228`; round
    compact below `260x260`.
-5. Convert composer to own `WatchfaceSurface`.
+5. Convert watchface to own `WatchfaceSurface`.
    Calculate once on create. Update style once on display-mode refresh.
    Pass the surface to every module.
 6. Split and rename modules.
@@ -113,7 +113,7 @@ watchface_composer_update_weather_condition(condition, temp_unit);
    public symbols or includes remain.
 8. Tighten `main.c`.
    Remove direct feature-module includes and calls. Route battery and
-   health events through composer.
+   health events through watchface.
 9. Validate and review.
    Build all current target platforms: `aplite`, `basalt`, `diorite`,
    `emery`, `flint`. Screenshot Emery and one compact rectangular target.

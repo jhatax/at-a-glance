@@ -1,4 +1,4 @@
-#include "watchface_composer.h"
+#include "watchface.h"
 #include "battery.h"
 #include "climate.h"
 #include "date.h"
@@ -31,12 +31,12 @@ typedef enum {
 } LayerMask;
 static uint8_t s_layers_created = (uint8_t) NO_LAYERS_MASK;
 
-static void watchface_composer_exit_path() {
-  watchface_composer_destroy();
+static void watchface_exit_path() {
+  watchface_destroy();
   window_stack_pop_all(false);
 }
 
-static void watchface_composer_update_style(void) {
+static void watchface_update_style(void) {
   if (!s_wf_settings) {
     return;
   }
@@ -44,14 +44,14 @@ static void watchface_composer_update_style(void) {
   layout_update_surface_style(&s_surface, s_wf_settings->display_mode);
 }
 
-bool watchface_composer_create(
+bool watchface_create(
     Window* window,
     const WatchfaceSettings* settings) {
   if (!window || !settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Cannot create watchface without composer inputs");
+            "Cannot create watchface without watchface inputs");
     if (window) {
-      watchface_composer_exit_path();
+      watchface_exit_path();
     }
     return false;
   }
@@ -63,7 +63,7 @@ bool watchface_composer_create(
 
   if (!root) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
-    watchface_composer_exit_path();
+    watchface_exit_path();
     return false;
   }
 
@@ -87,7 +87,7 @@ bool watchface_composer_create(
 
   if ((s_layers_created & MUST_HAVE_LAYERS_MASK) != MUST_HAVE_LAYERS_MASK) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
-    watchface_composer_exit_path();
+    watchface_exit_path();
     return false;
   }
 
@@ -107,7 +107,7 @@ bool watchface_composer_create(
   return true;
 }
 
-void watchface_composer_destroy() {
+void watchface_destroy() {
   if (s_layers_created) {
     if (s_layers_created & DATE_LAYER_MASK) {
       date_module_destroy();
@@ -148,12 +148,12 @@ void watchface_composer_destroy() {
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
-void watchface_composer_refresh() {
+void watchface_refresh() {
   if (!s_wf_window || !s_wf_settings) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
   window_set_background_color(
       s_wf_window,
       s_surface.style.palette->background);
@@ -177,12 +177,12 @@ void watchface_composer_refresh() {
   #endif
 }
 
-void watchface_composer_handle_tick(TimeUnits units_changed) {
+void watchface_handle_tick(TimeUnits units_changed) {
   if (!s_wf_settings || !s_wf_window) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
 
   if (units_changed & MINUTE_UNIT) {
     time_module_refresh(&s_surface, s_wf_settings->time_format);
@@ -192,42 +192,42 @@ void watchface_composer_handle_tick(TimeUnits units_changed) {
   }
 }
 
-void watchface_composer_update_battery(const BatteryChargeState* state) {
+void watchface_update_battery(const BatteryChargeState* state) {
   if (!s_wf_settings || !s_wf_window || !state) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
   battery_module_set_state(state);
 }
 
-void watchface_composer_update_temp(int celsius_tenths, uint8_t temp_unit) {
+void watchface_update_temp(int celsius_tenths, uint8_t temp_unit) {
   if (!s_wf_settings || !s_wf_window) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
   climate_module_set_temperature(celsius_tenths, temp_unit, &s_surface);
 }
 
-void watchface_composer_update_weather_condition(
+void watchface_update_weather_condition(
     int weather_condition,
     uint8_t temp_unit) {
   if (!s_wf_settings || !s_wf_window) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
   climate_module_set_condition(weather_condition, temp_unit, &s_surface);
 }
 
 #if defined(PBL_HEALTH)
-void watchface_composer_handle_health_event(HealthEventType event) {
+void watchface_handle_health_event(HealthEventType event) {
   if (!s_wf_settings || !s_wf_window) {
     return;
   }
 
-  watchface_composer_update_style();
+  watchface_update_style();
 
   if (s_layers_created & BPM_LAYER_MASK) {
     bpm_module_handle_event(event);

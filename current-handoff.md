@@ -65,7 +65,7 @@ Additional project expectations:
 - settings load/save orchestration
 - Pebble app loop entry
 
-`watchface_composer.c` owns screen composition:
+`watchface.c` owns the active watchface runtime:
 
 - active window and settings references
 - layout calculation
@@ -139,8 +139,8 @@ The accepted model is:
 
 1. `init()` creates the window and installs handlers.
 2. `window_stack_push()` lets Pebble call the window load handler.
-3. The load handler creates the watchface through `watchface_composer_create()`.
-4. If required controls cannot be created, the composer destroys partial state
+3. The load handler creates the watchface through `watchface_create()`.
+4. If required controls cannot be created, the watchface destroys partial state
    and pops the window stack.
 5. With no useful window left, `app_event_loop()` returns.
 6. `deinit()` unwinds services and destroys the window safely.
@@ -185,7 +185,7 @@ Current boundary:
   clear external contract.
 - renderers that already have palette/background context should use Pebble's
   legibility helpers directly, such as `gcolor_legible_over()`.
-- low-level display code should not reach into `main.c` or composer state.
+- low-level display code should not reach into `main.c` or watchface state.
 
 ## AppMessage And Settings
 
@@ -237,7 +237,7 @@ Candidate audits:
   hiding message contracts.
 - Settings application: keep persistence in `settings.c`, but avoid making
   `main.c` own module-specific behavior.
-- Service callbacks: dispatch to modules/composer; do not let `main.c` regain
+- Service callbacks: dispatch to watchface; do not let `main.c` regain
   formatting or render state.
 
 Do not move behavior merely for symmetry. Preserve behavior and use clear owner

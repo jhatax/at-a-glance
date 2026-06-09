@@ -79,8 +79,8 @@ At A Glance: Configuration
 Use these boundaries when reviewing or extending the code:
 
 - `src/c/main.c`: window lifecycle, service subscriptions, AppMessage
-  receive flow, settings ownership, and composer dispatch.
-- `src/modules/watchface_composer.c`: screen assembly, root layer
+  receive flow, settings ownership, and watchface dispatch.
+- `src/modules/watchface.c`: active watchface coordination, root layer
   discovery, `WatchfaceSurface` ownership, module creation/destruction
   order, full-display refresh coordination, and event routing.
 - `src/modules/layout.c`: rectangular `WatchfaceSurface` calculation,
@@ -166,9 +166,9 @@ Text-first controls:
 
 Module ownership:
 
-- `watchface_composer` is the owner of screen composition state. Do not force
+- `watchface` is the active watchface coordinator. Do not force
   `main.c` to shuttle window, settings, palette, or layout state through every
-  module call when composer can own the composition boundary cleanly.
+  module call when watchface can own the runtime boundary cleanly.
 - Keep climate state and procedural weather glyph drawing separate when the
   drawing logic becomes too large to audit inside `climate.c`. The climate
   module should pass explicit render inputs such as condition, frame, and

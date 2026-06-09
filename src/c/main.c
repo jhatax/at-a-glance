@@ -2,7 +2,7 @@
 
 #include "ataglance.h"
 #include "../modules/helper.h"
-#include "../modules/watchface_composer.h"
+#include "../modules/watchface.h"
 
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
@@ -57,18 +57,18 @@ static void refresh_watchface_display() {
     return;
   }
 
-  watchface_composer_refresh();
+  watchface_refresh();
 }
 
 #if defined(PBL_HEALTH)
 static void health_handler(HealthEventType event, void* context) {
   (void)context;
-  watchface_composer_handle_health_event(event);
+  watchface_handle_health_event(event);
 }
 #endif
 
 static void battery_handler(BatteryChargeState state) {
-  watchface_composer_update_battery(&state);
+  watchface_update_battery(&state);
 }
 
 static void tick_handler(
@@ -76,7 +76,7 @@ static void tick_handler(
     TimeUnits units_changed) {
   (void)tick_time;
 
-  watchface_composer_handle_tick(units_changed);
+  watchface_handle_tick(units_changed);
 }
 
 static void inbox_received_callback(
@@ -119,7 +119,7 @@ static void inbox_received_callback(
 
   Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
   if (tt && tt->type == TUPLE_INT) {
-    watchface_composer_update_temp(
+    watchface_update_temp(
         (int)tt->value->int32,
         s_settings.temp_unit);
   } else if (tt) {
@@ -129,7 +129,7 @@ static void inbox_received_callback(
 
   Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
   if (tw && tw->type == TUPLE_INT) {
-    watchface_composer_update_weather_condition(
+    watchface_update_weather_condition(
         (int)tw->value->int32,
         s_settings.temp_unit);
   } else if (tw) {
@@ -252,9 +252,9 @@ static void main_window_load(Window* window) {
     return;
   }
 
-  if (!watchface_composer_create(window, &s_settings)) {
+  if (!watchface_create(window, &s_settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Watchface composer create failed");
+            "Watchface create failed");
     return;
   }
 
@@ -264,7 +264,7 @@ static void main_window_load(Window* window) {
 static void main_window_unload(Window* window) {
   (void)window;
 
-  watchface_composer_destroy();
+  watchface_destroy();
 }
 
 static void init(void) {
