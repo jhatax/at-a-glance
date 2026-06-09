@@ -4,6 +4,7 @@
 
 static char s_time_buffer[ATAGLANCE_MAX_STR_LEN];
 static TextLayer* s_time_layer;
+static GFont s_custom_time_font;
 static const WatchfaceSurface* s_surface;
 
 static void format_time(
@@ -11,6 +12,8 @@ static void format_time(
     size_t buflen,
     const struct tm* t,
     uint8_t time_format);
+static uint32_t custom_time_font_resource_id(
+    const WatchfaceSurface* surface);
 
 static void format_time(
     char* buf,
@@ -32,6 +35,20 @@ static void format_time(
   strftime(buf, buflen, "%H:%M", t);
 }
 
+static uint32_t custom_time_font_resource_id(
+    const WatchfaceSurface* surface) {
+  if (!surface) {
+    return 0;
+  }
+
+  if (surface->face_width >= ATAGLANCE_DESIGN_FACE_WIDTH &&
+      surface->face_height >= ATAGLANCE_DESIGN_FACE_HEIGHT) {
+    return RESOURCE_ID_FONT_TIME_UNBOUNDED_48;
+  }
+
+  return 0;
+}
+
 bool time_module_create(
     Layer* root,
     const WatchfaceSurface* surface) {
@@ -49,12 +66,18 @@ bool time_module_create(
   }
 
   text_layer_set_background_color(s_time_layer, GColorClear);
-#ifdef DEBUG_ATAGLANCE
-  text_layer_set_background_color(s_time_layer, GColorLightGray);
-#endif
+  const uint32_t custom_font_resource_id =
+      custom_time_font_resource_id(surface);
+  if (custom_font_resource_id) {
+    s_custom_time_font = fonts_load_custom_font(
+        resource_get_handle(custom_font_resource_id));
+  }
+
   text_layer_set_font(
       s_time_layer,
-      surface->style.fonts[text->font_role]);
+      s_custom_time_font ?
+          s_custom_time_font :
+          surface->style.fonts[text->font_role]);
   text_layer_set_text_alignment(s_time_layer, text->alignment);
   layer_add_child(root, text_layer_get_layer(s_time_layer));
   return true;
@@ -64,6 +87,11 @@ void time_module_destroy(void) {
   if (s_time_layer) {
     text_layer_destroy(s_time_layer);
     s_time_layer = NULL;
+  }
+
+  if (s_custom_time_font) {
+    fonts_unload_custom_font(s_custom_time_font);
+    s_custom_time_font = NULL;
   }
 
   s_time_buffer[0] = '\0';
@@ -93,7 +121,4 @@ void time_module_refresh(
       layout_color_for_role(
           s_surface->style.palette,
           s_surface->time.text.color_role));
-#ifdef DEBUG_ATAGLANCE
-  text_layer_set_background_color(s_time_layer, GColorLightGray);
-#endif
 }

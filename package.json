@@ -46,6 +46,11 @@
           "name": "MENU_ICON",
           "type": "bitmap",
           "menuIcon": true
+        },
+        {
+          "file": "fonts/unbounded-semibold-600-time.ttf",
+          "name": "FONT_TIME_UNBOUNDED_48",
+          "type": "font"
         }
       ]
     }
