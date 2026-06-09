@@ -35,14 +35,21 @@ pass.
 
 ## Layout
 
-The rectangular layout is computed from the display bounds instead of fixed
-Emery-only coordinates. Rectangular spacing is:
+The active watchface is coordinated by `src/modules/watchface.c`.
+`main.c` owns Pebble lifecycle and AppMessage parsing, then hands runtime
+events to `watchface`. The watchface owns one calculated `WatchfaceSurface`
+from `src/modules/layout.c`.
 
-```c
-PBL_DISPLAY_HEIGHT / 28
-```
+`WatchfaceSurface` has six fixed product strata:
 
-Screen hierarchy:
+- date
+- time
+- BPM
+- steps
+- battery
+- climate, which is weather icon plus temperature text
+
+Rectangular layout places those six strata into this visual hierarchy:
 
 ```text
 top boundary
@@ -60,22 +67,83 @@ bottom row
 bottom boundary
 ```
 
+The rectangular layout is computed from the display bounds instead of fixed
+Emery-only coordinates. Coordinates are scaled from the `200x228` Emery
+design baseline with rounded integer scaling.
+
 All text columns are left-aligned. The left health and bottom columns
 start at the content margin. The right health and bottom columns are
 positioned by column math, but their text alignment remains left.
 
-Current fonts:
+### Rectangular Geometry
 
-- Date: `FONT_KEY_GOTHIC_18_BOLD`
-- Time: `FONT_KEY_BITHAM_42_BOLD`
-- BPM: `FONT_KEY_GOTHIC_18_BOLD`
-- Steps: `FONT_KEY_GOTHIC_18_BOLD`
-- Temperature: `FONT_KEY_GOTHIC_18_BOLD`
-- Battery: `FONT_KEY_GOTHIC_18_BOLD`
+For Emery and other full rectangular displays, `200x228` computes to:
+
+```text
+content margin: 4
+row gap: 8
+icon: 28x28
+icon/text gap: 4
+
+date text:      GRect(4, 4, 192, 20)
+time text:      GRect(4, 58, 192, 48)
+rule:           (4, 114) -> (196, 114)
+BPM icon:       GRect(4, 122, 28, 28)
+BPM text:       GRect(36, 126, 40, 20)
+steps icon:     GRect(124, 122, 28, 28)
+steps text:     GRect(156, 126, 40, 20)
+climate icon:   GRect(4, 196, 28, 28)
+temperature:    GRect(36, 200, 40, 20)
+battery icon:   GRect(124, 196, 28, 28)
+battery text:   GRect(156, 200, 40, 20)
+```
+
+For compact rectangular displays such as Aplite, Basalt, Diorite, and
+Flint, `144x168` computes to:
+
+```text
+content margin: 3
+row gap: 6
+icon: 20x21
+icon/text gap: 3
+
+date text:      GRect(3, 3, 138, 15)
+time text:      GRect(3, 43, 138, 35)
+rule:           (3, 84) -> (141, 84)
+BPM icon:       GRect(3, 90, 20, 21)
+BPM text:       GRect(26, 93, 29, 15)
+steps icon:     GRect(89, 90, 20, 21)
+steps text:     GRect(112, 93, 29, 15)
+climate icon:   GRect(3, 144, 20, 21)
+temperature:    GRect(26, 147, 29, 15)
+battery icon:   GRect(89, 144, 20, 21)
+battery text:   GRect(112, 147, 29, 15)
+```
 
 The horizontal rule is 1 pixel wide. Value text frames for BPM, steps,
 temperature, and battery use compact rectangular sizing to preserve negative
-space on 144x168 displays.
+space on `144x168` displays.
+
+### Fonts
+
+Font roles are stored in the surface per text stratum. Full rectangular
+displays use:
+
+- Date: `FONT_KEY_GOTHIC_18_BOLD`
+- Time: `FONT_KEY_BITHAM_42_BOLD`
+- BPM: `FONT_KEY_GOTHIC_18`
+- Steps: `FONT_KEY_GOTHIC_18`
+- Temperature: `FONT_KEY_GOTHIC_18`
+- Battery: `FONT_KEY_GOTHIC_18_BOLD`
+
+Compact rectangular displays use:
+
+- Date: `FONT_KEY_GOTHIC_14_BOLD`
+- Time: `FONT_KEY_BITHAM_30_BLACK`
+- BPM: `FONT_KEY_GOTHIC_14`
+- Steps: `FONT_KEY_GOTHIC_14`
+- Temperature: `FONT_KEY_GOTHIC_14`
+- Battery: `FONT_KEY_GOTHIC_14_BOLD`
 
 ## Icons
 
@@ -149,7 +217,7 @@ write fails, the current in-memory setting still applies for the running
 watchface, but the value may not survive restart. Persistence failures
 are logged for debugging rather than shown on the watchface.
 
-## Weather
+## Climate Data
 
 The phone companion app requests weather from Open-Meteo every 30 minutes.
 It uses phone geolocation when available. When location is unavailable, it
@@ -225,8 +293,8 @@ that is how your local SDK is configured.
 resources/      Static image resources
 src/
   c/            Native Pebble C watchface code
-  modules/      Composer, layout surface, and feature modules
-  pkjs/         Phone-side weather and Clay configuration code
+  modules/      Watchface runtime, layout surface, and feature modules
+  pkjs/         Phone-side climate data and Clay configuration code
 package.json    Platforms, capabilities, message keys, and resources
 wscript         Pebble build entrypoint
 ```
