@@ -96,49 +96,49 @@ bool watchface_composer_create(
 }
 
 void watchface_composer_destroy() {
-  if (s_layers_created == NO_LAYERS_MASK) {
-    return;
-  }
-  // 1. Clean up Date Module if it was initialized
-  if (s_layers_created & DATE_LAYER_MASK) {
-    date_module_destroy();
-    s_layers_created &= ~DATE_LAYER_MASK; // Clear the bit
-  }
+  if (s_layers_created) {
+    // Date
+    if (s_layers_created & DATE_LAYER_MASK) {
+      date_module_destroy();
+      s_layers_created &= ~DATE_LAYER_MASK; // Clear the bit
+    }
 
-  // 2. Clean up Time Module if it was initialized
-  if (s_layers_created & TIME_LAYER_MASK) {
-    time_module_destroy();
-    s_layers_created &= ~TIME_LAYER_MASK;
-  }
+    // Time
+    if (s_layers_created & TIME_LAYER_MASK) {
+      time_module_destroy();
+      s_layers_created &= ~TIME_LAYER_MASK;
+    }
 
-  // 3. Clean up Battery Module if it was initialized
-  if (s_layers_created & BATTERY_LAYER_MASK) {
-    battery_module_destroy();
-    s_layers_created &= ~BATTERY_LAYER_MASK;
-  }
+    // Battery
+    if (s_layers_created & BATTERY_LAYER_MASK) {
+      battery_module_destroy();
+      s_layers_created &= ~BATTERY_LAYER_MASK;
+    }
 
-  // 4. Clean up Weather Module if it was initialized
-  if (s_layers_created & WEATHER_LAYER_MASK) {
-    weather_module_destroy();
-    s_layers_created &= ~WEATHER_LAYER_MASK;
-  }
+    // Weather
+    if (s_layers_created & WEATHER_LAYER_MASK) {
+      weather_module_destroy();
+      s_layers_created &= ~WEATHER_LAYER_MASK;
+    }
 
-  #ifdef PBL_HEALTH
-  // 5. Clean up Health Module if it was initialized
-  if (s_layers_created & HEALTH_LAYER_MASK) {
-    health_module_destroy();
-    s_layers_created &= ~HEALTH_LAYER_MASK;
-  }
-  #endif
+    #ifdef PBL_HEALTH
+    // Health
+    if (s_layers_created & HEALTH_LAYER_MASK) {
+      health_module_destroy();
+      s_layers_created &= ~HEALTH_LAYER_MASK;
+    }
+    #endif
 
-  // Reset the tracker completely just to be safe
+  }
+  // Reset all (async callbacks can still fire)
   s_layers_created = (uint8_t) NO_LAYERS_MASK;
+  s_wf_settings = NULL;
+  s_wf_window = NULL;
+  memset(&s_layout, 0, sizeof(s_layout));
 }
 
 void watchface_composer_refresh() {
   if (!s_wf_window || !s_wf_settings) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Cannot refresh watchface without composer inputs");
     return;
   }
 
@@ -164,8 +164,6 @@ void watchface_composer_refresh() {
 
 void watchface_composer_handle_tick(TimeUnits units_changed) {
   if (!s_wf_settings || !s_wf_window) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Cannot refresh tick display as watchface is in unknown state");
     return;
   }
 
@@ -180,6 +178,10 @@ void watchface_composer_handle_tick(TimeUnits units_changed) {
 }
 
 void watchface_composer_update_temp(int celsius_tenths, uint8_t temp_unit) {
+  if (!s_wf_settings || !s_wf_window) {
+    return;
+  }
+
   weather_module_set_temperature(
     celsius_tenths,
     temp_unit,
@@ -187,6 +189,10 @@ void watchface_composer_update_temp(int celsius_tenths, uint8_t temp_unit) {
 }
 
 void watchface_composer_update_weather_condition(int weather_condition, uint8_t temp_unit) {
+  if (!s_wf_settings || !s_wf_window) {
+    return;
+  }
+
   weather_module_set_condition(
     weather_condition,
     temp_unit,

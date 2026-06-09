@@ -3,6 +3,8 @@
 #include <pebble.h>
 
 typedef struct {
+  int16_t face_width;
+  int16_t face_height;
   GRect background_frame;
   GRect date_frame;
   GRect time_frame;
