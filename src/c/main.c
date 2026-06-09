@@ -152,6 +152,26 @@ static void inbox_received_callback(
             "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
 
+#if defined(DEBUG_ATAGLANCE) && defined(PBL_HEALTH)
+  Tuple* t_debug_bpm = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM);
+  int debug_bpm = 0;
+  if (t_debug_bpm && helper_tuple_to_int(t_debug_bpm, &debug_bpm)) {
+    watchface_debug_update_bpm(debug_bpm);
+  } else if (t_debug_bpm) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid DEBUG_BPM");
+  }
+
+  Tuple* t_debug_steps = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_STEPS);
+  int debug_steps = 0;
+  if (t_debug_steps && helper_tuple_to_int(t_debug_steps, &debug_steps)) {
+    watchface_debug_update_steps(debug_steps);
+  } else if (t_debug_steps) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid DEBUG_STEPS");
+  }
+#endif
+
   Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
   int display_mode = 0;
   if (td) {
@@ -202,6 +222,18 @@ static void outbox_sent_callback(
 }
 
 static uint32_t app_message_inbox_size(void) {
+#if defined(DEBUG_ATAGLANCE) && defined(PBL_HEALTH)
+  return dict_calc_buffer_size(
+      8,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t));
+#else
   return dict_calc_buffer_size(
       6,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -210,6 +242,7 @@ static uint32_t app_message_inbox_size(void) {
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE);
+#endif
 }
 
 static AppMessageResult open_app_message(void) {

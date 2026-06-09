@@ -1,4 +1,4 @@
-#if defined(PBL_HEALTH)
+#ifdef PBL_HEALTH
 #include "bpm.h"
 #include "../c/ataglance.h"
 
@@ -29,6 +29,7 @@ static void bpm_draw_scaled_line(
     int16_t x1,
     int16_t y1);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
+static void apply_bpm_value(int bpm, bool is_available);
 static void update_bpm(void);
 
 static TextLayer* create_bpm_text_layer(
@@ -145,37 +146,18 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 }
 
-static void update_bpm(void) {
+static void apply_bpm_value(int bpm, bool is_available) {
   if (!s_bpm_layer || !s_surface || !s_surface->style.palette) {
     return;
   }
 
-  time_t now = time(NULL);
-  HealthServiceAccessibilityMask hr_mask =
-      health_service_metric_accessible(
-          HealthMetricHeartRateBPM,
-          now,
-          now);
-
   GColor text_color = s_surface->style.palette->unavailable_text;
-  s_bpm = 0;
-  s_bpm_is_available = false;
+  s_bpm = bpm;
+  s_bpm_is_available = is_available && bpm > 0;
 
-  if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
-    s_bpm = (int) health_service_peek_current_value(
-        HealthMetricHeartRateBPM);
-
-    if (s_bpm > 0) {
-      snprintf(s_bpm_buffer, ATAGLANCE_MAX_STR_LEN, "%d", s_bpm);
-      text_color = calculate_bpm_color(s_bpm);
-      s_bpm_is_available = true;
-    } else {
-      snprintf(
-          s_bpm_buffer,
-          ATAGLANCE_MAX_STR_LEN,
-          "%s",
-          WATCHFACE_UNAVAILABLE_TEXT);
-    }
+  if (s_bpm_is_available) {
+    snprintf(s_bpm_buffer, ATAGLANCE_MAX_STR_LEN, "%d", s_bpm);
+    text_color = calculate_bpm_color(s_bpm);
   } else {
     snprintf(
         s_bpm_buffer,
@@ -189,6 +171,26 @@ static void update_bpm(void) {
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
   }
+}
+
+static void update_bpm(void) {
+  time_t now = time(NULL);
+  HealthServiceAccessibilityMask hr_mask =
+      health_service_metric_accessible(
+          HealthMetricHeartRateBPM,
+          now,
+          now);
+
+  int bpm = 0;
+  bool is_available = false;
+
+  if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
+    bpm = (int) health_service_peek_current_value(
+        HealthMetricHeartRateBPM);
+    is_available = bpm > 0;
+  }
+
+  apply_bpm_value(bpm, is_available);
 }
 
 bool bpm_module_create(
@@ -254,6 +256,12 @@ void bpm_module_handle_event(HealthEventType event) {
     update_bpm();
   }
 }
+
+#ifdef DEBUG_ATAGLANCE
+void bpm_module_debug_set_value(int bpm) {
+  apply_bpm_value(bpm, bpm > 0);
+}
+#endif
 
 #else
 

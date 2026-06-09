@@ -23,6 +23,7 @@ static void steps_draw_scaled_line(
     int16_t x1,
     int16_t y1);
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
+static void apply_steps_value(int steps, bool is_available);
 static void update_steps(void);
 
 static TextLayer* create_steps_text_layer(
@@ -118,34 +119,18 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 }
 
-static void update_steps(void) {
+static void apply_steps_value(int steps, bool is_available) {
   if (!s_steps_layer || !s_surface || !s_surface->style.palette) {
     return;
   }
 
   const ColorPalette* palette = s_surface->style.palette;
-  GColor text_color = palette->unavailable_text;
-  s_steps_is_available = false;
+  s_steps_is_available = is_available && steps >= 0;
+  GColor text_color = s_steps_is_available ?
+      palette->primary_text : palette->unavailable_text;
 
-  HealthServiceAccessibilityMask steps_mask =
-      health_service_metric_accessible(
-          HealthMetricStepCount,
-          time_start_of_today(),
-          time(NULL));
-
-  if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
-    HealthValue steps = health_service_sum_today(HealthMetricStepCount);
-    if (steps >= 0) {
-      snprintf(s_steps_buffer, ATAGLANCE_MAX_STR_LEN, "%d", (int)steps);
-      text_color = palette->primary_text;
-      s_steps_is_available = true;
-    } else {
-      snprintf(
-          s_steps_buffer,
-          ATAGLANCE_MAX_STR_LEN,
-          "%s",
-          WATCHFACE_UNAVAILABLE_TEXT);
-    }
+  if (s_steps_is_available) {
+    snprintf(s_steps_buffer, ATAGLANCE_MAX_STR_LEN, "%d", steps);
   } else {
     snprintf(
         s_steps_buffer,
@@ -159,6 +144,28 @@ static void update_steps(void) {
   if (s_steps_icon_layer) {
     layer_mark_dirty(s_steps_icon_layer);
   }
+}
+
+static void update_steps(void) {
+  HealthServiceAccessibilityMask steps_mask =
+      health_service_metric_accessible(
+          HealthMetricStepCount,
+          time_start_of_today(),
+          time(NULL));
+
+  int steps = 0;
+  bool is_available = false;
+
+  if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
+    HealthValue health_steps = health_service_sum_today(
+        HealthMetricStepCount);
+    if (health_steps >= 0) {
+      steps = (int)health_steps;
+      is_available = true;
+    }
+  }
+
+  apply_steps_value(steps, is_available);
 }
 
 bool steps_module_create(
@@ -223,6 +230,12 @@ void steps_module_handle_event(HealthEventType event) {
     update_steps();
   }
 }
+
+#ifdef DEBUG_ATAGLANCE
+void steps_module_debug_set_value(int steps) {
+  apply_steps_value(steps, steps >= 0);
+}
+#endif
 
 #else
 

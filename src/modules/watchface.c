@@ -237,4 +237,30 @@ void watchface_handle_health_event(HealthEventType event) {
     steps_module_handle_event(event);
   }
 }
+
+#ifdef DEBUG_ATAGLANCE
+void watchface_debug_update_bpm(int bpm) {
+  if (!s_wf_settings || !s_wf_window) {
+    return;
+  }
+
+  watchface_update_style();
+
+  if (s_layers_created & BPM_LAYER_MASK) {
+    bpm_module_debug_set_value(bpm);
+  }
+}
+
+void watchface_debug_update_steps(int steps) {
+  if (!s_wf_settings || !s_wf_window) {
+    return;
+  }
+
+  watchface_update_style();
+
+  if (s_layers_created & STEPS_LAYER_MASK) {
+    steps_module_debug_set_value(steps);
+  }
+}
+#endif
 #endif
