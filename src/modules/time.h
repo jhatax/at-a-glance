@@ -2,13 +2,12 @@
 
 #include <pebble.h>
 
-#include "display.h"
+#include "layout.h"
 
 bool time_module_create(
     Layer* root,
-    const GRect* frame,
-    const VisualPalette* palette);
+    const WatchfaceSurface* surface);
 void time_module_destroy(void);
 void time_module_refresh(
-    uint8_t time_format,
-    const VisualPalette* palette);
+    const WatchfaceSurface* surface,
+    uint8_t time_format);

@@ -17,7 +17,7 @@ monochrome emulator captures are selected.
 - Battery icon and percentage
 - Dark and light display modes
 - Color-aware and monochrome-aware visual palette
-- Procedural icons for health, weather, and battery
+- Procedural icons for BPM, steps, climate, and battery
 - Rebble Clay configuration page
 
 ## Supported Watches
@@ -225,6 +225,7 @@ that is how your local SDK is configured.
 resources/      Static image resources
 src/
   c/            Native Pebble C watchface code
+  modules/      Composer, layout surface, and feature modules
   pkjs/         Phone-side weather and Clay configuration code
 package.json    Platforms, capabilities, message keys, and resources
 wscript         Pebble build entrypoint

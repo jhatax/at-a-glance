@@ -50,7 +50,8 @@ Additional project expectations:
 - Reuse existing sentinels, macros, enum names, and product vocabulary.
 - Avoid redundant state, adjacent constants, and one-line helper functions.
 - Audit every include and caller when changing platform-bound headers,
-  especially `health.h` and `Health*` symbols behind `PBL_HEALTH`.
+  especially `bpm.h`, `steps.h`, and `Health*` symbols behind
+  `PBL_HEALTH`.
 - Do not ignore new refactor source files. Ignore local build/editor artifacts
   only.
 
@@ -80,15 +81,18 @@ Module ownership after the latest refactor:
 - `time.c`: time text layer, buffer, creation, tick update, destroy.
 - `battery.c`: battery text/icon layers, state, colors, callback update, and
   rendering.
-- `health.c`: BPM/steps text/icon layers, health state, colors, callback
-  update, and rendering. Entire module remains behind `PBL_HEALTH`.
-- `weather.c`: weather temperature text, weather icon layer, source state,
+- `bpm.c`: BPM text/icon layers, BPM state, colors, health event update,
+  and rendering. Health API use remains behind `PBL_HEALTH`.
+- `steps.c`: steps text/icon layers, steps availability, colors, health
+  event update, and rendering. Health API use remains behind `PBL_HEALTH`.
+- `climate.c`: temperature text, weather icon layer, source state,
   formatting, validation, update orchestration, and layer ownership.
-- `weather_glyphs.c`: procedural weather glyph drawing only. It receives
-  condition and palette explicitly; it must not reach back into weather state.
-- `display.c`: palette selection, unavailable token, and shared text-layer
-  display update behavior. It must not depend on `main.c`.
-- `layout.c`: geometry calculation only. It should not create Pebble layers.
+- `climate_glyphs.c`: procedural weather glyph drawing only. It receives
+  condition and palette explicitly; it must not reach back into climate
+  state.
+- `layout.c`: `WatchfaceSurface` calculation, palette selection,
+  typography resolution, and shared text-layer update behavior. It should
+  not create Pebble layers.
 - `settings.c`: persisted user settings defaults, validation, load, save, and
   HR sampling interval mapping.
 - `helper.c/.h`: shared helpers such as strict tuple parsing and scaling.
@@ -162,12 +166,12 @@ Unavailable weather uses existing vocabulary:
 C validates incoming untrusted data at the receiving boundary. JS should avoid
 drift by sending the documented sentinel values when fetch/parse fails.
 
-Weather glyph drawing was split out because `weather.c` had become too
-entangled. Keep the split clean:
+Weather glyph drawing is split out so climate state and procedural glyph
+rendering stay independently auditable. Keep the split clean:
 
-- `weather.c` owns state and layer/update orchestration.
-- `weather_glyphs.c` maps/draws glyphs from explicit render inputs.
-- `draw_weather_icon()` should receive condition and palette explicitly.
+- `climate.c` owns state and layer/update orchestration.
+- `climate_glyphs.c` maps/draws glyphs from explicit render inputs.
+- `draw_climate_icon()` should receive condition and palette explicitly.
 
 ## Palette And Legibility
 
@@ -176,8 +180,8 @@ watchface.
 
 Current boundary:
 
-- `display_get_palette()` owns palette selection.
-- palette storage in `display.c` should remain file-local unless there is a
+- `layout_update_surface_style()` owns palette selection.
+- palette storage in `layout.c` should remain file-local unless there is a
   clear external contract.
 - renderers that already have palette/background context should use Pebble's
   legibility helpers directly, such as `gcolor_legible_over()`.

@@ -1,10 +1,10 @@
 #pragma once
 
 #include <pebble.h>
-#include "display.h"
+#include "layout.h"
 
-void draw_weather_icon(
+void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
-    const VisualPalette* palette);
+    const ColorPalette* palette);

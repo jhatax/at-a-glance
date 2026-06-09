@@ -2,23 +2,77 @@
 
 #include <pebble.h>
 
+#define WATCHFACE_UNAVAILABLE_TEXT "---"
+
+typedef enum {
+  WATCHFACE_FONT_ROLE_DATE = 0,
+  WATCHFACE_FONT_ROLE_TIME,
+  WATCHFACE_FONT_ROLE_BPM,
+  WATCHFACE_FONT_ROLE_STEPS,
+  WATCHFACE_FONT_ROLE_BATTERY,
+  WATCHFACE_FONT_ROLE_CLIMATE,
+  WATCHFACE_FONT_ROLE_COUNT
+} WatchfaceFontRole;
+
+typedef enum {
+  WATCHFACE_COLOR_ROLE_PRIMARY_TEXT = 0,
+  WATCHFACE_COLOR_ROLE_UNAVAILABLE_TEXT,
+  WATCHFACE_COLOR_ROLE_DATE,
+  WATCHFACE_COLOR_ROLE_TIME,
+  WATCHFACE_COLOR_ROLE_RULE,
+  WATCHFACE_COLOR_ROLE_STEPS_ICON,
+  WATCHFACE_COLOR_ROLE_DYNAMIC
+} WatchfaceColorRole;
+
+typedef struct {
+  GColor background;
+  GColor primary_text;
+  GColor unavailable_text;
+  GColor date;
+  GColor time;
+  GColor rule;
+  GColor steps_icon;
+} ColorPalette;
+
+typedef struct {
+  GRect frame;
+  GTextAlignment alignment;
+  WatchfaceFontRole font_role;
+  WatchfaceColorRole color_role;
+} WatchfaceTextSubstratum;
+
+typedef struct {
+  GRect frame;
+  bool is_enabled;
+  bool requires_update_proc;
+  WatchfaceColorRole color_role;
+} WatchfaceIconSubstratum;
+
+typedef struct {
+  bool is_enabled;
+  GPoint start;
+  GPoint end;
+  WatchfaceColorRole color_role;
+} WatchfaceRuleSubstratum;
+
+typedef struct {
+  WatchfaceTextSubstratum text;
+} WatchfaceTextStratum;
+
+typedef struct {
+  WatchfaceIconSubstratum icon;
+  WatchfaceTextSubstratum text;
+} WatchfaceMetricStratum;
+
+typedef struct {
+  const ColorPalette* palette;
+  GFont fonts[WATCHFACE_FONT_ROLE_COUNT];
+} WatchfaceSurfaceStyle;
+
 typedef struct {
   int16_t face_width;
   int16_t face_height;
   GRect background_frame;
-  GRect date_frame;
-  GRect time_frame;
-  GRect bpm_icon_frame;
-  GRect bpm_text_frame;
-  GRect steps_icon_frame;
-  GRect steps_text_frame;
-  GRect weather_icon_frame;
-  GRect temp_text_frame;
-  GRect battery_icon_frame;
-  GRect battery_text_frame;
-  int16_t rule_left;
-  int16_t rule_y;
-  int16_t rule_right;
   int16_t content_x;
   int16_t row_gap;
   int16_t column_gap;
@@ -26,12 +80,34 @@ typedef struct {
   int16_t content_width_time;
   int16_t content_width_health;
   int16_t content_width_bottom;
-} WatchfaceLayout;
+  WatchfaceSurfaceStyle style;
+  WatchfaceTextStratum date;
+  WatchfaceTextStratum time;
+  WatchfaceMetricStratum bpm;
+  WatchfaceMetricStratum steps;
+  WatchfaceMetricStratum battery;
+  WatchfaceMetricStratum climate;
+  WatchfaceRuleSubstratum rule;
+} WatchfaceSurface;
 
-void layout_calculate(
+void layout_calculate_surface(
     int16_t face_width,
     int16_t face_height,
-    WatchfaceLayout* layout);
+    uint8_t display_mode,
+    WatchfaceSurface* surface);
+
+void layout_update_surface_style(
+    WatchfaceSurface* surface,
+    uint8_t display_mode);
+
+GColor layout_color_for_role(
+    const ColorPalette* palette,
+    WatchfaceColorRole role);
+
+void layout_update_text_layer(
+    TextLayer* layer,
+    const char* text,
+    GColor text_color);
 
 int16_t layout_scale_icon_x(const GSize* bounds_size, int16_t coord);
 

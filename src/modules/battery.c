@@ -7,13 +7,13 @@ static Layer* s_battery_icon_layer;
 static TextLayer* s_battery_layer;
 static BatteryChargeState s_battery_state;
 
-static const VisualPalette* s_palette;
+static const WatchfaceSurface* s_surface;
 
-static inline TextLayer* create_battery_text_layer(
+static TextLayer* create_battery_text_layer(
     Layer* parent,
-    const GRect* frame,
+    const WatchfaceTextSubstratum* text,
     GFont font);
-static inline GColor get_battery_color_from_state(void);
+static GColor get_battery_color_from_state(void);
 static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
@@ -28,55 +28,59 @@ static void battery_draw_scaled_line(
 static void battery_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_battery(void);
 
-static inline TextLayer* create_battery_text_layer(
+static TextLayer* create_battery_text_layer(
     Layer* parent,
-    const GRect* frame,
+    const WatchfaceTextSubstratum* text,
     GFont font) {
-  if (!parent || !frame) {
+  if (!parent || !text) {
     return NULL;
   }
 
-  TextLayer* layer = text_layer_create(*frame);
+  TextLayer* layer = text_layer_create(text->frame);
   if (!layer) {
     return NULL;
   }
 
   text_layer_set_background_color(layer, GColorClear);
   text_layer_set_font(layer, font);
-  text_layer_set_text_alignment(layer, GTextAlignmentLeft);
+  text_layer_set_text_alignment(layer, text->alignment);
   layer_add_child(parent, text_layer_get_layer(layer));
   return layer;
 }
 
-static inline GColor get_battery_color_from_state(void) {
+static GColor get_battery_color_from_state(void) {
+  if (!s_surface || !s_surface->style.palette) {
+    return GColorWhite;
+  }
+
   int percent = s_battery_state.charge_percent;
 
   if (s_battery_state.is_charging) {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        gcolor_legible_over(s_palette->background));
+        gcolor_legible_over(s_surface->style.palette->background));
   }
 
   if (percent > 50) {
     return PBL_IF_COLOR_ELSE(
         GColorCobaltBlue,
-        gcolor_legible_over(s_palette->background));
+        gcolor_legible_over(s_surface->style.palette->background));
   }
   if (percent > 20) {
     return PBL_IF_COLOR_ELSE(
         GColorRajah,
-        gcolor_legible_over(s_palette->background));
+        gcolor_legible_over(s_surface->style.palette->background));
   }
   return PBL_IF_COLOR_ELSE(
       GColorRed,
-      gcolor_legible_over(s_palette->background));
+      gcolor_legible_over(s_surface->style.palette->background));
 }
 
 static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
     GColor color) {
-  graphics_context_set_stroke_color(ctx, s_palette->background);
+  graphics_context_set_stroke_color(ctx, s_surface->style.palette->background);
   graphics_context_set_stroke_width(ctx, 1);
   battery_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
   battery_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
@@ -113,17 +117,18 @@ static void battery_draw_scaled_line(
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_palette) {
+  if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
     return;
   }
 
+  const ColorPalette* palette = s_surface->style.palette;
   GRect bounds = layer_get_bounds(layer);
   const int stroke_width = 2;
   int percent = s_battery_state.charge_percent;
   GColor draw_color = get_battery_color_from_state();
   int fill_w = (percent * 18) / 100;
 
-  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_context_set_fill_color(ctx, palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   graphics_context_set_stroke_color(ctx, draw_color);
@@ -164,7 +169,7 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void update_battery(void) {
-  if (!s_battery_layer || !s_palette) {
+  if (!s_battery_layer || !s_surface || !s_surface->style.palette) {
     return;
   }
 
@@ -174,7 +179,7 @@ static void update_battery(void) {
       "%d%%",
       s_battery_state.charge_percent);
 
-  display_update_text_layer(
+  layout_update_text_layer(
       s_battery_layer,
       s_battery_buffer,
       get_battery_color_from_state());
@@ -186,20 +191,20 @@ static void update_battery(void) {
 
 bool battery_module_create(
     Layer* root,
-    const WatchfaceLayout* layout,
-    const VisualPalette* palette) {
-  if (!root || !layout || !palette) {
+    const WatchfaceSurface* surface) {
+  if (!root || !surface || !surface->style.palette) {
     return false;
   }
 
-  s_palette = palette;
+  const WatchfaceTextSubstratum* text = &surface->battery.text;
+  const WatchfaceIconSubstratum* icon = &surface->battery.icon;
+  s_surface = surface;
   s_battery_state = battery_state_service_peek();
 
   s_battery_layer = create_battery_text_layer(
       root,
-      &layout->battery_text_frame,
-      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD)
-  );
+      text,
+      surface->style.fonts[text->font_role]);
 
   if (!s_battery_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -207,7 +212,9 @@ bool battery_module_create(
     return false;
   }
 
-  s_battery_icon_layer = layer_create(layout->battery_icon_frame);
+  if (icon->is_enabled) {
+    s_battery_icon_layer = layer_create(icon->frame);
+  }
   if (s_battery_icon_layer) {
     layer_set_update_proc(
         s_battery_icon_layer,
@@ -230,11 +237,12 @@ void battery_module_destroy(void) {
   }
 
   s_battery_buffer[0] = '\0';
+  s_surface = NULL;
 }
 
-void battery_module_refresh(const VisualPalette* palette) {
-  if (palette) {
-    s_palette = palette;
+void battery_module_refresh(const WatchfaceSurface* surface) {
+  if (surface) {
+    s_surface = surface;
   }
 
   s_battery_state = battery_state_service_peek();

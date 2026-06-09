@@ -78,15 +78,14 @@ At A Glance: Configuration
 
 Use these boundaries when reviewing or extending the code:
 
-- `src/c/main.c`: window lifecycle, service subscriptions,
-  settings/palette selection, AppMessage receive flow, and event routing.
+- `src/c/main.c`: window lifecycle, service subscriptions, AppMessage
+  receive flow, settings ownership, and composer dispatch.
 - `src/modules/watchface_composer.c`: screen assembly, root layer
-  discovery, shared system fonts, module creation/destruction order,
-  full-display refresh coordination, and tick-driven date/time refresh.
-- `src/modules/layout.c`: rectangular frame calculation through
-  `layout_calculate()`, filling caller-owned `WatchfaceLayout` storage.
-- `src/modules/display.c`: palette selection, unavailable token, and common
-  text-layer display updates.
+  discovery, `WatchfaceSurface` ownership, module creation/destruction
+  order, full-display refresh coordination, and event routing.
+- `src/modules/layout.c`: rectangular `WatchfaceSurface` calculation,
+  color palette selection, typography resolution, common text-layer
+  updates, and icon-coordinate scaling helpers.
 - `src/modules/settings.c`: persisted settings defaults, validation, load,
   save, and HR sampling interval mapping.
 - `src/modules/helper.h`: shared static inline icon-scaling helpers.
@@ -94,11 +93,16 @@ Use these boundaries when reviewing or extending the code:
   formatting, and date refresh.
 - `src/modules/time.c`: time text layer, time buffer,
   time-format rendering, and time refresh.
-- `src/modules/weather.c`: raw Open-Meteo weather-code mapping and
-  procedural weather glyph rendering, plus temperature state, text
-  layer, formatting, and weather availability.
-- `src/modules/health.c`: BPM and steps layers, procedural health icons,
-  health text buffers, colors, and health-service update handling.
+- `src/modules/climate.c`: raw Open-Meteo weather-code state,
+  temperature formatting, temperature text layer, weather availability,
+  and weather icon layer ownership.
+- `src/modules/climate_glyphs.c`: raw Open-Meteo weather-code mapping and
+  procedural weather glyph rendering from explicit condition, frame, and
+  palette inputs.
+- `src/modules/bpm.c`: BPM text/icon layers, procedural BPM icon, BPM
+  buffer, colors, and heart-rate update handling.
+- `src/modules/steps.c`: steps text/icon layers, procedural steps icon,
+  steps buffer, colors, and movement update handling.
 - `src/modules/battery.c`: battery icon/text layers, battery state, battery
   colors, procedural battery drawing, and battery callback state updates.
 
@@ -132,8 +136,8 @@ Prevent drift:
 - Reuse existing sentinels, enum names, macros, message keys, and product
   vocabulary. Do not introduce adjacent names for an existing concept.
 - When changing a platform-bound header or API, audit every include and every
-  caller for required platform guards. In particular, `health.h` and any
-  `Health*` symbols must remain behind `PBL_HEALTH` guardrails.
+  caller for required platform guards. In particular, `bpm.h`, `steps.h`,
+  and any `Health*` symbols must remain behind `PBL_HEALTH` guardrails.
 - Audit C, PebbleKit JS, Clay config, `package.json`, README, AGENTS, and
   manual AppMessage assumptions together when message shape changes.
 - Prefer existing module-owned contracts over new variables or helper
@@ -165,13 +169,14 @@ Module ownership:
 - `watchface_composer` is the owner of screen composition state. Do not force
   `main.c` to shuttle window, settings, palette, or layout state through every
   module call when composer can own the composition boundary cleanly.
-- Keep weather state and procedural weather glyph drawing separate when the
-  drawing logic becomes too large to audit inside `weather.c`. The weather
+- Keep climate state and procedural weather glyph drawing separate when the
+  drawing logic becomes too large to audit inside `climate.c`. The climate
   module should pass explicit render inputs such as condition, frame, and
-  palette into glyph rendering rather than exposing weather-owned globals.
+  palette into glyph rendering rather than exposing climate-owned globals.
 - Optional modules should use product semantics for creation success. For
-  health, at least one created text layer is meaningfully available; do not
-  force arbitrary all-or-nothing success when the product accepts partial text.
+  BPM and steps, a created text layer is meaningfully available; do not
+  force arbitrary all-or-nothing success when the product accepts text-only
+  metrics.
 
 Main boundary:
 
@@ -196,7 +201,7 @@ Lifecycle and files:
 
 ## Rectangular Layout Baseline
 
-Rectangular layout is calculated in `layout_calculate()`.
+Rectangular layout is calculated in `layout_calculate_surface()`.
 Future layout work must derive frames from root or unobstructed bounds and
 known platform invariants. Do not introduce new hard-coded screen positions
 when bounds-derived calculations can express the layout.
@@ -258,7 +263,7 @@ Weather state:
 - PebbleKit JS uses phone geolocation when available and falls back to OAK,
   the product home location, at `37.85626, -122.21383`
 - C maps codes into private weather glyph buckets in
-  `src/modules/weather.c`
+  `src/modules/climate_glyphs.c`
 - procedural glyphs are used instead of Carbon/IcoMoon or PDC weather
   assets for now
 

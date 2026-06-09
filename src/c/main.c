@@ -1,14 +1,8 @@
 #include <pebble.h>
 
 #include "ataglance.h"
-#include "../modules/battery.h"
-#include "../modules/display.h"
 #include "../modules/helper.h"
 #include "../modules/watchface_composer.h"
-#include "../modules/weather.h"
-#if defined(PBL_HEALTH)
-#include "../modules/health.h"
-#endif
 
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
@@ -69,12 +63,12 @@ static void refresh_watchface_display() {
 #if defined(PBL_HEALTH)
 static void health_handler(HealthEventType event, void* context) {
   (void)context;
-  health_module_handle_event(event);
+  watchface_composer_handle_health_event(event);
 }
 #endif
 
 static void battery_handler(BatteryChargeState state) {
-  battery_module_set_state(&state);
+  watchface_composer_update_battery(&state);
 }
 
 static void tick_handler(

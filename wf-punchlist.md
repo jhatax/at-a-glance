@@ -16,10 +16,10 @@ so they can be reviewed deliberately.
    - Do not assume a scaled rectangular layout is enough for round displays.
 
 2. Continue `main.c` modularization only where a real boundary remains.
-   - Settings, layout, palette/display, helper, health, battery, and weather
+   - Settings, layout/surface, helper, BPM, steps, battery, and climate
      have been split out.
-   - Remaining candidates are narrower: messaging/weather receive flow,
-     temperature formatting/display, and top-row time/date.
+   - Remaining candidates are narrower: messaging/weather receive flow and
+     future round-surface decisions.
    - Extract helpers only when they clarify a real seam or reduce meaningful
      duplication.
 
@@ -63,7 +63,8 @@ so they can be reviewed deliberately.
 1. Docs drift was reconciled against the current implementation.
 2. `refresh_watchface_display()` was audited and made responsible for palette
    refresh on display-mode updates.
-3. `WatchfaceLayout` was extracted to group current layer frames.
+3. `WatchfaceSurface` was extracted to group current layer frames,
+   palette, typography, and substrata.
 4. `update_step_count()` was renamed to `update_steps()`.
 5. Background layer frame now derives from root bounds.
 6. Rule left edge, right edge, and y-position now derive from layout state.
@@ -74,9 +75,9 @@ so they can be reviewed deliberately.
 10. Text layer updates were centralized through `update_text_layer_display()`.
 11. `CONTENT_X` was removed from the layout code.
 12. Rectangular spacing now derives from display height in
-    `layout_calculate()`.
-13. `layout_calculate()` now fills caller-owned
-    `WatchfaceLayout` storage.
+    `layout_calculate_surface()`.
+13. `layout_calculate_surface()` now fills caller-owned
+    `WatchfaceSurface` storage.
 14. Battery icon drawing is horizontal and bounds-derived.
 15. Fallback heart icon drawing uses the named icon drawing grid.
 16. Rebble Clay is wired through `@rebble/clay`.
@@ -84,23 +85,25 @@ so they can be reviewed deliberately.
     `emery`, and `flint`.
 18. Color and black-and-white display palettes use `PBL_IF_COLOR_ELSE()`
     fallbacks where appropriate.
-19. Weather condition rendering was moved into `src/modules/weather.c`.
+19. Climate state and weather condition rendering are owned by
+    `src/modules/climate.c`.
 20. PebbleKit JS sends raw Open-Meteo `weather_code` values to C.
 21. Weather codes are mapped into private procedural glyph buckets in C.
-22. Weather glyphs are lightweight file-local `static inline` renderers.
+22. Weather glyphs are lightweight file-local renderers.
 23. Snow grains are folded into snow, freezing drizzle and freezing rain
     share one glyph, and unknown conditions render as a question mark.
 24. BPM, steps, and temperature use `FONT_KEY_GOTHIC_18`; battery keeps
     `FONT_KEY_GOTHIC_18_BOLD`.
 25. Temperature text width was expanded to 40px for 3-digit Fahrenheit values.
 26. Shared icon scaling moved to `src/modules/helper.h`.
-27. `WatchfaceLayout` moved to `src/modules/layout.c`.
+27. `WatchfaceSurface` moved to `src/modules/layout.c`.
 28. Palette and text-layer display helpers moved to
-    `src/modules/display.c`.
+    `src/modules/layout.c`.
 29. Persisted settings defaults, validation, load, and save moved to
     `src/modules/settings.c`.
-30. BPM and steps moved to `src/modules/health.c`, and BPM now uses only a
-    procedural heart icon.
+30. BPM and steps moved to separate `src/modules/bpm.c` and
+    `src/modules/steps.c` modules, and BPM now uses only a procedural
+    heart icon.
 31. The BPM PDC resource and hidden icon fallback AppMessage setting were
     removed.
 32. Battery state, rendering, and text updates moved to

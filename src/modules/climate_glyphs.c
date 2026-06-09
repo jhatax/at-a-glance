@@ -1,4 +1,4 @@
-#include "weather_glyphs.h"
+#include "climate_glyphs.h"
 #include "../c/ataglance.h"
 #include "helper.h"
 #include "layout.h"
@@ -26,14 +26,14 @@ typedef enum {
   WEATHER_ICON_CENTER_Y = ATAGLANCE_DESIGN_ICON_HEIGHT / 2,
 } WeatherIconGeometry;
 
-static inline int16_t weather_scale_x(const GRect* frame, int16_t value) {
+static int16_t weather_scale_x(const GRect* frame, int16_t value) {
   return frame->origin.x + helper_scale_round(
       value,
       frame->size.w,
       ATAGLANCE_DESIGN_ICON_WIDTH);
 }
 
-static inline int16_t weather_scale_y(const GRect* frame, int16_t value) {
+static int16_t weather_scale_y(const GRect* frame, int16_t value) {
   return frame->origin.y + helper_scale_round(
       value,
       frame->size.h,
@@ -41,7 +41,7 @@ static inline int16_t weather_scale_y(const GRect* frame, int16_t value) {
   );
 }
 
-static inline GPoint weather_point(const GRect* frame, int16_t x, int16_t y) {
+static GPoint weather_point(const GRect* frame, int16_t x, int16_t y) {
   return GPoint(weather_scale_x(frame, x), weather_scale_y(frame, y));
 }
 
@@ -64,7 +64,7 @@ static void weather_subframe(
       ATAGLANCE_DESIGN_ICON_HEIGHT);
 }
 
-static inline void weather_line(
+static void weather_line(
     GContext* ctx,
     const GRect* frame,
     int16_t x0,
@@ -100,7 +100,7 @@ static void weather_fill_rect(
       GCornerNone);
 }
 
-static inline void weather_fill_circle(
+static void weather_fill_circle(
     GContext* ctx,
     const GRect* frame,
     int16_t x,
@@ -112,7 +112,7 @@ static inline void weather_fill_circle(
       layout_scale_icon_coord(&frame->size, r));
 }
 
-static inline void weather_draw_circle(
+static void weather_draw_circle(
     GContext* ctx,
     const GRect* frame,
     int16_t x,
@@ -124,8 +124,8 @@ static inline void weather_draw_circle(
       layout_scale_icon_coord(&frame->size, r));
 }
 
-static inline GColor weather_subtle_color(
-    const VisualPalette* palette) {
+static GColor weather_subtle_color(
+    const ColorPalette* palette) {
   if (!palette || helper_color_equal(palette->background, GColorWhite)) {
     return GColorDarkGray;
   }
@@ -133,19 +133,19 @@ static inline GColor weather_subtle_color(
   return GColorLightGray;
 }
 
-static inline GColor weather_clear_ring_color(
-    const VisualPalette* palette) {
+static GColor weather_clear_ring_color(
+    const ColorPalette* palette) {
   return weather_subtle_color(palette);
 }
 
-static inline GColor weather_clear_fill_color(
-    const VisualPalette* palette) {
+static GColor weather_clear_fill_color(
+    const ColorPalette* palette) {
   return gcolor_legible_over(palette->background);
 }
 
 static GColor weather_color_for_kind(
     WeatherIconKind kind,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GColor fallback = gcolor_legible_over(palette->background);
 
   switch (kind) {
@@ -248,7 +248,7 @@ static void draw_weather_cloud(
     GContext* ctx,
     const GRect* frame,
     GColor color,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_fill_color(ctx, palette->background);
   graphics_context_set_stroke_width(ctx, 2);
@@ -268,7 +268,7 @@ static void draw_weather_cloud(
 static void draw_weather_clear_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   graphics_context_set_stroke_color(ctx, weather_clear_ring_color(palette));
   graphics_context_set_stroke_width(ctx, 1);
   weather_draw_circle(
@@ -290,7 +290,7 @@ static void draw_weather_clear_icon(
 static void draw_weather_partly_cloudy_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GRect cloud_frame;
   GRect sun_frame;
 
@@ -309,7 +309,7 @@ static void draw_weather_partly_cloudy_icon(
 static void draw_weather_fog_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   graphics_context_set_stroke_color(ctx, weather_color_for_kind(
       WEATHER_ICON_FOG,
       palette));
@@ -322,7 +322,7 @@ static void draw_weather_fog_icon(
 static void draw_weather_drizzle_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   graphics_context_set_stroke_color(ctx, weather_color_for_kind(
       WEATHER_ICON_DRIZZLE,
       palette));
@@ -357,7 +357,7 @@ static void draw_weather_rain_icon(
     GContext* ctx,
     const GRect* frame,
     bool heavy,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   draw_weather_rain_marks(
       ctx,
       frame,
@@ -413,7 +413,7 @@ static void draw_weather_snowflake(
 static void draw_weather_sleet_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GRect snow_frame;
   GColor color = weather_color_for_kind(WEATHER_ICON_SLEET, palette);
 
@@ -429,7 +429,7 @@ static void draw_weather_sleet_icon(
 static void draw_weather_snow_showers_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GRect cloud_frame;
   GRect snow_frame;
   GColor color = weather_color_for_kind(
@@ -447,7 +447,7 @@ static void draw_weather_showers_icon(
     GContext* ctx,
     const GRect* frame,
     bool heavy,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GRect cloud_frame;
   GRect rain_frame;
   GColor color = weather_color_for_kind(heavy ?
@@ -464,7 +464,7 @@ static void draw_weather_showers_icon(
 static void draw_weather_bolt_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   GColor color = weather_color_for_kind(
       WEATHER_ICON_THUNDERSTORM,
       palette);
@@ -494,7 +494,7 @@ static void draw_weather_bolt_icon(
 static void draw_weather_unavailable_icon(
     GContext* ctx,
     const GRect* frame,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   draw_weather_cloud(ctx, frame, palette->unavailable_text, palette);
 
   graphics_context_set_stroke_color(
@@ -557,11 +557,11 @@ static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
   return WEATHER_ICON_UNKNOWN;
 }
 
-void draw_weather_icon(
+void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
-    const VisualPalette* palette) {
+    const ColorPalette* palette) {
   if (!ctx || !frame || !palette) {
     return;
   }

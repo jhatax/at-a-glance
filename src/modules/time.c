@@ -4,7 +4,7 @@
 
 static char s_time_buffer[ATAGLANCE_MAX_STR_LEN];
 static TextLayer* s_time_layer;
-static const VisualPalette* s_palette;
+static const WatchfaceSurface* s_surface;
 
 static void format_time(
     char* buf,
@@ -34,14 +34,14 @@ static void format_time(
 
 bool time_module_create(
     Layer* root,
-    const GRect* frame,
-    const VisualPalette* palette) {
-  if (!root || !frame || !palette) {
+    const WatchfaceSurface* surface) {
+  if (!root || !surface || !surface->style.palette) {
     return false;
   }
 
-  s_palette = palette;
-  s_time_layer = text_layer_create(*frame);
+  const WatchfaceTextSubstratum* text = &surface->time.text;
+  s_surface = surface;
+  s_time_layer = text_layer_create(text->frame);
   if (!s_time_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create time text layer");
@@ -51,8 +51,8 @@ bool time_module_create(
   text_layer_set_background_color(s_time_layer, GColorClear);
   text_layer_set_font(
       s_time_layer,
-      fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-  text_layer_set_text_alignment(s_time_layer, GTextAlignmentLeft);
+      surface->style.fonts[text->font_role]);
+  text_layer_set_text_alignment(s_time_layer, text->alignment);
   layer_add_child(root, text_layer_get_layer(s_time_layer));
   return true;
 }
@@ -64,15 +64,16 @@ void time_module_destroy(void) {
   }
 
   s_time_buffer[0] = '\0';
+  s_surface = NULL;
 }
 
 void time_module_refresh(
-    uint8_t time_format,
-    const VisualPalette* palette) {
-  if (palette) {
-    s_palette = palette;
+    const WatchfaceSurface* surface,
+    uint8_t time_format) {
+  if (surface) {
+    s_surface = surface;
   }
-  if (!s_time_layer || !s_palette) {
+  if (!s_time_layer || !s_surface || !s_surface->style.palette) {
     return;
   }
 
@@ -83,5 +84,10 @@ void time_module_refresh(
   }
 
   format_time(s_time_buffer, ATAGLANCE_MAX_STR_LEN, t, time_format);
-  display_update_text_layer(s_time_layer, s_time_buffer, s_palette->time);
+  layout_update_text_layer(
+      s_time_layer,
+      s_time_buffer,
+      layout_color_for_role(
+          s_surface->style.palette,
+          s_surface->time.text.color_role));
 }
