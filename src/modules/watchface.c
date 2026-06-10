@@ -1,4 +1,5 @@
 #include "watchface.h"
+#include "background.h"
 #include "battery.h"
 #include "climate.h"
 #include "date.h"
@@ -13,7 +14,6 @@
 static WatchfaceSurface s_surface = {0};
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
-static Layer* s_background_layer = NULL;
 
 typedef enum {
   NO_LAYERS_MASK = 0,
@@ -22,41 +22,13 @@ typedef enum {
   BATTERY_LAYER_MASK = 4,
   MUST_HAVE_LAYERS_MASK = 7,
   CLIMATE_LAYER_MASK = 8,
+  BACKGROUND_LAYER_MASK = 16,
 #ifdef PBL_HEALTH
-  BPM_LAYER_MASK = 16,
-  STEPS_LAYER_MASK = 32,
-  ALL_LAYERS_MASK = 63
-#else
-  ALL_LAYERS_MASK = 15
+  BPM_LAYER_MASK = 32,
+  STEPS_LAYER_MASK = 64
 #endif
 } LayerMask;
 static uint8_t s_layers_created = (uint8_t) NO_LAYERS_MASK;
-
-static void background_layer_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_surface.style.palette) {
-    return;
-  }
-
-  GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_fill_color(
-      ctx,
-      s_surface.style.palette->background_layer_background);
-  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-
-  if (!s_surface.background.line_enabled) {
-    return;
-  }
-
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_context_set_stroke_color(
-      ctx,
-      s_surface.style.palette->background_layer_line);
-  graphics_draw_line(
-      ctx,
-      GPoint(s_surface.background.line_x, s_surface.background.line_y),
-      GPoint(s_surface.background.line_x + s_surface.background.line_width,
-             s_surface.background.line_y));
-}
 
 static void watchface_exit_path() {
   watchface_destroy();
@@ -103,11 +75,8 @@ bool watchface_create(
       s_wf_settings->display_mode,
       &s_surface);
 
-  s_background_layer = layer_create(s_surface.background.frame);
-  if (s_background_layer) {
-    layer_set_update_proc(s_background_layer, background_layer_update_proc);
-    layer_add_child(root, s_background_layer);
-  }
+  s_layers_created |= background_module_create(root, &s_surface) ?
+      BACKGROUND_LAYER_MASK : 0;
 
   s_layers_created |= date_module_create(root, &s_surface) ?
       DATE_LAYER_MASK : 0;
@@ -142,9 +111,9 @@ bool watchface_create(
 
 void watchface_destroy() {
   if (s_layers_created) {
-    if (s_background_layer) {
-      layer_destroy(s_background_layer);
-      s_background_layer = NULL;
+    if (s_layers_created & BACKGROUND_LAYER_MASK) {
+      background_module_destroy();
+      s_layers_created &= ~BACKGROUND_LAYER_MASK;
     }
 
     if (s_layers_created & DATE_LAYER_MASK) {
@@ -181,10 +150,7 @@ void watchface_destroy() {
   }
 
   s_layers_created = (uint8_t) NO_LAYERS_MASK;
-  if (s_background_layer) {
-    layer_destroy(s_background_layer);
-    s_background_layer = NULL;
-  }
+  background_module_destroy();
   s_wf_settings = NULL;
   s_wf_window = NULL;
   memset(&s_surface, 0, sizeof(s_surface));
@@ -199,9 +165,7 @@ void watchface_refresh() {
   window_set_background_color(
       s_wf_window,
       s_surface.style.palette->background);
-  if (s_background_layer) {
-    layer_mark_dirty(s_background_layer);
-  }
+  background_module_refresh(&s_surface);
 
   date_module_refresh(&s_surface);
   time_module_refresh(&s_surface, s_wf_settings->time_format);
