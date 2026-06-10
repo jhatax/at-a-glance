@@ -272,7 +272,8 @@ of unrelated locals.
 ## Proposed Rectangle Redesign
 
 Do not mix this with the behavior-preserving rectangle architect extraction.
-It should be a later visual slice.
+This has not been implemented. Treat it as a future committed visual slice,
+separate from the completed layout-boundary refactor.
 
 Proposed visual order:
 
@@ -294,6 +295,51 @@ Intent:
 
 This reads more like a centered instrument than the current dashboard-like
 four-row layout.
+
+Implementation scope for the rectangle visual slice:
+
+- revise `layout_rect.c` geometry only after auditing the current rectangular
+  screenshots
+- keep each substratum responsible for its own final `x`, `y`, `w`, and `h`
+- keep module lifecycle unchanged: modules still create, refresh, and destroy
+  their own layers from calculated substrata
+- keep watchface as the clearing house only; do not move rendering details
+  into `watchface.c`
+- avoid adding helper functions for calculations that are clearer inline
+- build and screenshot at least Emery and one compact rectangular platform
+
+The rectangle slice should not introduce round support. It should establish
+the visual vocabulary that the later round architect can translate.
+
+## Proposed Round Redesign
+
+This has not been implemented. Treat it as a separate future visual slice
+after the rectangle redesign has been validated.
+
+The round design should preserve the same product sequence where possible:
+
+```text
+Battery / Climate
+Time
+Rule
+Date
+Steps / BPM
+```
+
+On Chalk, top and bottom modules likely need stacked or compact icon/text
+treatments because circle-safe spans shrink quickly near the edges. On Gabbro,
+more of the rectangular horizontal vocabulary may survive, but the architect
+must still calculate safe spans from the actual face size.
+
+Implementation scope for the round visual slice:
+
+- introduce `layout_round.c/.h` privately behind `layout.c`
+- calculate row-specific safe spans from chord width
+- assign final frames directly to each substratum
+- keep the same six fixed strata: date, time, bpm, steps, battery, climate
+- do not enable round platforms until the layout is built, installed, and
+  screenshot-reviewed
+- do not scale rectangular coordinates wholesale and call that round support
 
 ## Round Architect Flow
 

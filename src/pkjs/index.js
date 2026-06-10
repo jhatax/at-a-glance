@@ -3,9 +3,9 @@ var clayConfig = require("./config.json");
 var clay = new Clay(clayConfig);
 
 const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
-// Must match WEATHER_TEMP_INVALID in src/modules/weather.h.
+// Must match WEATHER_TEMP_INVALID in src/modules/climate.h.
 const WEATHER_TEMP_INVALID = -32768;
-// Must match WEATHER_CONDITION_UNKNOWN in src/modules/weather.h.
+// Must match WEATHER_CONDITION_UNKNOWN in src/modules/climate.h.
 const WEATHER_CONDITION_UNKNOWN = -1;
 // OAK is the product fallback location for this watchface.
 const OAK_WEATHER_LATITUDE = 37.85626;
