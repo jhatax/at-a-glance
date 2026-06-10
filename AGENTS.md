@@ -82,13 +82,22 @@ Use these boundaries when reviewing or extending the code:
   receive flow, settings ownership, and watchface dispatch.
 - `src/modules/watchface.c`: active watchface coordination, root layer
   discovery, `WatchfaceSurface` ownership, module creation/destruction
-  order, full-display refresh coordination, and event routing.
-- `src/modules/layout.c`: rectangular `WatchfaceSurface` calculation,
-  color palette selection, typography resolution, common text-layer
-  updates, and icon-coordinate scaling helpers.
+  order, `s_strata_created_mask` ownership, full-display refresh
+  coordination, and event routing.
+- `src/modules/watchface_components.h`: shared display component model:
+  color palette, font/color roles, surface, strata, and substrata types.
+- `src/modules/layout.c`: public layout facade over calculated
+  `WatchfaceSurface` data and color-role lookup.
+- `src/modules/layout_stylist.c`: private style helper for palette
+  selection, compact/full classification, and font-role resolution.
+- `src/modules/layout_rect.c`: private rectangular architect that assigns
+  bounds-derived frames for strata and substrata.
+- `src/modules/substratum_renderer.c`: shared Pebble rendering helper for
+  calculated substrata: text-layer creation/update and icon-coordinate
+  scaling.
 - `src/modules/settings.c`: persisted settings defaults, validation, load,
   save, and HR sampling interval mapping.
-- `src/modules/helper.h`: shared static inline icon-scaling helpers.
+- `src/modules/helper.c`: shared arithmetic, color, and parsing helpers.
 - `src/modules/date.c`: date text layer, date buffer, uppercase date
   formatting, and date refresh.
 - `src/modules/time.c`: time text layer, time buffer,
@@ -121,6 +130,12 @@ Use the stricter loop before writing code:
 4. Edit only after terms and branches line up.
 5. Build and review the diff against the stated intent.
 
+When an audit or patch reveals a broken pattern, search for sibling
+occurrences before declaring the slice complete. Fix the same pattern across
+the relevant modules in one coherent patch when the ownership boundary and
+risk profile match. Do not patch one instance and leave the rest as a future
+cleanup unless there is a concrete reason to split the work.
+
 Code style:
 
 - Keep programming source lines at or below 80 characters where practical.
@@ -135,6 +150,9 @@ Prevent drift:
 
 - Reuse existing sentinels, enum names, macros, message keys, and product
   vocabulary. Do not introduce adjacent names for an existing concept.
+- Keep naming aligned with the domain model. Watchface creation bookkeeping
+  is strata-oriented, so use strata/stratum vocabulary rather than layer
+  vocabulary when tracking created watchface sections.
 - When changing a platform-bound header or API, audit every include and every
   caller for required platform guards. In particular, `bpm.h`, `steps.h`,
   and any `Health*` symbols must remain behind `PBL_HEALTH` guardrails.
@@ -163,12 +181,29 @@ Text-first controls:
 - If an icon layer cannot be created, continue updating the corresponding text.
 - Log layer creation failures once where creation happens. Avoid repeated
   refresh-time log spam for known-missing layers.
+- Module `create()` success means the required product surface was created:
+  the background layer for background and the text layer for text-bearing
+  strata. Optional icon-layer creation does not gate success.
+- Assign a module's retained `s_surface` pointer only after the required layer
+  has been created successfully. Failure paths must not leave stale surface
+  pointers, custom fonts, or partially-owned state behind.
+- If a module loads a custom font or other resource during `create()`, the
+  same module must release it both on later create failure and in `destroy()`.
+  Audit sibling modules for the same lifecycle pattern before finishing.
 
 Module ownership:
 
 - `watchface` is the active watchface coordinator. Do not force
   `main.c` to shuttle window, settings, palette, or layout state through every
   module call when watchface can own the runtime boundary cleanly.
+- Feature modules own their Pebble layers, buffers, source state, update
+  procs, refresh logic, and destroy paths. Shared render helpers may create or
+  update a layer from a calculated substratum, but ownership stays with the
+  feature module that called them.
+- `layout.h` is the public layout API. Feature modules should include
+  `watchface_components.h` for surface/type contracts and
+  `substratum_renderer.h` for text-layer setup/update or icon scaling. Include
+  `layout.h` only when calling true layout APIs.
 - Keep climate state and procedural weather glyph drawing separate when the
   drawing logic becomes too large to audit inside `climate.c`. The climate
   module should pass explicit render inputs such as condition, frame, and
@@ -208,53 +243,75 @@ when bounds-derived calculations can express the layout.
 
 For Emery (`200x228`):
 
-- derived spacing: `PBL_DISPLAY_HEIGHT / 28`, currently `8`
-- date: `GRect(8, 8, 184, 20)`, `FONT_KEY_GOTHIC_18_BOLD`
-- time: `GRect(8, 58, 184, 48)`, `FONT_KEY_BITHAM_42_BOLD`
-- rule: line from `(8, 114)` to `(192, 114)`
-- heart icon: `GRect(8, 118, 28, 28)`, procedural heart
-- BPM text: `GRect(38, 122, 28, 20)`, `FONT_KEY_GOTHIC_18`
-- steps icon: `GRect(122, 118, 28, 28)`, procedural paw glyph
-- steps text: `GRect(152, 122, 40, 20)`, `FONT_KEY_GOTHIC_18`
-- weather icon: `GRect(8, 196, 28, 28)`, procedural weather glyph
-- temperature text: `GRect(38, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
-- battery icon: `GRect(128, 196, 28, 28)`, procedural horizontal battery
-- battery text: `GRect(158, 200, 34, 20)`,
-  `FONT_KEY_GOTHIC_18_BOLD`
+- content margin: `4`
+- row gap: `8`
+- icon: `28x28`
+- date: `GRect(4, 122, 192, 28)`, centered,
+  `FONT_KEY_GOTHIC_24_BOLD`
+- time: `GRect(4, 46, 192, 60)`, centered, custom Unbounded 48 when loaded
+  on full rectangular displays, with system-font fallback by platform
+- rule: 2 px horizontal line from `(4, 114)` to `(196, 114)`
+- battery icon: `GRect(4, 4, 28, 28)`, procedural horizontal battery
+- battery text: `GRect(36, 8, 40, 20)`, `FONT_KEY_GOTHIC_18_BOLD`
+- climate icon: `GRect(124, 4, 28, 28)`, procedural weather glyph
+- temperature text: `GRect(156, 8, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- steps icon: `GRect(4, 196, 28, 28)`, procedural steps glyph
+- steps text: `GRect(36, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
+- BPM icon: `GRect(124, 196, 28, 28)`, procedural BPM glyph
+- BPM text: `GRect(156, 200, 40, 20)`, `FONT_KEY_GOTHIC_18`
 
-Text alignment is intentionally left-aligned across all columns.
+For compact rectangular displays such as Aplite, Basalt, Diorite, and Flint
+(`144x168`):
 
-Current implementation does not draw a vertical rail. It uses a horizontal
-rule at `y=114`.
+- content margin: `3`
+- row gap: `6`
+- icon: `20x21`
+- date: `GRect(3, 90, 138, 21)`, centered,
+  `FONT_KEY_GOTHIC_14_BOLD`
+- time: `GRect(3, 34, 138, 44)`, centered,
+  `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS`
+- rule: 2 px horizontal line from `(3, 84)` to `(141, 84)`
+- battery icon: `GRect(3, 3, 20, 21)`
+- battery text: `GRect(26, 6, 29, 15)`, `FONT_KEY_GOTHIC_14_BOLD`
+- climate icon: `GRect(89, 3, 20, 21)`
+- temperature text: `GRect(112, 6, 29, 15)`, `FONT_KEY_GOTHIC_14`
+- steps icon: `GRect(3, 144, 20, 21)`
+- steps text: `GRect(26, 147, 29, 15)`, `FONT_KEY_GOTHIC_14`
+- BPM icon: `GRect(89, 144, 20, 21)`
+- BPM text: `GRect(112, 147, 29, 15)`, `FONT_KEY_GOTHIC_14`
+
+Date and time are centered. Metric text remains left-aligned within its
+calculated substratum. Current implementation uses a background stratum with a
+horizontal rule; it does not draw a vertical rail.
 
 ---
 
 ## Visual Semantics
 
 - unavailable text token is `---`
-- dark mode uses black background, light gray primary text, Windsor Tan
-  unavailable text on color displays, Rich Brilliant Lavender date,
-  Sunset Orange time, Light Gray rule, and Chrome Yellow steps icon
-- light mode uses white background, black primary text, Light Gray
-  unavailable text on color displays, Imperial Purple date, Sunset Orange
-  time, Light Gray rule, and Chrome Yellow steps icon
-- black-and-white displays use inverted unavailable backgrounds so missing
-  values remain legible without color
-- unavailable icon backgrounds should match unavailable text backgrounds
-  unless an explicit product decision says otherwise
+- dark mode uses black background, white rule, Celeste primary text on color,
+  Dark Gray unavailable text on color, Electric Blue date, Sunset Orange time,
+  and Celeste steps icon
+- light mode uses white background, Oxford Blue rule, Cobalt Blue primary text,
+  Light Gray unavailable text on color, black date, Sunset Orange time, and
+  Cobalt Blue steps icon
+- black-and-white displays fall back to legible black-and-white color choices
+  via `PBL_IF_COLOR_ELSE` and `gcolor_legible_over()`
+- dynamic icon/text colors are owned by the feature module when they depend on
+  live state, such as BPM or battery
 
 BPM color zones:
 
 - `<=0` or unavailable: current mode unavailable color
-- `1-99`: Jaeger Green
+- `1-99`: current mode primary text color
 - `100-120`: Magenta
 - `>120`: Red
 
 Battery text/icon colors:
 
 - charging: Jaeger Green
-- not charging and `>50`: Cobalt Blue
-- not charging and `21-50`: Yellow
+- not charging and `>50`: current mode primary text color
+- not charging and `21-50`: Rajah on color, legible fallback otherwise
 - not charging and `<=20`: Red
 
 Weather state:
@@ -336,6 +393,9 @@ Do not scale the rectangular layout wholesale and call it round support.
 - Visual QA sample set was considered: dark and light modes, color and
   black-and-white displays, available and unavailable health values, weather
   unavailable, long date, `99999` steps, and `100%` battery.
+- When a bug or lifecycle problem is fixed as a pattern, sibling modules and
+  analogous call sites were searched and either fixed in the same coherent
+  slice or explicitly called out as intentionally out of scope.
 - Ephemeral files such as screenshots and temporary buffers are deleted after
   validation, or when a chat-generated buffer has served its purpose. Confirm
   deletion before acting; this overrides any prior blanket permission to
