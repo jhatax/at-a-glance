@@ -1,7 +1,7 @@
 #include "climate_glyphs.h"
 #include "../c/ataglance.h"
 #include "helper.h"
-#include "layout.h"
+#include "substratum_renderer.h"
 
 typedef enum {
   WEATHER_ICON_CLEAR = 0,
@@ -109,7 +109,7 @@ static void weather_fill_circle(
   graphics_fill_circle(
       ctx,
       weather_point(frame, x, y),
-      layout_scale_icon_coord(&frame->size, r));
+      substratum_renderer_scale_icon_coord(&frame->size, r));
 }
 
 static void weather_draw_circle(
@@ -121,7 +121,7 @@ static void weather_draw_circle(
   graphics_draw_circle(
       ctx,
       weather_point(frame, x, y),
-      layout_scale_icon_coord(&frame->size, r));
+      substratum_renderer_scale_icon_coord(&frame->size, r));
 }
 
 static GColor weather_subtle_color(

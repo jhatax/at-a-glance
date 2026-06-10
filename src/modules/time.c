@@ -1,5 +1,6 @@
 #include "time.h"
 #include "settings.h"
+#include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 static char s_time_buffer[ATAGLANCE_MAX_STR_LEN];
@@ -12,8 +13,8 @@ static void format_time(
     size_t buflen,
     const struct tm* t,
     uint8_t time_format);
-static uint32_t custom_time_font_resource_id(
-    const WatchfaceSurface* surface);
+static void load_custom_time_font(const WatchfaceSurface* surface);
+static void unload_custom_time_font(void);
 
 static void format_time(
     char* buf,
@@ -35,18 +36,25 @@ static void format_time(
   strftime(buf, buflen, "%H:%M", t);
 }
 
-static uint32_t custom_time_font_resource_id(
-    const WatchfaceSurface* surface) {
+static void load_custom_time_font(const WatchfaceSurface* surface) {
   if (!surface) {
-    return 0;
+    return;
   }
 
-  if (surface->face_width >= ATAGLANCE_DESIGN_FACE_WIDTH &&
-      surface->face_height >= ATAGLANCE_DESIGN_FACE_HEIGHT) {
-    return RESOURCE_ID_FONT_TIME_UNBOUNDED_48;
+  const WatchfaceSurfaceStyle* style = &surface->style;
+  const uint32_t custom_font_resource_id =
+      style->custom_font_resource_ids[WATCHFACE_FONT_ROLE_TIME];
+  if (custom_font_resource_id) {
+    s_custom_time_font = fonts_load_custom_font(
+        resource_get_handle(custom_font_resource_id));
   }
+}
 
-  return 0;
+static void unload_custom_time_font(void) {
+  if (s_custom_time_font) {
+    fonts_unload_custom_font(s_custom_time_font);
+    s_custom_time_font = NULL;
+  }
 }
 
 bool time_module_create(
@@ -57,29 +65,22 @@ bool time_module_create(
   }
 
   const WatchfaceTextSubstratum* text = &surface->time.text;
-  s_surface = surface;
-  s_time_layer = text_layer_create(text->frame);
+  load_custom_time_font(surface);
+
+  s_time_layer = substratum_renderer_create_text_layer(
+      root,
+      text,
+      s_custom_time_font ?
+          s_custom_time_font :
+          surface->style.fonts[text->font_role]);
   if (!s_time_layer) {
+    unload_custom_time_font();
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create time text layer");
     return false;
   }
 
-  text_layer_set_background_color(s_time_layer, GColorClear);
-  const uint32_t custom_font_resource_id =
-      custom_time_font_resource_id(surface);
-  if (custom_font_resource_id) {
-    s_custom_time_font = fonts_load_custom_font(
-        resource_get_handle(custom_font_resource_id));
-  }
-
-  text_layer_set_font(
-      s_time_layer,
-      s_custom_time_font ?
-          s_custom_time_font :
-          surface->style.fonts[text->font_role]);
-  text_layer_set_text_alignment(s_time_layer, text->alignment);
-  layer_add_child(root, text_layer_get_layer(s_time_layer));
+  s_surface = surface;
   return true;
 }
 
@@ -89,10 +90,7 @@ void time_module_destroy(void) {
     s_time_layer = NULL;
   }
 
-  if (s_custom_time_font) {
-    fonts_unload_custom_font(s_custom_time_font);
-    s_custom_time_font = NULL;
-  }
+  unload_custom_time_font();
 
   s_time_buffer[0] = '\0';
   s_surface = NULL;
@@ -115,10 +113,10 @@ void time_module_refresh(
   }
 
   format_time(s_time_buffer, ATAGLANCE_MAX_STR_LEN, t, time_format);
-  layout_update_text_layer(
+  substratum_renderer_update_text_layer(
       s_time_layer,
       s_time_buffer,
-      layout_color_for_role(
+      substratum_renderer_color_for_role(
           s_surface->style.palette,
           s_surface->time.text.color_role));
 }

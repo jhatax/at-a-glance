@@ -1,5 +1,6 @@
 #if defined(PBL_HEALTH)
 #include "steps.h"
+#include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 static char s_steps_buffer[ATAGLANCE_MAX_STR_LEN];
@@ -8,10 +9,6 @@ static TextLayer* s_steps_layer;
 static bool s_steps_is_available;
 static const WatchfaceSurface* s_surface;
 
-static TextLayer* create_steps_text_layer(
-    Layer* parent,
-    const WatchfaceTextSubstratum* text,
-    GFont font);
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size);
@@ -25,26 +22,6 @@ static void steps_draw_scaled_line(
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
 static void apply_steps_value(int steps, bool is_available);
 static void update_steps(void);
-
-static TextLayer* create_steps_text_layer(
-    Layer* parent,
-    const WatchfaceTextSubstratum* text,
-    GFont font) {
-  if (!parent || !text) {
-    return NULL;
-  }
-
-  TextLayer* layer = text_layer_create(text->frame);
-  if (!layer) {
-    return NULL;
-  }
-
-  text_layer_set_background_color(layer, GColorClear);
-  text_layer_set_font(layer, font);
-  text_layer_set_text_alignment(layer, text->alignment);
-  layer_add_child(parent, text_layer_get_layer(layer));
-  return layer;
-}
 
 static void draw_data_gap_slash(
     GContext* ctx,
@@ -73,8 +50,8 @@ static void steps_draw_scaled_line(
 
   graphics_draw_line(
       ctx,
-      layout_scaled_icon_point(bounds_size, x0, y0),
-      layout_scaled_icon_point(bounds_size, x1, y1));
+      substratum_renderer_scale_icon_point(bounds_size, x0, y0),
+      substratum_renderer_scale_icon_point(bounds_size, x1, y1));
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -95,24 +72,24 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_fill_circle(
       ctx,
-      layout_scaled_icon_point(&bounds.size, 14, 9),
-      layout_scale_icon_coord(&bounds.size, 7));
+      substratum_renderer_scale_icon_point(&bounds.size, 14, 9),
+      substratum_renderer_scale_icon_coord(&bounds.size, 7));
 
   graphics_context_set_fill_color(ctx, palette->background);
   graphics_fill_rect(
       ctx,
-      GRect(layout_scale_icon_x(&bounds.size, 6),
-            layout_scale_icon_y(&bounds.size, 15),
-            layout_scale_icon_x(&bounds.size, 16),
-            layout_scale_icon_y(&bounds.size, 4)),
+      GRect(substratum_renderer_scale_icon_x(&bounds.size, 6),
+            substratum_renderer_scale_icon_y(&bounds.size, 15),
+            substratum_renderer_scale_icon_x(&bounds.size, 16),
+            substratum_renderer_scale_icon_y(&bounds.size, 4)),
       0,
       GCornerNone);
 
   graphics_context_set_fill_color(ctx, steps_icon_color);
   graphics_fill_circle(
       ctx,
-      layout_scaled_icon_point(&bounds.size, 14, 22),
-      layout_scale_icon_coord(&bounds.size, 4));
+      substratum_renderer_scale_icon_point(&bounds.size, 14, 22),
+      substratum_renderer_scale_icon_coord(&bounds.size, 4));
 
   if (!s_steps_is_available) {
     draw_data_gap_slash(ctx, &bounds.size);
@@ -139,7 +116,10 @@ static void apply_steps_value(int steps, bool is_available) {
         WATCHFACE_UNAVAILABLE_TEXT);
   }
 
-  layout_update_text_layer(s_steps_layer, s_steps_buffer, text_color);
+  substratum_renderer_update_text_layer(
+      s_steps_layer,
+      s_steps_buffer,
+      text_color);
 
   if (s_steps_icon_layer) {
     layer_mark_dirty(s_steps_icon_layer);
@@ -177,10 +157,9 @@ bool steps_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->steps.text;
   const WatchfaceIconSubstratum* icon = &surface->steps.icon;
-  s_surface = surface;
   s_steps_is_available = false;
 
-  s_steps_layer = create_steps_text_layer(
+  s_steps_layer = substratum_renderer_create_text_layer(
       root,
       text,
       surface->style.fonts[text->font_role]);
@@ -191,13 +170,11 @@ bool steps_module_create(
     return false;
   }
 
-  if (icon->is_enabled) {
-    s_steps_icon_layer = layer_create(icon->frame);
-  }
-  if (s_steps_icon_layer) {
-    layer_set_update_proc(s_steps_icon_layer, steps_icon_update_proc);
-    layer_add_child(root, s_steps_icon_layer);
-  }
+  s_surface = surface;
+  s_steps_icon_layer = substratum_renderer_create_icon_layer(
+      root,
+      icon,
+      steps_icon_update_proc);
 
   return true;
 }

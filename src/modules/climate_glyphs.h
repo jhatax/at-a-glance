@@ -1,7 +1,8 @@
 #pragma once
 
 #include <pebble.h>
-#include "layout.h"
+
+#include "watchface_components.h"
 
 void draw_climate_icon(
     GContext* ctx,

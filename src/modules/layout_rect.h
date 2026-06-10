@@ -1,7 +1,8 @@
 #pragma once
 
 #include <pebble.h>
-#include "layout.h"
+
+#include "watchface_components.h"
 
 void layout_rect_calculate_surface(
     int16_t face_width,

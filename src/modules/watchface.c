@@ -16,19 +16,19 @@ static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 
 typedef enum {
-  NO_LAYERS_MASK = 0,
-  DATE_LAYER_MASK = 1,
-  TIME_LAYER_MASK = 2,
-  BATTERY_LAYER_MASK = 4,
-  MUST_HAVE_LAYERS_MASK = 7,
-  CLIMATE_LAYER_MASK = 8,
-  BACKGROUND_LAYER_MASK = 16,
+  NO_STRATA_MASK = 0,
+  DATE_STRATUM_MASK = 1,
+  TIME_STRATUM_MASK = 2,
+  BATTERY_STRATUM_MASK = 4,
+  MUST_HAVE_STRATA_MASK = 7,
+  CLIMATE_STRATUM_MASK = 8,
+  BACKGROUND_STRATUM_MASK = 16,
 #ifdef PBL_HEALTH
-  BPM_LAYER_MASK = 32,
-  STEPS_LAYER_MASK = 64
+  BPM_STRATUM_MASK = 32,
+  STEPS_STRATUM_MASK = 64
 #endif
-} LayerMask;
-static uint8_t s_layers_created = (uint8_t) NO_LAYERS_MASK;
+} StratumMask;
+static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
 static void watchface_exit_path() {
   watchface_destroy();
@@ -66,7 +66,7 @@ bool watchface_create(
     return false;
   }
 
-  s_layers_created = (uint8_t) NO_LAYERS_MASK;
+  s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
   GRect bounds = layer_get_bounds(root);
   layout_calculate_surface(
@@ -75,81 +75,82 @@ bool watchface_create(
       s_wf_settings->display_mode,
       &s_surface);
 
-  s_layers_created |= background_module_create(root, &s_surface) ?
-      BACKGROUND_LAYER_MASK : 0;
+  s_strata_created_mask |= background_module_create(root, &s_surface) ?
+      BACKGROUND_STRATUM_MASK : 0;
 
-  s_layers_created |= date_module_create(root, &s_surface) ?
-      DATE_LAYER_MASK : 0;
+  s_strata_created_mask |= date_module_create(root, &s_surface) ?
+      DATE_STRATUM_MASK : 0;
 
-  s_layers_created |= time_module_create(root, &s_surface) ?
-      TIME_LAYER_MASK : 0;
+  s_strata_created_mask |= time_module_create(root, &s_surface) ?
+      TIME_STRATUM_MASK : 0;
 
-  s_layers_created |= battery_module_create(root, &s_surface) ?
-      BATTERY_LAYER_MASK : 0;
+  s_strata_created_mask |= battery_module_create(root, &s_surface) ?
+      BATTERY_STRATUM_MASK : 0;
 
-  if ((s_layers_created & MUST_HAVE_LAYERS_MASK) != MUST_HAVE_LAYERS_MASK) {
+  if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) !=
+      MUST_HAVE_STRATA_MASK) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
     watchface_exit_path();
     return false;
   }
 
-  s_layers_created |= climate_module_create(
+  s_strata_created_mask |= climate_module_create(
       root,
       &s_surface,
-      s_wf_settings->temp_unit) ? CLIMATE_LAYER_MASK : 0;
+      s_wf_settings->temp_unit) ? CLIMATE_STRATUM_MASK : 0;
 
   #ifdef PBL_HEALTH
-  s_layers_created |= bpm_module_create(root, &s_surface) ?
-      BPM_LAYER_MASK : 0;
+  s_strata_created_mask |= bpm_module_create(root, &s_surface) ?
+      BPM_STRATUM_MASK : 0;
 
-  s_layers_created |= steps_module_create(root, &s_surface) ?
-      STEPS_LAYER_MASK : 0;
+  s_strata_created_mask |= steps_module_create(root, &s_surface) ?
+      STEPS_STRATUM_MASK : 0;
   #endif
 
   return true;
 }
 
 void watchface_destroy() {
-  if (s_layers_created) {
-    if (s_layers_created & BACKGROUND_LAYER_MASK) {
+  if (s_strata_created_mask) {
+    if (s_strata_created_mask & BACKGROUND_STRATUM_MASK) {
       background_module_destroy();
-      s_layers_created &= ~BACKGROUND_LAYER_MASK;
+      s_strata_created_mask &= ~BACKGROUND_STRATUM_MASK;
     }
 
-    if (s_layers_created & DATE_LAYER_MASK) {
+    if (s_strata_created_mask & DATE_STRATUM_MASK) {
       date_module_destroy();
-      s_layers_created &= ~DATE_LAYER_MASK;
+      s_strata_created_mask &= ~DATE_STRATUM_MASK;
     }
 
-    if (s_layers_created & TIME_LAYER_MASK) {
+    if (s_strata_created_mask & TIME_STRATUM_MASK) {
       time_module_destroy();
-      s_layers_created &= ~TIME_LAYER_MASK;
+      s_strata_created_mask &= ~TIME_STRATUM_MASK;
     }
 
-    if (s_layers_created & BATTERY_LAYER_MASK) {
+    if (s_strata_created_mask & BATTERY_STRATUM_MASK) {
       battery_module_destroy();
-      s_layers_created &= ~BATTERY_LAYER_MASK;
+      s_strata_created_mask &= ~BATTERY_STRATUM_MASK;
     }
 
-    if (s_layers_created & CLIMATE_LAYER_MASK) {
+    if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
       climate_module_destroy();
-      s_layers_created &= ~CLIMATE_LAYER_MASK;
+      s_strata_created_mask &= ~CLIMATE_STRATUM_MASK;
     }
 
     #ifdef PBL_HEALTH
-    if (s_layers_created & BPM_LAYER_MASK) {
+    if (s_strata_created_mask & BPM_STRATUM_MASK) {
       bpm_module_destroy();
-      s_layers_created &= ~BPM_LAYER_MASK;
+      s_strata_created_mask &= ~BPM_STRATUM_MASK;
     }
 
-    if (s_layers_created & STEPS_LAYER_MASK) {
+    if (s_strata_created_mask & STEPS_STRATUM_MASK) {
       steps_module_destroy();
-      s_layers_created &= ~STEPS_LAYER_MASK;
+      s_strata_created_mask &= ~STEPS_STRATUM_MASK;
     }
     #endif
   }
 
-  s_layers_created = (uint8_t) NO_LAYERS_MASK;
+  s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
   s_wf_settings = NULL;
   s_wf_window = NULL;
   memset(&s_surface, 0, sizeof(s_surface));
@@ -170,16 +171,16 @@ void watchface_refresh() {
   time_module_refresh(&s_surface, s_wf_settings->time_format);
   battery_module_refresh(&s_surface);
 
-  if (s_layers_created & CLIMATE_LAYER_MASK) {
+  if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
     climate_module_refresh(&s_surface, s_wf_settings->temp_unit);
   }
 
   #ifdef PBL_HEALTH
-  if (s_layers_created & BPM_LAYER_MASK) {
+  if (s_strata_created_mask & BPM_STRATUM_MASK) {
     bpm_module_refresh(&s_surface);
   }
 
-  if (s_layers_created & STEPS_LAYER_MASK) {
+  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
     steps_module_refresh(&s_surface);
   }
   #endif
@@ -237,11 +238,11 @@ void watchface_handle_health_event(HealthEventType event) {
 
   watchface_update_style();
 
-  if (s_layers_created & BPM_LAYER_MASK) {
+  if (s_strata_created_mask & BPM_STRATUM_MASK) {
     bpm_module_handle_event(event);
   }
 
-  if (s_layers_created & STEPS_LAYER_MASK) {
+  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
     steps_module_handle_event(event);
   }
 }
@@ -254,7 +255,7 @@ void watchface_debug_update_bpm(int bpm) {
 
   watchface_update_style();
 
-  if (s_layers_created & BPM_LAYER_MASK) {
+  if (s_strata_created_mask & BPM_STRATUM_MASK) {
     bpm_module_debug_set_value(bpm);
   }
 }
@@ -266,7 +267,7 @@ void watchface_debug_update_steps(int steps) {
 
   watchface_update_style();
 
-  if (s_layers_created & STEPS_LAYER_MASK) {
+  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
     steps_module_debug_set_value(steps);
   }
 }

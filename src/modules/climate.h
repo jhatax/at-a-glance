@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-#include "layout.h"
+#include "watchface_components.h"
 
 // JS sends these same sentinel values when weather is unavailable.
 #define WEATHER_TEMP_INVALID INT16_MIN

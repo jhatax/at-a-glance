@@ -3,7 +3,7 @@
 #include <pebble.h>
 
 #include "../c/ataglance.h"
-#include "layout.h"
+#include "watchface_components.h"
 
 bool steps_module_create(
     Layer* root,

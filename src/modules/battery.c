@@ -1,4 +1,5 @@
 #include "battery.h"
+#include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN];
@@ -9,10 +10,6 @@ static BatteryChargeState s_battery_state;
 
 static const WatchfaceSurface* s_surface;
 
-static TextLayer* create_battery_text_layer(
-    Layer* parent,
-    const WatchfaceTextSubstratum* text,
-    GFont font);
 static GColor calculate_battery_color(void);
 static void draw_battery_charging_bolt(
     GContext* ctx,
@@ -27,26 +24,6 @@ static void battery_draw_scaled_line(
     int16_t y1);
 static void battery_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_battery(void);
-
-static TextLayer* create_battery_text_layer(
-    Layer* parent,
-    const WatchfaceTextSubstratum* text,
-    GFont font) {
-  if (!parent || !text) {
-    return NULL;
-  }
-
-  TextLayer* layer = text_layer_create(text->frame);
-  if (!layer) {
-    return NULL;
-  }
-
-  text_layer_set_background_color(layer, GColorClear);
-  text_layer_set_font(layer, font);
-  text_layer_set_text_alignment(layer, text->alignment);
-  layer_add_child(parent, text_layer_get_layer(layer));
-  return layer;
-}
 
 static GColor calculate_battery_color(void) {
   if (!s_surface || !s_surface->style.palette) {
@@ -111,8 +88,8 @@ static void battery_draw_scaled_line(
 
   graphics_draw_line(
       ctx,
-      layout_scaled_icon_point(bounds_size, x0, y0),
-      layout_scaled_icon_point(bounds_size, x1, y1));
+      substratum_renderer_scale_icon_point(bounds_size, x0, y0),
+      substratum_renderer_scale_icon_point(bounds_size, x1, y1));
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -136,16 +113,16 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_draw_rect(
       ctx,
-      GRect(layout_scale_icon_x(&bounds.size, 2),
-            layout_scale_icon_y(&bounds.size, 8),
-            layout_scale_icon_x(&bounds.size, 22),
-            layout_scale_icon_y(&bounds.size, 13)));
+      GRect(substratum_renderer_scale_icon_x(&bounds.size, 2),
+            substratum_renderer_scale_icon_y(&bounds.size, 8),
+            substratum_renderer_scale_icon_x(&bounds.size, 22),
+            substratum_renderer_scale_icon_y(&bounds.size, 13)));
   graphics_fill_rect(
       ctx,
-      GRect(layout_scale_icon_x(&bounds.size, 24),
-            layout_scale_icon_y(&bounds.size, 12),
-            layout_scale_icon_x(&bounds.size, 2),
-            layout_scale_icon_y(&bounds.size, 5)),
+      GRect(substratum_renderer_scale_icon_x(&bounds.size, 24),
+            substratum_renderer_scale_icon_y(&bounds.size, 12),
+            substratum_renderer_scale_icon_x(&bounds.size, 2),
+            substratum_renderer_scale_icon_y(&bounds.size, 5)),
       0,
       GCornerNone);
 
@@ -155,10 +132,10 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_fill_rect(
       ctx,
-      GRect(layout_scale_icon_x(&bounds.size, 5),
-            layout_scale_icon_y(&bounds.size, 11),
-            layout_scale_icon_x(&bounds.size, fill_w),
-            layout_scale_icon_y(&bounds.size, 7)),
+      GRect(substratum_renderer_scale_icon_x(&bounds.size, 5),
+            substratum_renderer_scale_icon_y(&bounds.size, 11),
+            substratum_renderer_scale_icon_x(&bounds.size, fill_w),
+            substratum_renderer_scale_icon_y(&bounds.size, 7)),
       0,
       GCornerNone);
 
@@ -178,7 +155,7 @@ static void update_battery(void) {
       "%d%%",
       s_battery_state.charge_percent);
 
-  layout_update_text_layer(
+  substratum_renderer_update_text_layer(
       s_battery_layer,
       s_battery_buffer,
       calculate_battery_color());
@@ -197,10 +174,9 @@ bool battery_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->battery.text;
   const WatchfaceIconSubstratum* icon = &surface->battery.icon;
-  s_surface = surface;
   s_battery_state = battery_state_service_peek();
 
-  s_battery_layer = create_battery_text_layer(
+  s_battery_layer = substratum_renderer_create_text_layer(
       root,
       text,
       surface->style.fonts[text->font_role]);
@@ -211,15 +187,11 @@ bool battery_module_create(
     return false;
   }
 
-  if (icon->is_enabled) {
-    s_battery_icon_layer = layer_create(icon->frame);
-  }
-  if (s_battery_icon_layer) {
-    layer_set_update_proc(
-        s_battery_icon_layer,
-        battery_icon_update_proc);
-    layer_add_child(root, s_battery_icon_layer);
-  }
+  s_surface = surface;
+  s_battery_icon_layer = substratum_renderer_create_icon_layer(
+      root,
+      icon,
+      battery_icon_update_proc);
 
   return true;
 }

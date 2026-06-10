@@ -1,7 +1,7 @@
 #include "climate.h"
 #include "climate_glyphs.h"
-#include "layout.h"
 #include "settings.h"
+#include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 #define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
@@ -78,7 +78,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
       palette->primary_text :
       palette->unavailable_text;
 
-  layout_update_text_layer(
+  substratum_renderer_update_text_layer(
       s_temperature_layer,
       s_temperature_buffer,
       text_color);
@@ -124,32 +124,21 @@ bool climate_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->climate.text;
   const WatchfaceIconSubstratum* icon = &surface->climate.icon;
-  s_surface = surface;
-  s_temperature_layer = text_layer_create(text->frame);
+  s_temperature_layer = substratum_renderer_create_text_layer(
+      root,
+      text,
+      surface->style.fonts[text->font_role]);
   if (!s_temperature_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create climate temperature layer");
     return false;
   }
 
-  text_layer_set_background_color(s_temperature_layer, GColorClear);
-  text_layer_set_font(
-      s_temperature_layer,
-      surface->style.fonts[text->font_role]);
-  text_layer_set_text_alignment(
-      s_temperature_layer,
-      text->alignment);
-  layer_add_child(root, text_layer_get_layer(s_temperature_layer));
-
-  if (icon->is_enabled) {
-    s_climate_icon_layer = layer_create(icon->frame);
-  }
-  if (s_climate_icon_layer) {
-    layer_set_update_proc(
-        s_climate_icon_layer,
-        climate_icon_update_proc);
-    layer_add_child(root, s_climate_icon_layer);
-  }
+  s_surface = surface;
+  s_climate_icon_layer = substratum_renderer_create_icon_layer(
+      root,
+      icon,
+      climate_icon_update_proc);
 
   // Update display now that this module has been created
   climate_module_update_display(temp_unit);

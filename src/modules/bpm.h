@@ -3,7 +3,7 @@
 #include <pebble.h>
 
 #include "../c/ataglance.h"
-#include "layout.h"
+#include "watchface_components.h"
 
 bool bpm_module_create(
     Layer* root,

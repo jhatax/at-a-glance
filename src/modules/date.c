@@ -1,4 +1,5 @@
 #include "date.h"
+#include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 static char s_date_buffer[ATAGLANCE_MAX_STR_LEN];
@@ -28,20 +29,17 @@ bool date_module_create(
   }
 
   const WatchfaceTextSubstratum* text = &surface->date.text;
-  s_surface = surface;
-  s_date_layer = text_layer_create(text->frame);
+  s_date_layer = substratum_renderer_create_text_layer(
+      root,
+      text,
+      surface->style.fonts[text->font_role]);
   if (!s_date_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create date text layer");
     return false;
   }
 
-  text_layer_set_background_color(s_date_layer, GColorClear);
-  text_layer_set_font(
-      s_date_layer,
-      surface->style.fonts[text->font_role]);
-  text_layer_set_text_alignment(s_date_layer, text->alignment);
-  layer_add_child(root, text_layer_get_layer(s_date_layer));
+  s_surface = surface;
   return true;
 }
 
@@ -71,10 +69,10 @@ void date_module_refresh(const WatchfaceSurface* surface) {
 
   strftime(s_date_buffer, ATAGLANCE_MAX_STR_LEN, "%a · %d %b", t);
   uppercase_date(s_date_buffer);
-  layout_update_text_layer(
+  substratum_renderer_update_text_layer(
       s_date_layer,
       s_date_buffer,
-      layout_color_for_role(
+      substratum_renderer_color_for_role(
           s_surface->style.palette,
           s_surface->date.text.color_role));
 }

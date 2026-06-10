@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-#include "layout.h"
+#include "watchface_components.h"
 
 bool background_module_create(
     Layer* root,

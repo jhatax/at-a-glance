@@ -156,18 +156,11 @@ void layout_rect_calculate_surface(
     .line_y = rule_y,
     .line_width = metrics.content_width,
   };
-  surface->content_x = metrics.content_left;
-  surface->row_gap = metrics.row_gap;
-  surface->column_gap = metrics.column_gap;
-  surface->content_width_date = metrics.content_width;
-  surface->content_width_time = metrics.content_width;
-  surface->content_width_health = metrics.content_width;
-  surface->content_width_bottom = metrics.content_width;
 
   surface->date.text = (WatchfaceTextSubstratum) {
     .frame = GRect(metrics.content_left,
                    date_text_top,
-                   surface->content_width_date,
+                   metrics.content_width,
                    metrics.date_text_height),
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
@@ -176,7 +169,7 @@ void layout_rect_calculate_surface(
   surface->time.text = (WatchfaceTextSubstratum) {
     .frame = GRect(metrics.content_left,
                    time_text_top,
-                   surface->content_width_time,
+                   metrics.content_width,
                    metrics.time_text_height),
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_TIME,
@@ -188,7 +181,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .requires_update_proc = true,
     .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->battery.text = (WatchfaceTextSubstratum) {
@@ -208,7 +200,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .requires_update_proc = true,
     .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->climate.text = (WatchfaceTextSubstratum) {
@@ -228,7 +219,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .requires_update_proc = true,
     .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->steps.text = (WatchfaceTextSubstratum) {
@@ -248,7 +238,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .requires_update_proc = true,
     .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->bpm.text = (WatchfaceTextSubstratum) {

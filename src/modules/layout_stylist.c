@@ -71,6 +71,16 @@ static const char* layout_font_key_for_role(
   }
 }
 
+static uint32_t layout_custom_font_resource_id_for_role(
+    WatchfaceFontRole role,
+    bool is_compact) {
+  if (role == WATCHFACE_FONT_ROLE_TIME && !is_compact) {
+    return RESOURCE_ID_FONT_TIME_UNBOUNDED_48;
+  }
+
+  return 0;
+}
+
 static const ColorPalette* layout_palette_for_display_mode(
     uint8_t display_mode) {
   if (display_mode == DISPLAY_MODE_LIGHT) {
@@ -97,5 +107,9 @@ void layout_stylist_update_surface_style(
   for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
     style->fonts[i] = fonts_get_system_font(
         layout_font_key_for_role((WatchfaceFontRole)i, is_compact));
+    style->custom_font_resource_ids[i] =
+        layout_custom_font_resource_id_for_role(
+            (WatchfaceFontRole)i,
+            is_compact);
   }
 }

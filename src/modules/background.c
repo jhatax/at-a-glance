@@ -39,7 +39,6 @@ bool background_module_create(
     return false;
   }
 
-  s_surface = surface;
   s_background_layer = layer_create(surface->background.frame);
   if (!s_background_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -47,6 +46,7 @@ bool background_module_create(
     return false;
   }
 
+  s_surface = surface;
   layer_set_update_proc(s_background_layer, background_layer_update_proc);
   layer_add_child(root, s_background_layer);
   return true;
