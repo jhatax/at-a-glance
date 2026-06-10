@@ -71,9 +71,7 @@ static GColor calculate_bpm_color(int bpm) {
         GColorMagenta,
         gcolor_legible_over(palette->background));
   }
-  return PBL_IF_COLOR_ELSE(
-      GColorJaegerGreen,
-      gcolor_legible_over(palette->background));
+  return palette->primary_text;
 }
 
 static void draw_bpm_icon_with_color(

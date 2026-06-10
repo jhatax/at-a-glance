@@ -6,22 +6,22 @@ static const ColorPalette c_dark_palette = {
   .background = GColorBlack,
   .background_layer_background = GColorBlack,
   .background_layer_line = GColorWhite,
-  .primary_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .unavailable_text = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorWhite),
-  .date = PBL_IF_COLOR_ELSE(GColorRichBrilliantLavender, GColorWhite),
+  .primary_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorWhite),
+  .date = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
-  .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
+  .steps_icon = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
 };
 
 static const ColorPalette c_light_palette = {
   .background = GColorWhite,
   .background_layer_background = GColorWhite,
-  .background_layer_line = GColorBlack,
-  .primary_text = GColorBlack,
+  .background_layer_line = GColorOxfordBlue,
+  .primary_text = GColorCobaltBlue,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
-  .date = PBL_IF_COLOR_ELSE(GColorImperialPurple, GColorBlack),
+  .date = PBL_IF_COLOR_ELSE(GColorBlack, GColorBlack),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
-  .steps_icon = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
+  .steps_icon = GColorCobaltBlue,
 };
 
 static bool layout_is_compact_display(

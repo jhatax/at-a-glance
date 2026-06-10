@@ -53,27 +53,26 @@ static GColor calculate_battery_color(void) {
     return GColorWhite;
   }
 
+  const ColorPalette* palette = s_surface->style.palette;
   int percent = s_battery_state.charge_percent;
 
   if (s_battery_state.is_charging) {
     return PBL_IF_COLOR_ELSE(
         GColorJaegerGreen,
-        gcolor_legible_over(s_surface->style.palette->background));
+        gcolor_legible_over(palette->background));
   }
 
   if (percent > 50) {
-    return PBL_IF_COLOR_ELSE(
-        GColorCobaltBlue,
-        gcolor_legible_over(s_surface->style.palette->background));
+    return palette->primary_text;
   }
   if (percent > 20) {
     return PBL_IF_COLOR_ELSE(
         GColorRajah,
-        gcolor_legible_over(s_surface->style.palette->background));
+        gcolor_legible_over(palette->background));
   }
   return PBL_IF_COLOR_ELSE(
       GColorRed,
-      gcolor_legible_over(s_surface->style.palette->background));
+      gcolor_legible_over(palette->background));
 }
 
 static void draw_battery_charging_bolt(
