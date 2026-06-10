@@ -248,11 +248,17 @@ Invariants:
   `DEBUG_ATAGLANCE` and `PBL_HEALTH`.
 - Debug BPM/steps injections are one-shot when consumed by refresh and can be
   explicitly cleared.
+- A zero step count is valid when Pebble Health reports step data as
+  accessible. In current emulator runs, `0` steps can appear even when no
+  useful health data is present; this is treated as an emulator-data quirk, not
+  a product bug to special-case in watchface code.
 
 Acceptance checks:
 
 - No `weather.c/.h`, `health.c/.h`, or old display module remains tracked.
 - PebbleKit JS comments reference `climate.h`, not `weather.h`.
+- Do not infer unavailable steps from `0`; unavailable steps are driven by
+  health-service accessibility and invalid readings.
 
 ### Background Layer
 
@@ -314,4 +320,3 @@ As of this ledger creation:
 - `pebble build` passes for the configured rectangular platforms.
 - Worktree was clean before this ledger file was added.
 - Round support is not implemented or enabled.
-

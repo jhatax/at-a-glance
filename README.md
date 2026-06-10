@@ -155,6 +155,10 @@ Compact rectangular displays use:
 
 When BPM or steps data is unavailable on health-capable watches, the
 corresponding icon uses a diagonal data-gap slash and unavailable text color.
+Step count `0` is treated as a valid value when Pebble Health reports step data
+as accessible. Some emulator runs can report accessible health data with `0`
+steps even when the emulator has no meaningful health history; that is a known
+emulator quirk and is not special-cased by the watchface.
 
 ## Colors
 
