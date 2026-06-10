@@ -150,7 +150,6 @@ void watchface_destroy() {
   }
 
   s_layers_created = (uint8_t) NO_LAYERS_MASK;
-  background_module_destroy();
   s_wf_settings = NULL;
   s_wf_window = NULL;
   memset(&s_surface, 0, sizeof(s_surface));
