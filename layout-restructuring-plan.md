@@ -174,7 +174,9 @@ The renderer does not own:
 - destroys only strata that were actually created
 - accepts source-state setters from `main.c`
 - dispatches `watchface_refresh(WatchfaceUpdateMask updates)`
-- keeps style updates private through `watchface_update_style()`
+- handles display-mode style recalculation inline in the display-mode branch
+  of `watchface_refresh()`
+- keeps the strata-only redraw mask private inside `watchface.c`
 
 `main.c` should not know that climate, battery, BPM, steps, time, date, or
 background are separate modules. It should only know that events imply
@@ -204,13 +206,13 @@ WATCHFACE_UPDATE_ALL
 
 - updates the surface style once
 - updates the window background color
-- refreshes the background layer
-- expands the refresh mask to redraw all strata affected by palette/style
+- refreshes the background layer if it was created
+- replaces the refresh mask with a private strata-only mask so
+  `WATCHFACE_UPDATE_DISPLAY_MODE` is not retained during module dispatch
 
-The original plan considered a separate `watchface_update_display_mode()` API.
-The implemented design kept the single dispatcher instead, which preserves the
-new invariant that `watchface_refresh()` is the only render-dispatch entry
-point.
+The strata-only mask is intentionally not part of `watchface.h`; `main.c`
+should not know about strata. `WATCHFACE_UPDATE_ALL` remains public for initial
+full refreshes and includes display mode plus all watchface update categories.
 
 Source-state setters are intentionally separate from rendering:
 
@@ -224,10 +226,13 @@ Debug health setters are guarded by `DEBUG_ATAGLANCE` and `PBL_HEALTH`:
 ```c
 void watchface_debug_set_bpm(int bpm);
 void watchface_debug_set_steps(int steps);
+void watchface_debug_clear_health(void);
 ```
 
 Setters may update module-owned source state, but they must not update Pebble
 layers directly. Rendering occurs only through a later `watchface_refresh()`.
+Debug health overrides are one-shot when consumed by refresh, and may also be
+cleared explicitly through `watchface_debug_clear_health()`.
 
 ## Module Lifecycle
 

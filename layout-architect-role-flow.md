@@ -73,11 +73,13 @@ and `PBL_HEALTH`:
 ```c
 void watchface_debug_set_bpm(int bpm);
 void watchface_debug_set_steps(int steps);
+void watchface_debug_clear_health(void);
 ```
 
 These setters may redirect to module-owned setters, but neither watchface
 setters nor module setters may update Pebble layers directly. Rendering occurs
-only when `watchface_refresh()` receives a mask.
+only when `watchface_refresh()` receives a mask. Debug health overrides are
+one-shot when consumed by refresh and can also be cleared explicitly.
 
 Current update categories:
 
@@ -88,11 +90,14 @@ WATCHFACE_UPDATE_BATTERY
 WATCHFACE_UPDATE_CLIMATE
 WATCHFACE_UPDATE_HEALTH
 WATCHFACE_UPDATE_DISPLAY_MODE
+WATCHFACE_UPDATE_ALL
 ```
 
 `WATCHFACE_UPDATE_DISPLAY_MODE` is special. It updates surface style once,
-updates the window/background color, then refreshes all visible strata because
-palette/font decisions can affect any rendered component.
+updates the window/background color, refreshes the background layer if it was
+created, then replaces the dispatch mask with a private strata-only redraw
+mask. That private mask lives in `watchface.c`, not `watchface.h`, because
+`main.c` should not know about strata.
 
 ## Surface, Strata, And Substrata
 
