@@ -2,13 +2,13 @@
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
-static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN];
+static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
 
-static Layer* s_battery_icon_layer;
-static TextLayer* s_battery_layer;
-static BatteryChargeState s_battery_state;
+static Layer* s_battery_icon_layer = NULL;
+static TextLayer* s_battery_layer = NULL;
+static BatteryChargeState s_battery_state = {0};
 
-static const WatchfaceSurface* s_surface;
+static const WatchfaceSurface* s_surface = NULL;
 
 static GColor calculate_battery_color(void);
 static void draw_battery_charging_bolt(

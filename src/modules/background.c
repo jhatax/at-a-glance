@@ -1,7 +1,7 @@
 #include "background.h"
 
-static Layer* s_background_layer;
-static const WatchfaceSurface* s_surface;
+static Layer* s_background_layer = NULL;
+static const WatchfaceSurface* s_surface = NULL;
 
 static void background_layer_update_proc(Layer* layer, GContext* ctx);
 

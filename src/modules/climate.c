@@ -12,7 +12,7 @@
 // Initialize static variables to known starting state values
 static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
-static char s_temperature_buffer[ATAGLANCE_MAX_STR_LEN];
+static char s_temperature_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
 static const WatchfaceSurface* s_surface = NULL;

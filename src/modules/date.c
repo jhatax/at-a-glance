@@ -2,9 +2,9 @@
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
-static char s_date_buffer[ATAGLANCE_MAX_STR_LEN];
-static TextLayer* s_date_layer;
-static const WatchfaceSurface* s_surface;
+static char s_date_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static TextLayer* s_date_layer = NULL;
+static const WatchfaceSurface* s_surface = NULL;
 
 static void uppercase_date(char* buf);
 

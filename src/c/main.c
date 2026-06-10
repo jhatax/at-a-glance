@@ -7,7 +7,7 @@
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
 
-static Window* s_window;
+static Window* s_window = NULL;
 static WatchfaceSettings s_settings = {0};
 
 #if defined(PBL_HEALTH)

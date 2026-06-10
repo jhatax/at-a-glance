@@ -3,10 +3,10 @@
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
-static char s_time_buffer[ATAGLANCE_MAX_STR_LEN];
-static TextLayer* s_time_layer;
-static GFont s_custom_time_font;
-static const WatchfaceSurface* s_surface;
+static char s_time_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static TextLayer* s_time_layer = NULL;
+static GFont s_custom_time_font = NULL;
+static const WatchfaceSurface* s_surface = NULL;
 
 static void format_time(
     char* buf,
