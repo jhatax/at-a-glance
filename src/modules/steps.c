@@ -230,6 +230,11 @@ void steps_module_debug_set_steps(int steps) {
   s_debug_steps = steps;
   s_debug_steps_is_set = true;
 }
+
+void steps_module_debug_clear_steps(void) {
+  s_debug_steps_is_set = false;
+  s_debug_steps = STEPS_INVALID;
+}
 #endif
 
 #else

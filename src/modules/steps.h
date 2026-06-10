@@ -13,4 +13,5 @@ void steps_module_refresh(const WatchfaceSurface* surface);
 
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
 void steps_module_debug_set_steps(int steps);
+void steps_module_debug_clear_steps(void);
 #endif

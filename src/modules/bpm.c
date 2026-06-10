@@ -255,6 +255,11 @@ void bpm_module_debug_set_bpm(int bpm) {
   s_debug_bpm = bpm;
   s_debug_bpm_is_set = true;
 }
+
+void bpm_module_debug_clear_bpm(void) {
+  s_debug_bpm_is_set = false;
+  s_debug_bpm = BPM_INVALID;
+}
 #endif
 
 #else

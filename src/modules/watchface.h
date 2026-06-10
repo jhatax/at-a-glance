@@ -40,5 +40,6 @@ void watchface_set_weather_condition(int weather_condition);
 #ifdef DEBUG_ATAGLANCE
 void watchface_debug_set_bpm(int bpm);
 void watchface_debug_set_steps(int steps);
+void watchface_debug_clear_health(void);
 #endif
 #endif
