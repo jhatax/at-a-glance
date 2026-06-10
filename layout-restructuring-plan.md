@@ -1,97 +1,47 @@
 # Layout Restructuring Plan
+**Status: Complete.**
 
-This plan captures the current architecture after the `WatchfaceSurface`
-refactor, stylist extraction, rectangle architect extraction, and rectangular
-visual redesign. It is the handoff for the next cleanup phase before round
-watchface work.
+This document records the completed layout restructuring that prepared the
+rectangular watchface for future round layout work. The scope was boundary
+cleanup and ownership realignment, not enabling Chalk or Gabbro.
 
-This is still a boundary cleanup plan. It is not round support.
+## Completed Outcome
 
-## Current State
-
-The current code works and has the right broad ownership model:
+The layout/watchface architecture is now split along the intended boundaries:
 
 - `watchface` is the runtime clearing house.
-- feature modules own Pebble layer creation, refresh, update procs, state, and
-  destroy paths.
-- `layout` calculates the display contract: surface, strata, substrata, frames,
-  style, fonts, palette, and color roles.
-- `layout_stylist.c/.h` privately owns palette and font resolution.
+- feature modules own Pebble layer creation, update procs, refresh behavior,
+  source state, and destroy paths.
+- `layout` calculates the display contract and exposes only public layout
+  APIs.
+- `layout_stylist.c/.h` privately owns palette and typography decisions.
 - `layout_rect.c/.h` privately owns rectangular geometry.
+- `watchface_components.h` owns shared display component types.
+- `substratum_renderer.c/.h` owns common Pebble rendering helpers for
+  calculated substrata.
 
-The next cleanup is to split the shared display component model and
-substratum rendering helpers out of `layout.h` / `layout.c`.
+The refactor is complete for the current rectangular watchface. Round support
+remains a separate future design and implementation effort.
 
-## Revised Target Shape
+## Public And Private Boundaries
 
-Use these files and boundaries:
+### `src/c/ataglance.h`
 
-- `ataglance.h`
-  - product constants and compile-time product decisions only
-  - examples: debug flag, design dimensions, row heights, font key constants,
-    icon design dimensions, persisted-settings toggle
-  - no Pebble layer helpers
-  - no module lifecycle APIs
+Owns product constants and compile-time product decisions:
 
-- `watchface_components.h`
-  - shared display component model
-  - contains only type definitions and display vocabulary
-  - used by layout, renderer helpers, watchface runtime, climate glyphs, and
-    feature modules
+- debug flag
+- design face dimensions
+- icon, margin, row, column, and text sizing constants
+- compact/full font key choices
+- string limits
+- persisted-settings toggle
 
-- `layout.h`
-  - public layout API only
-  - includes `watchface_components.h`
-  - exposes `layout_calculate_surface()`, `layout_update_surface_style()`, and
-    possibly `layout_color_for_role()`
-  - does not expose text-layer creation/update helpers
-  - does not expose icon coordinate scaling helpers
+It must not own Pebble layer helpers, module lifecycle APIs, or runtime
+watchface orchestration.
 
-- `layout.c`
-  - public facade for the layout module
-  - dispatches to private layout architects
-  - calls private stylist
-  - keeps only layout API implementations
+### `src/modules/watchface_components.h`
 
-- `layout_stylist.c/.h`
-  - private to layout
-  - owns `ColorPalette` constants
-  - owns display-mode palette selection
-  - owns compact/full classification
-  - owns font-key mapping for `WatchfaceFontRole`
-  - fills `WatchfaceSurfaceStyle`
-
-- `layout_rect.c/.h`
-  - private to layout
-  - owns rectangular coordinate calculation
-  - fills every rectangular stratum and substratum frame
-  - fills rectangular background/rule geometry
-
-- `layout_round.c/.h`
-  - future private layout architect
-  - not added until round geometry is deliberately planned
-  - must account for row-specific circular safe spans
-
-- `substratum_renderer.c/.h`
-  - public helper for rendering calculated substrata into Pebble runtime objects
-  - includes `watchface_components.h`
-  - creates and updates Pebble text layers from `WatchfaceTextSubstratum`
-  - scales icon design coordinates into actual icon-layer bounds
-  - does not own module state, update procs, source data, or dynamic colors
-
-- `watchface.c/.h`
-  - runtime orchestration API
-  - creates modules explicitly
-  - refreshes modules explicitly
-  - routes platform/service/AppMessage events
-  - owns the live `WatchfaceSurface`
-  - should not become a utility dependency for feature modules
-
-## `watchface_components.h`
-
-Create `src/modules/watchface_components.h`.
-
-Move these definitions out of `layout.h`:
+Owns the shared display component model:
 
 - `WATCHFACE_UNAVAILABLE_TEXT`
 - `WatchfaceFontRole`
@@ -100,94 +50,17 @@ Move these definitions out of `layout.h`:
 - `WatchfaceTextSubstratum`
 - `WatchfaceIconSubstratum`
 - `WatchfaceBackgroundSubstratum`
-- `WatchfaceTextStratum`
-- `WatchfaceMetricStratum`
+- fixed stratum structs
 - `WatchfaceSurfaceStyle`
 - `WatchfaceSurface`
 
-This file is not a dumping ground for all shared typedefs. It is only for the
-watchface display component model.
+This header is intentionally type-focused. It is not a dumping ground for
+settings APIs, layout functions, renderer functions, or feature-module
+lifecycle declarations.
 
-Do not put these in `watchface_components.h`:
+### `src/modules/layout.h`
 
-- product constants: keep in `ataglance.h`
-- layout APIs: keep in `layout.h`
-- renderer APIs: keep in `substratum_renderer.h`
-- module lifecycle APIs: keep in feature-module headers
-- settings/runtime event APIs: keep in `settings.h` and `watchface.h`
-
-## `substratum_renderer.h`
-
-Create `src/modules/substratum_renderer.h`.
-
-Target public API:
-
-```c
-TextLayer* substratum_renderer_create_text_layer(
-    Layer* parent,
-    const WatchfaceTextSubstratum* text,
-    GFont font);
-
-void substratum_renderer_update_text_layer(
-    TextLayer* layer,
-    const char* text,
-    GColor text_color);
-
-int16_t substratum_renderer_scale_icon_x(
-    const GSize* bounds_size,
-    int16_t coord);
-
-int16_t substratum_renderer_scale_icon_y(
-    const GSize* bounds_size,
-    int16_t coord);
-
-int16_t substratum_renderer_scale_icon_coord(
-    const GSize* bounds_size,
-    int16_t coord);
-
-GPoint substratum_renderer_scale_icon_point(
-    const GSize* bounds_size,
-    int16_t x,
-    int16_t y);
-```
-
-Move these implementations out of `layout.c`:
-
-- `layout_update_text_layer()`
-- `layout_scale_icon_x()`
-- `layout_scale_icon_y()`
-- `layout_scale_icon_coord()`
-- `layout_scaled_icon_point()`
-- private design-coordinate validators used by those scaling helpers
-
-Rename call sites to the `substratum_renderer_*` names in the same slice.
-
-Move repeated text-layer creation setup into
-`substratum_renderer_create_text_layer()`:
-
-```c
-text_layer_create(text->frame);
-text_layer_set_background_color(layer, GColorClear);
-text_layer_set_font(layer, font);
-text_layer_set_text_alignment(layer, text->alignment);
-layer_add_child(parent, text_layer_get_layer(layer));
-```
-
-Feature modules should still own the returned layer pointer and destroy it.
-
-Do not move these into `substratum_renderer`:
-
-- text formatting
-- dynamic color calculation
-- icon update procs
-- module source state
-- weather glyph decisions
-- battery/BPM/steps availability decisions
-
-## Layout API After Cleanup
-
-After `watchface_components.h` and `substratum_renderer.h` exist, `layout.h`
-should be reduced to layout APIs over shared components:
+The public layout API is now narrow:
 
 ```c
 void layout_calculate_surface(
@@ -199,119 +72,251 @@ void layout_calculate_surface(
 void layout_update_surface_style(
     WatchfaceSurface* surface,
     uint8_t display_mode);
+```
 
-GColor layout_color_for_role(
+`layout.h` includes `watchface_components.h` because layout calculates a
+`WatchfaceSurface`. It does not expose text-layer helpers, icon scaling
+helpers, color-role lookup, or private architect/stylist APIs.
+
+### `src/modules/layout.c`
+
+`layout.c` is the layout facade:
+
+- clears caller-owned `WatchfaceSurface` storage
+- dispatches rectangular geometry calculation under `PBL_RECT`
+- applies style through the stylist
+- updates style when display mode changes
+
+Only layout implementation files should include private layout headers.
+
+### `src/modules/layout_stylist.c/.h`
+
+The stylist is private to layout and owns visual decisions:
+
+- dark/light `ColorPalette` constants
+- display-mode palette selection
+- compact/full display classification
+- `WatchfaceFontRole` to Pebble system font key mapping
+- custom font resource selection for time
+- filling `WatchfaceSurfaceStyle`
+
+Current compact rule:
+
+- round: compact below `260x260`
+- rectangular: compact below `200x228`
+
+Current palette implementation is the Shinkansen palette captured in
+`palette-options.md`.
+
+### `src/modules/layout_rect.c/.h`
+
+The rectangle architect is private to layout and owns rectangular geometry.
+It fills final frames on each substratum instead of leaking intermediate row
+math into `WatchfaceSurface`.
+
+Current rectangular layout flow:
+
+- derive private `LayoutRectMetrics` from face width/height
+- assign the full background frame and horizontal rule
+- assign date and time text frames centered around the rule
+- assign battery/climate top-row icon and text frames
+- assign steps/BPM bottom-row icon and text frames
+
+Durable rule: layout is not a generic row engine. The product strata remain
+fixed and known, and the architect assigns each substratum directly.
+
+### `src/modules/substratum_renderer.c/.h`
+
+The renderer helper owns common Pebble runtime operations for calculated
+substrata:
+
+```c
+TextLayer* substratum_renderer_create_text_layer(
+    Layer* parent,
+    const WatchfaceTextSubstratum* text,
+    GFont font);
+
+Layer* substratum_renderer_create_icon_layer(
+    Layer* parent,
+    const WatchfaceIconSubstratum* icon,
+    LayerUpdateProc update_proc);
+
+void substratum_renderer_update_text_layer(
+    TextLayer* layer,
+    const char* text,
+    GColor text_color);
+
+GColor substratum_renderer_color_for_role(
     const ColorPalette* palette,
     WatchfaceColorRole role);
 ```
 
-Keep `layout_color_for_role()` in `layout` for now. It maps layout color roles
-to palette colors. Moving it to the renderer would blur layout vocabulary with
-Pebble layer rendering.
+It also owns icon design-coordinate scaling helpers. This keeps feature
+modules from duplicating Pebble layer setup while preserving module ownership
+of actual layer pointers and destroy paths.
 
-## Watchface Display Mode API
+The renderer does not own:
 
-Add a public watchface API:
+- module source state
+- text formatting
+- dynamic color decisions
+- icon update procs
+- service/AppMessage data
+- glyph behavior decisions
+
+### `src/modules/watchface.c/.h`
+
+`watchface` owns the live runtime surface and coordinates all rendering:
+
+- creates the calculated `WatchfaceSurface`
+- creates modules explicitly
+- tracks created strata with `s_strata_created_mask`
+- destroys only strata that were actually created
+- accepts source-state setters from `main.c`
+- dispatches `watchface_refresh(WatchfaceUpdateMask updates)`
+- keeps style updates private through `watchface_update_style()`
+
+`main.c` should not know that climate, battery, BPM, steps, time, date, or
+background are separate modules. It should only know that events imply
+watchface update categories.
+
+## Watchface Refresh Flow
+
+The implemented flow uses one public render dispatcher:
 
 ```c
-void watchface_update_display_mode(uint8_t display_mode);
+void watchface_refresh(WatchfaceUpdateMask updates);
 ```
 
-`main.c` should call this when the `DISPLAY_MODE` setting changes.
+Current update categories:
 
-`watchface_update_display_mode()` should:
+```c
+WATCHFACE_UPDATE_TIME
+WATCHFACE_UPDATE_DATE
+WATCHFACE_UPDATE_BATTERY
+WATCHFACE_UPDATE_CLIMATE
+WATCHFACE_UPDATE_HEALTH
+WATCHFACE_UPDATE_DISPLAY_MODE
+WATCHFACE_UPDATE_ALL
+```
 
-- call private `watchface_update_style()`
-- update the window background color
-- refresh the background layer
-- refresh all created modules whose rendered colors come from the palette
+`WATCHFACE_UPDATE_DISPLAY_MODE` is handled inside `watchface_refresh()`. It:
 
-After this exists, remove defensive `watchface_update_style()` calls from
-unrelated event paths:
+- updates the surface style once
+- updates the window background color
+- refreshes the background layer
+- expands the refresh mask to redraw all strata affected by palette/style
 
-- tick events
-- battery events
-- weather temperature updates
-- weather condition updates
-- health events
-- debug BPM/steps updates
+The original plan considered a separate `watchface_update_display_mode()` API.
+The implemented design kept the single dispatcher instead, which preserves the
+new invariant that `watchface_refresh()` is the only render-dispatch entry
+point.
 
-Do not make `watchface_update_style()` public. `main.c` should notify
-watchface of display-mode changes, not mutate internal style state directly.
+Source-state setters are intentionally separate from rendering:
 
-## Watchface Runtime Cleanup
+```c
+void watchface_set_temperature(int celsius_tenths);
+void watchface_set_weather_condition(int weather_condition);
+```
 
-Remove the redundant unconditional `background_module_destroy()` at the end of
-`watchface_destroy()`.
+Debug health setters are guarded by `DEBUG_ATAGLANCE` and `PBL_HEALTH`:
 
-The layer-created mask should be the single source of truth for which modules
-were created and therefore which modules need destroy calls.
+```c
+void watchface_debug_set_bpm(int bpm);
+void watchface_debug_set_steps(int steps);
+```
 
-## Implementation Sequence
+Setters may update module-owned source state, but they must not update Pebble
+layers directly. Rendering occurs only through a later `watchface_refresh()`.
 
-Use the prescribed coding cycle for each slice: audit, state patch shape,
-edit narrowly, validate, review diff.
+## Module Lifecycle
 
-1. Remove redundant background destroy.
-   - Edit only `watchface.c`.
-   - Build.
+Feature modules own their own substrata lifecycle:
 
-2. Add `watchface_components.h`.
-   - Move component/display type definitions out of `layout.h`.
-   - Update includes so modules that only need `WatchfaceSurface` or
-     `ColorPalette` include `watchface_components.h` instead of `layout.h`.
-   - Keep `layout.h` as an API header over components.
-   - Build.
+- create required text layers from calculated substrata
+- optionally create icon layers from calculated icon substrata
+- keep module-owned source state and buffers
+- refresh only their own text/icon surfaces
+- destroy only layers they created
 
-3. Add `substratum_renderer.c/.h`.
-   - Move text update and icon scaling helpers out of `layout.c/.h`.
-   - Add text-layer creation helper.
-   - Convert modules one at a time or in one coherent renderer slice after
-     auditing all call sites.
-   - Build.
+Creation success follows product semantics:
 
-4. Add `watchface_update_display_mode()`.
-   - Keep `watchface_update_style()` private.
-   - Route display mode changes from `main.c` through the new public API.
-   - Remove defensive style updates from unrelated event handlers.
-   - Build and test dark/light mode.
+- required text layer creation determines module success for text-bearing
+  modules
+- icon creation is optional unless a module explicitly makes it required
+- watchface records success in `s_strata_created_mask`
+- destroy paths use that mask as the source of truth
 
-5. Re-audit layout public surface.
-   - Confirm no renderer helpers remain in `layout.h`.
-   - Confirm private layout headers are only included by layout implementation
-     files.
-   - Confirm feature modules do not include `layout.h` unless they call layout
-     APIs directly.
+## Rectangular Visual Baseline
 
-6. Only after this cleanup, resume round planning.
-   - Do not add `layout_round.c/.h` until round geometry is designed.
-   - Round must use row-specific circular safe spans.
+The current rectangular face uses:
 
-## Non-Goals
+- top row: battery on the left, climate on the right
+- centered time above the rule
+- horizontal rule through the face midpoint
+- centered date below the rule
+- bottom row: steps on the left, BPM on the right
 
-- Do not enable Chalk or Gabbro in this cleanup.
-- Do not introduce round geometry yet.
-- Do not move Pebble layer ownership out of feature modules.
-- Do not create a generic dynamic stratum array.
-- Do not hide watchface module creation behind a registry.
-- Do not rename feature modules.
-- Do not change AppMessage keys.
-- Do not change glyph behavior.
-- Do not change palette or layout visuals while extracting components and
-  renderer helpers.
+Each text and icon substratum has its own final `GRect`. Intermediate metrics
+such as content bounds, row gaps, column gaps, and pair widths stay private to
+`layout_rect.c`.
 
-## Validation
+## Completed Implementation Sequence
 
-Required after each code slice:
+The completed sequence was:
+
+1. Extracted palette/font decisions into `layout_stylist.c/.h`.
+2. Extracted rectangular geometry into `layout_rect.c/.h`.
+3. Moved shared component types into `watchface_components.h`.
+4. Moved text-layer creation/update, icon-layer creation, color-role lookup,
+   and icon scaling into `substratum_renderer.c/.h`.
+5. Reduced `layout.h` to the layout calculation/style APIs.
+6. Converted feature modules to create their own text/icon layers from their
+   calculated substrata.
+7. Kept feature modules as owners of buffers, source state, update procs,
+   refresh behavior, and destroy paths.
+8. Centralized render dispatch through `watchface_refresh()`.
+9. Added watchface source-state setters for climate and debug health values.
+10. Made debug BPM/steps injections one-shot and explicitly reset their
+    module statics.
+11. Initialized file-scope static module state explicitly instead of relying
+    on implicit C zero initialization.
+
+## Non-Goals Preserved
+
+- Chalk and Gabbro are not enabled.
+- No round geometry has been added.
+- Pebble layer ownership remains in feature modules.
+- There is no generic dynamic stratum array.
+- Watchface module creation is not hidden behind a registry.
+- AppMessage keys were not changed for this refactor.
+- Glyph behavior was not changed by the layout restructuring.
+
+## Validation Performed During The Restructure
+
+Across the completed slices, validation included:
 
 - `git diff --check`
 - `pebble build`
-- review diff for intended files only
+- emulator install/screenshot checks for visual slices where requested
+- call-site audits for layout helpers, renderer helpers, module APIs, and
+  watchface refresh paths
 
-Additional validation after display-mode API work:
+## Future Work
 
-- install/screenshot Emery in dark and light mode
-- install/screenshot Flint if health-row colors or refresh behavior changed
+Round support remains the next architectural step. It should be implemented as
+a deliberate `layout_round.c/.h` architect, private to layout, and should not
+scale the rectangular layout wholesale.
 
-Unrelated files, screenshots, and local plan copies must remain unstaged unless
-explicitly requested.
+Round planning must account for:
+
+- circular clipping at each row's y-position
+- row-specific safe spans
+- icon legibility near curved edges
+- compact/full typography decisions for Chalk and Gabbro
+- color and monochrome display behavior
+- missing sensors or health data
+
+Any future refresh-mask cleanup, such as renaming display-mode updates to a
+palette/style-specific update category, should be handled as a separate
+watchface runtime slice rather than folded into layout restructuring.
