@@ -173,11 +173,14 @@ static GColor weather_color_for_kind(
   return fallback;
 }
 
-static void draw_weather_sun(
+static void draw_weather_outline_sun(
     GContext* ctx,
     const GRect* frame,
-    GColor color) {
-  graphics_context_set_fill_color(ctx, color);
+    const ColorPalette* palette,
+    bool is_outline) {
+  GColor color = weather_color_for_kind(WEATHER_ICON_SUNNY, palette);
+  GColor sunFillColor = is_outline ? palette->background : color;
+  graphics_context_set_fill_color(ctx, sunFillColor);
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
   weather_fill_circle(
@@ -244,13 +247,24 @@ static void draw_weather_sun(
       WEATHER_ICON_CENTER_Y + 10);
 }
 
-static void draw_weather_cloud(
+static void draw_weather_sun(
     GContext* ctx,
     const GRect* frame,
-    GColor color,
     const ColorPalette* palette) {
+      draw_weather_outline_sun(ctx, frame, palette, false);
+}
+
+static void draw_weather_filled_cloud(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    WeatherIconKind icon_kind,
+    bool is_filled) {
+  GColor color = weather_color_for_kind(icon_kind, palette);
+  GColor cloudFillColor = is_filled ? color : palette->background;
+
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_fill_color(ctx, palette->background);
+  graphics_context_set_fill_color(ctx, cloudFillColor);
   graphics_context_set_stroke_width(ctx, 2);
 
   weather_draw_circle(ctx, frame, 8, 16, 5);
@@ -263,6 +277,14 @@ static void draw_weather_cloud(
   weather_fill_rect(ctx, frame, 6, 13, 15, 7);
 
   weather_line(ctx, frame, 4, 20, 23, 20);
+}
+
+static void draw_weather_cloud(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    WeatherIconKind icon_kind) {
+      draw_weather_filled_cloud(ctx, frame, palette, icon_kind, false);
 }
 
 static void draw_weather_clear_icon(
@@ -293,17 +315,11 @@ static void draw_weather_partly_cloudy_icon(
     const ColorPalette* palette) {
   GRect cloud_frame;
   GRect sun_frame;
-
   weather_subframe(frame, &sun_frame, 0, 0, 22, 22);
-  draw_weather_sun(ctx, &sun_frame, weather_color_for_kind(WEATHER_ICON_SUNNY, palette));
+  draw_weather_outline_sun(ctx, &sun_frame, palette, true);
 
   weather_subframe(frame, &cloud_frame, 5, 10, 23, 17);
-  draw_weather_cloud(
-    ctx,
-    &cloud_frame,
-    weather_color_for_kind(WEATHER_ICON_PARTLY_CLOUDY, palette),
-    palette
-  );
+  draw_weather_filled_cloud(ctx, &cloud_frame, palette, WEATHER_ICON_PARTLY_CLOUDY, true);
 }
 
 static void draw_weather_fog_icon(
@@ -437,7 +453,7 @@ static void draw_weather_snow_showers_icon(
       palette);
 
   weather_subframe(frame, &cloud_frame, 0, 2, 20, 15);
-  draw_weather_cloud(ctx, &cloud_frame, color, palette);
+  draw_weather_cloud(ctx, &cloud_frame, palette, WEATHER_ICON_SNOW_SHOWERS);
 
   weather_subframe(frame, &snow_frame, 10, 8, 18, 20);
   draw_weather_snowflake(ctx, &snow_frame, color);
@@ -450,12 +466,11 @@ static void draw_weather_showers_icon(
     const ColorPalette* palette) {
   GRect cloud_frame;
   GRect rain_frame;
-  GColor color = weather_color_for_kind(heavy ?
-      WEATHER_ICON_HEAVY_SHOWERS : WEATHER_ICON_SHOWERS,
-      palette);
+  WeatherIconKind kind = heavy ? WEATHER_ICON_HEAVY_SHOWERS : WEATHER_ICON_SHOWERS;
+  GColor color = weather_color_for_kind(kind, palette);
 
   weather_subframe(frame, &cloud_frame, 0, heavy ? 1 : 2, 20, 15);
-  draw_weather_cloud(ctx, &cloud_frame, color, palette);
+  draw_weather_cloud(ctx, &cloud_frame, palette, kind);
 
   weather_subframe(frame, &rain_frame, 10, heavy ? 8 : 10, 18, 20);
   draw_weather_rain_marks(ctx, &rain_frame, color, heavy);
@@ -495,7 +510,7 @@ static void draw_weather_unavailable_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
-  draw_weather_cloud(ctx, frame, palette->unavailable_text, palette);
+  draw_weather_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN);
 
   graphics_context_set_stroke_color(
       ctx,
@@ -573,20 +588,13 @@ void draw_climate_icon(
       draw_weather_clear_icon(ctx, frame, palette);
       break;
     case WEATHER_ICON_SUNNY:
-      draw_weather_sun(
-          ctx,
-          frame,
-          weather_color_for_kind(WEATHER_ICON_SUNNY, palette));
+      draw_weather_sun(ctx, frame, palette);
       break;
     case WEATHER_ICON_PARTLY_CLOUDY:
       draw_weather_partly_cloudy_icon(ctx, frame, palette);
       break;
     case WEATHER_ICON_CLOUD:
-      draw_weather_cloud(
-          ctx,
-          frame,
-          weather_color_for_kind(WEATHER_ICON_CLOUD, palette),
-          palette);
+      draw_weather_cloud(ctx, frame, palette, icon_kind);
       break;
     case WEATHER_ICON_FOG:
       draw_weather_fog_icon(ctx, frame, palette);
