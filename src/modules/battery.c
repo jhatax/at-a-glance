@@ -13,7 +13,7 @@ static TextLayer* create_battery_text_layer(
     Layer* parent,
     const WatchfaceTextSubstratum* text,
     GFont font);
-static GColor get_battery_color_from_state(void);
+static GColor calculate_battery_color(void);
 static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
@@ -48,7 +48,7 @@ static TextLayer* create_battery_text_layer(
   return layer;
 }
 
-static GColor get_battery_color_from_state(void) {
+static GColor calculate_battery_color(void) {
   if (!s_surface || !s_surface->style.palette) {
     return GColorWhite;
   }
@@ -125,7 +125,7 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   GRect bounds = layer_get_bounds(layer);
   const int stroke_width = 2;
   int percent = s_battery_state.charge_percent;
-  GColor draw_color = get_battery_color_from_state();
+  GColor draw_color = calculate_battery_color();
   int fill_w = (percent * 18) / 100;
 
   graphics_context_set_fill_color(ctx, palette->background);
@@ -182,7 +182,7 @@ static void update_battery(void) {
   layout_update_text_layer(
       s_battery_layer,
       s_battery_buffer,
-      get_battery_color_from_state());
+      calculate_battery_color());
 
   if (s_battery_icon_layer) {
     layer_mark_dirty(s_battery_icon_layer);
