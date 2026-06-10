@@ -1,22 +1,12 @@
 # Round Watchface Plan
 
 This is the planning artifact for adding round-display support. It is
-not approval to add `chalk` or `gabbro` yet.
+not approval to add `chalk` or `gabbro` yet, and it is not approval to
+change rectangular behavior.
 
-## Existing Plan Found
-
-The existing project notes say:
-
-- Plan round layout separately before adding `chalk` or `gabbro`.
-- Research Pebble/Rebble round-display guidance and community examples.
-- Account for row-specific clipping on circular screens.
-- Keep row-specific content widths separate.
-- Do not scale the rectangular layout and call it round support.
-
-The current code has the right starting point: `layout_calculate()`
-fills a caller-owned `WatchfaceLayout`. `WatchfaceLayout` already has
-separate width fields for date, time, health, and bottom content. Today
-those fields all receive the same rectangular content width.
+The current codebase has already moved to the `WatchfaceSurface`
+architecture. This plan reflects that architecture and should be used as
+the handoff for the eventual round implementation.
 
 ## Source Findings
 
@@ -28,8 +18,8 @@ those fields all receive the same rectangular content width.
 - Pebble's round design guidance recommends a two-pixel edge margin and
   warns against thin rings at the outer edge.
 - Pebble text APIs support text flow and paging, but this watchface has
-  single-line fixed values. We should calculate safe frames instead of
-  relying on text flow to rescue poor placement.
+  single-line fixed values. Calculate safe frames instead of relying on
+  text flow to rescue poor placement.
 - The rePebble Round 2 SDK note says `gabbro` is the Pebble Round 2
   platform and its display is `260x260`, compared with `180x180` for
   Chalk.
@@ -46,268 +36,286 @@ Sources:
 - <https://repebble.com/blog/cloudpebble-returns-plus-new-pure-javascript-and-round-2-sdk>
 - <https://github.com/pebble-examples/time-dots/>
 
-## Current Layout Constraints
+## Current Architecture
 
-Current rectangular layout:
+The current watchface is organized around a calculated surface and fixed
+module-owned strata:
 
-- Uses `content_x = 2`, which is acceptable for rectangular Emery but
-  unsafe as a universal round inset.
-- Centers the horizontal rule at `face_height / 2`.
-- Places date, time, health, and bottom rows using rectangular
-  assumptions.
-- Gives every content-width field the same width.
-- Keeps text left-aligned everywhere.
-- Keeps each complication as an icon-plus-value horizontal pair.
+- `layout.h` is the only public layout API.
+- `layout.c` is the layout facade.
+- `layout_stylist.c/.h` owns palette, font, and compact/full style
+  decisions.
+- `layout_rect.c/.h` owns rectangular geometry.
+- Future `layout_round.c/.h` should own round geometry.
+- `watchface.c` is the runtime clearing house.
+- Feature modules own Pebble layers, render state, buffers, refresh,
+  update procs, and destroy paths.
+- `main.c` dispatches platform/service/AppMessage events to `watchface`;
+  it should not call feature modules directly.
 
-This cannot be carried onto Chalk unchanged. The bottom row is the hard
-failure: a two-column icon-plus-value row near the lower curve does not
-have enough horizontal width on a `180x180` circular screen.
+`WatchfaceSurface` is the calculated UI contract. It is not Pebble layer
+state. It contains:
 
-The current module boundary makes the right product rule clearer:
-`layout.c` owns geometry, `watchface_composer.c` creates modules from
-that geometry, and each metric module owns its text and optional icon
-layers. Round support should preserve that boundary. The layout must
-describe the frames and optional icon policy; the composer should not
-invent geometry, and individual modules should not decide global round
-placement.
+- face dimensions
+- one `WatchfaceSurfaceStyle`
+- one background substratum
+- six fixed strata: date, time, battery, climate, steps, bpm
+
+The fixed strata are intentional. Do not replace them with a generic
+dynamic strata array.
+
+Text substrata carry final frame, text alignment, font role, and color
+role. Icon substrata carry final frame, enabled flag, and color role.
+The background substratum carries the full-face frame and the horizon
+line coordinates.
+
+## Current Rectangular Baseline
+
+The rectangular architect currently calculates this visual sequence:
+
+```text
+Battery icon + text        Climate icon + temperature
+Centered time
+2px horizon rule
+Centered date
+Steps icon + text          BPM icon + text
+```
+
+The rectangular layout is the product baseline, not a geometry template
+for round. Round should feel related to this visual vocabulary, but it
+must be calculated from circular safe spans.
+
+Current styling decisions that round must account for:
+
+- `ColorPalette` is colors-only.
+- Palette/font/compact decisions are in `layout_stylist.c`.
+- Dynamic battery and BPM colors are module-owned by
+  `calculate_battery_color()` and `calculate_bpm_color()`.
+- Rectangular compact means face width below `200` or face height below
+  `228`.
+- Round compact means face width below `260` or face height below `260`.
+- Chalk is compact.
+- Gabbro is full.
 
 ## Round Geometry Rule
 
-Round layout needs row-band safe spans, not one global content width.
+Round layout needs row-specific circular safe spans, not one global
+content width.
 
-For a square circular display:
+For a round display:
 
-- `diameter = min(face_width, face_height)`
-- `radius = diameter / 2`
-- `center_x = face_width / 2`
-- `center_y = face_height / 2`
-- `safe_radius = radius - edge_margin`
-- for a row band `(y, h)`, use the farthest vertical edge from center:
-  `dy = max(abs(y - center_y), abs((y + h - 1) - center_y))`
-- `half_width = isqrt((safe_radius * safe_radius) - (dy * dy))`
-- `safe_x = center_x - half_width`
-- `safe_w = half_width * 2`
+```c
+diameter = min(face_width, face_height);
+radius = diameter / 2;
+center_x = face_width / 2;
+center_y = face_height / 2;
+safe_radius = radius - edge_margin;
 
-Add a small optical inset after this calculation for text and glyphs.
-This keeps the top date, the lower complication grid, and the rule from
-touching the circular edge.
+dy = max(abs(row_y - center_y), abs((row_y + row_h - 1) - center_y));
+half_width = isqrt((safe_radius * safe_radius) - (dy * dy));
+safe_x = center_x - half_width;
+safe_w = half_width * 2;
+```
 
-Implementation note: use integer math. Do not introduce floating point.
+Use integer math only. Do not introduce floating point.
 
-## Recommended Product Direction
+Use the farthest vertical edge of a row band when calculating `dy`.
+This protects the full height of text/icon frames, not only the row's
+centerline.
 
-Use a round-native centered layout as the starting hypothesis:
+Apply any optical inset after calculating the safe span. The circular
+safe span is the physical bound; optical inset is a design decision.
 
-1. Date centered near the upper third.
-2. Time centered in the largest middle band.
-3. A short horizontal rule centered on the safe span at its y-position.
-4. Compact complication rows below the rule.
-
-The complication layout is the important design question. The first
-Chalk prototype should preserve all four text data points with two
-compact horizontal rows:
-
-- row 1: BPM and steps
-- row 2: weather/temperature and battery
-
-The health row may keep small icons because `62` and `4218` are not
-self-labeling. The bottom row should be text-first on Chalk: temperature
-and battery percentage already carry `°F`/`°C` and `%`, so their icons
-are optional and should be omitted if they force crowding near the lower
-curve.
-
-The rejected option is a vertical `2x2` icon-over-value grid, which is
-too tall near the bottom curve with the current value font.
-
-For Gabbro, reuse the same layout model and safe-span calculation.
-Because Gabbro is `260x260`, it can allow more breathing room, but it
-should not be a scaled rectangular layout.
-
-## Chalk Geometry Audit
+## Computed Chalk Safe Spans
 
 Chalk is the hard target because it is `180x180`.
 
-The current rectangular value font uses an 18px text layer. If a round
-complication cell uses a 20px icon, a 1px gap, and an 18px value layer,
-the minimum vertical stack is:
+Reference calculation with `margin = 4`:
 
 ```text
-20 icon + 1 gap + 18 value = 39px
+y=18   x=40..140   width=100
+y=32   x=25..155   width=130
+y=50   x=13..167   width=153
+y=74   x=5..175    width=169
+y=90   x=4..176    width=172
+y=114  x=7..173    width=165
+y=138  x=18..162   width=144
+y=146  x=24..157   width=133
+y=154  x=31..149   width=119
+y=166  x=46..134   width=88
+y=172  x=57..123   width=66
 ```
 
-Two stacked complication rows therefore need 78px before row gaps.
-Below a centered rule, that pushes the lower row near the bottom curve.
-At those y-positions, the round safe span becomes too narrow for two
-useful columns.
+Implications:
 
-The same problem appears horizontally. The lower row can narrow to
-roughly a two-cell width where `90°F` and `100%` can fit as text, but
-full icon-plus-value pairs have almost no slack.
+- Chalk cannot use a scaled rectangular two-column layout near the top
+  or bottom.
+- Lower-row horizontal icon-plus-value pairs become fragile as soon as
+  the row moves below roughly `y=146`.
+- Text-first complications are more durable than full icon/value pairs.
+- Optional icons must be disabled explicitly when they do not fit.
 
-Conclusion: do not add a dormant `PBL_ROUND` branch until we choose one
-of these tradeoffs:
+## Computed Gabbro Safe Spans
 
-- reduce or change the round value font
-- show fewer than four text values on Chalk
-- omit optional icons where text is already self-labeling
-- use a single-column complication stack
-- use a `2x2` grid only on Gabbro and a different Chalk layout
-- move some complications above or around the rule instead of below it
+Gabbro is `260x260` and should be treated as full round.
 
-## Prototype Finding
-
-The first production round layout should not use icon-over-value cells
-on Chalk. It should use compact horizontal rows with text as the
-must-initialize surface.
-
-Recommended Chalk model:
-
-- date centered near `y=18`
-- time centered near `y=52`
-- rule raised to about `y=105`
-- health row at about `y=110`
-- bottom row at about `y=132`
-- complication rows use 20px text height
-- health icons shrink to about 16px
-- bottom-row icons are omitted on Chalk unless a prototype proves there
-  is comfortable slack
-- row content is centered inside the round safe span
-
-The important safe-span estimates for Chalk:
+Reference calculation with `margin = 6`:
 
 ```text
-row              band       safe width
-health row       y=110 h=20  about 148px
-bottom row       y=132 h=20  about 118px
+y=18   x=70..190    width=120
+y=32   x=51..209    width=159
+y=50   x=34..227    width=193
+y=74   x=19..241    width=223
+y=90   x=12..248    width=235
+y=114  x=7..253     width=246
+y=130  x=6..254     width=248
+y=154  x=8..252     width=244
+y=178  x=15..245    width=230
+y=202  x=28..232    width=205
+y=226  x=48..212    width=163
+y=238  x=64..196    width=133
+y=246  x=77..183    width=105
 ```
 
-Approximate required widths:
+Implications:
+
+- Gabbro can likely preserve more horizontal icon/text vocabulary than
+  Chalk.
+- Gabbro should still use the same round-safe-span model.
+- Do not hard-code a scaled rectangular layout just because Gabbro has
+  more room.
+
+## Product Layout Direction
+
+Preserve the current visual vocabulary across rectangular and round
+faces:
 
 ```text
-BPM:      16 icon + 1 gap + 28 value = 45px
-steps:    16 icon + 1 gap + 40 value = 57px
-health:   45 + 4 column gap + 57 = 106px
-
-temp:     40 value
-battery:  34 value
-bottom:   40 + 20 column gap + 34 = 94px
+Top context: battery and climate
+Dominant centered time
+Centered 2px horizon rule
+Centered date
+Bottom health context: steps and bpm
 ```
 
-This gives the bottom row roughly 24px of slack on Chalk, which is much
-more realistic than the full icon-plus-value candidate. It preserves the
-current text font and all four data values while accepting the product
-hierarchy: text is essential, icons are support.
+Chalk should start from a compact, text-first interpretation:
 
-For Gabbro, start with the same model before inventing a separate one.
-The larger safe spans should allow the bottom weather and battery icons
-to return, likely at a larger round-specific icon size, while keeping
-the row order and text-first contract identical to Chalk.
+- top context may need stacking or aggressively compact placement
+- time remains centered and dominant
+- rule remains centered and short enough to fit its safe span
+- date remains centered
+- bottom health context may need text-first placement or stacked
+  icon/text treatment
+- climate and battery icons are optional if text is already
+  self-labeling
+- steps and BPM icons are more valuable because raw values are less
+  self-labeling
 
-## Module-Aware Layout Contract
+Gabbro should start with the same conceptual model:
 
-The current composer and module split changes the implementation shape:
+- same sequence as Chalk
+- larger safe spans may allow more icon/value pairs
+- geometry still comes from circular safe spans
+- screenshots decide whether optional icons return
 
-- `layout.c` should calculate round frames and optional icon policy.
-- `watchface_composer.c` should pass those frames to the modules and
-  keep enforcing must-initialize text creation.
-- Date, time, battery, weather, and health modules should keep owning
-  their layer creation, update procs, buffers, and destroy paths.
-- Optional icon suppression must be explicit. Do not rely on failed
-  `layer_create()` calls or zero-sized accidental frames as control
-  flow.
-- If `WatchfaceLayout` needs round-specific icon visibility flags, add
-  named fields rather than a generic cell array.
-- Text alignment may need to become layout-provided metadata. Round date
-  and time should be centered; rectangular alignment should remain
-  unchanged.
+## Round Architect Role
 
-## Implementation Plan
+Future `layout_round.c/.h` should be private to layout and included only
+by `layout.c`.
 
-Phase 1: decide the round information model.
+The round architect calculates geometry only. It fills the existing
+`WatchfaceSurface` substrata:
 
-- Chalk should show all four text values at once.
-- Decide whether Chalk may use smaller or different value fonts.
-- Decide whether Gabbro re-enables bottom-row icons within the same
-  two-row model.
-- Do not write a dormant round branch until this decision is made.
+- `surface->background`
+- `surface->date.text`
+- `surface->time.text`
+- `surface->battery.icon`
+- `surface->battery.text`
+- `surface->climate.icon`
+- `surface->climate.text`
+- `surface->steps.icon`
+- `surface->steps.text`
+- `surface->bpm.icon`
+- `surface->bpm.text`
+
+The round architect must not:
+
+- create Pebble `Layer` or `TextLayer` objects
+- set update procs
+- call feature modules
+- decide runtime data availability
+- change AppMessage behavior
+- own palette or font resolution
+- pass or return large watchface structs by value
+
+Every known substratum gets an explicit frame. Layout is not a generic
+row engine, even when a round design uses visual rows.
+
+## Guardrails And Invariants
+
+- Do not enable `chalk` or `gabbro` in `package.json` until the round
+  geometry is implemented and screenshot-reviewed.
+- Do not add dormant round source code without an implementation slice
+  that can be built and inspected.
+- Preserve current rectangular behavior while planning and implementing
+  round support.
+- Feature modules continue to create/destroy their own layers from their
+  own substrata.
+- Optional icon behavior uses `WatchfaceIconSubstratum.is_enabled`.
+- Do not use failed `layer_create()`, zero-size frames, or hidden text
+  as control flow.
+- Text is the primary glance surface; icons are secondary support.
+- If a text-bearing stratum creates its text layer, the module can be
+  considered meaningfully created even if an optional icon layer fails.
+- Keep `ColorPalette` colors-only.
+- Dynamic battery and BPM colors remain module-owned.
+- Public APIs must be external functions declared in headers, not
+  `static` or `inline`.
+- Private file-local helpers may remain `static`.
+- Preserve AppMessage keys and runtime behavior.
+- Build rectangular targets after any source change, even if round is
+  behind platform guards.
+- Screenshot before approving any geometry change.
+
+## Implementation Sequence
+
+Phase 1: round architect scaffolding.
+
+- Add private `layout_round.c/.h`.
+- Include it only from `layout.c`.
+- Add the `PBL_ROUND` dispatch in `layout_calculate_surface()`.
+- Keep `package.json` targets unchanged in this phase.
+- Build current rectangular targets to confirm no drift.
 
 Phase 2: geometry only.
 
-- Keep `package.json` target platforms unchanged.
-- Add a private round branch inside `layout_calculate()`.
-- Add small private helpers in `layout.c` for round safe spans and
-  integer square root.
-- Keep `layout_calculate()` writing into caller-owned `WatchfaceLayout`.
-- Do not pass `WatchfaceLayout` or other project structs by value.
+- Add integer safe-span helpers in `layout_round.c`.
+- Calculate explicit frames for every existing substratum.
+- Use `is_enabled` for optional icon suppression.
+- Do not change fonts, palette, AppMessage, module lifecycle, or
+  feature-module behavior.
 
-Phase 3: layout data shape.
+Phase 3: target enablement and screenshot review.
 
-- Extend `WatchfaceLayout` only if needed for round-specific alignment,
-  icon visibility, or cell frames.
-- Prefer explicit fields over an opaque generic array.
-- Keep existing rectangular fields stable for current platforms.
-- If round needs text alignment changes, make that explicit instead of
-  hiding it inside magic coordinates.
+- Add `chalk` only when the round architect has real geometry.
+- Build and screenshot Chalk.
+- Adjust only round geometry/icon enablement based on screenshot
+  findings.
+- Add `gabbro` after Chalk is understood, then screenshot and evaluate
+  whether Gabbro can restore optional icons.
 
-Phase 4: round rendering behavior.
+Phase 4: documentation and cleanup.
 
-- Center date and time on round displays.
-- Keep rectangular left alignment unchanged.
-- For Chalk, keep health icons small and omit bottom-row icons unless
-  screenshots prove the row has comfortable slack.
-- For Gabbro, evaluate restoring all four icons within the same two-row
-  text-first model.
-- Keep icon frames stable within each cell.
-- Use current glyph modules; do not redesign glyphs as part of round
-  layout.
+- Update README and design notes only after screenshots confirm the
+  round layout.
+- Keep source comments sparse and tied to non-obvious geometry.
+- Commit round support as a focused slice, not mixed with palette,
+  AppMessage, or unrelated module cleanup.
 
-Phase 5: platform enablement.
+## Validation For This Plan Update
 
-- Add `chalk` only after the round branch builds and screenshots are
-  acceptable.
-- Add `gabbro` after verifying the local SDK supports it in this repo.
-- Do not reorder AppMessage keys.
-- Update `AGENTS.md`, `README.md`, and manual validation commands after
-  target platforms change.
+This document update is a documentation-only slice.
 
-Phase 6: validation.
-
-- Build before every emulator pass.
-- Test current rectangular platforms still build.
-- Capture Chalk screenshots for dark and light modes.
-- Capture Gabbro screenshots if the local SDK exposes the platform.
-- Test likely text extremes:
-  `WED · 30 SEP`, `12:59`, `100`, `99999`, `---F`, and `100%`.
-- Test missing health/weather values.
-- Test color and black-and-white behavior where platform support allows.
-
-Use `pebble kill --force` for emulator recovery.
-
-## Open Decisions
-
-1. Confirm that Chalk may use 16px health icons and omit bottom-row
-   icons.
-2. Decide whether round date/time remain the same fonts or receive
-   round-specific font choices after screenshots.
-3. Decide whether Gabbro uses the same compact rows with all icons
-   restored or a roomier round-specific grid.
-4. Verify whether this workspace's SDK can build and emulate `gabbro`.
-5. Decide whether the first patch targets Chalk only, then Gabbro, or
-   both round platforms together after SDK verification.
-
-## Recommended First Patch
-
-The first patch should be a round-decision/prototype patch, not
-production layout code:
-
-- create a small frame-calculation prototype or temporary layout lab
-- model Chalk `180x180` and Gabbro `260x260`
-- test the recommended Chalk layout: centered date/time, small health
-  icons, bottom text-only row
-- test the Gabbro variant that restores bottom weather/battery icons
-- prove text extremes before touching production `layout.c`
-
-After that decision is reviewed, the first production code patch should
-add round-safe-span helpers in `src/modules/layout.c`, branch
-`layout_calculate()` on `PBL_ROUND`, and keep target platforms
-unchanged.
+- Run `git diff --check`.
+- Review the diff and confirm only `RoundWatchfacePlan.md` changed.
+- No `pebble build` is required for this documentation-only update.
