@@ -11,9 +11,6 @@ bool bpm_module_create(
 void bpm_module_destroy(void);
 void bpm_module_refresh(const WatchfaceSurface* surface);
 
-#ifdef PBL_HEALTH
-void bpm_module_handle_event(HealthEventType event);
-#ifdef DEBUG_ATAGLANCE
-void bpm_module_debug_set_value(int bpm);
-#endif
+#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+void bpm_module_debug_set_bpm(int bpm);
 #endif

@@ -12,20 +12,33 @@ typedef enum {
 } WatchfaceDebugMessageKey;
 #endif
 
+typedef enum {
+  WATCHFACE_UPDATE_NONE = 0,
+  WATCHFACE_UPDATE_TIME = 1 << 0,
+  WATCHFACE_UPDATE_DATE = 1 << 1,
+  WATCHFACE_UPDATE_BATTERY = 1 << 2,
+  WATCHFACE_UPDATE_CLIMATE = 1 << 3,
+  WATCHFACE_UPDATE_HEALTH = 1 << 4,
+  WATCHFACE_UPDATE_DISPLAY_MODE = 1 << 5,
+  WATCHFACE_UPDATE_ALL = WATCHFACE_UPDATE_TIME |
+      WATCHFACE_UPDATE_DATE |
+      WATCHFACE_UPDATE_BATTERY |
+      WATCHFACE_UPDATE_CLIMATE |
+      WATCHFACE_UPDATE_HEALTH |
+      WATCHFACE_UPDATE_DISPLAY_MODE
+} WatchfaceUpdateMask;
+
 bool watchface_create(
     Window* window,
     const WatchfaceSettings* settings);
 void watchface_destroy();
-void watchface_refresh();
-void watchface_handle_tick(TimeUnits units_changed);
-void watchface_update_battery(const BatteryChargeState* state);
-void watchface_update_temp(int celsius_tenths, uint8_t temp_unit);
-void watchface_update_weather_condition(int weather_condition, uint8_t temp_unit);
+void watchface_refresh(WatchfaceUpdateMask updates);
+void watchface_set_temperature(int celsius_tenths);
+void watchface_set_weather_condition(int weather_condition);
 
 #ifdef PBL_HEALTH
-void watchface_handle_health_event(HealthEventType event);
 #ifdef DEBUG_ATAGLANCE
-void watchface_debug_update_bpm(int bpm);
-void watchface_debug_update_steps(int steps);
+void watchface_debug_set_bpm(int bpm);
+void watchface_debug_set_steps(int steps);
 #endif
 #endif

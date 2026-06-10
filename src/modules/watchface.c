@@ -156,120 +156,72 @@ void watchface_destroy() {
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
-void watchface_refresh() {
-  if (!s_wf_window || !s_wf_settings) {
+void watchface_refresh(WatchfaceUpdateMask updates) {
+  if (!s_wf_window ||
+      !s_wf_settings ||
+      updates == WATCHFACE_UPDATE_NONE) {
     return;
   }
 
-  watchface_update_style();
-  window_set_background_color(
-      s_wf_window,
-      s_surface.style.palette->background);
-  background_module_refresh(&s_surface);
+  WatchfaceUpdateMask refresh_updates = updates;
+  if (updates & WATCHFACE_UPDATE_DISPLAY_MODE) {
+    watchface_update_style();
+    if (s_surface.style.palette) {
+      window_set_background_color(
+          s_wf_window,
+          s_surface.style.palette->background);
+    }
+    background_module_refresh(&s_surface);
+    refresh_updates = (WatchfaceUpdateMask)(
+        refresh_updates |
+        WATCHFACE_UPDATE_TIME |
+        WATCHFACE_UPDATE_DATE |
+        WATCHFACE_UPDATE_BATTERY |
+        WATCHFACE_UPDATE_CLIMATE |
+        WATCHFACE_UPDATE_HEALTH);
+  }
 
-  date_module_refresh(&s_surface);
-  time_module_refresh(&s_surface, s_wf_settings->time_format);
-  battery_module_refresh(&s_surface);
-
-  if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
+  if (refresh_updates & WATCHFACE_UPDATE_DATE) {
+    date_module_refresh(&s_surface);
+  }
+  if (refresh_updates & WATCHFACE_UPDATE_TIME) {
+    time_module_refresh(&s_surface, s_wf_settings->time_format);
+  }
+  if (refresh_updates & WATCHFACE_UPDATE_BATTERY) {
+    battery_module_refresh(&s_surface);
+  }
+  if ((refresh_updates & WATCHFACE_UPDATE_CLIMATE) &&
+      (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
     climate_module_refresh(&s_surface, s_wf_settings->temp_unit);
   }
 
   #ifdef PBL_HEALTH
-  if (s_strata_created_mask & BPM_STRATUM_MASK) {
+  if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
+      (s_strata_created_mask & BPM_STRATUM_MASK)) {
     bpm_module_refresh(&s_surface);
   }
 
-  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
+  if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
+      (s_strata_created_mask & STEPS_STRATUM_MASK)) {
     steps_module_refresh(&s_surface);
   }
   #endif
 }
 
-void watchface_handle_tick(TimeUnits units_changed) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-
-  if (units_changed & MINUTE_UNIT) {
-    time_module_refresh(&s_surface, s_wf_settings->time_format);
-  }
-  if (units_changed & DAY_UNIT) {
-    date_module_refresh(&s_surface);
-  }
+void watchface_set_temperature(int celsius_tenths) {
+  climate_module_set_temperature(celsius_tenths);
 }
 
-void watchface_update_battery(const BatteryChargeState* state) {
-  if (!s_wf_settings || !s_wf_window || !state) {
-    return;
-  }
-
-  watchface_update_style();
-  battery_module_set_state(state);
+void watchface_set_weather_condition(int weather_condition) {
+  climate_module_set_condition(weather_condition);
 }
 
-void watchface_update_temp(int celsius_tenths, uint8_t temp_unit) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-  climate_module_set_temperature(celsius_tenths, temp_unit, &s_surface);
+#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+void watchface_debug_set_bpm(int bpm) {
+  bpm_module_debug_set_bpm(bpm);
 }
 
-void watchface_update_weather_condition(
-    int weather_condition,
-    uint8_t temp_unit) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-  climate_module_set_condition(weather_condition, temp_unit, &s_surface);
+void watchface_debug_set_steps(int steps) {
+  steps_module_debug_set_steps(steps);
 }
-
-#if defined(PBL_HEALTH)
-void watchface_handle_health_event(HealthEventType event) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-
-  if (s_strata_created_mask & BPM_STRATUM_MASK) {
-    bpm_module_handle_event(event);
-  }
-
-  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
-    steps_module_handle_event(event);
-  }
-}
-
-#ifdef DEBUG_ATAGLANCE
-void watchface_debug_update_bpm(int bpm) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-
-  if (s_strata_created_mask & BPM_STRATUM_MASK) {
-    bpm_module_debug_set_value(bpm);
-  }
-}
-
-void watchface_debug_update_steps(int steps) {
-  if (!s_wf_settings || !s_wf_window) {
-    return;
-  }
-
-  watchface_update_style();
-
-  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
-    steps_module_debug_set_value(steps);
-  }
-}
-#endif
 #endif

@@ -219,12 +219,3 @@ void battery_module_refresh(const WatchfaceSurface* surface) {
   s_battery_state = battery_state_service_peek();
   update_battery();
 }
-
-void battery_module_set_state(const BatteryChargeState* state) {
-  if (!state) {
-    return;
-  }
-
-  s_battery_state = *state;
-  update_battery();
-}

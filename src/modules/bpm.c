@@ -3,12 +3,18 @@
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
-static char s_bpm_buffer[ATAGLANCE_MAX_STR_LEN];
-static Layer* s_bpm_icon_layer;
-static TextLayer* s_bpm_layer;
-static int s_bpm;
-static bool s_bpm_is_available;
-static const WatchfaceSurface* s_surface;
+#define BPM_INVALID -1
+
+static char s_bpm_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static Layer* s_bpm_icon_layer = NULL;
+static TextLayer* s_bpm_layer = NULL;
+static int s_bpm = BPM_INVALID;
+static bool s_bpm_is_available = false;
+static const WatchfaceSurface* s_surface = NULL;
+#ifdef DEBUG_ATAGLANCE
+static bool s_debug_bpm_is_set = false;
+static int s_debug_bpm = BPM_INVALID;
+#endif
 
 static GColor calculate_bpm_color(int bpm);
 static void draw_bpm_icon_with_color(
@@ -152,6 +158,15 @@ static void apply_bpm_value(int bpm, bool is_available) {
 }
 
 static void update_bpm(void) {
+#ifdef DEBUG_ATAGLANCE
+  if (s_debug_bpm_is_set) {
+    apply_bpm_value(s_debug_bpm, s_debug_bpm > 0);
+    s_debug_bpm_is_set = false;
+    s_debug_bpm = BPM_INVALID;
+    return;
+  }
+#endif
+
   time_t now = time(NULL);
   HealthServiceAccessibilityMask hr_mask =
       health_service_metric_accessible(
@@ -159,7 +174,7 @@ static void update_bpm(void) {
           now,
           now);
 
-  int bpm = 0;
+  int bpm = BPM_INVALID;
   bool is_available = false;
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
@@ -180,8 +195,12 @@ bool bpm_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->bpm.text;
   const WatchfaceIconSubstratum* icon = &surface->bpm.icon;
-  s_bpm = 0;
+  s_bpm = BPM_INVALID;
   s_bpm_is_available = false;
+#ifdef DEBUG_ATAGLANCE
+  s_debug_bpm_is_set = false;
+  s_debug_bpm = BPM_INVALID;
+#endif
 
   s_bpm_layer = substratum_renderer_create_text_layer(
       root,
@@ -214,7 +233,13 @@ void bpm_module_destroy(void) {
   }
 
   s_bpm_buffer[0] = '\0';
+  s_bpm = BPM_INVALID;
+  s_bpm_is_available = false;
   s_surface = NULL;
+  #ifdef DEBUG_ATAGLANCE
+  s_debug_bpm_is_set = false;
+  s_debug_bpm = BPM_INVALID;
+  #endif
 }
 
 void bpm_module_refresh(const WatchfaceSurface* surface) {
@@ -225,16 +250,10 @@ void bpm_module_refresh(const WatchfaceSurface* surface) {
   update_bpm();
 }
 
-void bpm_module_handle_event(HealthEventType event) {
-  if (event == HealthEventSignificantUpdate ||
-      event == HealthEventHeartRateUpdate) {
-    update_bpm();
-  }
-}
-
 #ifdef DEBUG_ATAGLANCE
-void bpm_module_debug_set_value(int bpm) {
-  apply_bpm_value(bpm, bpm > 0);
+void bpm_module_debug_set_bpm(int bpm) {
+  s_debug_bpm = bpm;
+  s_debug_bpm_is_set = true;
 }
 #endif
 

@@ -169,10 +169,7 @@ void climate_module_refresh(
   climate_module_update_display(temp_unit);
 }
 
-void climate_module_set_temperature(
-    int celsius_tenths,
-    uint8_t temp_unit,
-    const WatchfaceSurface* surface) {
+void climate_module_set_temperature(int celsius_tenths) {
   if (!climate_temperature_is_valid(celsius_tenths)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather temperature invalid: value=%d",
@@ -181,13 +178,9 @@ void climate_module_set_temperature(
   }
 
   s_temp_celsius_tenths = celsius_tenths;
-  climate_module_refresh(surface, temp_unit);
 }
 
-void climate_module_set_condition(
-    int weather_condition,
-    uint8_t temp_unit,
-    const WatchfaceSurface* surface) {
+void climate_module_set_condition(int weather_condition) {
   if (!climate_condition_is_valid(weather_condition)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather condition invalid: value=%d",
@@ -196,5 +189,4 @@ void climate_module_set_condition(
   }
 
   s_weather_condition = weather_condition;
-  climate_module_refresh(surface, temp_unit);
 }

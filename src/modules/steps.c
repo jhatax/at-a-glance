@@ -3,11 +3,17 @@
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
-static char s_steps_buffer[ATAGLANCE_MAX_STR_LEN];
-static Layer* s_steps_icon_layer;
-static TextLayer* s_steps_layer;
-static bool s_steps_is_available;
-static const WatchfaceSurface* s_surface;
+#define STEPS_INVALID -1
+
+static char s_steps_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static Layer* s_steps_icon_layer = NULL;
+static TextLayer* s_steps_layer = NULL;
+static bool s_steps_is_available = false;
+static const WatchfaceSurface* s_surface = NULL;
+#ifdef DEBUG_ATAGLANCE
+static bool s_debug_steps_is_set = false;
+static int s_debug_steps = STEPS_INVALID;
+#endif
 
 static void draw_data_gap_slash(
     GContext* ctx,
@@ -127,13 +133,22 @@ static void apply_steps_value(int steps, bool is_available) {
 }
 
 static void update_steps(void) {
+#ifdef DEBUG_ATAGLANCE
+  if (s_debug_steps_is_set) {
+    apply_steps_value(s_debug_steps, s_debug_steps >= 0);
+    s_debug_steps_is_set = false;
+    s_debug_steps = STEPS_INVALID;
+    return;
+  }
+#endif
+
   HealthServiceAccessibilityMask steps_mask =
       health_service_metric_accessible(
           HealthMetricStepCount,
           time_start_of_today(),
           time(NULL));
 
-  int steps = 0;
+  int steps = STEPS_INVALID;
   bool is_available = false;
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
@@ -158,6 +173,10 @@ bool steps_module_create(
   const WatchfaceTextSubstratum* text = &surface->steps.text;
   const WatchfaceIconSubstratum* icon = &surface->steps.icon;
   s_steps_is_available = false;
+#ifdef DEBUG_ATAGLANCE
+  s_debug_steps_is_set = false;
+  s_debug_steps = STEPS_INVALID;
+#endif
 
   s_steps_layer = substratum_renderer_create_text_layer(
       root,
@@ -190,7 +209,12 @@ void steps_module_destroy(void) {
   }
 
   s_steps_buffer[0] = '\0';
+  s_steps_is_available = false;
   s_surface = NULL;
+  #ifdef DEBUG_ATAGLANCE
+  s_debug_steps_is_set = false;
+  s_debug_steps = STEPS_INVALID;
+  #endif
 }
 
 void steps_module_refresh(const WatchfaceSurface* surface) {
@@ -201,16 +225,10 @@ void steps_module_refresh(const WatchfaceSurface* surface) {
   update_steps();
 }
 
-void steps_module_handle_event(HealthEventType event) {
-  if (event == HealthEventSignificantUpdate ||
-      event == HealthEventMovementUpdate) {
-    update_steps();
-  }
-}
-
 #ifdef DEBUG_ATAGLANCE
-void steps_module_debug_set_value(int steps) {
-  apply_steps_value(steps, steps >= 0);
+void steps_module_debug_set_steps(int steps) {
+  s_debug_steps = steps;
+  s_debug_steps_is_set = true;
 }
 #endif
 
