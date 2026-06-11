@@ -46,7 +46,6 @@ typedef struct {
   int16_t content_width;
   int16_t center_y;
   int16_t row_gap;
-  int16_t column_gap;
   int16_t icon_w;
   int16_t icon_h;
   int16_t icon_text_gap;
@@ -75,16 +74,14 @@ static LayoutRectMetrics layout_rect_metrics(
       ATAGLANCE_DESIGN_ICON_HEIGHT,
       face_height);
   const int16_t top_text_height = layout_rect_scale_height(
-      ATAGLANCE_DESIGN_BOTTOM_ROW_HEIGHT,
+      ATAGLANCE_DESIGN_BOTTOM_TEXT_HEIGHT,
       face_height);
   const int16_t bottom_text_height = layout_rect_scale_height(
-      ATAGLANCE_DESIGN_HEALTH_ROW_HEIGHT,
+      ATAGLANCE_DESIGN_HEALTH_TEXT_HEIGHT,
       face_height);
-  const int16_t date_text_height = helper_max(
-      icon_h,
-      layout_rect_scale_height(
-          ATAGLANCE_DESIGN_DATE_ROW_HEIGHT,
-          face_height));
+  const int16_t date_text_height = layout_rect_scale_height(
+      ATAGLANCE_DESIGN_DATE_TEXT_HEIGHT,
+      face_height);
 
   return (LayoutRectMetrics) {
     .content_left = content_left,
@@ -96,9 +93,6 @@ static LayoutRectMetrics layout_rect_metrics(
     .row_gap = layout_rect_scale_height(
         ATAGLANCE_DESIGN_ROW_GAP,
         face_height),
-    .column_gap = layout_rect_scale_width(
-        ATAGLANCE_DESIGN_COLUMN_GAP,
-        face_width),
     .icon_w = icon_w,
     .icon_h = icon_h,
     .icon_text_gap = layout_rect_scale_width(
@@ -109,7 +103,7 @@ static LayoutRectMetrics layout_rect_metrics(
         face_width),
     .date_text_height = date_text_height,
     .time_text_height = layout_rect_scale_height(
-        ATAGLANCE_DESIGN_TIME_ROW_HEIGHT,
+        ATAGLANCE_DESIGN_TIME_TEXT_HEIGHT,
         face_height),
     .top_text_height = top_text_height,
     .bottom_text_height = bottom_text_height,
@@ -181,7 +175,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->battery.text = (WatchfaceTextSubstratum) {
     .frame = GRect(metrics.content_left +
@@ -192,7 +185,6 @@ void layout_rect_calculate_surface(
                    metrics.top_text_height),
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BATTERY,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->climate.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(right_pair_x,
@@ -200,7 +192,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->climate.text = (WatchfaceTextSubstratum) {
     .frame = GRect(right_pair_x +
@@ -211,7 +202,6 @@ void layout_rect_calculate_surface(
                    metrics.top_text_height),
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->steps.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(metrics.content_left,
@@ -219,7 +209,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->steps.text = (WatchfaceTextSubstratum) {
     .frame = GRect(metrics.content_left +
@@ -230,7 +219,6 @@ void layout_rect_calculate_surface(
                    metrics.bottom_text_height),
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_STEPS,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->bpm.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(right_pair_x,
@@ -238,7 +226,6 @@ void layout_rect_calculate_surface(
                    metrics.icon_w,
                    metrics.icon_h),
     .is_enabled = true,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
   surface->bpm.text = (WatchfaceTextSubstratum) {
     .frame = GRect(right_pair_x +
@@ -249,6 +236,5 @@ void layout_rect_calculate_surface(
                    metrics.bottom_text_height),
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BPM,
-    .color_role = WATCHFACE_COLOR_ROLE_DYNAMIC,
   };
 }

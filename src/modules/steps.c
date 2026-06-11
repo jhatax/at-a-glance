@@ -72,7 +72,7 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   GColor steps_icon_color = s_steps_is_available ?
-      palette->steps_icon : palette->unavailable_text;
+      palette->primary_text : palette->unavailable_text;
 
   graphics_context_set_fill_color(ctx, steps_icon_color);
 

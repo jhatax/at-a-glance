@@ -79,10 +79,6 @@ GColor substratum_renderer_color_for_role(
       return palette->date;
     case WATCHFACE_COLOR_ROLE_TIME:
       return palette->time;
-    case WATCHFACE_COLOR_ROLE_STEPS_ICON:
-      return palette->steps_icon;
-    case WATCHFACE_COLOR_ROLE_DYNAMIC:
-      return palette->primary_text;
     default:
       return palette->primary_text;
   }

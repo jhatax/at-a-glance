@@ -7,33 +7,26 @@ static const ColorPalette c_dark_palette = {
   .background_layer_background = GColorBlack,
   .background_layer_line = GColorWhite,
   .primary_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
-  .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorWhite),
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .date = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
-  .steps_icon = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
 };
 
 static const ColorPalette c_light_palette = {
   .background = GColorWhite,
   .background_layer_background = GColorWhite,
-  .background_layer_line = GColorOxfordBlue,
-  .primary_text = GColorCobaltBlue,
-  .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
-  .date = PBL_IF_COLOR_ELSE(GColorBlack, GColorBlack),
+  .background_layer_line = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
+  .primary_text = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
+  .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
+  .date = GColorBlack,
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
-  .steps_icon = GColorCobaltBlue,
 };
 
 static bool layout_is_compact_display(
     int16_t face_width,
     int16_t face_height) {
-#if defined(PBL_ROUND)
-  return face_width < ATAGLANCE_ROUND_FULL_FACE_WIDTH ||
-      face_height < ATAGLANCE_ROUND_FULL_FACE_HEIGHT;
-#else
   return face_width < ATAGLANCE_DESIGN_FACE_WIDTH ||
       face_height < ATAGLANCE_DESIGN_FACE_HEIGHT;
-#endif
 }
 
 static const char* layout_font_key_for_role(
@@ -103,6 +96,7 @@ void layout_stylist_update_surface_style(
       face_width,
       face_height);
   style->palette = layout_palette_for_display_mode(display_mode);
+  style->is_light_mode = display_mode == DISPLAY_MODE_LIGHT;
 
   for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
     style->fonts[i] = fonts_get_system_font(

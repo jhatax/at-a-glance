@@ -289,12 +289,14 @@ horizontal rule; it does not draw a vertical rail.
 ## Visual Semantics
 
 - unavailable text token is `---`
+- color selection favors high-contrast colors on dark backgrounds and
+  darker, high-light-absorption colors on light backgrounds
 - dark mode uses black background, white rule, Celeste primary text on color,
-  Dark Gray unavailable text on color, Electric Blue date, Sunset Orange time,
-  and Celeste steps icon
+  Light Gray unavailable text on color, Electric Blue date, Sunset Orange time,
+  and primary-text metric icons
 - light mode uses white background, Oxford Blue rule, Cobalt Blue primary text,
-  Light Gray unavailable text on color, black date, Sunset Orange time, and
-  Cobalt Blue steps icon
+  Dark Gray unavailable text on color, black date, Sunset Orange time, and
+  primary-text metric icons
 - black-and-white displays fall back to legible black-and-white color choices
   via `PBL_IF_COLOR_ELSE` and `gcolor_legible_over()`
 - dynamic icon/text colors are owned by the feature module when they depend on
@@ -304,15 +306,15 @@ BPM color zones:
 
 - `<=0` or unavailable: current mode unavailable color
 - `1-99`: current mode primary text color
-- `100-120`: Magenta
-- `>120`: Red
+- `100-120`: Chrome Yellow on dark, Windsor Tan on light
+- `>120`: Orange on dark, Bulgarian Rose on light
 
 Battery text/icon colors:
 
-- charging: Jaeger Green
+- charging: Islamic Green on color, current mode primary text on monochrome
 - not charging and `>50`: current mode primary text color
-- not charging and `21-50`: Rajah on color, legible fallback otherwise
-- not charging and `<=20`: Red
+- not charging and `21-50`: Rajah on dark, Windsor Tan on light
+- not charging and `<=20`: Red on dark, Bulgarian Rose on light
 
 Weather state:
 

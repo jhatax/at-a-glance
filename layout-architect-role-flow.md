@@ -123,7 +123,6 @@ Icon substrata carry:
 
 - final frame
 - enabled flag
-- color role
 
 Feature modules consume their own substrata and own their actual Pebble
 `Layer`/`TextLayer` lifecycle.
@@ -258,7 +257,6 @@ typedef struct {
   int16_t content_width;
   int16_t display_center;
   int16_t row_gap;
-  int16_t column_gap;
   GSize icon_size;
   int16_t icon_text_gap;
   int16_t data_width;

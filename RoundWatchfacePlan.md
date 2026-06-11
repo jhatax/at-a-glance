@@ -53,6 +53,41 @@ module-owned strata:
 - `main.c` dispatches platform/service/AppMessage events to `watchface`;
   it should not call feature modules directly.
 
+Current layout call flow:
+
+```c
+watchface_create()
+  -> layout_calculate_surface(face_width,
+                              face_height,
+                              display_mode,
+                              &s_surface)
+       -> memset(surface, 0, sizeof(*surface))
+       -> #ifdef PBL_RECT
+          layout_rect_calculate_surface(face_width, face_height, surface)
+       -> layout_update_surface_style(surface, display_mode)
+            -> layout_stylist_update_surface_style(...)
+```
+
+This is the model for round. `layout_calculate_surface()` remains the
+single public entry point. It should dispatch to exactly one shape
+architect behind Pebble shape macros, then apply style:
+
+```c
+#ifdef PBL_RECT
+  layout_rect_calculate_surface(face_width, face_height, surface);
+#elif defined(PBL_ROUND)
+  layout_round_calculate_surface(face_width, face_height, surface);
+#endif
+
+layout_update_surface_style(surface, display_mode);
+```
+
+Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect dispatch.
+Use capability macros such as `PBL_COLOR`, `PBL_BW`, and `PBL_HEALTH`
+only for color, monochrome, and health behavior. Do not use
+`PBL_PLATFORM_CHALK` or `PBL_PLATFORM_GABBRO` for general round
+geometry unless a model-specific exception is proven by screenshots.
+
 `WatchfaceSurface` is the calculated UI contract. It is not Pebble layer
 state. It contains:
 
@@ -65,9 +100,23 @@ The fixed strata are intentional. Do not replace them with a generic
 dynamic strata array.
 
 Text substrata carry final frame, text alignment, font role, and color
-role. Icon substrata carry final frame, enabled flag, and color role.
+role. Icon substrata carry final frame and enabled flag.
 The background substratum carries the full-face frame and the horizon
 line coordinates.
+
+Architect invariants:
+
+- `WatchfaceSurface` carries final substratum frames only.
+- Intermediate metrics such as content bounds, safe spans, margins,
+  row gaps, pair widths, and optical insets stay private to the
+  active architect implementation.
+- `layout_rect.c` owns rectangular intermediate math in private structs
+  such as `LayoutRectMetrics`.
+- `layout_round.c` should own round intermediate math in private structs
+  such as `LayoutRoundMetrics` or row-safe-span helpers.
+- No layout-private metrics should leak into `watchface_components.h`.
+- Each substratum gets its own `x`, `y`, `w`, and `h` through its final
+  `GRect`; callers should not reconstruct coordinates.
 
 ## Current Rectangular Baseline
 
@@ -93,7 +142,8 @@ Current styling decisions that round must account for:
   `calculate_battery_color()` and `calculate_bpm_color()`.
 - Rectangular compact means face width below `200` or face height below
   `228`.
-- Round compact means face width below `260` or face height below `260`.
+- Round compact uses the same binary design baseline: face width below
+  `200` or face height below `228`.
 - Chalk is compact.
 - Gabbro is full.
 
@@ -223,6 +273,19 @@ Gabbro should start with the same conceptual model:
 Future `layout_round.c/.h` should be private to layout and included only
 by `layout.c`.
 
+`layout_round.h` should mirror the rectangular architect's narrow API:
+
+```c
+void layout_round_calculate_surface(
+    int16_t face_width,
+    int16_t face_height,
+    WatchfaceSurface* surface);
+```
+
+The function receives scalar face dimensions and a caller-owned surface
+pointer. It must fill the existing substrata in place. It must not pass
+or return `WatchfaceSurface` by value.
+
 The round architect calculates geometry only. It fills the existing
 `WatchfaceSurface` substrata:
 
@@ -251,6 +314,23 @@ The round architect must not:
 Every known substratum gets an explicit frame. Layout is not a generic
 row engine, even when a round design uses visual rows.
 
+Conditional compilation flow:
+
+- `layout.h` remains shape-agnostic and public.
+- `layout.c` includes private architect headers.
+- `layout.c` dispatches rectangular geometry under `PBL_RECT`.
+- `layout.c` dispatches round geometry under `PBL_ROUND`.
+- `layout_rect.c/.h` may compile only for rectangular builds if the
+  include/build setup requires it, but no feature module may include it.
+- `layout_round.c/.h` should compile only for round builds once added,
+  or keep all round-specific implementation behind `#ifdef PBL_ROUND`
+  if the Pebble build system compiles all listed C files for all
+  platforms.
+- Feature modules and `watchface.c` continue to include only public
+  contracts such as `layout.h`, `watchface_components.h`, and
+  `substratum_renderer.h` as appropriate. They must not include
+  `layout_rect.h` or `layout_round.h`.
+
 ## Guardrails And Invariants
 
 - Do not enable `chalk` or `gabbro` in `package.json` until the round
@@ -276,6 +356,21 @@ row engine, even when a round design uses visual rows.
 - Build rectangular targets after any source change, even if round is
   behind platform guards.
 - Screenshot before approving any geometry change.
+- Preserve the current `watchface_create()` responsibility split:
+  watchface owns the live `WatchfaceSurface`, layout calculates it, and
+  feature modules create their own layers from their assigned substrata.
+- Keep `watchface_refresh()` as the runtime dispatch boundary. Round
+  support should not make `main.c` aware of feature modules or shape
+  internals.
+- Do not add round-specific conditionals to feature modules unless a
+  module has a proven rendering exception that cannot be expressed by
+  calculated substratum frames, font roles, text color roles, or
+  icon `is_enabled`.
+- Do not change palette, typography, AppMessage, debug health, or
+  module lifecycle behavior in the same slice as first round geometry.
+- Keep custom-font decisions in `layout_stylist.c`; round may influence
+  compact/full style classification, but `time.c` must not make shape
+  decisions locally.
 
 ## Implementation Sequence
 
@@ -283,7 +378,9 @@ Phase 1: round architect scaffolding.
 
 - Add private `layout_round.c/.h`.
 - Include it only from `layout.c`.
-- Add the `PBL_ROUND` dispatch in `layout_calculate_surface()`.
+- Add the `PBL_ROUND` dispatch in `layout_calculate_surface()` as the
+  round equivalent of the current `PBL_RECT` call to
+  `layout_rect_calculate_surface(face_width, face_height, surface)`.
 - Keep `package.json` targets unchanged in this phase.
 - Build current rectangular targets to confirm no drift.
 

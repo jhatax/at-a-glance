@@ -165,36 +165,39 @@ emulator quirk and is not special-cased by the watchface.
 Dark mode:
 
 - Background: black
-- Date: lavender on color, white on monochrome
+- Date: electric blue on color, white on monochrome
 - Time: sunset orange on color, white on monochrome
-- Primary text: light gray on color, white on monochrome
-- Rule: light gray on color, white on monochrome
-- Unavailable text: Windsor Tan on color, white on monochrome
+- Primary text: Celeste on color, white on monochrome
+- Rule: white
+- Unavailable text: light gray on color, white on monochrome
 
 Light mode:
 
 - Background: white
-- Date: imperial purple on color, black on monochrome
+- Date: black
 - Time: sunset orange on color, black on monochrome
-- Primary text: black
-- Rule: light gray on color, black on monochrome
-- Unavailable text: light gray on color, black on monochrome
+- Primary text: cobalt blue on color, black on monochrome
+- Rule: oxford blue on color, black on monochrome
+- Unavailable text: dark gray on color, black on monochrome
+
+Color choices prefer high-contrast colors on dark backgrounds and darker,
+high-light-absorption colors on light backgrounds.
 
 BPM zones:
 
 - Unavailable or invalid: unavailable color
-- `1-99`: Jaeger Green on color
-- `100-120`: Magenta on color
-- `>120`: Red on color
+- `1-99`: current mode primary text color
+- `100-120`: chrome yellow on dark, Windsor Tan on light
+- `>120`: orange on dark, Bulgarian Rose on light
 - Monochrome devices use the current primary text color for available BPM
   values.
 
 Battery zones:
 
-- Charging: Jaeger Green on color
-- `>50%`: Cobalt Blue on color
-- `21-50%`: Yellow on color
-- `<=20%`: Red on color
+- Charging: Islamic Green on color
+- `>50%`: current mode primary text color
+- `21-50%`: Rajah on dark, Windsor Tan on light
+- `<=20%`: red on dark, Bulgarian Rose on light
 - Monochrome devices use the current primary text color.
 
 ## Configuration

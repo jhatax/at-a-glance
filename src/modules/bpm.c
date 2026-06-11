@@ -11,6 +11,7 @@ static TextLayer* s_bpm_layer = NULL;
 static int s_bpm = BPM_INVALID;
 static bool s_bpm_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
+static const ColorPalette* s_palette = NULL;
 #ifdef DEBUG_ATAGLANCE
 static bool s_debug_bpm_is_set = false;
 static int s_debug_bpm = BPM_INVALID;
@@ -36,23 +37,24 @@ static void apply_bpm_value(int bpm, bool is_available);
 static void update_bpm(void);
 
 static GColor calculate_bpm_color(int bpm) {
-  if (!s_surface || !s_surface->style.palette) {
+  if (!s_surface || !s_palette) {
     return GColorWhite;
   }
 
-  const ColorPalette* palette = s_surface->style.palette;
+  const ColorPalette* palette = s_palette;
   if (bpm <= 0) {
     return palette->unavailable_text;
   }
   if (bpm > 120) {
     return PBL_IF_COLOR_ELSE(
-        GColorRed,
-        gcolor_legible_over(palette->background));
+        s_surface->style.is_light_mode ? GColorBulgarianRose : GColorOrange,
+        palette->primary_text);
   }
   if (bpm >= 100) {
     return PBL_IF_COLOR_ELSE(
-        GColorMagenta,
-        gcolor_legible_over(palette->background));
+        s_surface->style.is_light_mode ?
+            GColorWindsorTan : GColorChromeYellow,
+        palette->primary_text);
   }
   return palette->primary_text;
 }
@@ -77,14 +79,12 @@ static void draw_bpm_icon_with_color(
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size) {
-  if (!s_surface || !s_surface->style.palette) {
+  if (!s_surface || !s_palette) {
     return;
   }
 
   graphics_context_set_stroke_width(ctx, 3);
-  graphics_context_set_stroke_color(
-      ctx,
-      gcolor_legible_over(s_surface->style.palette->background));
+  graphics_context_set_stroke_color(ctx, s_palette->unavailable_text);
   bpm_draw_scaled_line(ctx, bounds_size, 5, 3, 24, 26);
 }
 
@@ -106,7 +106,7 @@ static void bpm_draw_scaled_line(
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
+  if (!layer || !ctx || !s_surface || !s_palette) {
     return;
   }
 
@@ -114,7 +114,7 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_context_set_fill_color(
       ctx,
-      s_surface->style.palette->background);
+      s_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   draw_bpm_icon_with_color(
@@ -128,11 +128,11 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void apply_bpm_value(int bpm, bool is_available) {
-  if (!s_bpm_layer || !s_surface || !s_surface->style.palette) {
+  if (!s_bpm_layer || !s_surface || !s_palette) {
     return;
   }
 
-  GColor text_color = s_surface->style.palette->unavailable_text;
+  GColor text_color = s_palette->unavailable_text;
   s_bpm = bpm;
   s_bpm_is_available = is_available && bpm > 0;
 
@@ -214,6 +214,7 @@ bool bpm_module_create(
   }
 
   s_surface = surface;
+  s_palette = surface->style.palette;
   s_bpm_icon_layer = substratum_renderer_create_icon_layer(
       root,
       icon,
@@ -235,6 +236,7 @@ void bpm_module_destroy(void) {
   s_bpm_buffer[0] = '\0';
   s_bpm = BPM_INVALID;
   s_bpm_is_available = false;
+  s_palette = NULL;
   s_surface = NULL;
   #ifdef DEBUG_ATAGLANCE
   s_debug_bpm_is_set = false;
@@ -243,8 +245,9 @@ void bpm_module_destroy(void) {
 }
 
 void bpm_module_refresh(const WatchfaceSurface* surface) {
-  if (surface) {
+  if (surface && surface->style.palette) {
     s_surface = surface;
+    s_palette = surface->style.palette;
   }
 
   update_bpm();
@@ -266,9 +269,7 @@ void bpm_module_debug_clear_bpm(void) {
 
 #include "bpm.h"
 
-bool bpm_module_create(
-    Layer* root,
-    const WatchfaceSurface* surface) {
+bool bpm_module_create(Layer* root, const WatchfaceSurface* surface) {
   (void)root;
   (void)surface;
   return true;

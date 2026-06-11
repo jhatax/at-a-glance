@@ -146,7 +146,7 @@ static GColor weather_clear_fill_color(
 static GColor weather_color_for_kind(
     WeatherIconKind kind,
     const ColorPalette* palette) {
-  GColor fallback = gcolor_legible_over(palette->background);
+  GColor fallback = palette->primary_text;
 
   switch (kind) {
     case WEATHER_ICON_THUNDERSTORM:
@@ -166,8 +166,9 @@ static GColor weather_color_for_kind(
     case WEATHER_ICON_PARTLY_CLOUDY:
     case WEATHER_ICON_FOG:
     case WEATHER_ICON_CLEAR:
-    case WEATHER_ICON_UNKNOWN:
       return PBL_IF_COLOR_ELSE(GColorCobaltBlue, fallback);
+    case WEATHER_ICON_UNKNOWN:
+      return palette->unavailable_text;
   }
 
   return fallback;
@@ -510,11 +511,11 @@ static void draw_weather_unavailable_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
-  draw_weather_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN);
+  draw_weather_filled_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN, true);
 
   graphics_context_set_stroke_color(
       ctx,
-      gcolor_legible_over(palette->background));
+      palette->unavailable_text);
   graphics_context_set_stroke_width(ctx, 3);
   weather_line(ctx, frame, 5, 3, 24, 26);
 }

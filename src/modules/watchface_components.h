@@ -18,9 +18,7 @@ typedef enum {
   WATCHFACE_COLOR_ROLE_PRIMARY_TEXT = 0,
   WATCHFACE_COLOR_ROLE_UNAVAILABLE_TEXT,
   WATCHFACE_COLOR_ROLE_DATE,
-  WATCHFACE_COLOR_ROLE_TIME,
-  WATCHFACE_COLOR_ROLE_STEPS_ICON,
-  WATCHFACE_COLOR_ROLE_DYNAMIC
+  WATCHFACE_COLOR_ROLE_TIME
 } WatchfaceColorRole;
 
 typedef struct {
@@ -31,7 +29,6 @@ typedef struct {
   GColor unavailable_text;
   GColor date;
   GColor time;
-  GColor steps_icon;
 } ColorPalette;
 
 typedef struct {
@@ -44,7 +41,6 @@ typedef struct {
 typedef struct {
   GRect frame;
   bool is_enabled;
-  WatchfaceColorRole color_role;
 } WatchfaceIconSubstratum;
 
 typedef struct {
@@ -66,6 +62,7 @@ typedef struct {
 
 typedef struct {
   const ColorPalette* palette;
+  bool is_light_mode;
   GFont fonts[WATCHFACE_FONT_ROLE_COUNT];
   uint32_t custom_font_resource_ids[WATCHFACE_FONT_ROLE_COUNT];
 } WatchfaceSurfaceStyle;
