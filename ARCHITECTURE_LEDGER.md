@@ -106,10 +106,11 @@ Invariants:
 
 - `layout.h` exposes only calculated-surface APIs:
   `layout_calculate_surface()` and `layout_update_surface_style()`.
-- Layout calculation coordinates private layout profile selection, calculates
-  axis-specific scale flags and compact/full classification once, stores the
-  compact/full state on `WatchfaceSurfaceStyle`, and passes private scale
-  flags through layout architect boundaries.
+- Layout calculation is the public general contractor: it initializes the
+  caller-owned surface, dispatches to exactly one private shape architect, and
+  then applies style.
+- Shape architects resolve geometry and compact/full classification once, then
+  store the compact/full state on `WatchfaceSurfaceStyle`.
 - Only layout implementation files include private layout helpers such as
   `layout_rect.h` and `layout_stylist.h`.
 - Layout calculates data; it does not create Pebble layers.
@@ -135,9 +136,9 @@ Invariants:
   display-mode refresh.
 - Modules may load/unload custom fonts as lifecycle owners, but they do not
   decide which font resource should be used.
-- Compact classification is based on the active private layout profile's
-  design face dimensions. With the current product profile, compact means face
-  width below `200` or face height below `228`.
+- Compact classification is architect-owned because the active architect owns
+  the geometry context. With the current rectangular blueprint, compact means
+  face width below `200` or face height below `228`.
 
 Acceptance checks:
 
@@ -155,20 +156,20 @@ Invariants:
 
 - Architects assign final `x`, `y`, `w`, and `h` to each substratum.
 - Architects may use file-local metric structs to improve readability.
-- Architects consume immutable private `AtAGlanceLayoutDesign` product values
-  instead of reaching directly for scattered product constants.
-- Architects derive private resolved metrics from the immutable profile, face
-  dimensions, and axis-specific scale flags. They must not mutate, copy, or
-  reinterpret a product profile as a runtime resolved profile.
-- Layout profiles are private to layout implementation and must not be exposed
-  through `layout.h` or `WatchfaceSurface`.
-- Layout profiles do not include dead or speculative spacing fields such as
+- Architects consume canonical product constants through private file-local
+  blueprints, not through public profile objects or mutable runtime copies.
+- Architects derive private resolved metrics from their blueprint and face
+  dimensions. They must not mutate, copy, or reinterpret immutable product
+  constants as runtime state.
+- Architect blueprints are private to layout implementation and must not be
+  exposed through `layout.h` or `WatchfaceSurface`.
+- Blueprints do not include dead or speculative spacing fields such as
   `column_gap`, and do not include a separate optical x-inset while
   `content_margin` owns edge spacing.
-- Profile values are initialized from canonical product constants.
-- Layout dimensions only scale down on axes whose face dimension is below the
-  profile design dimension. Full axes use profile values directly, including
-  `40` data-field width and `28x28` icon size.
+- Blueprint values are initialized from canonical product constants.
+- Rectangular dimensions only scale in the compact blueprint where approved.
+  Full rectangular displays use canonical values directly, including `40`
+  data-field width and `28x28` icon size.
 - Layout is not a generic row engine; product strata remain fixed and known.
 - Round support must not be enabled until a real round architect exists.
 

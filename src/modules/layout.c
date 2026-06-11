@@ -23,6 +23,10 @@ void layout_calculate_surface(int16_t face_width,
 
 #ifdef PBL_RECT
   layout_rect_calculate_surface(face_width, face_height, surface);
+#elif defined(PBL_ROUND)
+#error "Round layout architect is not implemented yet"
+#else
+#error "Unsupported Pebble display shape"
 #endif
 
   layout_update_surface_style(&(surface->style), display_mode);

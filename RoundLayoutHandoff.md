@@ -48,20 +48,14 @@ watchface_create()
                               display_mode,
                               &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> select private layout profile
-       -> calculate axis scale flags
-       -> calculate and store surface->style.is_compact
        -> #ifdef PBL_RECT
           layout_rect_calculate_surface(face_width,
                                         face_height,
-                                        profile,
-                                        scale_width,
-                                        scale_height,
                                         surface)
+          #elif defined(PBL_ROUND)
+          #error until layout_round_calculate_surface() exists
        -> layout_update_surface_style(surface, display_mode)
-            -> layout_stylist_update_surface_style(display_mode,
-                                                   is_compact,
-                                                   ...)
+            -> layout_stylist_update_surface_style(style, display_mode)
 ```
 
 Round should use the same public entry point:
@@ -69,13 +63,13 @@ Round should use the same public entry point:
 ```c
 #ifdef PBL_RECT
   layout_rect_calculate_surface(
-      face_width, face_height, profile, scale_width, scale_height, surface);
+      face_width, face_height, surface);
 #elif defined(PBL_ROUND)
   layout_round_calculate_surface(
-      face_width, face_height, profile, scale_width, scale_height, surface);
+      face_width, face_height, surface);
 #endif
 
-layout_update_surface_style(surface, display_mode);
+layout_update_surface_style(&surface->style, display_mode);
 ```
 
 `layout.c` is the only file that should include private architect headers.
@@ -99,9 +93,6 @@ The intended API mirrors the rectangle architect:
 void layout_round_calculate_surface(
     int16_t face_width,
     int16_t face_height,
-    const AtAGlanceLayoutDesign* profile,
-    bool scale_width,
-    bool scale_height,
     WatchfaceSurface* surface);
 ```
 
@@ -178,8 +169,8 @@ safe_w = half_width * 2;
 Use the farthest vertical edge of each row band when calculating `dy`.
 This protects the full text or icon frame, not just the row centerline.
 
-Use the active profile's `content_margin` as the edge margin. Do not add a
-separate optical inset unless screenshots later prove a distinct round-only
+Use the active round blueprint's content margin as the edge margin. Do not add
+a separate optical inset unless screenshots later prove a distinct round-only
 correction is needed.
 
 Every known substratum should receive its own final `GRect`. Do not make
@@ -217,10 +208,10 @@ Do not scale rectangle just because Gabbro has more room.
 - font-role mapping
 - custom time font resource IDs
 
-Layout calculation owns axis-specific scale decisions and compact/full
-classification. It calculates them once from the active private profile's
-design face dimensions, stores compact/full on `WatchfaceSurfaceStyle`, and
-passes compact/full to the stylist. With the current product profile, compact
+The active shape architect owns compact/full classification because it owns
+geometry. It calculates compact/full once from its blueprint and face
+dimensions, stores compact/full on `WatchfaceSurfaceStyle`, and the stylist
+consumes that stored state. With the current rectangular blueprint, compact
 means face width below `200` or face height below `228`.
 
 Do not move font decisions into `time.c` or `layout_round.c`. The round

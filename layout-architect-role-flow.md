@@ -180,12 +180,12 @@ Keep only `layout.h` public.
 Private implementation files:
 
 - `layout.c`
-  - public facade
+  - public facade and general contractor
   - owns `layout_calculate_surface()`
   - owns `layout_update_surface_style()`
-  - selects the active private layout profile
-  - calculates axis-specific scale flags and compact/full classification once
-    and stores compact/full on the surface
+  - initializes the caller-owned `WatchfaceSurface`
+  - dispatches to exactly one private shape architect
+  - applies style after geometry and compact/full are resolved
   - includes private architect/stylist headers
 
 - `layout_stylist.c/.h`
@@ -228,9 +228,6 @@ Private flow:
 void layout_rect_calculate_surface(
     int16_t face_width,
     int16_t face_height,
-    const AtAGlanceLayoutDesign* profile,
-    bool scale_width,
-    bool scale_height,
     WatchfaceSurface* surface);
 ```
 
@@ -280,11 +277,11 @@ This struct is not a public object. It is only a file-local grouping of
 derived rectangle metrics so the calculation is readable and not a spreadsheet
 of unrelated locals.
 
-Architects consume immutable private `AtAGlanceLayoutDesign` values. Profile
-values are initialized from canonical product constants in `ataglance.h`.
-Architects derive private resolved metrics from the profile, face dimensions,
-and axis-specific scale flags. Full axes use profile values directly, including
-`40` data-field width and `28x28` icon size.
+Architects consume canonical product constants through private file-local
+blueprints. Architects derive private resolved metrics from the blueprint and
+face dimensions, and they own compact/full classification because they own the
+geometry context. Full rectangular displays use canonical values directly,
+including `40` data-field width and `28x28` icon size.
 
 ## Proposed Rectangle Redesign
 

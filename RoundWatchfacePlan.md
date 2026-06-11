@@ -42,9 +42,11 @@ The current watchface is organized around a calculated surface and fixed
 module-owned strata:
 
 - `layout.h` is the only public layout API.
-- `layout.c` is the layout facade.
-- `layout_stylist.c/.h` owns palette, font, and compact/full style
-  decisions.
+- `layout.c` is the public layout contractor: it initializes the
+  caller-owned surface, dispatches to the right shape architect, and then
+  applies style.
+- `layout_stylist.c/.h` owns palette, font, and custom-font decisions. It
+  consumes compact/full state from the calculated surface.
 - `layout_rect.c/.h` owns rectangular geometry.
 - Future `layout_round.c/.h` should own round geometry.
 - `watchface.c` is the runtime clearing house.
@@ -62,36 +64,30 @@ watchface_create()
                               display_mode,
                               &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> select private layout profile
-       -> calculate axis scale flags
-       -> calculate and store surface->style.is_compact
        -> #ifdef PBL_RECT
           layout_rect_calculate_surface(face_width,
                                         face_height,
-                                        profile,
-                                        scale_width,
-                                        scale_height,
                                         surface)
+          #elif defined(PBL_ROUND)
+          #error until layout_round_calculate_surface() exists
        -> layout_update_surface_style(surface, display_mode)
-            -> layout_stylist_update_surface_style(display_mode,
-                                                   is_compact,
-                                                   ...)
+            -> layout_stylist_update_surface_style(style, display_mode)
 ```
 
 This is the model for round. `layout_calculate_surface()` remains the
-single public entry point. It should dispatch to exactly one shape
-architect behind Pebble shape macros, then apply style:
+single public entry point. It dispatches to exactly one shape architect
+behind Pebble shape macros, then applies style:
 
 ```c
 #ifdef PBL_RECT
   layout_rect_calculate_surface(
-      face_width, face_height, profile, scale_width, scale_height, surface);
+      face_width, face_height, surface);
 #elif defined(PBL_ROUND)
   layout_round_calculate_surface(
-      face_width, face_height, profile, scale_width, scale_height, surface);
+      face_width, face_height, surface);
 #endif
 
-layout_update_surface_style(surface, display_mode);
+layout_update_surface_style(&surface->style, display_mode);
 ```
 
 Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect dispatch.
@@ -122,9 +118,11 @@ Architect invariants:
 - Intermediate metrics such as content bounds, safe spans, margins,
   row gaps, and pair widths stay private to the active architect
   implementation.
-- Layout profiles are private immutable product inputs. Shape architects
-  consume profile values plus axis-specific scale flags instead of scattered
-  product constants, and derive resolved metrics privately.
+- Shape architects consume canonical product constants through private
+  file-local blueprints and derive resolved metrics privately.
+- Shape architects own compact/full classification because they own the
+  geometry context. They store that resolved state on
+  `WatchfaceSurfaceStyle`.
 - `layout_rect.c` owns rectangular intermediate math in private structs
   such as `LayoutRectMetrics`.
 - `layout_round.c` should own round intermediate math in private structs
@@ -152,14 +150,14 @@ must be calculated from circular safe spans.
 Current styling decisions that round must account for:
 
 - `ColorPalette` is colors-only.
-- Layout calculates axis-specific scale flags and compact/full once from the
-  active profile's design face dimensions, then stores compact/full on
+- The active shape architect calculates compact/full once from its geometry
+  blueprint and face dimensions, then stores compact/full on
   `WatchfaceSurfaceStyle`.
 - Palette and font decisions are in `layout_stylist.c`; the stylist consumes
   the stored compact/full state and does not recompute it from dimensions.
 - Dynamic battery and BPM colors are module-owned by
   `calculate_battery_color()` and `calculate_bpm_color()`.
-- With the current product profile, compact means face width below `200` or
+- With the current rectangular blueprint, compact means face width below `200` or
   face height below `228`.
 - Chalk is compact.
 - Gabbro is full.
@@ -397,8 +395,7 @@ Phase 1: round architect scaffolding.
 - Include it only from `layout.c`.
 - Add the `PBL_ROUND` dispatch in `layout_calculate_surface()` as the
   round equivalent of the current `PBL_RECT` call to
-  `layout_rect_calculate_surface(face_width, face_height, profile,
-  scale_width, scale_height, surface)`.
+  `layout_rect_calculate_surface(face_width, face_height, surface)`.
 - Keep `package.json` targets unchanged in this phase.
 - Build current rectangular targets to confirm no drift.
 
