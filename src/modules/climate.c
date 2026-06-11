@@ -104,13 +104,13 @@ static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  int16_t _condition = s_weather_condition;
+  int16_t condition = s_weather_condition;
 
   if (!s_weather_condition_known) {
-    _condition = WEATHER_CONDITION_UNKNOWN;
+    condition = WEATHER_CONDITION_UNKNOWN;
   }
 
-  draw_climate_icon(ctx, &bounds, _condition, palette);
+  draw_climate_icon(ctx, &bounds, condition, palette);
 }
 
 // APIs called by other components of the watchface
@@ -135,11 +135,12 @@ bool climate_module_create(
   }
 
   s_surface = surface;
-  s_climate_icon_layer = substratum_renderer_create_icon_layer(
-      root,
-      icon,
-      climate_icon_update_proc);
-
+  if (icon->is_enabled) {
+    s_climate_icon_layer = substratum_renderer_create_icon_layer(
+        root,
+        icon,
+        climate_icon_update_proc);
+  }
   // Update display now that this module has been created
   climate_module_update_display(temp_unit);
   return true;

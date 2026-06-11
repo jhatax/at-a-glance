@@ -49,7 +49,7 @@ Owns the shared display component model:
 - `ColorPalette`
 - `WatchfaceTextSubstratum`
 - `WatchfaceIconSubstratum`
-- `WatchfaceBackgroundSubstratum`
+- `WatchfaceBackgroundStratum`
 - fixed stratum structs
 - `WatchfaceSurfaceStyle`
 - `WatchfaceSurface`

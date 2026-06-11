@@ -183,12 +183,16 @@ Private implementation files:
   - public facade
   - owns `layout_calculate_surface()`
   - owns `layout_update_surface_style()`
+  - selects the active private layout profile
+  - calculates axis-specific scale flags and compact/full classification once
+    and stores compact/full on the surface
   - includes private architect/stylist headers
 
 - `layout_stylist.c/.h`
   - already extracted
-  - owns palette constants, compact/full classification, font key mapping, and
-    style filling
+  - owns palette constants, font key mapping, and style filling
+  - consumes compact/full classification from the calculated surface style
+    instead of recomputing it from face dimensions
 
 - `layout_rect.c/.h`
   - already extracted
@@ -224,6 +228,9 @@ Private flow:
 void layout_rect_calculate_surface(
     int16_t face_width,
     int16_t face_height,
+    const AtAGlanceLayoutDesign* profile,
+    bool scale_width,
+    bool scale_height,
     WatchfaceSurface* surface);
 ```
 
@@ -249,23 +256,35 @@ Use a private metrics struct only if it reduces clutter:
 
 ```c
 typedef struct {
-  int16_t face_width;
-  int16_t face_height;
-  int16_t margin;
   int16_t content_left;
   int16_t content_right;
+  int16_t content_top;
+  int16_t content_bottom;
   int16_t content_width;
-  int16_t display_center;
+  int16_t center_y;
   int16_t row_gap;
-  GSize icon_size;
+  int16_t icon_w;
+  int16_t icon_h;
   int16_t icon_text_gap;
   int16_t data_width;
+  int16_t date_text_height;
+  int16_t time_text_height;
+  int16_t top_text_height;
+  int16_t bottom_text_height;
+  int16_t top_row_height;
+  int16_t bottom_row_height;
 } LayoutRectMetrics;
 ```
 
 This struct is not a public object. It is only a file-local grouping of
 derived rectangle metrics so the calculation is readable and not a spreadsheet
 of unrelated locals.
+
+Architects consume immutable private `AtAGlanceLayoutDesign` values. Profile
+values are initialized from canonical product constants in `ataglance.h`.
+Architects derive private resolved metrics from the profile, face dimensions,
+and axis-specific scale flags. Full axes use profile values directly, including
+`40` data-field width and `28x28` icon size.
 
 ## Proposed Rectangle Redesign
 

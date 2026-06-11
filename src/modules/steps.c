@@ -190,11 +190,12 @@ bool steps_module_create(
   }
 
   s_surface = surface;
-  s_steps_icon_layer = substratum_renderer_create_icon_layer(
-      root,
-      icon,
-      steps_icon_update_proc);
-
+  if (icon->is_enabled) {
+    s_steps_icon_layer = substratum_renderer_create_icon_layer(
+        root,
+        icon,
+        steps_icon_update_proc);
+  }
   return true;
 }
 

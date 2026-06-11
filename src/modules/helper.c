@@ -13,6 +13,9 @@ int16_t helper_scale_round(
     int16_t input_value,
     int16_t numerator,
     int16_t denominator) {
+  if (numerator == denominator) {
+    return input_value;
+  }
   return ((input_value * numerator) + (denominator / 2)) /
       denominator;
 }

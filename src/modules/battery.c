@@ -187,11 +187,12 @@ bool battery_module_create(
 
   s_surface = surface;
   s_palette = surface->style.palette;
-  s_battery_icon_layer = substratum_renderer_create_icon_layer(
-      root,
-      icon,
-      battery_icon_update_proc);
-
+  if (icon->is_enabled) {
+    s_battery_icon_layer = substratum_renderer_create_icon_layer(
+        root,
+        icon,
+        battery_icon_update_proc);
+}
   return true;
 }
 

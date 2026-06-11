@@ -1,5 +1,4 @@
 #pragma once
-
 #include <pebble.h>
 
 #include "watchface_components.h"
@@ -11,5 +10,5 @@ void layout_calculate_surface(
     WatchfaceSurface* surface);
 
 void layout_update_surface_style(
-    WatchfaceSurface* surface,
+    WatchfaceSurfaceStyle* surface,
     uint8_t display_mode);

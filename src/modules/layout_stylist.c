@@ -22,13 +22,6 @@ static const ColorPalette c_light_palette = {
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
 };
 
-static bool layout_is_compact_display(
-    int16_t face_width,
-    int16_t face_height) {
-  return face_width < ATAGLANCE_DESIGN_FACE_WIDTH ||
-      face_height < ATAGLANCE_DESIGN_FACE_HEIGHT;
-}
-
 static const char* layout_font_key_for_role(
     WatchfaceFontRole role,
     bool is_compact) {
@@ -74,8 +67,7 @@ static uint32_t layout_custom_font_resource_id_for_role(
   return 0;
 }
 
-static const ColorPalette* layout_palette_for_display_mode(
-    uint8_t display_mode) {
+static const ColorPalette* layout_palette_for_display_mode(uint8_t display_mode) {
   if (display_mode == DISPLAY_MODE_LIGHT) {
     return &c_light_palette;
   }
@@ -84,19 +76,16 @@ static const ColorPalette* layout_palette_for_display_mode(
 }
 
 void layout_stylist_update_surface_style(
-    int16_t face_width,
-    int16_t face_height,
-    uint8_t display_mode,
-    WatchfaceSurfaceStyle* style) {
+    WatchfaceSurfaceStyle* style,
+    uint8_t display_mode) {
+
   if (!style) {
     return;
   }
 
-  const bool is_compact = layout_is_compact_display(
-      face_width,
-      face_height);
   style->palette = layout_palette_for_display_mode(display_mode);
-  style->is_light_mode = display_mode == DISPLAY_MODE_LIGHT;
+  style->is_light_mode = (display_mode == DISPLAY_MODE_LIGHT);
+  bool is_compact = style->is_compact;
 
   for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
     style->fonts[i] = fonts_get_system_font(

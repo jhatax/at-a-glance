@@ -11,6 +11,7 @@
 #include "steps.h"
 #endif
 
+// A consequence of this is that s_surface.is_compact = false by default
 static WatchfaceSurface s_surface = {0};
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
@@ -41,9 +42,7 @@ static void watchface_exit_path() {
   window_stack_pop_all(false);
 }
 
-bool watchface_create(
-    Window* window,
-    const WatchfaceSettings* settings) {
+bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   if (!window || !settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot create watchface without watchface inputs");
@@ -163,7 +162,7 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
 
   WatchfaceUpdateMask refresh_updates = updates;
   if (updates & WATCHFACE_UPDATE_DISPLAY_MODE) {
-    layout_update_surface_style(&s_surface, s_wf_settings->display_mode);
+    layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
     if (s_surface.style.palette) {
       window_set_background_color(
           s_wf_window,

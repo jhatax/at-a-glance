@@ -62,10 +62,20 @@ watchface_create()
                               display_mode,
                               &s_surface)
        -> memset(surface, 0, sizeof(*surface))
+       -> select private layout profile
+       -> calculate axis scale flags
+       -> calculate and store surface->style.is_compact
        -> #ifdef PBL_RECT
-          layout_rect_calculate_surface(face_width, face_height, surface)
+          layout_rect_calculate_surface(face_width,
+                                        face_height,
+                                        profile,
+                                        scale_width,
+                                        scale_height,
+                                        surface)
        -> layout_update_surface_style(surface, display_mode)
-            -> layout_stylist_update_surface_style(...)
+            -> layout_stylist_update_surface_style(display_mode,
+                                                   is_compact,
+                                                   ...)
 ```
 
 This is the model for round. `layout_calculate_surface()` remains the
@@ -74,9 +84,11 @@ architect behind Pebble shape macros, then apply style:
 
 ```c
 #ifdef PBL_RECT
-  layout_rect_calculate_surface(face_width, face_height, surface);
+  layout_rect_calculate_surface(
+      face_width, face_height, profile, scale_width, scale_height, surface);
 #elif defined(PBL_ROUND)
-  layout_round_calculate_surface(face_width, face_height, surface);
+  layout_round_calculate_surface(
+      face_width, face_height, profile, scale_width, scale_height, surface);
 #endif
 
 layout_update_surface_style(surface, display_mode);
@@ -92,7 +104,7 @@ geometry unless a model-specific exception is proven by screenshots.
 state. It contains:
 
 - face dimensions
-- one `WatchfaceSurfaceStyle`
+- one `WatchfaceSurfaceStyle`, including the calculated compact/full state
 - one background substratum
 - six fixed strata: date, time, battery, climate, steps, bpm
 
@@ -108,8 +120,11 @@ Architect invariants:
 
 - `WatchfaceSurface` carries final substratum frames only.
 - Intermediate metrics such as content bounds, safe spans, margins,
-  row gaps, pair widths, and optical insets stay private to the
-  active architect implementation.
+  row gaps, and pair widths stay private to the active architect
+  implementation.
+- Layout profiles are private immutable product inputs. Shape architects
+  consume profile values plus axis-specific scale flags instead of scattered
+  product constants, and derive resolved metrics privately.
 - `layout_rect.c` owns rectangular intermediate math in private structs
   such as `LayoutRectMetrics`.
 - `layout_round.c` should own round intermediate math in private structs
@@ -137,13 +152,15 @@ must be calculated from circular safe spans.
 Current styling decisions that round must account for:
 
 - `ColorPalette` is colors-only.
-- Palette/font/compact decisions are in `layout_stylist.c`.
+- Layout calculates axis-specific scale flags and compact/full once from the
+  active profile's design face dimensions, then stores compact/full on
+  `WatchfaceSurfaceStyle`.
+- Palette and font decisions are in `layout_stylist.c`; the stylist consumes
+  the stored compact/full state and does not recompute it from dimensions.
 - Dynamic battery and BPM colors are module-owned by
   `calculate_battery_color()` and `calculate_bpm_color()`.
-- Rectangular compact means face width below `200` or face height below
-  `228`.
-- Round compact uses the same binary design baseline: face width below
-  `200` or face height below `228`.
+- With the current product profile, compact means face width below `200` or
+  face height below `228`.
 - Chalk is compact.
 - Gabbro is full.
 
@@ -173,8 +190,8 @@ Use the farthest vertical edge of a row band when calculating `dy`.
 This protects the full height of text/icon frames, not only the row's
 centerline.
 
-Apply any optical inset after calculating the safe span. The circular
-safe span is the physical bound; optical inset is a design decision.
+Use `content_margin` as the edge margin. Do not add a separate optical inset
+unless screenshots later prove a distinct round-only correction is needed.
 
 ## Computed Chalk Safe Spans
 
@@ -368,8 +385,8 @@ Conditional compilation flow:
   icon `is_enabled`.
 - Do not change palette, typography, AppMessage, debug health, or
   module lifecycle behavior in the same slice as first round geometry.
-- Keep custom-font decisions in `layout_stylist.c`; round may influence
-  compact/full style classification, but `time.c` must not make shape
+- Keep custom-font decisions in `layout_stylist.c`; layout calculation owns
+  compact/full style classification, and `time.c` must not make shape
   decisions locally.
 
 ## Implementation Sequence
@@ -380,7 +397,8 @@ Phase 1: round architect scaffolding.
 - Include it only from `layout.c`.
 - Add the `PBL_ROUND` dispatch in `layout_calculate_surface()` as the
   round equivalent of the current `PBL_RECT` call to
-  `layout_rect_calculate_surface(face_width, face_height, surface)`.
+  `layout_rect_calculate_surface(face_width, face_height, profile,
+  scale_width, scale_height, surface)`.
 - Keep `package.json` targets unchanged in this phase.
 - Build current rectangular targets to confirm no drift.
 

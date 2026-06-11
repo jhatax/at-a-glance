@@ -39,6 +39,9 @@ Every non-trivial change follows this cycle:
 - Mature codebase rule: do not overreach. Prefer local, deliberate changes.
 - Do not create helper functions when the real logic is clearer inline,
   especially for fewer than roughly 10 lines of straightforward code.
+- Do not introduce private helpers for five or fewer simple logic statements
+  unless they are required by a framework callback signature, hide genuinely
+  non-obvious domain math, or remove meaningful repeated complexity.
 - Public APIs are declared in headers and implemented as external functions.
   Public APIs must not be `static` or `inline`.
 - File-local private helpers may be `static`.
@@ -65,6 +68,9 @@ Invariants:
 
 - It may define debug flags, design dimensions, sizing constants, font keys,
   string limits, and persisted-settings toggles.
+- Design face width/height remain canonical product constants.
+- Design icon width/height remain canonical product constants because icon
+  glyph and renderer coordinate math use them as the icon design-space bounds.
 - It must not own Pebble layer helpers, module lifecycle APIs, or runtime
   watchface orchestration.
 
@@ -100,6 +106,10 @@ Invariants:
 
 - `layout.h` exposes only calculated-surface APIs:
   `layout_calculate_surface()` and `layout_update_surface_style()`.
+- Layout calculation coordinates private layout profile selection, calculates
+  axis-specific scale flags and compact/full classification once, stores the
+  compact/full state on `WatchfaceSurfaceStyle`, and passes private scale
+  flags through layout architect boundaries.
 - Only layout implementation files include private layout helpers such as
   `layout_rect.h` and `layout_stylist.h`.
 - Layout calculates data; it does not create Pebble layers.
@@ -118,12 +128,16 @@ resolution for layout.
 
 Invariants:
 
-- Palette selection, compact/full display classification, font-role to system
-  font mapping, and custom font resource decisions happen here.
+- Palette selection, font-role to system font mapping, and custom font
+  resource decisions happen here.
+- Compact/full display classification is consumed here from the calculated
+  surface style; the stylist must not recompute it from face dimensions during
+  display-mode refresh.
 - Modules may load/unload custom fonts as lifecycle owners, but they do not
   decide which font resource should be used.
-- Compact classification is based on face dimensions:
-  rectangular compact below `200x228`, round compact below `260x260`.
+- Compact classification is based on the active private layout profile's
+  design face dimensions. With the current product profile, compact means face
+  width below `200` or face height below `228`.
 
 Acceptance checks:
 
@@ -141,6 +155,20 @@ Invariants:
 
 - Architects assign final `x`, `y`, `w`, and `h` to each substratum.
 - Architects may use file-local metric structs to improve readability.
+- Architects consume immutable private `AtAGlanceLayoutDesign` product values
+  instead of reaching directly for scattered product constants.
+- Architects derive private resolved metrics from the immutable profile, face
+  dimensions, and axis-specific scale flags. They must not mutate, copy, or
+  reinterpret a product profile as a runtime resolved profile.
+- Layout profiles are private to layout implementation and must not be exposed
+  through `layout.h` or `WatchfaceSurface`.
+- Layout profiles do not include dead or speculative spacing fields such as
+  `column_gap`, and do not include a separate optical x-inset while
+  `content_margin` owns edge spacing.
+- Profile values are initialized from canonical product constants.
+- Layout dimensions only scale down on axes whose face dimension is below the
+  profile design dimension. Full axes use profile values directly, including
+  `40` data-field width and `28x28` icon size.
 - Layout is not a generic row engine; product strata remain fixed and known.
 - Round support must not be enabled until a real round architect exists.
 
