@@ -9,7 +9,7 @@ bool bpm_module_create(
     Layer* root,
     const WatchfaceSurface* surface);
 void bpm_module_destroy(void);
-void bpm_module_refresh(const WatchfaceSurface* surface);
+void bpm_module_refresh(void);
 
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
 void bpm_module_debug_set_bpm(int bpm);

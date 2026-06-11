@@ -159,13 +159,7 @@ void climate_module_destroy(void) {
   s_surface = NULL;
 }
 
-void climate_module_refresh(
-    const WatchfaceSurface* surface,
-    uint8_t temp_unit) {
-  if (surface) {
-    s_surface = surface;
-  }
-
+void climate_module_refresh(uint8_t temp_unit) {
   climate_module_update_display(temp_unit);
 }
 

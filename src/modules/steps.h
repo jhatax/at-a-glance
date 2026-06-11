@@ -9,7 +9,7 @@ bool steps_module_create(
     Layer* root,
     const WatchfaceSurface* surface);
 void steps_module_destroy(void);
-void steps_module_refresh(const WatchfaceSurface* surface);
+void steps_module_refresh(void);
 
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
 void steps_module_debug_set_steps(int steps);

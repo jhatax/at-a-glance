@@ -244,12 +244,12 @@ void bpm_module_destroy(void) {
   #endif
 }
 
-void bpm_module_refresh(const WatchfaceSurface* surface) {
-  if (surface && surface->style.palette) {
-    s_surface = surface;
-    s_palette = surface->style.palette;
+void bpm_module_refresh(void) {
+  if (!s_surface || !s_surface->style.palette) {
+    return;
   }
 
+  s_palette = s_surface->style.palette;
   update_bpm();
 }
 
@@ -278,8 +278,7 @@ bool bpm_module_create(Layer* root, const WatchfaceSurface* surface) {
 void bpm_module_destroy(void) {
 }
 
-void bpm_module_refresh(const WatchfaceSurface* surface) {
-  (void)surface;
+void bpm_module_refresh(void) {
 }
 
 #endif

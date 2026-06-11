@@ -187,6 +187,10 @@ Text-first controls:
 - Assign a module's retained `s_surface` pointer only after the required layer
   has been created successfully. Failure paths must not leave stale surface
   pointers, custom fonts, or partially-owned state behind.
+- Module `refresh()` APIs must not accept `WatchfaceSurface`. `create(root,
+  surface)` captures the calculated surface once; refresh may accept only a
+  narrow runtime payload, such as `time_format` or `temp_unit`, and must
+  validate the module-local `s_surface` before rendering.
 - If a module loads a custom font or other resource during `create()`, the
   same module must release it both on later create failure and in `destroy()`.
   Audit sibling modules for the same lifecycle pattern before finishing.

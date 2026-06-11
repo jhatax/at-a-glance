@@ -61,11 +61,7 @@ void background_module_destroy(void) {
   s_surface = NULL;
 }
 
-void background_module_refresh(const WatchfaceSurface* surface) {
-  if (surface) {
-    s_surface = surface;
-  }
-
+void background_module_refresh(void) {
   if (!s_background_layer || !s_surface || !s_surface->style.palette) {
     return;
   }

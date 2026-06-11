@@ -96,12 +96,7 @@ void time_module_destroy(void) {
   s_surface = NULL;
 }
 
-void time_module_refresh(
-    const WatchfaceSurface* surface,
-    uint8_t time_format) {
-  if (surface) {
-    s_surface = surface;
-  }
+void time_module_refresh(uint8_t time_format) {
   if (!s_time_layer || !s_surface || !s_surface->style.palette) {
     return;
   }

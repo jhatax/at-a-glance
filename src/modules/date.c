@@ -53,10 +53,7 @@ void date_module_destroy(void) {
   s_surface = NULL;
 }
 
-void date_module_refresh(const WatchfaceSurface* surface) {
-  if (surface) {
-    s_surface = surface;
-  }
+void date_module_refresh(void) {
   if (!s_date_layer || !s_surface || !s_surface->style.palette) {
     return;
   }

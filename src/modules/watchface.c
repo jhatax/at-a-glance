@@ -170,34 +170,34 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
           s_surface.style.palette->background);
     }
     if (s_strata_created_mask & BACKGROUND_STRATUM_MASK) {
-      background_module_refresh(&s_surface);
+      background_module_refresh();
     }
     refresh_updates = WATCHFACE_UPDATE_ALL_STRATA;
   }
 
   if (refresh_updates & WATCHFACE_UPDATE_DATE) {
-    date_module_refresh(&s_surface);
+    date_module_refresh();
   }
   if (refresh_updates & WATCHFACE_UPDATE_TIME) {
-    time_module_refresh(&s_surface, s_wf_settings->time_format);
+    time_module_refresh(s_wf_settings->time_format);
   }
   if (refresh_updates & WATCHFACE_UPDATE_BATTERY) {
-    battery_module_refresh(&s_surface);
+    battery_module_refresh();
   }
   if ((refresh_updates & WATCHFACE_UPDATE_CLIMATE) &&
       (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
-    climate_module_refresh(&s_surface, s_wf_settings->temp_unit);
+    climate_module_refresh(s_wf_settings->temp_unit);
   }
 
   #ifdef PBL_HEALTH
   if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & BPM_STRATUM_MASK)) {
-    bpm_module_refresh(&s_surface);
+    bpm_module_refresh();
   }
 
   if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & STEPS_STRATUM_MASK)) {
-    steps_module_refresh(&s_surface);
+    steps_module_refresh();
   }
   #endif
 }

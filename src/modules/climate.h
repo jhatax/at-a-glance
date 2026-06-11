@@ -13,8 +13,6 @@ bool climate_module_create(
     const WatchfaceSurface* surface,
     uint8_t temp_unit);
 void climate_module_destroy(void);
-void climate_module_refresh(
-    const WatchfaceSurface* surface,
-    uint8_t temp_unit);
+void climate_module_refresh(uint8_t temp_unit);
 void climate_module_set_temperature(int celsius_tenths);
 void climate_module_set_condition(int weather_condition);

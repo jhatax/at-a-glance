@@ -185,6 +185,10 @@ Invariants:
 - The strata-only redraw mask is private to `watchface.c`; `main.c` must not
   know about strata.
 - Setters mutate source state only. Rendering happens through a later refresh.
+- Module refresh calls do not pass `WatchfaceSurface`. `create(root, surface)`
+  establishes each module's retained calculated-surface contract; refresh calls
+  may pass only narrow runtime payloads such as time format or temperature
+  unit.
 
 Acceptance checks:
 
@@ -228,12 +232,16 @@ Invariants:
   module explicitly defines it as required.
 - Modules assign their static `s_surface` only after required layer creation
   succeeds.
+- Modules validate their retained `s_surface` during refresh/render. Refresh
+  must not accept or replace a module's surface pointer.
 
 Acceptance checks:
 
 - `*_module_create()` returns true only after required layers are created.
 - Destroy paths clean up every layer/font the module owns.
 - Watchface records creation success only from module create return values.
+- No feature-module `*_refresh()` declaration accepts `WatchfaceSurface`.
+- Payload-bearing refresh APIs pass only the runtime value needed to render.
 
 ### Climate And Health Boundaries
 

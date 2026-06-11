@@ -217,11 +217,7 @@ void steps_module_destroy(void) {
   #endif
 }
 
-void steps_module_refresh(const WatchfaceSurface* surface) {
-  if (surface) {
-    s_surface = surface;
-  }
-
+void steps_module_refresh(void) {
   update_steps();
 }
 
@@ -252,8 +248,7 @@ bool steps_module_create(
 void steps_module_destroy(void) {
 }
 
-void steps_module_refresh(const WatchfaceSurface* surface) {
-  (void)surface;
+void steps_module_refresh(void) {
 }
 
 #endif

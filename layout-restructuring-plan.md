@@ -214,6 +214,14 @@ The strata-only mask is intentionally not part of `watchface.h`; `main.c`
 should not know about strata. `WATCHFACE_UPDATE_ALL` remains public for initial
 full refreshes and includes display mode plus all watchface update categories.
 
+Module refresh APIs intentionally do not receive `WatchfaceSurface`.
+`create(root, surface)` captures the calculated surface once, and each module
+validates its retained `s_surface` before rendering. Refresh calls may receive
+only narrow runtime payloads that are not part of the surface contract, such as
+`time_format` for time and `temp_unit` for climate. Do not replace this with
+setters unless the value is persistent module source state rather than
+refresh-time render input.
+
 Source-state setters are intentionally separate from rendering:
 
 ```c
@@ -243,6 +251,8 @@ Feature modules own their own substrata lifecycle:
 - keep module-owned source state and buffers
 - refresh only their own text/icon surfaces
 - destroy only layers they created
+- retain the calculated surface captured during create
+- never accept or swap a surface pointer during refresh
 
 Creation success follows product semantics:
 

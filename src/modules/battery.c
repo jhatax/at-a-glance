@@ -211,14 +211,12 @@ void battery_module_destroy(void) {
   s_surface = NULL;
 }
 
-void battery_module_refresh(const WatchfaceSurface* surface) {
-  if (surface && surface->style.palette) {
-    s_surface = surface;
-    s_palette = surface->style.palette;
-  } else {
+void battery_module_refresh(void) {
+  if (!s_surface || !s_surface->style.palette) {
     return;
   }
 
+  s_palette = s_surface->style.palette;
   s_battery_state = battery_state_service_peek();
   update_battery();
 }
