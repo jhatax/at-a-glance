@@ -147,10 +147,7 @@ static void apply_bpm_value(int bpm, bool is_available) {
         WATCHFACE_UNAVAILABLE_TEXT);
   }
 
-  substratum_renderer_update_text_layer(
-      s_bpm_layer,
-      s_bpm_buffer,
-      text_color);
+  substratum_renderer_update_text_layer(s_bpm_layer, s_bpm_buffer, text_color);
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);

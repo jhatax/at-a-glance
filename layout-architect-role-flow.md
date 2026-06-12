@@ -1,17 +1,19 @@
 # Layout Architect Role And Flow
 
-This document captures the current layout/watchface boundary and the next
-layout refactor direction after the stylist, rectangle architect, component,
+This document captures the current surface/watchface boundary and the next
+round architect direction after the stylist, rectangle architect, component,
 and substratum renderer extractions. It is a handoff for future rectangle and
-round layout architect work.
+round surface work.
 
 ## Current State
 
-- `layout.h` is the only public layout contract.
-- `layout.c` is the public facade for the layout module.
+- The public surface builder prepares the calculated `WatchfaceSurface`.
+- The surface builder owns the construction sequence: clear the surface, ask
+  the active architect to apply its blueprint, then apply style.
 - `layout_stylist.c/.h` is private to layout and owns palette/font style
   resolution.
-- `layout_rect.c/.h` is private to layout and owns rectangular geometry.
+- `layout_rect.c` is private to layout and owns rectangular geometry.
+- `layout_round.c` is private to layout and owns round geometry.
 - `watchface_components.h` defines the display component types shared by
   layout, watchface, renderer helpers, and feature modules.
 - `substratum_renderer.c/.h` owns common text/icon layer creation, text-layer
@@ -21,10 +23,11 @@ round layout architect work.
 - `watchface` remains the clearing house for module creation, refresh,
   destroy, source-state intake, and mask-based render dispatch.
 
-The next major layout step is round architecture. Rectangle geometry is already
-private to layout, but future visual redesigns should keep the same ownership
-model: layout calculates a `WatchfaceSurface`; modules render their own strata
-from that surface; watchface coordinates lifecycle and refresh.
+The next major surface step is round architecture. Rectangle geometry is
+already private to layout, but future visual redesigns should keep the same
+ownership model: the surface builder prepares a `WatchfaceSurface`; modules
+render their own strata from that surface; watchface coordinates lifecycle and
+refresh.
 
 ## Primary Drivers
 
@@ -45,7 +48,7 @@ Three files define the top-level product/runtime relationship:
   - calls only watchface runtime APIs for display behavior
 
 - `src/modules/watchface.c`
-  - creates the calculated surface
+  - asks the surface builder to prepare the calculated surface
   - creates/destroys feature modules
   - owns the created-strata mask
   - accepts source-state setters from `main.c`
@@ -127,19 +130,20 @@ Icon substrata carry:
 Feature modules consume their own substrata and own their actual Pebble
 `Layer`/`TextLayer` lifecycle.
 
-## Layout Flow
+## Surface Flow
 
-The layout module owns calculation only:
+The surface builder owns surface preparation only:
 
 ```text
-layout_calculate_surface()
-  -> layout architect fills geometry
-  -> layout stylist fills palette/font/custom-font decisions
+surface_builder_prepare()
+  -> clear caller-owned WatchfaceSurface storage
+  -> active architect fills geometry and compact/full state
+  -> stylist fills palette/font/custom-font decisions
   -> WatchfaceSurface is complete
 ```
 
-The layout module does not create Pebble layers, subscribe to services, parse
-AppMessage tuples, or render module source state.
+The surface builder does not create Pebble layers, subscribe to services,
+parse AppMessage tuples, or render module source state.
 
 ## Architect Responsibility
 
@@ -175,16 +179,22 @@ substratum lives.
 
 ## Private File Shape
 
-Keep only `layout.h` public.
+Keep only the surface-preparation API public for watchface runtime.
+
+TODO: Rename current `layout.c/.h` to `surface_builder.c/.h` and update the
+public API to `surface_builder_prepare()`. That function should clear the
+caller-owned surface, call the active architect, call the stylist, and return.
+
+TODO: After this commit series lands, make helper macros defensive with fully
+parenthesized parameters and expressions.
 
 Private implementation files:
 
-- `layout.c`
-  - public facade and general contractor
-  - owns `layout_calculate_surface()`
-  - owns `layout_update_surface_style()`
+- `surface_builder.c/.h`
+  - public surface-preparation boundary
+  - owns `surface_builder_prepare()`
   - initializes the caller-owned `WatchfaceSurface`
-  - dispatches to exactly one private shape architect
+  - calls the active architect contract
   - applies style after geometry and compact/full are resolved
   - includes private architect/stylist headers
 
@@ -194,17 +204,17 @@ Private implementation files:
   - consumes compact/full classification from the calculated surface style
     instead of recomputing it from face dimensions
 
-- `layout_rect.c/.h`
+- `layout_rect.c`
   - already extracted
   - private to layout
   - owns rectangular geometry
   - fills every rectangular substratum frame
 
-- `layout_round.c/.h`
-  - future extraction
+- `layout_round.c`
+  - current round extraction
   - private to layout
   - owns round geometry
-  - must not be introduced speculatively before round layout is planned
+  - uses the same architect contract as rectangle
 
 - `substratum_renderer.c/.h`
   - helper boundary for rendering calculated substrata
@@ -213,8 +223,9 @@ Private implementation files:
   - owns color-role lookup from a `ColorPalette`
   - owns icon coordinate scaling helpers
 
-Only `layout.c` should include architect headers. Feature modules and
-`watchface.c` should not include private architect/stylist headers.
+Only the surface builder should include architect and stylist headers. Feature
+modules and `watchface.c` should not include private architect/stylist
+headers.
 
 ## Rectangle Architect Flow
 
@@ -347,7 +358,8 @@ must still calculate safe spans from the actual face size.
 
 Implementation scope for the round visual slice:
 
-- introduce `layout_round.c/.h` privately behind `layout.c`
+- introduce `layout_round.c` as the round implementation of the shared
+  architect contract
 - calculate row-specific safe spans from chord width
 - assign final frames directly to each substratum
 - keep the same six fixed strata: date, time, bpm, steps, battery, climate

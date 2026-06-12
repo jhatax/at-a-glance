@@ -87,27 +87,27 @@ GColor substratum_renderer_color_for_role(
 int16_t substratum_renderer_scale_icon_x(
     const GSize* size,
     int16_t coord) {
-  if (!size || !is_valid_design_x_coord(coord, ATAGLANCE_DESIGN_ICON_WIDTH)) {
+  if (!size || !is_valid_design_x_coord(coord, DESIGN_ICON_WIDTH)) {
     return 0;
   }
 
-  return helper_scale_round(
+  return HELPER_SCALE_ROUND(
       coord,
       size->w,
-      ATAGLANCE_DESIGN_ICON_WIDTH);
+      DESIGN_ICON_WIDTH);
 }
 
 int16_t substratum_renderer_scale_icon_y(
     const GSize* size,
     int16_t coord) {
-  if (!size || !is_valid_design_y_coord(coord, ATAGLANCE_DESIGN_ICON_HEIGHT)) {
+  if (!size || !is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT)) {
     return 0;
   }
 
-  return helper_scale_round(
+  return HELPER_SCALE_ROUND(
       coord,
       size->h,
-      ATAGLANCE_DESIGN_ICON_HEIGHT);
+      DESIGN_ICON_HEIGHT);
 }
 
 int16_t substratum_renderer_scale_icon_coord(
@@ -117,23 +117,23 @@ int16_t substratum_renderer_scale_icon_coord(
     return 0;
   }
 
-  if (!(is_valid_design_x_coord(coord, ATAGLANCE_DESIGN_ICON_WIDTH) ||
-      is_valid_design_y_coord(coord, ATAGLANCE_DESIGN_ICON_HEIGHT))) {
+  if (!(is_valid_design_x_coord(coord, DESIGN_ICON_WIDTH) ||
+      is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT))) {
     return 0;
   }
 
-  int16_t chosen_dimension = helper_min(size->w, size->h);
+  int16_t chosen_dimension = HELPER_MIN(size->w, size->h);
   int16_t design_dimension = (chosen_dimension == size->w) ?
-      ATAGLANCE_DESIGN_ICON_WIDTH : ATAGLANCE_DESIGN_ICON_HEIGHT;
-  return helper_scale_round(coord, chosen_dimension, design_dimension);
+      DESIGN_ICON_WIDTH : DESIGN_ICON_HEIGHT;
+  return HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension);
 }
 
 GPoint substratum_renderer_scale_icon_point(
     const GSize* size,
     int16_t x,
     int16_t y) {
-  if (!(is_valid_design_x_coord(x, ATAGLANCE_DESIGN_ICON_WIDTH) &&
-      is_valid_design_y_coord(y, ATAGLANCE_DESIGN_ICON_HEIGHT))) {
+  if (!(is_valid_design_x_coord(x, DESIGN_ICON_WIDTH) &&
+      is_valid_design_y_coord(y, DESIGN_ICON_HEIGHT))) {
     return GPoint(0, 0);
   }
 

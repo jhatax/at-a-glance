@@ -89,7 +89,7 @@ static const LayoutBlueprint c_round_blueprint = {
   .time_text_height = DESIGN_SCALE_Y(DESIGN_TIME_TEXT_HEIGHT),
   .data_text_width = DESIGN_SCALE_X(DESIGN_DATA_TEXT_WIDTH),
   .data_text_height = DESIGN_SCALE_Y(DESIGN_DATA_TEXT_HEIGHT),
-  .icon_text_pair_height = DESIGN_SCALE_Y(ROUND_MAX(DESIGN_ICON_HEIGHT,DESIGN_DATA_TEXT_HEIGHT)),
+  .icon_text_pair_height = DESIGN_SCALE_Y(HELPER_MAX(DESIGN_ICON_HEIGHT,DESIGN_DATA_TEXT_HEIGHT)),
 };
 #else
 // Blueprint for larger devices

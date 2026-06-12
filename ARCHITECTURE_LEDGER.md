@@ -98,29 +98,43 @@ Acceptance checks:
 - No layout-private metrics are exposed in `WatchfaceSurface`.
 - No renderer functions are declared in `watchface_components.h`.
 
-### Layout Facade
+### Surface Builder
 
-Decision: `src/modules/layout.c/.h` is the public layout facade.
+Decision: the public surface-construction boundary is
+`surface_builder_prepare()`.
+
+TODO: Rename current `layout.c/.h` to `surface_builder.c/.h` and update the
+public API to `surface_builder_prepare()`. That function should clear the
+caller-owned surface, call the active architect, call the stylist, and return.
+
+TODO: After this commit series lands, make helper macros defensive with fully
+parenthesized parameters and expressions.
 
 Invariants:
 
-- `layout.h` exposes only calculated-surface APIs:
-  `layout_calculate_surface()` and `layout_update_surface_style()`.
-- Layout calculation is the public general contractor: it initializes the
-  caller-owned surface, dispatches to exactly one private shape architect, and
+- Watchface owns `WatchfaceSurface` storage and lifetime, but it does not
+  coordinate geometry and styling directly.
+- The surface builder prepares the caller-owned surface from scratch:
+  it clears the surface, asks the active architect to apply the blueprint, and
   then applies style.
+- The `memset(surface, 0, sizeof(*surface))` belongs in the surface builder
+  because clearing the surface is step one of preparing a fresh calculated
+  surface, not defensive cleanup in runtime code.
+- The architect contract is singular. Platform-specific rectangular and round
+  implementations provide the same architect entry point behind shape guards.
 - Shape architects resolve geometry and compact/full classification once, then
   store the compact/full state on `WatchfaceSurfaceStyle`.
-- Only layout implementation files include private layout helpers such as
-  `layout_rect.h` and `layout_stylist.h`.
-- Layout calculates data; it does not create Pebble layers.
+- The stylist consumes the resolved `WatchfaceSurfaceStyle` state; it does not
+  re-derive compact/full from dimensions.
+- Surface preparation calculates data; it does not create Pebble layers.
 
 Acceptance checks:
 
-- Feature modules include `layout.h` only if they need layout APIs; otherwise
-  they use `watchface_components.h` and/or `substratum_renderer.h`.
-- `layout.h` does not expose text-layer creation, icon scaling, or color-role
-  lookup.
+- `watchface.c` calls one public surface-preparation API when creating the
+  watchface surface.
+- `watchface.c` does not call the architect and stylist separately.
+- Public surface-preparation headers do not expose text-layer creation, icon
+  scaling, private blueprint metrics, or color-role lookup.
 
 ### Layout Stylist
 
@@ -149,8 +163,8 @@ Acceptance checks:
 
 ### Layout Architect
 
-Decision: `src/modules/layout_rect.c/.h` privately owns rectangular geometry.
-Future `layout_round.c/.h` will privately own round geometry.
+Decision: shape architect implementations privately own shape-specific
+geometry behind one architect contract.
 
 Invariants:
 
@@ -161,8 +175,8 @@ Invariants:
 - Architects derive private resolved metrics from their blueprint and face
   dimensions. They must not mutate, copy, or reinterpret immutable product
   constants as runtime state.
-- Architect blueprints are private to layout implementation and must not be
-  exposed through `layout.h` or `WatchfaceSurface`.
+- Architect blueprints are private implementation details and must not be
+  exposed through public surface APIs or `WatchfaceSurface`.
 - Blueprints do not include dead or speculative spacing fields such as
   `column_gap`, and do not include a separate optical x-inset while
   `content_margin` owns edge spacing.

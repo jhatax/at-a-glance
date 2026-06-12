@@ -20,7 +20,7 @@ static void background_layer_update_proc(Layer* layer, GContext* ctx) {
     return;
   }
 
-  graphics_context_set_stroke_width(ctx, 2);
+  graphics_context_set_stroke_width(ctx, s_surface->background.line_height);
   graphics_context_set_stroke_color(
       ctx,
       s_surface->style.palette->background_layer_line);

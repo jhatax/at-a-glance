@@ -5,6 +5,28 @@
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 
 typedef enum {
+  // Reference display used for all layout decisions and icon styling.
+  DESIGN_FACE_HEIGHT = 228,
+  DESIGN_FACE_WIDTH = 200,
+
+  // Aesthetic layout decisions
+  DESIGN_MARGIN = 8,
+  DESIGN_ICON_TEXT_GAP = 3,
+  DESIGN_ROW_GAP = 4,
+  DESIGN_HORIZON_H = 1,
+
+  // Reference size for all designed glyphs
+  DESIGN_ICON_HEIGHT = 24,
+  DESIGN_ICON_WIDTH = 24,
+
+  // Aligned to font choices
+  DESIGN_DATE_TEXT_HEIGHT = 28,
+  DESIGN_TIME_TEXT_HEIGHT = 54,
+  DESIGN_DATA_TEXT_HEIGHT = 20,
+  DESIGN_DATA_TEXT_WIDTH = 40
+} WatchfaceDesignInputs;
+
+typedef enum {
   WATCHFACE_FONT_ROLE_DATE = 0,
   WATCHFACE_FONT_ROLE_TIME,
   WATCHFACE_FONT_ROLE_BPM,
@@ -49,6 +71,7 @@ typedef struct {
   int16_t line_x;
   int16_t line_y;
   int16_t line_width;
+  int16_t line_height;
 } WatchfaceBackgroundStratum;
 
 typedef struct {

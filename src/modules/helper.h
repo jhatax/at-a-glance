@@ -2,14 +2,12 @@
 
 #include <pebble.h>
 
-int16_t helper_max(int16_t a, int16_t b);
+#define HELPER_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-int16_t helper_min(int16_t a, int16_t b);
+#define HELPER_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-int16_t helper_scale_round(
-    int16_t input_value,
-    int16_t numerator,
-    int16_t denominator);
+#define HELPER_SCALE_ROUND(v, n, d) \
+  (((n) == (d)) ? (v) : ((((v) * (n)) + ((d) / 2)) / (d)))
 
 bool helper_tuple_to_int(Tuple* tuple, int* value);
 bool helper_color_equal(GColor first, GColor second);

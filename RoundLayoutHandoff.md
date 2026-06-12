@@ -43,54 +43,43 @@ The relevant current flow is:
 
 ```c
 watchface_create()
-  -> layout_calculate_surface(face_width,
-                              face_height,
-                              display_mode,
-                              &s_surface)
+  -> surface_builder_prepare(face_width,
+                             face_height,
+                             display_mode,
+                             &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> #ifdef PBL_RECT
-          layout_rect_calculate_surface(face_width,
-                                        face_height,
-                                        surface)
-          #elif defined(PBL_ROUND)
-          #error until layout_round_calculate_surface() exists
-       -> layout_update_surface_style(surface, display_mode)
-            -> layout_stylist_update_surface_style(style, display_mode)
+       -> architect_apply_blueprint(face_width,
+                                    face_height,
+                                    surface)
+       -> layout_stylist_update_surface_style(&surface->style, display_mode)
 ```
 
 Round should use the same public entry point:
 
 ```c
-#ifdef PBL_RECT
-  layout_rect_calculate_surface(
-      face_width, face_height, surface);
-#elif defined(PBL_ROUND)
-  layout_round_calculate_surface(
-      face_width, face_height, surface);
-#endif
-
-layout_update_surface_style(&surface->style, display_mode);
+memset(surface, 0, sizeof(*surface));
+architect_apply_blueprint(face_width, face_height, surface);
+layout_stylist_update_surface_style(&surface->style, display_mode);
 ```
 
-`layout.c` is the only file that should include private architect headers.
-Feature modules and `watchface.c` must not include `layout_rect.h` or
-`layout_round.h`.
+The surface builder is the only public surface-construction boundary.
+Feature modules and `watchface.c` must not include private architect or
+stylist headers.
 
 ## First Implementation Slice
 
 The first code slice should be architect scaffolding and geometry only:
 
-- add `src/modules/layout_round.h`
 - add `src/modules/layout_round.c`
-- include `layout_round.h` from `src/modules/layout.c`
-- dispatch `layout_round_calculate_surface()` under `PBL_ROUND`
+- implement the same `architect_apply_blueprint()` contract under
+  `PBL_ROUND`
 - keep `package.json` targets unchanged until geometry is real and reviewed
 - keep all existing rectangular targets building
 
-The intended API mirrors the rectangle architect:
+The intended architect API is shared by rectangle and round:
 
 ```c
-void layout_round_calculate_surface(
+void architect_apply_blueprint(
     int16_t face_width,
     int16_t face_height,
     WatchfaceSurface* surface);

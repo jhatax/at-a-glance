@@ -22,22 +22,24 @@ typedef enum {
 } WeatherIconKind;
 
 typedef enum {
-  WEATHER_ICON_CENTER_X = ATAGLANCE_DESIGN_ICON_WIDTH / 2,
-  WEATHER_ICON_CENTER_Y = ATAGLANCE_DESIGN_ICON_HEIGHT / 2,
+  WEATHER_ICON_CENTER_X = DESIGN_ICON_WIDTH / 2,
+  WEATHER_ICON_CENTER_Y = DESIGN_ICON_HEIGHT / 2,
+  WEATHER_ICON_WIDTH = DESIGN_ICON_WIDTH,
+  WEATHER_ICON_HEIGHT = DESIGN_ICON_HEIGHT,
 } WeatherIconGeometry;
 
 static int16_t weather_scale_x(const GRect* frame, int16_t value) {
-  return frame->origin.x + helper_scale_round(
+  return frame->origin.x + HELPER_SCALE_ROUND(
       value,
       frame->size.w,
-      ATAGLANCE_DESIGN_ICON_WIDTH);
+      WEATHER_ICON_WIDTH);
 }
 
 static int16_t weather_scale_y(const GRect* frame, int16_t value) {
-  return frame->origin.y + helper_scale_round(
+  return frame->origin.y + HELPER_SCALE_ROUND(
       value,
       frame->size.h,
-      ATAGLANCE_DESIGN_ICON_HEIGHT
+      WEATHER_ICON_HEIGHT
   );
 }
 
@@ -54,14 +56,14 @@ static void weather_subframe(
     int16_t h) {
   out->origin.x = weather_scale_x(frame, x);
   out->origin.y = weather_scale_y(frame, y);
-  out->size.w = helper_scale_round(
+  out->size.w = HELPER_SCALE_ROUND(
       w,
       frame->size.w,
-      ATAGLANCE_DESIGN_ICON_WIDTH);
-  out->size.h = helper_scale_round(
+      WEATHER_ICON_WIDTH);
+  out->size.h = HELPER_SCALE_ROUND(
       h,
       frame->size.h,
-      ATAGLANCE_DESIGN_ICON_HEIGHT);
+      WEATHER_ICON_HEIGHT);
 }
 
 static void weather_line(
@@ -88,14 +90,14 @@ static void weather_fill_rect(
       ctx,
       GRect(weather_scale_x(frame, x),
             weather_scale_y(frame, y),
-            helper_scale_round(
+            HELPER_SCALE_ROUND(
                 w,
                 frame->size.w,
-                ATAGLANCE_DESIGN_ICON_WIDTH),
-            helper_scale_round(
+                WEATHER_ICON_WIDTH),
+            HELPER_SCALE_ROUND(
                 h,
                 frame->size.h,
-                ATAGLANCE_DESIGN_ICON_HEIGHT)),
+                WEATHER_ICON_HEIGHT)),
       0,
       GCornerNone);
 }

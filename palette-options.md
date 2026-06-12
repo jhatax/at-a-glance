@@ -185,7 +185,7 @@ The implemented palette assumes date is no longer visually subordinate to
 time. Current `src/c/ataglance.h` uses:
 
 ```c
-#define ATAGLANCE_FONT_KEY_DATE_FULL FONT_KEY_GOTHIC_24_BOLD
+#define DESIGN_FONT_DATE_FULL FONT_KEY_GOTHIC_24_BOLD
 ```
 
 ## Original Option 1 Design Note

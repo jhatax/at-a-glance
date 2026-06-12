@@ -41,14 +41,15 @@ Sources:
 The current watchface is organized around a calculated surface and fixed
 module-owned strata:
 
-- `layout.h` is the only public layout API.
-- `layout.c` is the public layout contractor: it initializes the
-  caller-owned surface, dispatches to the right shape architect, and then
-  applies style.
+- `surface_builder_prepare()` is the public surface-construction API.
+- The surface builder initializes the caller-owned surface, asks the active
+  architect to apply the shape blueprint, and then applies style.
+- Rectangular and round architects use one architect contract. The active
+  implementation is selected by Pebble shape guards at compile time.
 - `layout_stylist.c/.h` owns palette, font, and custom-font decisions. It
   consumes compact/full state from the calculated surface.
-- `layout_rect.c/.h` owns rectangular geometry.
-- Future `layout_round.c/.h` should own round geometry.
+- `layout_rect.c` owns rectangular geometry.
+- `layout_round.c` owns round geometry.
 - `watchface.c` is the runtime clearing house.
 - Feature modules own Pebble layers, render state, buffers, refresh,
   update procs, and destroy paths.
@@ -59,38 +60,29 @@ Current layout call flow:
 
 ```c
 watchface_create()
-  -> layout_calculate_surface(face_width,
-                              face_height,
-                              display_mode,
-                              &s_surface)
+  -> surface_builder_prepare(face_width,
+                             face_height,
+                             display_mode,
+                             &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> #ifdef PBL_RECT
-          layout_rect_calculate_surface(face_width,
-                                        face_height,
-                                        surface)
-          #elif defined(PBL_ROUND)
-          #error until layout_round_calculate_surface() exists
-       -> layout_update_surface_style(surface, display_mode)
-            -> layout_stylist_update_surface_style(style, display_mode)
+       -> architect_apply_blueprint(face_width,
+                                    face_height,
+                                    surface)
+       -> layout_stylist_update_surface_style(&surface->style, display_mode)
 ```
 
-This is the model for round. `layout_calculate_surface()` remains the
-single public entry point. It dispatches to exactly one shape architect
-behind Pebble shape macros, then applies style:
+This is the model for round. `surface_builder_prepare()` remains the
+single public entry point from watchface runtime to surface construction.
+It prepares a fresh calculated surface, then calls the active architect
+contract and stylist in sequence:
 
 ```c
-#ifdef PBL_RECT
-  layout_rect_calculate_surface(
-      face_width, face_height, surface);
-#elif defined(PBL_ROUND)
-  layout_round_calculate_surface(
-      face_width, face_height, surface);
-#endif
-
-layout_update_surface_style(&surface->style, display_mode);
+memset(surface, 0, sizeof(*surface));
+architect_apply_blueprint(face_width, face_height, surface);
+layout_stylist_update_surface_style(&surface->style, display_mode);
 ```
 
-Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect dispatch.
+Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect implementation.
 Use capability macros such as `PBL_COLOR`, `PBL_BW`, and `PBL_HEALTH`
 only for color, monochrome, and health behavior. Do not use
 `PBL_PLATFORM_CHALK` or `PBL_PLATFORM_GABBRO` for general round
@@ -285,13 +277,13 @@ Gabbro should start with the same conceptual model:
 
 ## Round Architect Role
 
-Future `layout_round.c/.h` should be private to layout and included only
-by `layout.c`.
+`layout_round.c` is the round implementation of the shared architect
+contract. It remains private to surface construction.
 
-`layout_round.h` should mirror the rectangular architect's narrow API:
+The round architect uses the same narrow API as the rectangular architect:
 
 ```c
-void layout_round_calculate_surface(
+void architect_apply_blueprint(
     int16_t face_width,
     int16_t face_height,
     WatchfaceSurface* surface);
@@ -331,20 +323,16 @@ row engine, even when a round design uses visual rows.
 
 Conditional compilation flow:
 
-- `layout.h` remains shape-agnostic and public.
-- `layout.c` includes private architect headers.
-- `layout.c` dispatches rectangular geometry under `PBL_RECT`.
-- `layout.c` dispatches round geometry under `PBL_ROUND`.
-- `layout_rect.c/.h` may compile only for rectangular builds if the
-  include/build setup requires it, but no feature module may include it.
-- `layout_round.c/.h` should compile only for round builds once added,
-  or keep all round-specific implementation behind `#ifdef PBL_ROUND`
-  if the Pebble build system compiles all listed C files for all
-  platforms.
+- The public surface-preparation API remains shape-agnostic.
+- The surface builder calls the shared architect contract.
+- `layout_rect.c` provides `architect_apply_blueprint()` under `PBL_RECT`.
+- `layout_round.c` provides `architect_apply_blueprint()` under `PBL_ROUND`.
+- Shape-specific implementation stays behind shape guards if the Pebble build
+  system compiles all listed C files for all platforms.
 - Feature modules and `watchface.c` continue to include only public
-  contracts such as `layout.h`, `watchface_components.h`, and
-  `substratum_renderer.h` as appropriate. They must not include
-  `layout_rect.h` or `layout_round.h`.
+  contracts such as the surface-preparation API, `watchface_components.h`,
+  and `substratum_renderer.h` as appropriate. They must not include private
+  architect or stylist headers.
 
 ## Guardrails And Invariants
 
@@ -391,11 +379,9 @@ Conditional compilation flow:
 
 Phase 1: round architect scaffolding.
 
-- Add private `layout_round.c/.h`.
-- Include it only from `layout.c`.
-- Add the `PBL_ROUND` dispatch in `layout_calculate_surface()` as the
-  round equivalent of the current `PBL_RECT` call to
-  `layout_rect_calculate_surface(face_width, face_height, surface)`.
+- Add private `layout_round.c`.
+- Implement `architect_apply_blueprint()` under `PBL_ROUND`.
+- Keep the surface builder's public call shape unchanged.
 - Keep `package.json` targets unchanged in this phase.
 - Build current rectangular targets to confirm no drift.
 

@@ -69,9 +69,9 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   layout_calculate_surface(
       bounds.size.w,
       bounds.size.h,
-      s_wf_settings->display_mode,
       &s_surface);
 
+  layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
   s_strata_created_mask |= background_module_create(root, &s_surface) ?
       BACKGROUND_STRATUM_MASK : 0;
 
@@ -103,7 +103,6 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   s_strata_created_mask |= steps_module_create(root, &s_surface) ?
       STEPS_STRATUM_MASK : 0;
   #endif
-
   return true;
 }
 
