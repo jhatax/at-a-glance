@@ -83,9 +83,9 @@ static void draw_data_gap_slash(
     return;
   }
 
-  graphics_context_set_stroke_width(ctx, 3);
-  graphics_context_set_stroke_color(ctx, s_palette->unavailable_text);
-  bpm_draw_scaled_line(ctx, bounds_size, 5, 3, 24, 26);
+  graphics_context_set_stroke_color(ctx, s_palette->primary_text);
+  graphics_context_set_stroke_width(ctx, 4);
+  bpm_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
 }
 
 static void bpm_draw_scaled_line(

@@ -511,7 +511,7 @@ static void draw_weather_unavailable_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
-  draw_weather_filled_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN, true);
+  draw_weather_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN);
 
   graphics_context_set_stroke_color(
       ctx,
