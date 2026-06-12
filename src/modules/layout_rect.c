@@ -133,22 +133,11 @@ static void architect_get_layout_from_blueprint(
       blueprint->date_text_height);
 
   computed->battery.icon = GRect(
-      left_icon_x,
-      top_row_y + icon_offset_y,
-      blueprint->icon_w,
-      blueprint->icon_h);
-  computed->battery.text = GRect(
-      left_text_x,
-      top_row_y + text_offset_y,
-      blueprint->data_text_width,
-      blueprint->data_text_height);
-
-  computed->climate.icon = GRect(
       right_icon_x,
       top_row_y + icon_offset_y,
       blueprint->icon_w,
       blueprint->icon_h);
-  computed->climate.text = GRect(
+  computed->battery.text = GRect(
       right_text_x,
       top_row_y + text_offset_y,
       blueprint->data_text_width,
@@ -156,10 +145,21 @@ static void architect_get_layout_from_blueprint(
 
   computed->steps.icon = GRect(
       left_icon_x,
-      bottom_row_y + icon_offset_y,
+      top_row_y + icon_offset_y,
       blueprint->icon_w,
       blueprint->icon_h);
   computed->steps.text = GRect(
+      left_text_x,
+      top_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
+
+  computed->climate.icon = GRect(
+      left_icon_x,
+      bottom_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->climate.text = GRect(
       left_text_x,
       bottom_row_y + text_offset_y,
       blueprint->data_text_width,

@@ -228,27 +228,8 @@ void architect_apply_blueprint(
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
 
-  // Battery: top-left
+  // Battery: top-right
   surface->battery.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.left_icon_x,
-      computed.top_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
-    .is_enabled = true,
-  };
-  surface->battery.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
-      computed.left_text_x,
-      computed.top_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_BATTERY,
-  };
-
-  // Climate: top-right
-  surface->climate.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(
       computed.right_icon_x,
       computed.top_row_y + computed.icon_offset_y,
@@ -256,21 +237,60 @@ void architect_apply_blueprint(
       computed.icon_h),
     .is_enabled = true,
   };
-
-  surface->climate.text = (WatchfaceTextSubstratum) {
+  surface->battery.text = (WatchfaceTextSubstratum) {
     .frame = GRect(
       computed.right_text_x,
       computed.top_row_y + computed.text_offset_y,
       computed.text_w,
       computed.text_h),
     .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_BATTERY,
+  };
+
+  // Steps: top-left
+  surface->steps.icon = (WatchfaceIconSubstratum) {
+    .frame = GRect(
+      computed.left_icon_x,
+      computed.top_row_y + computed.icon_offset_y,
+      computed.icon_w,
+      computed.icon_h),
+    .is_enabled = true,
+  };
+
+  surface->steps.text = (WatchfaceTextSubstratum) {
+    .frame = GRect(
+      computed.left_text_x,
+      computed.top_row_y + computed.text_offset_y,
+      computed.text_w,
+      computed.text_h),
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_STEPS,
+  };
+
+  // Climate: bottom-left
+  surface->climate.icon = (WatchfaceIconSubstratum) {
+    .frame = GRect(
+      computed.left_icon_x,
+      computed.bottom_row_y + computed.icon_offset_y,
+      computed.icon_w,
+      computed.icon_h),
+    .is_enabled = true,
+  };
+
+  surface->climate.text = (WatchfaceTextSubstratum) {
+    .frame = GRect(
+      computed.left_text_x,
+      computed.bottom_row_y + computed.text_offset_y,
+      computed.text_w,
+      computed.text_h),
+    .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
 
-  // BPM: bottom-left
+  // BPM: bottom-right
   surface->bpm.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(
-      computed.left_icon_x,
+      computed.right_icon_x,
       computed.bottom_row_y + computed.icon_offset_y,
       computed.icon_w,
       computed.icon_h),
@@ -279,32 +299,12 @@ void architect_apply_blueprint(
 
   surface->bpm.text = (WatchfaceTextSubstratum) {
     .frame = GRect(
-      computed.left_text_x,
-      computed.bottom_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_BPM,
-  };
-
-  // Steps: bottom-right
-  surface->steps.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.right_icon_x,
-      computed.bottom_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
-    .is_enabled = true,
-  };
-
-  surface->steps.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
       computed.right_text_x,
       computed.bottom_row_y + computed.text_offset_y,
       computed.text_w,
       computed.text_h),
     .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_STEPS,
+    .font_role = WATCHFACE_FONT_ROLE_BPM,
   };
 }
 #endif
