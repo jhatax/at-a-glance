@@ -64,7 +64,7 @@ void date_module_refresh(void) {
     return;
   }
 
-  strftime(s_date_buffer, ATAGLANCE_MAX_STR_LEN, "%a · %d %b", t);
+  strftime(s_date_buffer, ATAGLANCE_MAX_STR_LEN, "%a %d %b", t);
   uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(
       s_date_layer,
