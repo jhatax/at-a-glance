@@ -18,24 +18,17 @@ typedef enum {
   WATCHFACE_UPDATE_DATE = 1 << 1,
   WATCHFACE_UPDATE_BATTERY = 1 << 2,
   WATCHFACE_UPDATE_CLIMATE = 1 << 3,
+  WATCHFACE_UPDATE_BACKGROUND = 1 << 4,
 #ifdef PBL_HEALTH
-  WATCHFACE_UPDATE_HEALTH = 1 << 4,
+  WATCHFACE_UPDATE_HEALTH = 1 << 5,
 #endif
-  WATCHFACE_UPDATE_DISPLAY_MODE = 1 << 5,
-  WATCHFACE_UPDATE_ALL = WATCHFACE_UPDATE_TIME |
-      WATCHFACE_UPDATE_DATE |
-      WATCHFACE_UPDATE_BATTERY |
-      WATCHFACE_UPDATE_CLIMATE |
-#ifdef PBL_HEALTH
-      WATCHFACE_UPDATE_HEALTH |
-#endif
-      WATCHFACE_UPDATE_DISPLAY_MODE
 } WatchfaceUpdateMask;
 
 bool watchface_create(
     Window* window,
     const WatchfaceSettings* settings);
 void watchface_destroy();
+void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
 void watchface_set_temperature(int celsius_tenths);
 void watchface_set_weather_condition(int weather_condition);

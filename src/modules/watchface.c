@@ -16,6 +16,7 @@ static WatchfaceSurface s_surface = {0};
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
+    WATCHFACE_UPDATE_BACKGROUND |
     WATCHFACE_UPDATE_TIME |
     WATCHFACE_UPDATE_DATE |
     WATCHFACE_UPDATE_BATTERY |
@@ -24,6 +25,8 @@ static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
     | WATCHFACE_UPDATE_HEALTH
 #endif
     ;
+
+static void watchface_refresh_strata(WatchfaceUpdateMask updates);
 
 typedef enum {
   NO_STRATA_MASK = 0,
@@ -106,6 +109,8 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   s_strata_created_mask |= steps_module_create(root, &s_surface) ?
       STEPS_STRATUM_MASK : 0;
   #endif
+
+  watchface_repaint();
   return true;
 }
 
@@ -155,6 +160,21 @@ void watchface_destroy() {
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
+void watchface_repaint(void) {
+  if (!s_wf_window ||
+      !s_wf_settings) {
+    return;
+  }
+
+  layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
+  if (s_surface.style.palette) {
+    window_set_background_color(
+        s_wf_window,
+        s_surface.style.palette->background);
+  }
+  watchface_refresh_strata(WATCHFACE_UPDATE_ALL_STRATA);
+}
+
 void watchface_refresh(WatchfaceUpdateMask updates) {
   if (!s_wf_window ||
       !s_wf_settings ||
@@ -162,41 +182,35 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
     return;
   }
 
-  WatchfaceUpdateMask refresh_updates = updates;
-  if (updates & WATCHFACE_UPDATE_DISPLAY_MODE) {
-    layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
-    if (s_surface.style.palette) {
-      window_set_background_color(
-          s_wf_window,
-          s_surface.style.palette->background);
-    }
-    if (s_strata_created_mask & BACKGROUND_STRATUM_MASK) {
-      background_module_refresh();
-    }
-    refresh_updates = WATCHFACE_UPDATE_ALL_STRATA;
-  }
+  watchface_refresh_strata(updates);
+}
 
-  if (refresh_updates & WATCHFACE_UPDATE_DATE) {
+static void watchface_refresh_strata(WatchfaceUpdateMask updates) {
+  if ((updates & WATCHFACE_UPDATE_BACKGROUND) &&
+      (s_strata_created_mask & BACKGROUND_STRATUM_MASK)) {
+    background_module_refresh();
+  }
+  if (updates & WATCHFACE_UPDATE_DATE) {
     date_module_refresh();
   }
-  if (refresh_updates & WATCHFACE_UPDATE_TIME) {
+  if (updates & WATCHFACE_UPDATE_TIME) {
     time_module_refresh(s_wf_settings->time_format);
   }
-  if (refresh_updates & WATCHFACE_UPDATE_BATTERY) {
+  if (updates & WATCHFACE_UPDATE_BATTERY) {
     battery_module_refresh();
   }
-  if ((refresh_updates & WATCHFACE_UPDATE_CLIMATE) &&
+  if ((updates & WATCHFACE_UPDATE_CLIMATE) &&
       (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
     climate_module_refresh(s_wf_settings->temp_unit);
   }
 
   #ifdef PBL_HEALTH
-  if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
+  if ((updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & BPM_STRATUM_MASK)) {
     bpm_module_refresh();
   }
 
-  if ((refresh_updates & WATCHFACE_UPDATE_HEALTH) &&
+  if ((updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & STEPS_STRATUM_MASK)) {
     steps_module_refresh();
   }

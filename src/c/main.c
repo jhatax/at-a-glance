@@ -89,6 +89,7 @@ static void inbox_received_callback(
     return;
   }
   bool changed = false;
+  bool repaint_requested = false;
   WatchfaceUpdateMask updates = WATCHFACE_UPDATE_NONE;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
@@ -181,9 +182,7 @@ static void inbox_received_callback(
     if (display_mode_is_valid &&
         s_settings.display_mode != (uint8_t)display_mode) {
       s_settings.display_mode = (uint8_t)display_mode;
-      updates = (WatchfaceUpdateMask)(
-          updates |
-          WATCHFACE_UPDATE_DISPLAY_MODE);
+      repaint_requested = true;
       changed = true;
     } else if (!display_mode_is_valid) {
       APP_LOG(APP_LOG_LEVEL_WARNING,
@@ -194,7 +193,9 @@ static void inbox_received_callback(
   if (changed) {
     settings_save(&s_settings);
   }
-  if (updates != WATCHFACE_UPDATE_NONE) {
+  if (repaint_requested) {
+    watchface_repaint();
+  } else if (updates != WATCHFACE_UPDATE_NONE) {
     watchface_refresh(updates);
   }
 }
@@ -295,8 +296,6 @@ static void main_window_load(Window* window) {
             "Watchface create failed");
     return;
   }
-
-  watchface_refresh(WATCHFACE_UPDATE_ALL);
 }
 
 static void main_window_unload(Window* window) {
