@@ -18,39 +18,24 @@ typedef struct {
 } LayoutBlueprint;
 
 typedef struct {
-  int16_t top_row_y;
-  int16_t bottom_row_y;
+  GRect icon;
+  GRect text;
+} CalculatedMetricPair;
 
-  int16_t time_x;
-  int16_t time_y;
-  int16_t time_w;
-  int16_t time_h;
-
+typedef struct {
   int16_t rule_x;
   int16_t rule_y;
   int16_t rule_w;
   int16_t rule_h;
 
-  int16_t date_x;
-  int16_t date_y;
-  int16_t date_w;
-  int16_t date_h;
+  GRect time;
+  GRect date;
 
-  int16_t left_icon_x;
-  int16_t left_text_x;
-
-  int16_t right_icon_x;
-  int16_t right_text_x;
-
-  int16_t icon_w;
-  int16_t icon_h;
-
-  int16_t text_w;
-  int16_t text_h;
-
-  int16_t icon_offset_y;
-  int16_t text_offset_y;
-  } CalculatedLayout;
+  CalculatedMetricPair battery;
+  CalculatedMetricPair climate;
+  CalculatedMetricPair steps;
+  CalculatedMetricPair bpm;
+} CalculatedLayout;
 
 #define RECT_SCALE_X(value) \
   (((value) * PBL_DISPLAY_WIDTH + (DESIGN_FACE_WIDTH / 2)) / \
@@ -101,9 +86,102 @@ static const LayoutBlueprint c_rect_blueprint = {
 };
 #endif
 
-void architect_get_layout_from_blueprint(const LayoutBlueprint* blueprint, CalculatedLayout* layout) {
-  (void)blueprint;
-  (void)layout;
+static void architect_get_layout_from_blueprint(
+    const LayoutBlueprint* blueprint,
+    CalculatedLayout* computed,
+    int16_t face_width,
+    int16_t face_height) {
+  if (!blueprint || !computed) {
+    return;
+  }
+
+  memset(computed, 0, sizeof(*computed));
+
+  const int16_t x_start = blueprint->margin;
+  const int16_t x_end = face_width - blueprint->margin;
+  const int16_t content_width = x_end - x_start;
+  const int16_t rule_y = face_height >> 1;
+  const int16_t top_row_y = blueprint->y_start;
+  const int16_t bottom_row_y = blueprint->y_end -
+      blueprint->icon_text_pair_height;
+
+  const int16_t left_icon_x = x_start;
+  const int16_t left_text_x = left_icon_x + blueprint->icon_w +
+      blueprint->icon_text_gap;
+  const int16_t right_icon_x = x_end - blueprint->data_text_width -
+      blueprint->icon_text_gap - blueprint->icon_w;
+  const int16_t right_text_x = right_icon_x + blueprint->icon_w +
+      blueprint->icon_text_gap;
+
+  int16_t text_offset_y = 0;
+  int16_t icon_offset_y = 0;
+  int16_t height_diff = (blueprint->icon_h -
+      blueprint->data_text_height) / 2;
+  if (height_diff > 0) {
+    text_offset_y = height_diff;
+  } else if (height_diff < 0) {
+    icon_offset_y = -height_diff;
+  }
+
+  computed->rule_x = x_start;
+  computed->rule_y = rule_y;
+  computed->rule_w = content_width;
+  computed->rule_h = DESIGN_HORIZON_H;
+
+  computed->time = GRect(
+      x_start,
+      rule_y - blueprint->time_text_height - blueprint->row_gap,
+      content_width,
+      blueprint->time_text_height);
+  computed->date = GRect(
+      x_start,
+      rule_y + blueprint->row_gap,
+      content_width,
+      blueprint->date_text_height);
+
+  computed->battery.icon = GRect(
+      left_icon_x,
+      top_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->battery.text = GRect(
+      left_text_x,
+      top_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
+
+  computed->climate.icon = GRect(
+      right_icon_x,
+      top_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->climate.text = GRect(
+      right_text_x,
+      top_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
+
+  computed->steps.icon = GRect(
+      left_icon_x,
+      bottom_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->steps.text = GRect(
+      left_text_x,
+      bottom_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
+
+  computed->bpm.icon = GRect(
+      right_icon_x,
+      bottom_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->bpm.text = GRect(
+      right_text_x,
+      bottom_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
 }
 
 void architect_apply_blueprint(
@@ -121,135 +199,78 @@ void architect_apply_blueprint(
   surface->face_height = face_height;
 
   const LayoutBlueprint* blueprint = &c_rect_blueprint;
+  CalculatedLayout computed = {0};
+  architect_get_layout_from_blueprint(
+      blueprint,
+      &computed,
+      face_width,
+      face_height);
 
-  // These values are computed more than twice, so caching them
-  const int16_t x_start = blueprint->margin;
-  const int16_t x_end = face_width - blueprint->margin;
-  const int16_t rule_y = face_height>>1;
-  const int16_t content_width = x_end - x_start;
-  const int16_t y_start = blueprint->y_start;
-  const int16_t y_end = blueprint->y_end;
-  const int16_t data_text_h = blueprint->data_text_height;
-  const int16_t data_text_w = blueprint->data_text_width;
-  const int16_t icon_h = blueprint->icon_h;
-  const int16_t icon_w = blueprint->icon_w;
-  const int16_t icon_text_gap = blueprint->icon_text_gap;
-
-  // Calculating the surface, one stratum at a time
+  // Initialize the surface, one stratum at a time
   // Background
-  int16_t str_top = rule_y;
-  int16_t str_left = x_start;
   surface->background = (WatchfaceBackgroundStratum) {
     .frame = GRect(0, 0, face_width, face_height),
     .line_enabled = true,
-    .line_x = str_left,
-    .line_y = str_top,
-    .line_width = content_width,
-    .line_height = DESIGN_HORIZON_H,
+    .line_x = computed.rule_x,
+    .line_y = computed.rule_y,
+    .line_width = computed.rule_w,
+    .line_height = computed.rule_h,
   };
 
   // Time
-  str_top = rule_y - blueprint->time_text_height - blueprint->row_gap;
-  str_left = x_start;
   surface->time.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left, str_top, content_width, blueprint->time_text_height),
+    .frame = computed.time,
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_TIME,
     .color_role = WATCHFACE_COLOR_ROLE_TIME,
   };
 
   // Date
-  str_top = rule_y + blueprint->row_gap;
-  str_left = x_start;
   surface->date.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left, str_top, content_width, blueprint->date_text_height),
+    .frame = computed.date,
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
 
-  // Calculate offsets for icons & text from the pair's starting y-coord
-  // Both offsets start out as 0 in the world in which they have the same ht.
-  int16_t text_offset_y = 0;
-  int16_t icon_offset_y = 0;
-  int16_t height_diff = (icon_h - data_text_h) / 2;
-  if (height_diff > 0) {
-    // Icon is taller, push text down by the difference
-    text_offset_y = height_diff;
-  } else if (height_diff < 0) {
-    // Text is taller, push icon down by the difference
-    icon_offset_y = -height_diff;
-  }
-
-  // Battery & Climate are in the same row, so anchor the row to str_top
-  str_top = y_start;
-  str_left = x_start;
   surface->battery.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(str_left, str_top + icon_offset_y, icon_w, icon_h),
+    .frame = computed.battery.icon,
     .is_enabled = true,
   };
-  // Only the x-coord will change for the row
-  str_left += icon_w + icon_text_gap;
   surface->battery.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left,
-                   str_top + text_offset_y,
-                   data_text_w,
-                   data_text_h),
+    .frame = computed.battery.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BATTERY,
   };
 
-  // Climate, same y-coord as Battery
-  str_left = x_end - data_text_w - icon_text_gap - icon_w;
   surface->climate.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(str_left, str_top + icon_offset_y, icon_w, icon_h),
+    .frame = computed.climate.icon,
     .is_enabled = true,
   };
 
-  // Only the x-coord will change for the row
-  str_left += icon_w + icon_text_gap;
   surface->climate.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left,
-                   str_top + text_offset_y,
-                   data_text_w,
-                   data_text_h),
+    .frame = computed.climate.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
 
-  // Steps & BPM are in the same row, so anchor the row to str_top
-  str_top = y_end - blueprint->icon_text_pair_height;
-  str_left = x_start;
   surface->steps.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(str_left, str_top + icon_offset_y, icon_w, icon_h),
+    .frame = computed.steps.icon,
     .is_enabled = true,
   };
 
-  // Only the x-coord will change for the row
-  str_left += icon_w + icon_text_gap;
   surface->steps.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left,
-                   str_top + text_offset_y,
-                   data_text_w,
-                   data_text_h),
+    .frame = computed.steps.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_STEPS,
   };
 
-  // BPM
-  // Only the x-coord will change for the row
-  str_left = x_end - data_text_w - icon_text_gap - icon_w;
   surface->bpm.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(str_left, str_top + icon_offset_y, icon_w, icon_h),
+    .frame = computed.bpm.icon,
     .is_enabled = true,
   };
-  // Only the x-coord will change for the row
-  str_left += icon_w + icon_text_gap;
   surface->bpm.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(str_left,
-                   str_top + text_offset_y,
-                   data_text_w,
-                   data_text_h),
+    .frame = computed.bpm.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BPM,
   };
