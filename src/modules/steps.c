@@ -1,4 +1,4 @@
-#if defined(PBL_HEALTH)
+#ifdef PBL_HEALTH
 #include "steps.h"
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
@@ -233,23 +233,5 @@ void steps_module_debug_clear_steps(void) {
   s_debug_steps = STEPS_INVALID;
 }
 #endif
-
-#else
-
-#include "steps.h"
-
-bool steps_module_create(
-    Layer* root,
-    const WatchfaceSurface* surface) {
-  (void)root;
-  (void)surface;
-  return true;
-}
-
-void steps_module_destroy(void) {
-}
-
-void steps_module_refresh(void) {
-}
 
 #endif

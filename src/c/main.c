@@ -10,7 +10,7 @@
 static Window* s_window = NULL;
 static WatchfaceSettings s_settings = {0};
 
-#if defined(PBL_HEALTH)
+#ifdef PBL_HEALTH
 static bool s_health_events_subscribed = false;
 static void apply_hr_sample_period();
 static void health_handler(HealthEventType event, void* context);
@@ -40,7 +40,7 @@ static void main_window_unload(Window* window);
 static void init(void);
 static void deinit(void);
 
-#if defined(PBL_HEALTH)
+#ifdef PBL_HEALTH
 static void apply_hr_sample_period() {
   uint8_t minutes = settings_get_hr_sample_minutes(
       s_settings.hr_sample_minutes);
@@ -49,7 +49,7 @@ static void apply_hr_sample_period() {
 }
 #endif
 
-#if defined(PBL_HEALTH)
+#ifdef PBL_HEALTH
 static void health_handler(HealthEventType event, void* context) {
   (void)event;
   (void)context;
@@ -141,7 +141,7 @@ static void inbox_received_callback(
       helper_tuple_to_int(th, &hr_minutes) &&
       HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
     s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
-    #if defined(PBL_HEALTH)
+    #ifdef PBL_HEALTH
     apply_hr_sample_period();
     #endif
     changed = true;
@@ -150,7 +150,7 @@ static void inbox_received_callback(
             "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
 
-#if defined(DEBUG_ATAGLANCE) && defined(PBL_HEALTH)
+#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
   Tuple* t_debug_bpm = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM);
   int debug_bpm = 0;
   if (t_debug_bpm && helper_tuple_to_int(t_debug_bpm, &debug_bpm)) {
@@ -227,7 +227,7 @@ static void outbox_sent_callback(
 }
 
 static uint32_t app_message_inbox_size(void) {
-#if defined(DEBUG_ATAGLANCE) && defined(PBL_HEALTH)
+#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
   return dict_calc_buffer_size(
       8,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -307,7 +307,7 @@ static void main_window_unload(Window* window) {
 
 static void init(void) {
   // Create the window before initializing app state and services.
-  #if defined(PBL_HEALTH)
+  #ifdef PBL_HEALTH
   s_health_events_subscribed = false;
   #endif
 
@@ -332,7 +332,7 @@ static void init(void) {
   // Subscribe to services
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
-  #if defined(PBL_HEALTH)
+  #ifdef PBL_HEALTH
     bool health_available = health_service_events_subscribe(
         health_handler,
         NULL);
@@ -359,7 +359,7 @@ static void deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   app_message_deregister_callbacks();
-  #if defined(PBL_HEALTH)
+  #ifdef PBL_HEALTH
     if (s_health_events_subscribed) {
       health_service_events_unsubscribe();
       s_health_events_subscribed = false;

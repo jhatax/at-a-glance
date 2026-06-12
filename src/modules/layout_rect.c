@@ -29,8 +29,10 @@ typedef struct {
 
   CalculatedMetricPair battery;
   CalculatedMetricPair climate;
+#ifdef PBL_HEALTH
   CalculatedMetricPair steps;
   CalculatedMetricPair bpm;
+#endif
 } CalculatedLayout;
 
 #define RECT_SCALE_X(value) \
@@ -143,17 +145,6 @@ static void architect_get_layout_from_blueprint(
       blueprint->data_text_width,
       blueprint->data_text_height);
 
-  computed->steps.icon = GRect(
-      left_icon_x,
-      top_row_y + icon_offset_y,
-      blueprint->icon_w,
-      blueprint->icon_h);
-  computed->steps.text = GRect(
-      left_text_x,
-      top_row_y + text_offset_y,
-      blueprint->data_text_width,
-      blueprint->data_text_height);
-
   computed->climate.icon = GRect(
       left_icon_x,
       bottom_row_y + icon_offset_y,
@@ -162,6 +153,18 @@ static void architect_get_layout_from_blueprint(
   computed->climate.text = GRect(
       left_text_x,
       bottom_row_y + text_offset_y,
+      blueprint->data_text_width,
+      blueprint->data_text_height);
+
+#ifdef PBL_HEALTH
+  computed->steps.icon = GRect(
+      left_icon_x,
+      top_row_y + icon_offset_y,
+      blueprint->icon_w,
+      blueprint->icon_h);
+  computed->steps.text = GRect(
+      left_text_x,
+      top_row_y + text_offset_y,
       blueprint->data_text_width,
       blueprint->data_text_height);
 
@@ -175,6 +178,7 @@ static void architect_get_layout_from_blueprint(
       bottom_row_y + text_offset_y,
       blueprint->data_text_width,
       blueprint->data_text_height);
+#endif
 }
 
 void architect_apply_blueprint(
@@ -244,6 +248,7 @@ void architect_apply_blueprint(
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
 
+#ifdef PBL_HEALTH
   surface->steps.icon = (WatchfaceIconSubstratum) {
     .frame = computed.steps.icon,
     .is_enabled = true,
@@ -264,5 +269,6 @@ void architect_apply_blueprint(
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BPM,
   };
+#endif
 }
 #endif

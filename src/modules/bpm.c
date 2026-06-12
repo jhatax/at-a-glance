@@ -263,20 +263,4 @@ void bpm_module_debug_clear_bpm(void) {
 }
 #endif
 
-#else
-
-#include "bpm.h"
-
-bool bpm_module_create(Layer* root, const WatchfaceSurface* surface) {
-  (void)root;
-  (void)surface;
-  return true;
-}
-
-void bpm_module_destroy(void) {
-}
-
-void bpm_module_refresh(void) {
-}
-
 #endif

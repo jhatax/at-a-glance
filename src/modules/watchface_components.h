@@ -29,8 +29,10 @@ typedef enum {
 typedef enum {
   WATCHFACE_FONT_ROLE_DATE = 0,
   WATCHFACE_FONT_ROLE_TIME,
+#ifdef PBL_HEALTH
   WATCHFACE_FONT_ROLE_BPM,
   WATCHFACE_FONT_ROLE_STEPS,
+#endif
   WATCHFACE_FONT_ROLE_BATTERY,
   WATCHFACE_FONT_ROLE_CLIMATE,
   WATCHFACE_FONT_ROLE_COUNT
@@ -98,8 +100,10 @@ typedef struct {
   WatchfaceSurfaceStyle style;
   WatchfaceTextStratum date;
   WatchfaceTextStratum time;
+#ifdef PBL_HEALTH
   WatchfaceTextWithIconStratum bpm;
   WatchfaceTextWithIconStratum steps;
+#endif
   WatchfaceTextWithIconStratum battery;
   WatchfaceTextWithIconStratum climate;
 } WatchfaceSurface;

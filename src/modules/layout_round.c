@@ -247,6 +247,7 @@ void architect_apply_blueprint(
     .font_role = WATCHFACE_FONT_ROLE_BATTERY,
   };
 
+#ifdef PBL_HEALTH
   // Steps: top-left
   surface->steps.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(
@@ -266,6 +267,7 @@ void architect_apply_blueprint(
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_STEPS,
   };
+#endif
 
   // Climate: bottom-left
   surface->climate.icon = (WatchfaceIconSubstratum) {
@@ -287,6 +289,7 @@ void architect_apply_blueprint(
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
 
+#ifdef PBL_HEALTH
   // BPM: bottom-right
   surface->bpm.icon = (WatchfaceIconSubstratum) {
     .frame = GRect(
@@ -306,5 +309,6 @@ void architect_apply_blueprint(
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BPM,
   };
+#endif
 }
 #endif

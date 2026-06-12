@@ -4,8 +4,10 @@
 
 #define DESIGN_FONT_DATE_COMPACT FONT_KEY_GOTHIC_18_BOLD
 #define DESIGN_FONT_TIME_COMPACT FONT_KEY_GOTHIC_28_BOLD
+#ifdef PBL_HEALTH
 #define DESIGN_FONT_BPM_COMPACT FONT_KEY_GOTHIC_14
 #define DESIGN_FONT_STEPS_COMPACT FONT_KEY_GOTHIC_14
+#endif
 #define DESIGN_FONT_BATTERY_COMPACT FONT_KEY_GOTHIC_14
 #define DESIGN_FONT_CLIMATE_COMPACT FONT_KEY_GOTHIC_14
 
@@ -15,8 +17,10 @@
 #else
 #define DESIGN_FONT_TIME_FULL FONT_KEY_LECO_42_NUMBERS
 #endif
+#ifdef PBL_HEALTH
 #define DESIGN_FONT_BPM_FULL FONT_KEY_GOTHIC_18
 #define DESIGN_FONT_STEPS_FULL FONT_KEY_GOTHIC_18
+#endif
 #define DESIGN_FONT_BATTERY_FULL FONT_KEY_GOTHIC_18
 #define DESIGN_FONT_CLIMATE_FULL FONT_KEY_GOTHIC_18
 
@@ -52,6 +56,7 @@ static const char* layout_font_key_for_role(
       return is_compact ?
           DESIGN_FONT_TIME_COMPACT :
           DESIGN_FONT_TIME_FULL;
+#ifdef PBL_HEALTH
     case WATCHFACE_FONT_ROLE_BPM:
       return is_compact ?
           DESIGN_FONT_BPM_COMPACT :
@@ -60,6 +65,7 @@ static const char* layout_font_key_for_role(
       return is_compact ?
           DESIGN_FONT_STEPS_COMPACT :
           DESIGN_FONT_STEPS_FULL;
+#endif
     case WATCHFACE_FONT_ROLE_BATTERY:
       return is_compact ?
           DESIGN_FONT_BATTERY_COMPACT :
@@ -69,9 +75,9 @@ static const char* layout_font_key_for_role(
           DESIGN_FONT_CLIMATE_COMPACT :
           DESIGN_FONT_CLIMATE_FULL;
     case WATCHFACE_FONT_ROLE_COUNT:
-      return DESIGN_FONT_BPM_FULL;
+      return DESIGN_FONT_CLIMATE_FULL;
     default:
-      return DESIGN_FONT_BPM_FULL;
+      return DESIGN_FONT_CLIMATE_FULL;
   }
 }
 
