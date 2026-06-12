@@ -1,12 +1,14 @@
 # Round Watchface Plan
 
-This is the planning artifact for adding round-display support. It is
-not approval to add `chalk` or `gabbro` yet, and it is not approval to
-change rectangular behavior.
+This is the planning and development artifact for round-display support. It
+started as the planning handoff before round support existed; it now tracks
+the first-pass round architecture present on this branch and the remaining
+design work needed before the round layout should be treated as final.
 
-The current codebase has already moved to the `WatchfaceSurface`
-architecture. This plan reflects that architecture and should be used as
-the handoff for the eventual round implementation.
+The current codebase uses the `WatchfaceSurface` architecture, a shared
+architect contract, and private rectangular and round architect
+implementations. Use this document with `ARCHITECTURE_LEDGER.md` and
+`roundwatchfacedevelopment.md` before making round geometry changes.
 
 ## Source Findings
 
@@ -41,9 +43,12 @@ Sources:
 The current watchface is organized around a calculated surface and fixed
 module-owned strata:
 
-- `surface_builder_prepare()` is the public surface-construction API.
-- The surface builder initializes the caller-owned surface, asks the active
-  architect to apply the shape blueprint, and then applies style.
+- Current `HEAD` still exposes `layout_calculate_surface()` as the public
+  surface-construction API. The ledger records the future rename to
+  `surface_builder_prepare()` as a TODO.
+- The surface-construction path initializes the caller-owned surface, asks the
+  active architect to apply the shape blueprint, and stores geometry on the
+  surface. Style is applied through `layout_update_surface_style()`.
 - Rectangular and round architects use one architect contract. The active
   implementation is selected by Pebble shape guards at compile time.
 - `layout_stylist.c/.h` owns palette, font, and custom-font decisions. It
@@ -56,30 +61,41 @@ module-owned strata:
 - `main.c` dispatches platform/service/AppMessage events to `watchface`;
   it should not call feature modules directly.
 
+Current branch state:
+
+- `layout_round.c` exists and provides the `PBL_ROUND` implementation of the
+  shared architect contract.
+- `layout_rect.c` provides the `PBL_RECT` implementation.
+- `layout_architect.h` declares the private architect contract used by shape
+  implementations.
+- `package.json` includes `chalk` and `gabbro` targets on this branch.
+- The latest committed round candidate uses four metric slots around the
+  centered time/rule/date core: steps top-left, battery top-right, climate
+  bottom-left, and BPM bottom-right.
+- Round geometry is implemented enough to build, but it still requires
+  screenshot-led design review before being considered product-final.
+
 Current layout call flow:
 
 ```c
 watchface_create()
-  -> surface_builder_prepare(face_width,
-                             face_height,
-                             display_mode,
-                             &s_surface)
+  -> layout_calculate_surface(face_width,
+                              face_height,
+                              &s_surface)
        -> memset(surface, 0, sizeof(*surface))
        -> architect_apply_blueprint(face_width,
                                     face_height,
                                     surface)
-       -> layout_stylist_update_surface_style(&surface->style, display_mode)
 ```
 
-This is the model for round. `surface_builder_prepare()` remains the
-single public entry point from watchface runtime to surface construction.
-It prepares a fresh calculated surface, then calls the active architect
-contract and stylist in sequence:
+This is the model for round. The public surface-construction entry point
+prepares a fresh calculated surface, then calls the active architect contract.
+Style update remains a separate layout API in current `HEAD`, with the
+surface-builder consolidation tracked as a ledger TODO:
 
 ```c
 memset(surface, 0, sizeof(*surface));
 architect_apply_blueprint(face_width, face_height, surface);
-layout_stylist_update_surface_style(&surface->style, display_mode);
 ```
 
 Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect implementation.
@@ -128,11 +144,11 @@ Architect invariants:
 The rectangular architect currently calculates this visual sequence:
 
 ```text
-Battery icon + text        Climate icon + temperature
+Steps icon + text          Battery icon + text
 Centered time
-2px horizon rule
+Horizon rule rectangle
 Centered date
-Steps icon + text          BPM icon + text
+Climate icon + text        BPM icon + text
 ```
 
 The rectangular layout is the product baseline, not a geometry template
@@ -149,10 +165,14 @@ Current styling decisions that round must account for:
   the stored compact/full state and does not recompute it from dimensions.
 - Dynamic battery and BPM colors are module-owned by
   `calculate_battery_color()` and `calculate_bpm_color()`.
-- With the current rectangular blueprint, compact means face width below `200` or
-  face height below `228`.
-- Chalk is compact.
-- Gabbro is full.
+- Compact/full state is stored on `WatchfaceSurfaceStyle` by the active
+  architect and consumed by the stylist.
+- The compact predicate and blueprint scaling behavior are architecture
+  sensitive and should be audited before further visual refinements are
+  treated as final.
+- Chalk is the compact round pressure case.
+- Gabbro is the larger round target and should still use the same round-safe
+  geometry model.
 
 ## Round Geometry Rule
 
@@ -180,7 +200,7 @@ Use the farthest vertical edge of a row band when calculating `dy`.
 This protects the full height of text/icon frames, not only the row's
 centerline.
 
-Use `content_margin` as the edge margin. Do not add a separate optical inset
+Use `DESIGN_MARGIN` as the edge margin. Do not add a separate optical inset
 unless screenshots later prove a distinct round-only correction is needed.
 
 ## Computed Chalk Safe Spans
@@ -248,25 +268,24 @@ Preserve the current visual vocabulary across rectangular and round
 faces:
 
 ```text
-Top context: battery and climate
+Top context: steps and battery
 Dominant centered time
-Centered 2px horizon rule
+Centered horizon rule
 Centered date
-Bottom health context: steps and bpm
+Bottom context: climate and bpm
 ```
 
 Chalk should start from a compact, text-first interpretation:
 
-- top context may need stacking or aggressively compact placement
+- top metric slots may need stacking or aggressively compact placement
 - time remains centered and dominant
 - rule remains centered and short enough to fit its safe span
 - date remains centered
-- bottom health context may need text-first placement or stacked
-  icon/text treatment
-- climate and battery icons are optional if text is already
-  self-labeling
-- steps and BPM icons are more valuable because raw values are less
-  self-labeling
+- bottom metric slots may need text-first placement or stacked icon/text
+  treatment
+- battery and climate text can be more self-labeling than steps and BPM, but
+  icons still help recognition when they fit cleanly
+- steps and BPM icons are valuable because raw values are less self-labeling
 
 Gabbro should start with the same conceptual model:
 
@@ -336,9 +355,9 @@ Conditional compilation flow:
 
 ## Guardrails And Invariants
 
-- Do not enable `chalk` or `gabbro` in `package.json` until the round
-  geometry is implemented and screenshot-reviewed.
-- Do not add dormant round source code without an implementation slice
+- `chalk` and `gabbro` are enabled on this branch. Any further round geometry
+  change requires round build and screenshot review before product approval.
+- Do not add dormant or speculative round code without an implementation slice
   that can be built and inspected.
 - Preserve current rectangular behavior while planning and implementing
   round support.
@@ -375,34 +394,38 @@ Conditional compilation flow:
   compact/full style classification, and `time.c` must not make shape
   decisions locally.
 
-## Implementation Sequence
+## Remaining Implementation Sequence
 
-Phase 1: round architect scaffolding.
+Completed foundation:
 
-- Add private `layout_round.c`.
-- Implement `architect_apply_blueprint()` under `PBL_ROUND`.
-- Keep the surface builder's public call shape unchanged.
-- Keep `package.json` targets unchanged in this phase.
-- Build current rectangular targets to confirm no drift.
+- private `layout_round.c` exists
+- shared `architect_apply_blueprint()` contract exists
+- `PBL_RECT` and `PBL_ROUND` shape implementations exist
+- `chalk` and `gabbro` are present in `package.json`
+- the background rule is represented as a rectangle on the calculated surface
 
-Phase 2: geometry only.
+Phase 1: audit the first-pass round geometry.
 
-- Add integer safe-span helpers in `layout_round.c`.
-- Calculate explicit frames for every existing substratum.
-- Use `is_enabled` for optional icon suppression.
-- Do not change fonts, palette, AppMessage, module lifecycle, or
-  feature-module behavior.
+- Confirm the current four-slot candidate on Chalk and Gabbro screenshots.
+- Check whether horizontal icon/text pairs fit at the top and bottom row
+  bands.
+- Compare the current unstacked treatment against stacked metric variants,
+  including inverse bottom stacking with text above icon.
+- Verify that `40` px data text width and canonical icon dimensions are
+  preserved unless a new design decision explicitly changes them.
+- Audit compact/full classification and blueprint scaling before tuning
+  geometry further.
 
-Phase 3: target enablement and screenshot review.
+Phase 2: refine round geometry only.
 
-- Add `chalk` only when the round architect has real geometry.
-- Build and screenshot Chalk.
-- Adjust only round geometry/icon enablement based on screenshot
-  findings.
-- Add `gabbro` after Chalk is understood, then screenshot and evaluate
-  whether Gabbro can restore optional icons.
+- Adjust only `layout_round.c` geometry and optional icon enablement based on
+  screenshot findings.
+- Use row-specific safe spans for top, center, and bottom bands.
+- Keep fonts, palette, AppMessage keys, module lifecycle, and feature-module
+  behavior unchanged unless a separate approved slice requires it.
+- Use `WatchfaceIconSubstratum.is_enabled` for intentional icon suppression.
 
-Phase 4: documentation and cleanup.
+Phase 3: documentation and cleanup.
 
 - Update README and design notes only after screenshots confirm the
   round layout.
@@ -415,5 +438,5 @@ Phase 4: documentation and cleanup.
 This document update is a documentation-only slice.
 
 - Run `git diff --check`.
-- Review the diff and confirm only `RoundWatchfacePlan.md` changed.
+- Review the diff and confirm only round planning docs changed.
 - No `pebble build` is required for this documentation-only update.

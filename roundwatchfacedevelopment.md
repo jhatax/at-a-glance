@@ -1,8 +1,9 @@
 # Round Watchface Development
 
 This document summarizes the round-display guidance from Pebble/Rebble
-documentation for At A Glance round watchface planning. It is guidance for
-design and implementation decisions, not approval to enable round platforms.
+documentation for At A Glance round watchface development. It captures the
+shape-specific guidance that still applies now that first-pass round support
+exists on this branch.
 
 Sources:
 
@@ -69,22 +70,48 @@ Sources:
 
 ## At A Glance Application
 
-- Prototype Chalk first. It is the tightest round target and the best test of
-  whether the visual model actually works.
+- Chalk remains the hard target. It is the tightest round display and the
+  best test of whether the visual model actually works.
 
 - Calculate safe spans per row before assigning frames. Do not use a single
   global content width for the round face.
 
-- Compare stacked and unstacked metric layouts before production
-  implementation. The design choice should be made from measured safe spans
-  and screenshots, not from rectangular intuition.
+- Compare stacked and unstacked metric layouts before treating the current
+  first-pass layout as final. The design choice should be made from measured
+  safe spans and screenshots, not from rectangular intuition.
 
 - Preserve the current glance hierarchy: top context, dominant centered time,
   centered rule, centered date, and bottom health context.
 
+- The current committed round layout uses four metric slots around the
+  centered time/rule/date core: steps top-left, battery top-right, climate
+  bottom-left, and BPM bottom-right. Treat this as the current candidate
+  layout, not as a proven final design.
+
 - Keep text primary and icons secondary. Icons may be disabled when they do not
   fit cleanly, but text-bearing metrics should remain readable.
 
-- Introduce private `layout_round.c/.h` only after the round layout shape has
-  been chosen. The round architect should sit behind `layout.c` and calculate
-  geometry only.
+- Keep the round architect private and geometry-only. It should sit behind the
+  surface/layout builder path, assign final substratum frames, and leave
+  palette, fonts, AppMessage behavior, and module lifecycle untouched.
+
+## Current Project State
+
+- `layout_round.c` exists and provides the `PBL_ROUND` implementation of the
+  shared architect contract.
+
+- `layout_rect.c` provides the `PBL_RECT` implementation of the same architect
+  contract. Shape-specific implementation remains private to layout/surface
+  construction.
+
+- `package.json` currently includes both `chalk` and `gabbro` targets on this
+  branch. Geometry changes now require screenshot review on round displays,
+  not just rectangular build validation.
+
+- `WatchfaceSurface` remains the calculated UI contract. It carries final
+  frames, style, the background rule rectangle, and fixed product strata; it
+  must not grow private layout metrics or row-safe-span internals.
+
+- Compact/full state is stored on `WatchfaceSurfaceStyle` for stylist
+  consumption. The exact compact predicate and blueprint scaling behavior
+  should be audited before further round refinements are treated as final.
