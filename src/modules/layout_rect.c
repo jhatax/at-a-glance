@@ -23,11 +23,7 @@ typedef struct {
 } CalculatedMetricPair;
 
 typedef struct {
-  int16_t rule_x;
-  int16_t rule_y;
-  int16_t rule_w;
-  int16_t rule_h;
-
+  GRect rule;
   GRect time;
   GRect date;
 
@@ -123,10 +119,7 @@ static void architect_get_layout_from_blueprint(
     icon_offset_y = -height_diff;
   }
 
-  computed->rule_x = x_start;
-  computed->rule_y = rule_y;
-  computed->rule_w = content_width;
-  computed->rule_h = DESIGN_HORIZON_H;
+  computed->rule = GRect(x_start, rule_y, content_width, DESIGN_HORIZON_H);
 
   computed->time = GRect(
       x_start,
@@ -210,11 +203,8 @@ void architect_apply_blueprint(
   // Background
   surface->background = (WatchfaceBackgroundStratum) {
     .frame = GRect(0, 0, face_width, face_height),
-    .line_enabled = true,
-    .line_x = computed.rule_x,
-    .line_y = computed.rule_y,
-    .line_width = computed.rule_w,
-    .line_height = computed.rule_h,
+    .rule_enabled = true,
+    .rule = computed.rule,
   };
 
   // Time

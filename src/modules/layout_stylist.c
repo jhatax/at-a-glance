@@ -23,7 +23,7 @@
 static const ColorPalette c_dark_palette = {
   .background = GColorBlack,
   .background_layer_background = GColorBlack,
-  .background_layer_line = GColorWhite,
+  .background_layer_rule = GColorWhite,
   .primary_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .date = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
@@ -33,7 +33,7 @@ static const ColorPalette c_dark_palette = {
 static const ColorPalette c_light_palette = {
   .background = GColorWhite,
   .background_layer_background = GColorWhite,
-  .background_layer_line = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
+  .background_layer_rule = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
   .primary_text = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
   .date = GColorBlack,

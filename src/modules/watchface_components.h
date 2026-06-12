@@ -46,7 +46,7 @@ typedef enum {
 typedef struct {
   GColor background;
   GColor background_layer_background;
-  GColor background_layer_line;
+  GColor background_layer_rule;
   GColor primary_text;
   GColor unavailable_text;
   GColor date;
@@ -67,11 +67,8 @@ typedef struct {
 
 typedef struct {
   GRect frame;
-  bool line_enabled;
-  int16_t line_x;
-  int16_t line_y;
-  int16_t line_width;
-  int16_t line_height;
+  bool rule_enabled;
+  GRect rule;
 } WatchfaceBackgroundStratum;
 
 typedef struct {

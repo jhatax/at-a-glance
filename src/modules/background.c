@@ -16,20 +16,14 @@ static void background_layer_update_proc(Layer* layer, GContext* ctx) {
       s_surface->style.palette->background_layer_background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  if (!s_surface->background.line_enabled) {
+  if (!s_surface->background.rule_enabled) {
     return;
   }
 
-  graphics_context_set_stroke_width(ctx, s_surface->background.line_height);
-  graphics_context_set_stroke_color(
+  graphics_context_set_fill_color(
       ctx,
-      s_surface->style.palette->background_layer_line);
-  graphics_draw_line(
-      ctx,
-      GPoint(s_surface->background.line_x, s_surface->background.line_y),
-      GPoint(
-          s_surface->background.line_x + s_surface->background.line_width,
-          s_surface->background.line_y));
+      s_surface->style.palette->background_layer_rule);
+  graphics_fill_rect(ctx, s_surface->background.rule, 0, GCornerNone);
 }
 
 bool background_module_create(

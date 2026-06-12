@@ -42,10 +42,7 @@ typedef struct {
   int16_t time_w;
   int16_t time_h;
 
-  int16_t rule_x;
-  int16_t rule_y;
-  int16_t rule_w;
-  int16_t rule_h;
+  GRect rule;
 
   int16_t date_x;
   int16_t date_y;
@@ -138,14 +135,15 @@ void architect_get_layout_from_blueprint(
   computed->time_h = tmp_a;
 
   tmp_b = face_width >> 2;
-  computed->rule_x = center_x - tmp_b;
-  computed->rule_y = computed->time_y + computed->time_h + row_gap;
-  computed->rule_w = face_width >> 1;
-  computed->rule_h = DESIGN_HORIZON_H;
+  computed->rule = GRect(
+      center_x - tmp_b,
+      computed->time_y + computed->time_h + row_gap,
+      face_width >> 1,
+      DESIGN_HORIZON_H);
 
   // Date
   tmp_b = ROUND_SCALE_VALUE(ROUND_DATE_WIDTH);
-  computed->date_y = computed->rule_y + row_gap;
+  computed->date_y = computed->rule.origin.y + row_gap;
   computed->date_x = center_x - (tmp_b >> 1); // x-start = x-center - field-width/2
   computed->date_w = tmp_b;
   computed->date_h = blueprint->date_text_height;
@@ -210,11 +208,8 @@ void architect_apply_blueprint(
   // Background
   surface->background = (WatchfaceBackgroundStratum) {
     .frame = GRect(0, 0, face_width, face_height),
-    .line_enabled = true,
-    .line_x = computed.rule_x,
-    .line_y = computed.rule_y,
-    .line_width = computed.rule_w,
-    .line_height = computed.rule_h,
+    .rule_enabled = true,
+    .rule = computed.rule,
   };
 
   // Time
