@@ -34,42 +34,31 @@ typedef struct {
 } LayoutBlueprint;
 
 typedef struct {
-  int16_t top_row_y;
-  int16_t bottom_row_y;
+  GRect icon;
+  GRect text;
+} CalculatedMetricPair;
 
-  int16_t time_x;
-  int16_t time_y;
-  int16_t time_w;
-  int16_t time_h;
-
+typedef struct {
   GRect rule;
+  GRect time;
+  GRect date;
 
-  int16_t date_x;
-  int16_t date_y;
-  int16_t date_w;
-  int16_t date_h;
+  CalculatedMetricPair battery;
+  CalculatedMetricPair climate;
+#ifdef PBL_HEALTH
+  CalculatedMetricPair steps;
+  CalculatedMetricPair bpm;
+#endif
+} CalculatedLayout;
 
-  int16_t left_icon_x;
-  int16_t left_text_x;
+#define DESIGN_SCALE_X(v) \
+  HELPER_SCALE_ROUND((v), PBL_DISPLAY_WIDTH, ROUND_REFERENCE_WIDTH)
 
-  int16_t right_icon_x;
-  int16_t right_text_x;
+#define DESIGN_SCALE_Y(v) \
+  HELPER_SCALE_ROUND((v), PBL_DISPLAY_HEIGHT, ROUND_REFERENCE_HEIGHT)
 
-  int16_t icon_w;
-  int16_t icon_h;
-
-  int16_t text_w;
-  int16_t text_h;
-
-  int16_t icon_offset_y;
-  int16_t text_offset_y;
-  } CalculatedLayout;
-
-#define DESIGN_SCALE_X(v) HELPER_SCALE_ROUND((v), PBL_DISPLAY_WIDTH, ROUND_REFERENCE_WIDTH)
-
-#define DESIGN_SCALE_Y(v) HELPER_SCALE_ROUND((v), PBL_DISPLAY_HEIGHT, ROUND_REFERENCE_HEIGHT)
-
-#define ROUND_SCALE_VALUE(v) HELPER_SCALE_ROUND((v), PBL_DISPLAY_HEIGHT, ROUND_REFERENCE_DIA)
+#define ROUND_SCALE_VALUE(v) \
+  HELPER_SCALE_ROUND((v), PBL_DISPLAY_HEIGHT, ROUND_REFERENCE_DIA)
 
 #if (PBL_DISPLAY_WIDTH <= DESIGN_FACE_WIDTH && \
   PBL_DISPLAY_HEIGHT <= DESIGN_FACE_HEIGHT)
@@ -86,7 +75,9 @@ static const LayoutBlueprint c_round_blueprint = {
   .time_text_height = DESIGN_SCALE_Y(DESIGN_TIME_TEXT_HEIGHT),
   .data_text_width = DESIGN_SCALE_X(DESIGN_DATA_TEXT_WIDTH),
   .data_text_height = DESIGN_SCALE_Y(DESIGN_DATA_TEXT_HEIGHT),
-  .icon_text_pair_height = DESIGN_SCALE_Y(HELPER_MAX(DESIGN_ICON_HEIGHT,DESIGN_DATA_TEXT_HEIGHT)),
+  .icon_text_pair_height = DESIGN_SCALE_Y(HELPER_MAX(
+      DESIGN_ICON_HEIGHT,
+      DESIGN_DATA_TEXT_HEIGHT)),
 };
 #else
 // Blueprint for larger devices
@@ -102,55 +93,54 @@ static const LayoutBlueprint c_round_blueprint = {
   .time_text_height = DESIGN_TIME_TEXT_HEIGHT,
   .data_text_width = DESIGN_DATA_TEXT_WIDTH,
   .data_text_height = DESIGN_DATA_TEXT_HEIGHT,
-  .icon_text_pair_height = HELPER_MAX(DESIGN_ICON_HEIGHT,DESIGN_DATA_TEXT_HEIGHT),
+  .icon_text_pair_height = HELPER_MAX(
+      DESIGN_ICON_HEIGHT,
+      DESIGN_DATA_TEXT_HEIGHT),
 };
 #endif
 
-void architect_get_layout_from_blueprint(
-  const LayoutBlueprint* blueprint,
-  CalculatedLayout* computed,
-  int16_t face_width,
-  int16_t face_height) {
-
+static void architect_get_layout_from_blueprint(
+    const LayoutBlueprint* blueprint,
+    CalculatedLayout* computed,
+    int16_t face_width,
+    int16_t face_height) {
   if (!blueprint || !computed) {
     return;
   }
-    // Start from a clean slate
+
   memset(computed, 0, sizeof(*computed));
 
   const int16_t row_gap = blueprint->row_gap;
   const int16_t center_x = face_width / 2;
+  const int16_t top_row_y = blueprint->y_start;
+  const int16_t time_w = ROUND_SCALE_VALUE(ROUND_TIME_WIDTH);
+  const int16_t time_y = top_row_y + blueprint->icon_text_pair_height +
+      row_gap;
 
-  computed->top_row_y = blueprint->y_start;
+  computed->time = GRect(
+      center_x - (time_w >> 1),
+      time_y,
+      time_w,
+      blueprint->time_text_height);
 
-  int tmp_a = 0;
-  int tmp_b = 0;
-
-  // Time
-  tmp_a = blueprint->time_text_height;
-  tmp_b = ROUND_SCALE_VALUE(ROUND_TIME_WIDTH);
-  computed->time_x = center_x - (tmp_b >> 1); // x-start = x-center - field-width/2
-  computed->time_y = computed->top_row_y + blueprint->icon_text_pair_height + row_gap;
-  computed->time_w = tmp_b;
-  computed->time_h = tmp_a;
-
-  tmp_b = face_width >> 2;
   computed->rule = GRect(
-      center_x - tmp_b,
-      computed->time_y + computed->time_h + row_gap,
+      center_x - (face_width >> 2),
+      time_y + blueprint->time_text_height + row_gap,
       face_width >> 1,
       DESIGN_HORIZON_H);
 
-  // Date
-  tmp_b = ROUND_SCALE_VALUE(ROUND_DATE_WIDTH);
-  computed->date_y = computed->rule.origin.y + row_gap;
-  computed->date_x = center_x - (tmp_b >> 1); // x-start = x-center - field-width/2
-  computed->date_w = tmp_b;
-  computed->date_h = blueprint->date_text_height;
+  const int16_t date_w = ROUND_SCALE_VALUE(ROUND_DATE_WIDTH);
+  const int16_t date_y = computed->rule.origin.y + row_gap;
 
-  computed->bottom_row_y = computed->date_y + computed->date_h + row_gap;
+  computed->date = GRect(
+      center_x - (date_w >> 1),
+      date_y,
+      date_w,
+      blueprint->date_text_height);
 
-  // For icon and text layers
+  const int16_t bottom_row_y = date_y + blueprint->date_text_height +
+      row_gap;
+
   const int16_t col_gap = ROUND_SCALE_VALUE(ROUND_COLUMN_GAP);
   const int16_t data_text_h = blueprint->data_text_height;
   const int16_t data_text_w = blueprint->data_text_width;
@@ -158,21 +148,11 @@ void architect_get_layout_from_blueprint(
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
 
-  tmp_b = center_x - col_gap - data_text_w;
-  computed->left_text_x = tmp_b;
-  computed->left_icon_x = tmp_b - icon_text_gap - icon_w;
+  const int16_t left_text_x = center_x - col_gap - data_text_w;
+  const int16_t left_icon_x = left_text_x - icon_text_gap - icon_w;
+  const int16_t right_icon_x = center_x + col_gap;
+  const int16_t right_text_x = right_icon_x + icon_text_gap + icon_w;
 
-  tmp_b = center_x + col_gap;
-  computed->right_icon_x = tmp_b;
-  computed->right_text_x = tmp_b + icon_text_gap + icon_w;
-
-  computed->icon_w = icon_w;
-  computed->icon_h = icon_h;
-
-  computed->text_w = data_text_w;
-  computed->text_h = data_text_h;
-  // Calculate offsets for icons & text from the pair's starting y-coord
-  // Both offsets start out as 0 in the world in which they have the same ht.
   int16_t text_offset_y = 0;
   int16_t icon_offset_y = 0;
   int16_t height_diff = (icon_h - data_text_h) / 2;
@@ -183,8 +163,52 @@ void architect_get_layout_from_blueprint(
     // Text is taller, push icon down by the difference
     icon_offset_y = -height_diff;
   }
-  computed->icon_offset_y = icon_offset_y;
-  computed->text_offset_y = text_offset_y;
+
+  computed->battery.icon = GRect(
+      right_icon_x,
+      top_row_y + icon_offset_y,
+      icon_w,
+      icon_h);
+  computed->battery.text = GRect(
+      right_text_x,
+      top_row_y + text_offset_y,
+      data_text_w,
+      data_text_h);
+
+  computed->climate.icon = GRect(
+      left_icon_x,
+      bottom_row_y + icon_offset_y,
+      icon_w,
+      icon_h);
+  computed->climate.text = GRect(
+      left_text_x,
+      bottom_row_y + text_offset_y,
+      data_text_w,
+      data_text_h);
+
+#ifdef PBL_HEALTH
+  computed->steps.icon = GRect(
+      left_icon_x,
+      top_row_y + icon_offset_y,
+      icon_w,
+      icon_h);
+  computed->steps.text = GRect(
+      left_text_x,
+      top_row_y + text_offset_y,
+      data_text_w,
+      data_text_h);
+
+  computed->bpm.icon = GRect(
+      right_icon_x,
+      bottom_row_y + icon_offset_y,
+      icon_w,
+      icon_h);
+  computed->bpm.text = GRect(
+      right_text_x,
+      bottom_row_y + text_offset_y,
+      data_text_w,
+      data_text_h);
+#endif
 }
 
 void architect_apply_blueprint(
@@ -202,7 +226,11 @@ void architect_apply_blueprint(
 
   const LayoutBlueprint* blueprint = &c_round_blueprint;
   CalculatedLayout computed = {0};
-  architect_get_layout_from_blueprint(blueprint, &computed, face_width, face_height);
+  architect_get_layout_from_blueprint(
+      blueprint,
+      &computed,
+      face_width,
+      face_height);
 
   // Calculating the surface, one stratum at a time
   // Background
@@ -214,7 +242,7 @@ void architect_apply_blueprint(
 
   // Time
   surface->time.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(computed.time_x, computed.time_y, computed.time_w, computed.time_h),
+    .frame = computed.time,
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_TIME,
     .color_role = WATCHFACE_COLOR_ROLE_TIME,
@@ -222,7 +250,7 @@ void architect_apply_blueprint(
 
   // Date
   surface->date.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(computed.date_x, computed.date_y, computed.date_w, computed.date_h),
+    .frame = computed.date,
     .alignment = GTextAlignmentCenter,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
@@ -230,19 +258,11 @@ void architect_apply_blueprint(
 
   // Battery: top-right
   surface->battery.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.right_icon_x,
-      computed.top_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
+    .frame = computed.battery.icon,
     .is_enabled = true,
   };
   surface->battery.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
-      computed.right_text_x,
-      computed.top_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
+    .frame = computed.battery.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BATTERY,
   };
@@ -250,20 +270,12 @@ void architect_apply_blueprint(
 #ifdef PBL_HEALTH
   // Steps: top-left
   surface->steps.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.left_icon_x,
-      computed.top_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
+    .frame = computed.steps.icon,
     .is_enabled = true,
   };
 
   surface->steps.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
-      computed.left_text_x,
-      computed.top_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
+    .frame = computed.steps.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_STEPS,
   };
@@ -271,20 +283,12 @@ void architect_apply_blueprint(
 
   // Climate: bottom-left
   surface->climate.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.left_icon_x,
-      computed.bottom_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
+    .frame = computed.climate.icon,
     .is_enabled = true,
   };
 
   surface->climate.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
-      computed.left_text_x,
-      computed.bottom_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
+    .frame = computed.climate.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
@@ -292,20 +296,12 @@ void architect_apply_blueprint(
 #ifdef PBL_HEALTH
   // BPM: bottom-right
   surface->bpm.icon = (WatchfaceIconSubstratum) {
-    .frame = GRect(
-      computed.right_icon_x,
-      computed.bottom_row_y + computed.icon_offset_y,
-      computed.icon_w,
-      computed.icon_h),
+    .frame = computed.bpm.icon,
     .is_enabled = true,
   };
 
   surface->bpm.text = (WatchfaceTextSubstratum) {
-    .frame = GRect(
-      computed.right_text_x,
-      computed.bottom_row_y + computed.text_offset_y,
-      computed.text_w,
-      computed.text_h),
+    .frame = computed.bpm.text,
     .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_BPM,
   };

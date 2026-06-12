@@ -1,6 +1,7 @@
 #ifdef PBL_RECT
 #include "layout_architect.h"
 #include "../c/ataglance.h"
+#include "helper.h"
 
 typedef struct {
   int16_t margin;
@@ -35,15 +36,11 @@ typedef struct {
 #endif
 } CalculatedLayout;
 
-#define RECT_SCALE_X(value) \
-  (((value) * PBL_DISPLAY_WIDTH + (DESIGN_FACE_WIDTH / 2)) / \
-      DESIGN_FACE_WIDTH)
+#define DESIGN_SCALE_X(value) \
+  HELPER_SCALE_ROUND((value), PBL_DISPLAY_WIDTH, DESIGN_FACE_WIDTH)
 
-#define RECT_SCALE_Y(value) \
-  (((value) * PBL_DISPLAY_HEIGHT + (DESIGN_FACE_HEIGHT / 2)) / \
-      DESIGN_FACE_HEIGHT)
-
-#define RECT_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define DESIGN_SCALE_Y(value) \
+  HELPER_SCALE_ROUND((value), PBL_DISPLAY_HEIGHT, DESIGN_FACE_HEIGHT)
 
 #if (PBL_DISPLAY_WIDTH >= DESIGN_FACE_WIDTH && \
   PBL_DISPLAY_HEIGHT >= DESIGN_FACE_HEIGHT)
@@ -60,7 +57,7 @@ static const LayoutBlueprint c_rect_blueprint = {
   .time_text_height = DESIGN_TIME_TEXT_HEIGHT,
   .data_text_width = DESIGN_DATA_TEXT_WIDTH,
   .data_text_height = DESIGN_DATA_TEXT_HEIGHT,
-  .icon_text_pair_height = RECT_MAX(
+  .icon_text_pair_height = HELPER_MAX(
       DESIGN_ICON_HEIGHT,
       DESIGN_DATA_TEXT_HEIGHT),
 };
@@ -70,17 +67,17 @@ static const LayoutBlueprint c_rect_blueprint = {
   .margin = DESIGN_MARGIN,
   .y_start = DESIGN_MARGIN,
   .y_end = PBL_DISPLAY_HEIGHT - DESIGN_MARGIN,
-  .row_gap = RECT_SCALE_Y(DESIGN_ROW_GAP),
-  .icon_w = RECT_SCALE_X(DESIGN_ICON_WIDTH),
-  .icon_h = RECT_SCALE_Y(DESIGN_ICON_HEIGHT),
+  .row_gap = DESIGN_SCALE_Y(DESIGN_ROW_GAP),
+  .icon_w = DESIGN_SCALE_X(DESIGN_ICON_WIDTH),
+  .icon_h = DESIGN_SCALE_Y(DESIGN_ICON_HEIGHT),
   .icon_text_gap = DESIGN_ICON_TEXT_GAP,
-  .date_text_height = RECT_SCALE_Y(DESIGN_DATE_TEXT_HEIGHT),
-  .time_text_height = RECT_SCALE_Y(DESIGN_TIME_TEXT_HEIGHT),
-  .data_text_width = RECT_SCALE_X(DESIGN_DATA_TEXT_WIDTH),
-  .data_text_height = RECT_SCALE_Y(DESIGN_DATA_TEXT_HEIGHT),
-  .icon_text_pair_height = RECT_SCALE_Y(RECT_MAX(
-    DESIGN_ICON_HEIGHT,
-    DESIGN_DATA_TEXT_HEIGHT)),
+  .date_text_height = DESIGN_SCALE_Y(DESIGN_DATE_TEXT_HEIGHT),
+  .time_text_height = DESIGN_SCALE_Y(DESIGN_TIME_TEXT_HEIGHT),
+  .data_text_width = DESIGN_SCALE_X(DESIGN_DATA_TEXT_WIDTH),
+  .data_text_height = DESIGN_SCALE_Y(DESIGN_DATA_TEXT_HEIGHT),
+  .icon_text_pair_height = DESIGN_SCALE_Y(HELPER_MAX(
+      DESIGN_ICON_HEIGHT,
+      DESIGN_DATA_TEXT_HEIGHT)),
 };
 #endif
 
