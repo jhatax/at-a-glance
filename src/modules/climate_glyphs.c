@@ -488,7 +488,7 @@ static void draw_weather_bolt_icon(
       palette);
   GColor border_color = PBL_IF_COLOR_ELSE(
       weather_subtle_color(palette),
-      gcolor_legible_over(palette->background));
+      palette->primary_text);
 
   graphics_context_set_stroke_color(ctx, border_color);
   graphics_context_set_stroke_width(ctx, 1);

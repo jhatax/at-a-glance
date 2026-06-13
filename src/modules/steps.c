@@ -32,7 +32,7 @@ static void draw_data_gap_slash(
   graphics_context_set_stroke_width(ctx, 3);
   graphics_context_set_stroke_color(
       ctx,
-      gcolor_legible_over(s_surface->style.palette->background));
+      s_surface->style.palette->primary_text);
   substratum_renderer_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
 }
 
