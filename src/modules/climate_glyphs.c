@@ -79,25 +79,19 @@ static void weather_line(
       weather_point(frame, x1, y1));
 }
 
-static void weather_fill_rect(
+static void weather_fill_rect_from_corners(
     GContext* ctx,
     const GRect* frame,
-    int16_t x,
-    int16_t y,
-    int16_t w,
-    int16_t h) {
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
   graphics_fill_rect(
       ctx,
-      GRect(weather_scale_x(frame, x),
-            weather_scale_y(frame, y),
-            HELPER_SCALE_ROUND(
-                w,
-                frame->size.w,
-                WEATHER_ICON_WIDTH),
-            HELPER_SCALE_ROUND(
-                h,
-                frame->size.h,
-                WEATHER_ICON_HEIGHT)),
+      GRect(weather_scale_x(frame, x0),
+            weather_scale_y(frame, y0),
+            weather_scale_x(frame, x1) - weather_scale_x(frame, x0),
+            weather_scale_y(frame, y1) - weather_scale_y(frame, y0)),
       0,
       GCornerNone);
 }
@@ -263,6 +257,22 @@ static void draw_weather_filled_cloud(
     const ColorPalette* palette,
     WeatherIconKind icon_kind,
     bool is_filled) {
+  const int16_t left_cloud_center_x = 8;
+  const int16_t left_cloud_center_y = 14;
+  const int16_t left_cloud_radius = 5;
+  const int16_t center_cloud_center_x = 14;
+  const int16_t center_cloud_center_y = 11;
+  const int16_t center_cloud_radius = 6;
+  const int16_t right_cloud_center_x = 19;
+  const int16_t right_cloud_center_y = 14;
+  const int16_t right_cloud_radius = 5;
+  const int16_t cloud_fill_left = 6;
+  const int16_t cloud_fill_top = 12;
+  const int16_t cloud_fill_right = 21;
+  const int16_t cloud_fill_bottom = 18;
+  const int16_t cloud_base_left = 4;
+  const int16_t cloud_base_right = 23;
+  const int16_t cloud_base_y = 18;
   GColor color = weather_color_for_kind(icon_kind, palette);
   GColor cloudFillColor = is_filled ? color : palette->background;
 
@@ -270,16 +280,58 @@ static void draw_weather_filled_cloud(
   graphics_context_set_fill_color(ctx, cloudFillColor);
   graphics_context_set_stroke_width(ctx, 2);
 
-  weather_draw_circle(ctx, frame, 8, 16, 5);
-  weather_draw_circle(ctx, frame, 14, 11, 6);
-  weather_draw_circle(ctx, frame, 19, 15, 5);
+  weather_draw_circle(
+      ctx,
+      frame,
+      left_cloud_center_x,
+      left_cloud_center_y,
+      left_cloud_radius);
+  weather_draw_circle(
+      ctx,
+      frame,
+      center_cloud_center_x,
+      center_cloud_center_y,
+      center_cloud_radius);
+  weather_draw_circle(
+      ctx,
+      frame,
+      right_cloud_center_x,
+      right_cloud_center_y,
+      right_cloud_radius);
 
-  weather_fill_circle(ctx, frame, 8, 16, 4);
-  weather_fill_circle(ctx, frame, 14, 11, 5);
-  weather_fill_circle(ctx, frame, 19, 15, 4);
-  weather_fill_rect(ctx, frame, 6, 13, 15, 7);
+  weather_fill_circle(
+      ctx,
+      frame,
+      left_cloud_center_x,
+      left_cloud_center_y,
+      4);
+  weather_fill_circle(
+      ctx,
+      frame,
+      center_cloud_center_x,
+      center_cloud_center_y,
+      5);
+  weather_fill_circle(
+      ctx,
+      frame,
+      right_cloud_center_x,
+      right_cloud_center_y,
+      4);
+  weather_fill_rect_from_corners(
+      ctx,
+      frame,
+      cloud_fill_left,
+      cloud_fill_top,
+      cloud_fill_right,
+      cloud_fill_bottom);
 
-  weather_line(ctx, frame, 4, 20, 23, 20);
+  weather_line(
+      ctx,
+      frame,
+      cloud_base_left,
+      cloud_base_y,
+      cloud_base_right,
+      cloud_base_y);
 }
 
 static void draw_weather_cloud(
@@ -483,30 +535,34 @@ static void draw_weather_bolt_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
+  int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
+  int16_t bolt_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
+      frame_min);
+  // Thunderstorm bolt contract: reuse the same 28x28 stroke-only polygon
+  // as the charging glyph, but draw it without a halo so weather keeps the
+  // storm color as the full silhouette.
+  static const GPoint bolt_points[] = {
+    {14, 0},
+    {5, 11},
+    {10, 11},
+    {5, 27},
+    {17, 13},
+    {23, 13},
+    {14, 5},
+  };
   GColor color = weather_color_for_kind(
       WEATHER_ICON_THUNDERSTORM,
       palette);
-  GColor border_color = PBL_IF_COLOR_ELSE(
-      weather_subtle_color(palette),
-      palette->primary_text);
 
-  graphics_context_set_stroke_color(ctx, border_color);
-  graphics_context_set_stroke_width(ctx, 1);
-  weather_line(ctx, frame, 17, 4, 9, 15);
-  weather_line(ctx, frame, 9, 15, 15, 15);
-  weather_line(ctx, frame, 15, 15, 10, 25);
-  weather_line(ctx, frame, 10, 25, 22, 11);
-  weather_line(ctx, frame, 22, 11, 16, 11);
-  weather_line(ctx, frame, 16, 11, 17, 4);
-
-  graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  weather_line(ctx, frame, 17, 4, 9, 15);
-  weather_line(ctx, frame, 9, 15, 15, 15);
-  weather_line(ctx, frame, 15, 15, 10, 25);
-  weather_line(ctx, frame, 10, 25, 22, 11);
-  weather_line(ctx, frame, 22, 11, 16, 11);
-  weather_line(ctx, frame, 16, 11, 17, 4);
+  substratum_renderer_draw_scaled_polygon_outline(
+      ctx,
+      &frame->size,
+      bolt_points,
+      ARRAY_LENGTH(bolt_points),
+      color,
+      color,
+      bolt_stroke_width,
+      true);
 }
 
 static void draw_weather_unavailable_icon(

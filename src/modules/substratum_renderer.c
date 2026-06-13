@@ -175,7 +175,7 @@ void substratum_renderer_draw_scaled_polygon_outline(
 
   if (draw_halo) {
     graphics_context_set_stroke_color(ctx, halo_color);
-    graphics_context_set_stroke_width(ctx, stroke_width + 2);
+    graphics_context_set_stroke_width(ctx, stroke_width + 1);
     gpath_draw_outline(ctx, path);
   }
 
