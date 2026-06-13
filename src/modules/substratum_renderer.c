@@ -145,3 +145,20 @@ GPoint substratum_renderer_scale_icon_point(
 
   return GPoint(x, y);
 }
+
+void substratum_renderer_draw_scaled_line(
+    GContext* ctx,
+    const GSize* size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  if (!ctx || !size) {
+    return;
+  }
+
+  graphics_draw_line(
+      ctx,
+      substratum_renderer_scale_icon_point(size, x0, y0),
+      substratum_renderer_scale_icon_point(size, x1, y1));
+}
