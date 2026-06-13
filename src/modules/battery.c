@@ -1,4 +1,5 @@
 #include "battery.h"
+#include "helper.h"
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
@@ -72,23 +73,32 @@ static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
     GColor color) {
-  graphics_context_set_stroke_color(ctx, s_palette->background);
-  graphics_context_set_stroke_width(ctx, 1);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
+  int16_t frame_min = HELPER_MIN(bounds_size->w, bounds_size->h);
+  int16_t bolt_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
+      frame_min);
+  // Charging bolt contract: stroke-only 7-point polygon in 28x28 design
+  // space. The top point, left jog, bottom point, and right jog define the
+  // silhouette; the final point returns inside the right edge so the closing
+  // segment reads as a bolt instead of a filled wedge after scaling.
+  static const GPoint bolt_points[] = {
+    {14, 0},
+    {5, 11},
+    {10, 11},
+    {5, 27},
+    {17, 13},
+    {23, 13},
+    {14, 5},
+  };
 
-  graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
+  substratum_renderer_draw_scaled_polygon_outline(
+      ctx,
+      bounds_size,
+      bolt_points,
+      ARRAY_LENGTH(bolt_points),
+      s_palette->primary_text,
+      s_palette->background,
+      bolt_stroke_width,
+      true);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
@@ -97,39 +107,68 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 
   GRect bounds = layer_get_bounds(layer);
-  const int stroke_width = 2;
+  const int16_t shell_left = 2;
+  const int16_t shell_top = 4;
+  const int16_t shell_right = 24;
+  const int16_t shell_bottom = 19;
+  const int16_t nub_left = 24;
+  const int16_t nub_top = 8;
+  const int16_t nub_right = 26;
+  const int16_t nub_bottom = 15;
+  const int16_t shell_stroke_width = 2;
+  const int16_t inner_breathing_room = 1;
+  const int16_t fill_inset = shell_stroke_width + inner_breathing_room;
+  const int16_t fill_left = shell_left + fill_inset;
+  const int16_t fill_top = shell_top + fill_inset;
+  const int16_t fill_right = shell_right - fill_inset;
+  const int16_t fill_bottom = shell_bottom - fill_inset;
+  // battery_scaled_rect_from_corners() treats right/bottom as exclusive
+  // edges, so the maximum unscaled fill span comes from the shell endpoints
+  // minus the shell stroke and one extra pixel of inner breathing room on
+  // each side.
+  const int16_t fill_width_max = fill_right - fill_left;
   int percent = s_battery_state.charge_percent;
   GColor draw_color = calculate_battery_color();
-  int fill_w = (percent * 18) / 100;
+  int16_t fill_width = (percent * fill_width_max) / 100;
 
   graphics_context_set_fill_color(ctx, s_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   graphics_context_set_stroke_color(ctx, draw_color);
   graphics_context_set_fill_color(ctx, draw_color);
-  graphics_context_set_stroke_width(ctx, stroke_width);
+  graphics_context_set_stroke_width(ctx, shell_stroke_width);
 
   graphics_draw_rect(
       ctx,
-      battery_scaled_rect_from_corners(&bounds.size, 2, 4, 24, 19));
+      battery_scaled_rect_from_corners(
+          &bounds.size,
+          shell_left,
+          shell_top,
+          shell_right,
+          shell_bottom));
   graphics_fill_rect(
       ctx,
-      battery_scaled_rect_from_corners(&bounds.size, 24, 8, 26, 15),
+      battery_scaled_rect_from_corners(
+          &bounds.size,
+          nub_left,
+          nub_top,
+          nub_right,
+          nub_bottom),
       0,
       GCornerNone);
 
-  if (fill_w < 1) {
-    fill_w = 1;
+  if (fill_width < 1) {
+    fill_width = 1;
   }
 
   graphics_fill_rect(
       ctx,
       battery_scaled_rect_from_corners(
           &bounds.size,
-          5,
-          7,
-          5 + fill_w,
-          16),
+          fill_left,
+          fill_top,
+          fill_left + fill_width,
+          fill_bottom),
       0,
       GCornerNone);
 

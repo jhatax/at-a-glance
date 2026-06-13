@@ -4,6 +4,9 @@
 
 #include "watchface_components.h"
 
+#define SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(frame_min) \
+  (((frame_min) < 20) ? 1 : 2)
+
 TextLayer* substratum_renderer_create_text_layer(
     Layer* parent,
     const WatchfaceTextSubstratum* text,
@@ -39,6 +42,16 @@ GPoint substratum_renderer_scale_icon_point(
     const GSize* size,
     int16_t x,
     int16_t y);
+
+void substratum_renderer_draw_scaled_polygon_outline(
+    GContext* ctx,
+    const GSize* size,
+    const GPoint* design_points,
+    uint32_t point_count,
+    GColor stroke_color,
+    GColor halo_color,
+    int16_t stroke_width,
+    bool draw_halo);
 
 void substratum_renderer_draw_scaled_line(
     GContext* ctx,

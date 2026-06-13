@@ -140,6 +140,52 @@ GPoint substratum_renderer_scale_icon_point(
   return GPoint(x, y);
 }
 
+void substratum_renderer_draw_scaled_polygon_outline(
+    GContext* ctx,
+    const GSize* size,
+    const GPoint* design_points,
+    uint32_t point_count,
+    GColor stroke_color,
+    GColor halo_color,
+    int16_t stroke_width,
+    bool draw_halo) {
+  GPoint scaled_points[8];
+  GPathInfo path_info;
+  GPath* path;
+
+  if (!ctx || !size || !design_points || point_count < 3 ||
+      point_count > ARRAY_LENGTH(scaled_points)) {
+    return;
+  }
+
+  for (uint32_t i = 0; i < point_count; ++i) {
+    scaled_points[i] = GPoint(
+        substratum_renderer_scale_icon_x(size, design_points[i].x),
+        substratum_renderer_scale_icon_y(size, design_points[i].y));
+  }
+
+  path_info = (GPathInfo) {
+    .num_points = point_count,
+    .points = scaled_points,
+  };
+  path = gpath_create(&path_info);
+  if (!path) {
+    return;
+  }
+
+  if (draw_halo) {
+    graphics_context_set_stroke_color(ctx, halo_color);
+    graphics_context_set_stroke_width(ctx, stroke_width + 2);
+    gpath_draw_outline(ctx, path);
+  }
+
+  graphics_context_set_stroke_color(ctx, stroke_color);
+  graphics_context_set_stroke_width(ctx, stroke_width);
+  gpath_draw_outline(ctx, path);
+
+  gpath_destroy(path);
+}
+
 void substratum_renderer_draw_scaled_line(
     GContext* ctx,
     const GSize* size,
