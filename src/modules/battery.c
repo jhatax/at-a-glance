@@ -16,13 +16,6 @@ static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
     GColor color);
-static void battery_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
 static void battery_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_battery(void);
 
@@ -57,38 +50,21 @@ static void draw_battery_charging_bolt(
     GColor color) {
   graphics_context_set_stroke_color(ctx, s_palette->background);
   graphics_context_set_stroke_width(ctx, 1);
-  battery_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  battery_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  battery_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  battery_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  battery_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  battery_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  battery_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  battery_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  battery_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  battery_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  battery_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  battery_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
-}
-
-static void battery_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!ctx || !bounds_size) {
-    return;
-  }
-
-  graphics_draw_line(
-      ctx,
-      substratum_renderer_scale_icon_point(bounds_size, x0, y0),
-      substratum_renderer_scale_icon_point(bounds_size, x1, y1));
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
