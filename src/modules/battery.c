@@ -12,6 +12,12 @@ static const WatchfaceSurface* s_surface = NULL;
 static const ColorPalette* s_palette = NULL;
 
 static GColor calculate_battery_color(void);
+static GRect battery_scaled_rect_from_corners(
+    const GSize* size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1);
 static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
@@ -42,6 +48,24 @@ static GColor calculate_battery_color(void) {
   return PBL_IF_COLOR_ELSE(
       s_surface->style.is_light_mode ? GColorBulgarianRose : GColorRed,
       s_palette->primary_text);
+}
+
+static GRect battery_scaled_rect_from_corners(
+    const GSize* size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  if (!size) {
+    return GRectZero;
+  }
+
+  int16_t left = substratum_renderer_scale_icon_x(size, x0);
+  int16_t top = substratum_renderer_scale_icon_y(size, y0);
+  int16_t right = substratum_renderer_scale_icon_x(size, x1);
+  int16_t bottom = substratum_renderer_scale_icon_y(size, y1);
+
+  return GRect(left, top, right - left, bottom - top);
 }
 
 static void draw_battery_charging_bolt(
@@ -87,16 +111,10 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_draw_rect(
       ctx,
-      GRect(substratum_renderer_scale_icon_x(&bounds.size, 2),
-            substratum_renderer_scale_icon_y(&bounds.size, 8),
-            substratum_renderer_scale_icon_x(&bounds.size, 22),
-            substratum_renderer_scale_icon_y(&bounds.size, 13)));
+      battery_scaled_rect_from_corners(&bounds.size, 2, 4, 24, 19));
   graphics_fill_rect(
       ctx,
-      GRect(substratum_renderer_scale_icon_x(&bounds.size, 24),
-            substratum_renderer_scale_icon_y(&bounds.size, 12),
-            substratum_renderer_scale_icon_x(&bounds.size, 2),
-            substratum_renderer_scale_icon_y(&bounds.size, 5)),
+      battery_scaled_rect_from_corners(&bounds.size, 24, 8, 26, 15),
       0,
       GCornerNone);
 
@@ -106,10 +124,12 @@ static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
 
   graphics_fill_rect(
       ctx,
-      GRect(substratum_renderer_scale_icon_x(&bounds.size, 5),
-            substratum_renderer_scale_icon_y(&bounds.size, 11),
-            substratum_renderer_scale_icon_x(&bounds.size, fill_w),
-            substratum_renderer_scale_icon_y(&bounds.size, 7)),
+      battery_scaled_rect_from_corners(
+          &bounds.size,
+          5,
+          7,
+          5 + fill_w,
+          16),
       0,
       GCornerNone);
 
