@@ -91,10 +91,7 @@ int16_t substratum_renderer_scale_icon_x(
     return 0;
   }
 
-  return HELPER_SCALE_ROUND(
-      coord,
-      size->w,
-      DESIGN_ICON_WIDTH);
+  return HELPER_SCALE_ROUND(coord, size->w, DESIGN_ICON_WIDTH);
 }
 
 int16_t substratum_renderer_scale_icon_y(
@@ -104,10 +101,7 @@ int16_t substratum_renderer_scale_icon_y(
     return 0;
   }
 
-  return HELPER_SCALE_ROUND(
-      coord,
-      size->h,
-      DESIGN_ICON_HEIGHT);
+  return HELPER_SCALE_ROUND(coord, size->h, DESIGN_ICON_HEIGHT);
 }
 
 int16_t substratum_renderer_scale_icon_coord(

@@ -16,8 +16,8 @@ typedef enum {
   DESIGN_HORIZON_H = 1,
 
   // Reference size for all designed glyphs
-  DESIGN_ICON_HEIGHT = 24,
-  DESIGN_ICON_WIDTH = 24,
+  DESIGN_ICON_HEIGHT = 28,
+  DESIGN_ICON_WIDTH = 28,
 
   // Aligned to font choices
   DESIGN_DATE_TEXT_HEIGHT = 28,
