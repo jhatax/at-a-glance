@@ -157,7 +157,7 @@ static GColor weather_color_for_kind(
     case WEATHER_ICON_HEAVY_RAIN:
     case WEATHER_ICON_SHOWERS:
     case WEATHER_ICON_HEAVY_SHOWERS:
-      return PBL_IF_COLOR_ELSE(GColorVividCerulean, fallback);
+      return PBL_IF_COLOR_ELSE(GColorCobaltBlue, fallback);
     case WEATHER_ICON_CLOUD:
     case WEATHER_ICON_PARTLY_CLOUDY:
     case WEATHER_ICON_FOG:
@@ -257,15 +257,18 @@ static void draw_weather_filled_cloud(
     const ColorPalette* palette,
     WeatherIconKind icon_kind,
     bool is_filled) {
+  // Cloud contract: three lobes plus a shared body fill, tuned for compact
+  // displays so the silhouette reads as one cloud instead of three circles
+  // with a heavy lower-right bias after scaling.
   const int16_t left_cloud_center_x = 8;
   const int16_t left_cloud_center_y = 14;
-  const int16_t left_cloud_radius = 5;
+  const int16_t left_cloud_radius = 4;
   const int16_t center_cloud_center_x = 14;
-  const int16_t center_cloud_center_y = 11;
-  const int16_t center_cloud_radius = 6;
+  const int16_t center_cloud_center_y = 10;
+  const int16_t center_cloud_radius = 5;
   const int16_t right_cloud_center_x = 19;
   const int16_t right_cloud_center_y = 14;
-  const int16_t right_cloud_radius = 5;
+  const int16_t right_cloud_radius = 4;
   const int16_t cloud_fill_left = 6;
   const int16_t cloud_fill_top = 12;
   const int16_t cloud_fill_right = 21;
@@ -304,19 +307,19 @@ static void draw_weather_filled_cloud(
       frame,
       left_cloud_center_x,
       left_cloud_center_y,
-      4);
+      3);
   weather_fill_circle(
       ctx,
       frame,
       center_cloud_center_x,
       center_cloud_center_y,
-      5);
+      4);
   weather_fill_circle(
       ctx,
       frame,
       right_cloud_center_x,
       right_cloud_center_y,
-      4);
+      3);
   weather_fill_rect_from_corners(
       ctx,
       frame,
@@ -394,13 +397,15 @@ static void draw_weather_drizzle_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
+  // Drizzle contract: three heavier, staggered marks so the glyph does not
+  // collapse into dots on compact monochrome displays.
   graphics_context_set_stroke_color(ctx, weather_color_for_kind(
       WEATHER_ICON_DRIZZLE,
       palette));
-  graphics_context_set_stroke_width(ctx, 1);
-  weather_line(ctx, frame, 7, 7, 5, 14);
-  weather_line(ctx, frame, 14, 6, 12, 13);
-  weather_line(ctx, frame, 21, 7, 19, 14);
+  graphics_context_set_stroke_width(ctx, 2);
+  weather_line(ctx, frame, 7, 5, 4, 16);
+  weather_line(ctx, frame, 14, 10, 11, 21);
+  weather_line(ctx, frame, 21, 15, 18, 26);
 }
 
 static void draw_weather_rain_marks(
