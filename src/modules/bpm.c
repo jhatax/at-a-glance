@@ -1,5 +1,6 @@
 #ifdef PBL_HEALTH
 #include "bpm.h"
+#include "helper.h"
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
@@ -60,13 +61,30 @@ static void draw_bpm_icon_with_color(
     return;
   }
 
+  int16_t frame_min = HELPER_MIN(bounds_size->w, bounds_size->h);
+  int16_t waveform_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
+      frame_min);
+
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 3, 15, 8, 15);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 8, 15, 11, 8);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 8, 15, 22);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 15, 22, 19, 12);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 19, 12, 24, 12);
+  // BPM icon contract: a 1px reference box anchors the waveform visually on
+  // compact displays so the pulse does not collapse into a floating blob.
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_rect(
+      ctx,
+      GRect(substratum_renderer_scale_icon_x(bounds_size, 3),
+            substratum_renderer_scale_icon_y(bounds_size, 4),
+            substratum_renderer_scale_icon_x(bounds_size, 25) -
+                substratum_renderer_scale_icon_x(bounds_size, 3),
+            substratum_renderer_scale_icon_y(bounds_size, 23) -
+                substratum_renderer_scale_icon_y(bounds_size, 4)));
+
+  graphics_context_set_stroke_width(ctx, waveform_stroke_width);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 2, 16, 7, 16);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 7, 16, 10, 9);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 9, 14, 23);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 14, 23, 18, 10);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 18, 10, 21, 16);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 21, 16, 26, 16);
 }
 
 static void draw_data_gap_slash(
