@@ -18,13 +18,6 @@ static int s_debug_steps = STEPS_INVALID;
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size);
-static void steps_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
 static void apply_steps_value(int steps, bool is_available);
 static void update_steps(void);
@@ -40,24 +33,7 @@ static void draw_data_gap_slash(
   graphics_context_set_stroke_color(
       ctx,
       gcolor_legible_over(s_surface->style.palette->background));
-  steps_draw_scaled_line(ctx, bounds_size, 5, 3, 24, 26);
-}
-
-static void steps_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!ctx || !bounds_size) {
-    return;
-  }
-
-  graphics_draw_line(
-      ctx,
-      substratum_renderer_scale_icon_point(bounds_size, x0, y0),
-      substratum_renderer_scale_icon_point(bounds_size, x1, y1));
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
