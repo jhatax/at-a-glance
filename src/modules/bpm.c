@@ -23,9 +23,6 @@ static void draw_bpm_icon_with_color(
     GContext* ctx,
     GColor color,
     const GSize* bounds_size);
-static void draw_data_gap_slash(
-    GContext* ctx,
-    const GSize* bounds_size);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void apply_bpm_value(int bpm, bool is_available);
 static void update_bpm(void);
@@ -87,18 +84,6 @@ static void draw_bpm_icon_with_color(
   substratum_renderer_draw_scaled_line(ctx, bounds_size, 21, 16, 26, 16);
 }
 
-static void draw_data_gap_slash(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  if (!s_surface || !s_palette) {
-    return;
-  }
-
-  graphics_context_set_stroke_color(ctx, s_palette->primary_text);
-  graphics_context_set_stroke_width(ctx, 3);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
-}
-
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
   if (!layer || !ctx || !s_surface || !s_palette) {
     return;
@@ -117,7 +102,10 @@ static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
       &bounds.size);
 
   if (!s_bpm_is_available) {
-    draw_data_gap_slash(ctx, &bounds.size);
+    substratum_renderer_draw_unavailable_slash(
+        ctx,
+        &bounds.size,
+        s_palette->primary_text);
   }
 }
 

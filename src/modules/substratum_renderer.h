@@ -60,3 +60,8 @@ void substratum_renderer_draw_scaled_line(
     int16_t y0,
     int16_t x1,
     int16_t y1);
+
+void substratum_renderer_draw_unavailable_slash(
+    GContext* ctx,
+    const GSize* size,
+    GColor color);

@@ -202,3 +202,19 @@ void substratum_renderer_draw_scaled_line(
       substratum_renderer_scale_icon_point(size, x0, y0),
       substratum_renderer_scale_icon_point(size, x1, y1));
 }
+
+void substratum_renderer_draw_unavailable_slash(
+    GContext* ctx,
+    const GSize* size,
+    GColor color) {
+  if (!ctx || !size) {
+    return;
+  }
+
+  // Unavailable slash contract: keep the 28x28 design-space diagonal
+  // shared across metric and weather glyphs so missing-data affordance
+  // does not drift between modules.
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 3);
+  substratum_renderer_draw_scaled_line(ctx, size, 5, 5, 24, 24);
+}

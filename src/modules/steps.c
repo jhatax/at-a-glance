@@ -15,26 +15,9 @@ static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
 #endif
 
-static void draw_data_gap_slash(
-    GContext* ctx,
-    const GSize* bounds_size);
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
 static void apply_steps_value(int steps, bool is_available);
 static void update_steps(void);
-
-static void draw_data_gap_slash(
-    GContext* ctx,
-    const GSize* bounds_size) {
-  if (!s_surface || !s_surface->style.palette) {
-    return;
-  }
-
-  graphics_context_set_stroke_width(ctx, 3);
-  graphics_context_set_stroke_color(
-      ctx,
-      s_surface->style.palette->primary_text);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
-}
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
@@ -74,7 +57,10 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
       substratum_renderer_scale_icon_coord(&bounds.size, 4));
 
   if (!s_steps_is_available) {
-    draw_data_gap_slash(ctx, &bounds.size);
+    substratum_renderer_draw_unavailable_slash(
+        ctx,
+        &bounds.size,
+        palette->primary_text);
   }
 }
 

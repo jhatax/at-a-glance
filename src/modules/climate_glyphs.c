@@ -544,8 +544,7 @@ static void draw_weather_bolt_icon(
   int16_t bolt_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
       frame_min);
   // Thunderstorm bolt contract: reuse the same 28x28 stroke-only polygon
-  // as the charging glyph, but draw it without a halo so weather keeps the
-  // storm color as the full silhouette.
+  // as the charging glyph so both bolt silhouettes stay in sync.
   static const GPoint bolt_points[] = {
     {14, 0},
     {5, 11},
@@ -575,10 +574,10 @@ static void draw_weather_unavailable_icon(
     const GRect* frame,
     const ColorPalette* palette) {
   draw_weather_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN);
-
-  graphics_context_set_stroke_color(ctx, palette->primary_text);
-  graphics_context_set_stroke_width(ctx, 3);
-  weather_line(ctx, frame, 5, 5, 24, 24);
+  substratum_renderer_draw_unavailable_slash(
+      ctx,
+      &frame->size,
+      palette->primary_text);
 }
 
 static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
