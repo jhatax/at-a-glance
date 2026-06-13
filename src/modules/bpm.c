@@ -25,13 +25,6 @@ static void draw_bpm_icon_with_color(
 static void draw_data_gap_slash(
     GContext* ctx,
     const GSize* bounds_size);
-static void bpm_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void apply_bpm_value(int bpm, bool is_available);
 static void update_bpm(void);
@@ -69,11 +62,11 @@ static void draw_bpm_icon_with_color(
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  bpm_draw_scaled_line(ctx, bounds_size, 3, 15, 8, 15);
-  bpm_draw_scaled_line(ctx, bounds_size, 8, 15, 11, 8);
-  bpm_draw_scaled_line(ctx, bounds_size, 11, 8, 15, 22);
-  bpm_draw_scaled_line(ctx, bounds_size, 15, 22, 19, 12);
-  bpm_draw_scaled_line(ctx, bounds_size, 19, 12, 24, 12);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 3, 15, 8, 15);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 8, 15, 11, 8);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 11, 8, 15, 22);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 15, 22, 19, 12);
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 19, 12, 24, 12);
 }
 
 static void draw_data_gap_slash(
@@ -85,24 +78,7 @@ static void draw_data_gap_slash(
 
   graphics_context_set_stroke_color(ctx, s_palette->primary_text);
   graphics_context_set_stroke_width(ctx, 4);
-  bpm_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
-}
-
-static void bpm_draw_scaled_line(
-    GContext* ctx,
-    const GSize* bounds_size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!ctx || !bounds_size) {
-    return;
-  }
-
-  graphics_draw_line(
-      ctx,
-      substratum_renderer_scale_icon_point(bounds_size, x0, y0),
-      substratum_renderer_scale_icon_point(bounds_size, x1, y1));
+  substratum_renderer_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
