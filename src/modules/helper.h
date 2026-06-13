@@ -6,8 +6,10 @@
 
 #define HELPER_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
+#define HELPER_CLAMP_MIN(exp, min) ((exp) > (min)) ? (exp) : (min)
+
 #define HELPER_SCALE_ROUND(v, n, d) \
-  (((n) == (d)) ? (v) : ((((v) * (n)) + ((d) / 2)) / (d)))
+  ((n) == (d)) ? (v) : ((((v) * (n)) + ((d) / 2)) / (d))
 
 bool helper_tuple_to_int(Tuple* tuple, int* value);
 bool helper_color_equal(GColor first, GColor second);
