@@ -10,6 +10,37 @@ static bool is_valid_design_y_coord(int16_t y, int16_t design_height) {
   return (y >= 0 && y <= design_height);
 }
 
+static int16_t scale_icon_x_in_frame(
+    const GRect* frame,
+    int16_t coord) {
+  if (!frame) {
+    return 0;
+  }
+
+  return frame->origin.x +
+      substratum_renderer_scale_icon_x(&frame->size, coord);
+}
+
+static int16_t scale_icon_y_in_frame(
+    const GRect* frame,
+    int16_t coord) {
+  if (!frame) {
+    return 0;
+  }
+
+  return frame->origin.y +
+      substratum_renderer_scale_icon_y(&frame->size, coord);
+}
+
+static GPoint scale_icon_point_in_frame(
+    const GRect* frame,
+    int16_t x,
+    int16_t y) {
+  return GPoint(
+      scale_icon_x_in_frame(frame, x),
+      scale_icon_y_in_frame(frame, y));
+}
+
 TextLayer* substratum_renderer_create_text_layer(
     Layer* parent,
     const WatchfaceTextSubstratum* text,
@@ -201,6 +232,78 @@ void substratum_renderer_draw_scaled_line(
       ctx,
       substratum_renderer_scale_icon_point(size, x0, y0),
       substratum_renderer_scale_icon_point(size, x1, y1));
+}
+
+void substratum_renderer_draw_scaled_line_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  if (!ctx || !frame) {
+    return;
+  }
+
+  graphics_draw_line(
+      ctx,
+      scale_icon_point_in_frame(frame, x0, y0),
+      scale_icon_point_in_frame(frame, x1, y1));
+}
+
+void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  if (!ctx || !frame) {
+    return;
+  }
+
+  graphics_fill_rect(
+      ctx,
+      GRect(scale_icon_x_in_frame(frame, x0),
+            scale_icon_y_in_frame(frame, y0),
+            scale_icon_x_in_frame(frame, x1) -
+                scale_icon_x_in_frame(frame, x0),
+            scale_icon_y_in_frame(frame, y1) -
+                scale_icon_y_in_frame(frame, y0)),
+      0,
+      GCornerNone);
+}
+
+void substratum_renderer_fill_scaled_circle_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
+  if (!ctx || !frame) {
+    return;
+  }
+
+  graphics_fill_circle(
+      ctx,
+      scale_icon_point_in_frame(frame, x, y),
+      substratum_renderer_scale_icon_coord(&frame->size, r));
+}
+
+void substratum_renderer_draw_scaled_circle_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
+  if (!ctx || !frame) {
+    return;
+  }
+
+  graphics_draw_circle(
+      ctx,
+      scale_icon_point_in_frame(frame, x, y),
+      substratum_renderer_scale_icon_coord(&frame->size, r));
 }
 
 void substratum_renderer_draw_unavailable_slash(

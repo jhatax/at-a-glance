@@ -61,6 +61,36 @@ void substratum_renderer_draw_scaled_line(
     int16_t x1,
     int16_t y1);
 
+void substratum_renderer_draw_scaled_line_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1);
+
+void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1);
+
+void substratum_renderer_fill_scaled_circle_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r);
+
+void substratum_renderer_draw_scaled_circle_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r);
+
 void substratum_renderer_draw_unavailable_slash(
     GContext* ctx,
     const GSize* size,

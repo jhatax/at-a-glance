@@ -43,10 +43,10 @@ static int16_t weather_scale_y(const GRect* frame, int16_t value) {
   );
 }
 
-static GPoint weather_point(const GRect* frame, int16_t x, int16_t y) {
-  return GPoint(weather_scale_x(frame, x), weather_scale_y(frame, y));
-}
-
+// TODO: Audit every weather_subframe() call site. Nested frame composition can
+// hide clipping and overlap errors when a child frame is tuned by eye instead
+// of derived from a stable glyph contract, as in partly-cloudy cloud/sun
+// placement.
 static void weather_subframe(
     const GRect* frame,
     GRect* out,
@@ -64,60 +64,6 @@ static void weather_subframe(
       h,
       frame->size.h,
       WEATHER_ICON_HEIGHT);
-}
-
-static void weather_line(
-    GContext* ctx,
-    const GRect* frame,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  graphics_draw_line(
-      ctx,
-      weather_point(frame, x0, y0),
-      weather_point(frame, x1, y1));
-}
-
-static void weather_fill_rect_from_corners(
-    GContext* ctx,
-    const GRect* frame,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  graphics_fill_rect(
-      ctx,
-      GRect(weather_scale_x(frame, x0),
-            weather_scale_y(frame, y0),
-            weather_scale_x(frame, x1) - weather_scale_x(frame, x0),
-            weather_scale_y(frame, y1) - weather_scale_y(frame, y0)),
-      0,
-      GCornerNone);
-}
-
-static void weather_fill_circle(
-    GContext* ctx,
-    const GRect* frame,
-    int16_t x,
-    int16_t y,
-    int16_t r) {
-  graphics_fill_circle(
-      ctx,
-      weather_point(frame, x, y),
-      substratum_renderer_scale_icon_coord(&frame->size, r));
-}
-
-static void weather_draw_circle(
-    GContext* ctx,
-    const GRect* frame,
-    int16_t x,
-    int16_t y,
-    int16_t r) {
-  graphics_draw_circle(
-      ctx,
-      weather_point(frame, x, y),
-      substratum_renderer_scale_icon_coord(&frame->size, r));
 }
 
 static GColor weather_subtle_color(
@@ -180,62 +126,62 @@ static void draw_weather_outline_sun(
   graphics_context_set_fill_color(ctx, sunFillColor);
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y,
       6);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y - 13,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y - 9);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y + 9,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y + 13);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 13,
       WEATHER_ICON_CENTER_Y,
       WEATHER_ICON_CENTER_X - 9,
       WEATHER_ICON_CENTER_Y);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X + 9,
       WEATHER_ICON_CENTER_Y,
       WEATHER_ICON_CENTER_X + 13,
       WEATHER_ICON_CENTER_Y);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 10,
       WEATHER_ICON_CENTER_Y - 10,
       WEATHER_ICON_CENTER_X - 7,
       WEATHER_ICON_CENTER_Y - 7);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X + 7,
       WEATHER_ICON_CENTER_Y - 7,
       WEATHER_ICON_CENTER_X + 10,
       WEATHER_ICON_CENTER_Y - 10);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 10,
       WEATHER_ICON_CENTER_Y + 10,
       WEATHER_ICON_CENTER_X - 7,
       WEATHER_ICON_CENTER_Y + 7);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X + 7,
@@ -283,44 +229,44 @@ static void draw_weather_filled_cloud(
   graphics_context_set_fill_color(ctx, cloudFillColor);
   graphics_context_set_stroke_width(ctx, 2);
 
-  weather_draw_circle(
+  substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       frame,
       left_cloud_center_x,
       left_cloud_center_y,
       left_cloud_radius);
-  weather_draw_circle(
+  substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       frame,
       center_cloud_center_x,
       center_cloud_center_y,
       center_cloud_radius);
-  weather_draw_circle(
+  substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       frame,
       right_cloud_center_x,
       right_cloud_center_y,
       right_cloud_radius);
 
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       left_cloud_center_x,
       left_cloud_center_y,
       3);
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       center_cloud_center_x,
       center_cloud_center_y,
       4);
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       right_cloud_center_x,
       right_cloud_center_y,
       3);
-  weather_fill_rect_from_corners(
+  substratum_renderer_fill_scaled_rect_from_corners_in_frame(
       ctx,
       frame,
       cloud_fill_left,
@@ -328,7 +274,7 @@ static void draw_weather_filled_cloud(
       cloud_fill_right,
       cloud_fill_bottom);
 
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       cloud_base_left,
@@ -351,7 +297,7 @@ static void draw_weather_clear_icon(
     const ColorPalette* palette) {
   graphics_context_set_stroke_color(ctx, weather_clear_ring_color(palette));
   graphics_context_set_stroke_width(ctx, 1);
-  weather_draw_circle(
+  substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
@@ -359,7 +305,7 @@ static void draw_weather_clear_icon(
       11);
 
   graphics_context_set_fill_color(ctx, weather_clear_fill_color(palette));
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
@@ -388,9 +334,9 @@ static void draw_weather_fog_icon(
       WEATHER_ICON_FOG,
       palette));
   graphics_context_set_stroke_width(ctx, 2);
-  weather_line(ctx, frame, 5, 10, 23, 10);
-  weather_line(ctx, frame, 2, 15, 26, 15);
-  weather_line(ctx, frame, 7, 20, 21, 20);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 5, 10, 23, 10);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 2, 15, 26, 15);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 7, 20, 21, 20);
 }
 
 static void draw_weather_drizzle_icon(
@@ -403,9 +349,9 @@ static void draw_weather_drizzle_icon(
       WEATHER_ICON_DRIZZLE,
       palette));
   graphics_context_set_stroke_width(ctx, 2);
-  weather_line(ctx, frame, 7, 5, 4, 16);
-  weather_line(ctx, frame, 14, 10, 11, 21);
-  weather_line(ctx, frame, 21, 15, 18, 26);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 7, 5, 4, 16);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 14, 10, 11, 21);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 21, 15, 18, 26);
 }
 
 static void draw_weather_rain_marks(
@@ -417,16 +363,16 @@ static void draw_weather_rain_marks(
   graphics_context_set_stroke_width(ctx, 2);
 
   if (heavy) {
-    weather_line(ctx, frame, 6, 3, 2, 25);
-    weather_line(ctx, frame, 12, 2, 8, 24);
-    weather_line(ctx, frame, 18, 4, 14, 26);
-    weather_line(ctx, frame, 24, 2, 20, 24);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 6, 3, 2, 25);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 12, 2, 8, 24);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 4, 14, 26);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 24, 2, 20, 24);
     return;
   }
 
-  weather_line(ctx, frame, 8, 7, 5, 21);
-  weather_line(ctx, frame, 15, 7, 12, 21);
-  weather_line(ctx, frame, 22, 7, 19, 21);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 8, 7, 5, 21);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 15, 7, 12, 21);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 22, 7, 19, 21);
 }
 
 static void draw_weather_rain_icon(
@@ -450,35 +396,35 @@ static void draw_weather_snowflake(
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_fill_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 9,
       WEATHER_ICON_CENTER_Y,
       WEATHER_ICON_CENTER_X + 9,
       WEATHER_ICON_CENTER_Y);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y - 9,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y + 9);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 7,
       WEATHER_ICON_CENTER_Y - 7,
       WEATHER_ICON_CENTER_X + 7,
       WEATHER_ICON_CENTER_Y + 7);
-  weather_line(
+  substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X - 7,
       WEATHER_ICON_CENTER_Y + 7,
       WEATHER_ICON_CENTER_X + 7,
       WEATHER_ICON_CENTER_Y - 7);
-  weather_fill_circle(
+  substratum_renderer_fill_scaled_circle_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
@@ -495,8 +441,8 @@ static void draw_weather_sleet_icon(
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  weather_line(ctx, frame, 7, 8, 4, 18);
-  weather_line(ctx, frame, 12, 10, 9, 20);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 7, 8, 4, 18);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 12, 10, 9, 20);
 
   weather_subframe(frame, &snow_frame, 14, 6, 12, 18);
   draw_weather_snowflake(ctx, &snow_frame, color);
