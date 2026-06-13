@@ -15,6 +15,7 @@
 static WatchfaceSurface s_surface = {0};
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
+static bool s_watchface_initialized = false;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
     WATCHFACE_UPDATE_BACKGROUND |
     WATCHFACE_UPDATE_TIME |
@@ -49,6 +50,10 @@ static void watchface_exit_path() {
 }
 
 bool watchface_create(Window* window, const WatchfaceSettings* settings) {
+  if (s_watchface_initialized) {
+    return true;
+  }
+
   if (!window || !settings) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot create watchface without watchface inputs");
@@ -72,12 +77,19 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
   GRect bounds = layer_get_bounds(root);
-  layout_calculate_surface(
+  if (!layout_watchface_initialize(
       bounds.size.w,
       bounds.size.h,
-      &s_surface);
+      &s_surface)) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
+    watchface_exit_path();
+    return false;
+  }
 
-  layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
+  layout_update_watchface_style(
+      &(s_surface.style),
+      s_wf_settings->display_mode);
+
   s_strata_created_mask |= background_module_create(root, &s_surface) ?
       BACKGROUND_STRATUM_MASK : 0;
 
@@ -110,7 +122,13 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
       STEPS_STRATUM_MASK : 0;
   #endif
 
-  watchface_repaint();
+  s_watchface_initialized = true;
+  if (s_surface.style.palette) {
+    window_set_background_color(
+        s_wf_window,
+        s_surface.style.palette->background);
+  }
+  watchface_refresh_strata(WATCHFACE_UPDATE_ALL_STRATA);
   return true;
 }
 
@@ -157,6 +175,7 @@ void watchface_destroy() {
   s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
   s_wf_settings = NULL;
   s_wf_window = NULL;
+  s_watchface_initialized = false;
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
@@ -166,7 +185,10 @@ void watchface_repaint(void) {
     return;
   }
 
-  layout_update_surface_style(&(s_surface.style), s_wf_settings->display_mode);
+  layout_update_watchface_style(
+      &(s_surface.style),
+      s_wf_settings->display_mode);
+
   if (s_surface.style.palette) {
     window_set_background_color(
         s_wf_window,

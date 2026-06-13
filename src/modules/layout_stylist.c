@@ -1,9 +1,9 @@
-#include "layout_stylist.h"
+#include "layout.h"
 #include "settings.h"
 #include "../c/ataglance.h"
 
 #define DESIGN_FONT_DATE_COMPACT FONT_KEY_GOTHIC_18_BOLD
-#define DESIGN_FONT_TIME_COMPACT FONT_KEY_GOTHIC_28_BOLD
+#define DESIGN_FONT_TIME_COMPACT FONT_KEY_BITHAM_34_MEDIUM_NUMBERS
 #ifdef PBL_HEALTH
 #define DESIGN_FONT_BPM_COMPACT FONT_KEY_GOTHIC_14
 #define DESIGN_FONT_STEPS_COMPACT FONT_KEY_GOTHIC_14
@@ -99,7 +99,7 @@ static const ColorPalette* layout_palette_for_display_mode(uint8_t display_mode)
   return &c_dark_palette;
 }
 
-void layout_stylist_update_surface_style(
+void layout_update_watchface_style(
     WatchfaceSurfaceStyle* style,
     uint8_t display_mode) {
 

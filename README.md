@@ -38,7 +38,8 @@ pass.
 The active watchface is coordinated by `src/modules/watchface.c`.
 `main.c` owns Pebble lifecycle and AppMessage parsing, then hands runtime
 events to `watchface`. The watchface owns one calculated `WatchfaceSurface`
-from `src/modules/layout.c`.
+initialized through the shape-specific layout implementation declared in
+`src/modules/layout.h`.
 
 `WatchfaceSurface` has six fixed product strata:
 

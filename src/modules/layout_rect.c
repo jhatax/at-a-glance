@@ -1,5 +1,5 @@
 #ifdef PBL_RECT
-#include "layout_architect.h"
+#include "layout.h"
 #include "../c/ataglance.h"
 #include "helper.h"
 
@@ -178,13 +178,15 @@ static void architect_get_layout_from_blueprint(
 #endif
 }
 
-void architect_apply_blueprint(
+bool layout_watchface_initialize(
     int16_t face_width,
     int16_t face_height,
     WatchfaceSurface* surface) {
   if (!surface) {
-    return;
+    return false;
   }
+
+  memset(surface, 0, sizeof(*surface));
 
   bool is_compact = face_width < DESIGN_FACE_WIDTH &&
       face_height < DESIGN_FACE_HEIGHT;
@@ -267,5 +269,6 @@ void architect_apply_blueprint(
     .font_role = WATCHFACE_FONT_ROLE_BPM,
   };
 #endif
+  return true;
 }
 #endif

@@ -43,15 +43,15 @@ Sources:
 The current watchface is organized around a calculated surface and fixed
 module-owned strata:
 
-- Current `HEAD` still exposes `layout_calculate_surface()` as the public
-  surface-construction API. The ledger records the future rename to
-  `surface_builder_prepare()` as a TODO.
-- The surface-construction path initializes the caller-owned surface, asks the
-  active architect to apply the shape blueprint, and stores geometry on the
-  surface. Style is applied through `layout_update_surface_style()`.
-- Rectangular and round architects use one architect contract. The active
-  implementation is selected by Pebble shape guards at compile time.
-- `layout_stylist.c/.h` owns palette, font, and custom-font decisions. It
+- `layout_watchface_initialize()` is the public watchface layout
+  initialization API.
+- The active shape-specific layout implementation initializes the caller-owned
+  surface, applies its blueprint/geometry, and stores final frames on the
+  surface.
+- Rectangular and round layout implementations use one public initialization
+  contract. The active implementation is selected by Pebble shape guards at
+  compile time.
+- `layout_stylist.c` owns palette, font, and custom-font decisions. It
   consumes compact/full state from the calculated surface.
 - `layout_rect.c` owns rectangular geometry.
 - `layout_round.c` owns round geometry.
@@ -63,11 +63,10 @@ module-owned strata:
 
 Current branch state:
 
-- `layout_round.c` exists and provides the `PBL_ROUND` implementation of the
-  shared architect contract.
-- `layout_rect.c` provides the `PBL_RECT` implementation.
-- `layout_architect.h` declares the private architect contract used by shape
-  implementations.
+- `layout_round.c` exists and provides the `PBL_ROUND` implementation of
+  `layout_watchface_initialize()`.
+- `layout_rect.c` provides the `PBL_RECT` implementation of
+  `layout_watchface_initialize()`.
 - `package.json` includes `chalk` and `gabbro` targets on this branch.
 - The latest committed round candidate uses four metric slots around the
   centered time/rule/date core: steps top-left, battery top-right, climate
@@ -79,23 +78,22 @@ Current layout call flow:
 
 ```c
 watchface_create()
-  -> layout_calculate_surface(face_width,
-                              face_height,
-                              &s_surface)
+  -> layout_watchface_initialize(face_width,
+                                 face_height,
+                                 &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> architect_apply_blueprint(face_width,
-                                    face_height,
-                                    surface)
+       -> apply shape blueprint/geometry
+  -> layout_update_watchface_style(&surface->style, display_mode)
 ```
 
 This is the model for round. The public surface-construction entry point
-prepares a fresh calculated surface, then calls the active architect contract.
-Style update remains a separate layout API in current `HEAD`, with the
-surface-builder consolidation tracked as a ledger TODO:
+prepares a fresh calculated surface through the active shape implementation.
+Style is applied after geometry and compact/full classification are resolved:
 
 ```c
 memset(surface, 0, sizeof(*surface));
-architect_apply_blueprint(face_width, face_height, surface);
+/* apply shape blueprint/geometry */
+layout_update_watchface_style(&surface->style, display_mode);
 ```
 
 Use `PBL_RECT` and `PBL_ROUND` for shape-specific architect implementation.
@@ -296,13 +294,13 @@ Gabbro should start with the same conceptual model:
 
 ## Round Architect Role
 
-`layout_round.c` is the round implementation of the shared architect
-contract. It remains private to surface construction.
+`layout_round.c` is the round implementation of the shared watchface layout
+initialization contract.
 
 The round architect uses the same narrow API as the rectangular architect:
 
 ```c
-void architect_apply_blueprint(
+bool layout_watchface_initialize(
     int16_t face_width,
     int16_t face_height,
     WatchfaceSurface* surface);
@@ -343,9 +341,8 @@ row engine, even when a round design uses visual rows.
 Conditional compilation flow:
 
 - The public surface-preparation API remains shape-agnostic.
-- The surface builder calls the shared architect contract.
-- `layout_rect.c` provides `architect_apply_blueprint()` under `PBL_RECT`.
-- `layout_round.c` provides `architect_apply_blueprint()` under `PBL_ROUND`.
+- `layout_rect.c` provides `layout_watchface_initialize()` under `PBL_RECT`.
+- `layout_round.c` provides `layout_watchface_initialize()` under `PBL_ROUND`.
 - Shape-specific implementation stays behind shape guards if the Pebble build
   system compiles all listed C files for all platforms.
 - Feature modules and `watchface.c` continue to include only public
@@ -399,7 +396,7 @@ Conditional compilation flow:
 Completed foundation:
 
 - private `layout_round.c` exists
-- shared `architect_apply_blueprint()` contract exists
+- shared `layout_watchface_initialize()` contract exists
 - `PBL_RECT` and `PBL_ROUND` shape implementations exist
 - `chalk` and `gabbro` are present in `package.json`
 - the background rule is represented as a rectangle on the calculated surface

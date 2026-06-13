@@ -21,18 +21,33 @@ Every non-trivial change follows this cycle:
 4. Review before editing.
    For architecture-sensitive changes, pause after the proposed patch shape
    and wait for agreement.
-5. Edit narrowly.
+5. Agree on invariants.
+   Explicitly name the contracts, ownership boundaries, lifecycle assumptions,
+   and behavior that must remain unchanged.
+6. Edit narrowly.
    Keep the slice coherent but local. Do not mix refactors, visual changes,
    AppMessage changes, and platform enablement unless explicitly approved.
-6. Validate.
+7. Validate.
    Run `git diff --check`; run `pebble build` for code changes unless the user
    explicitly pauses validation. Use emulator screenshots for visual slices.
-7. Reconcile.
+8. Document flow before commit.
+   For any new API, changed API, changed lifecycle path, or changed caller
+   behavior, create a clean before/after flow diagram and a proposed commit
+   message. The flow review must cover callers and users of the API, not only
+   the implementation diff.
+9. Get approval before commit.
+   The revised flow(s) and commit message must be approved before staging or
+   committing. A successful build and post-hoc diff review are not sufficient
+   approval for API, lifecycle, or caller-flow changes.
+10. Reconcile.
    Confirm each invariant and acceptance check as implemented, violated,
    intentionally deferred, or not applicable.
-8. Commit cleanly.
+11. Commit cleanly.
    Stage only intended files. Do not commit build artifacts, screenshots, or
    unrelated scratch files.
+12. Update the ledger.
+   After the accepted code flow lands, update this ledger for any changed
+   architecture decision, invariant, or acceptance check.
 
 ## Development Guardrails
 
@@ -55,28 +70,34 @@ Every non-trivial change follows this cycle:
 - Do not pass or return large watchface structs by value.
 - Do not change AppMessage keys, platform support, visual geometry, palette,
   or glyph behavior inside unrelated refactor slices.
+- Do not commit a new API, changed API, or changed API caller flow without an
+  approved before/after flow diagram and approved commit message.
 - Preserve user changes. Never revert unrelated dirty work.
 
 ## Current Architecture Decisions
 
 ### Product Constants
 
-Decision: `src/c/ataglance.h` owns product constants and compile-time product
-decisions.
+Decision: product constants are split by ownership. `src/c/ataglance.h` owns
+app-level flags and string limits. `src/modules/watchface_components.h` owns
+shared display design inputs.
 
 Invariants:
 
-- It may define debug flags, design dimensions, sizing constants, font keys,
-  string limits, and persisted-settings toggles.
+- `ataglance.h` may define debug flags, app-level string limits, and
+  persisted-settings toggles.
+- `watchface_components.h` may define shared design dimensions, sizing
+  constants, font roles, color roles, and surface component types.
 - Design face width/height remain canonical product constants.
 - Design icon width/height remain canonical product constants because icon
   glyph and renderer coordinate math use them as the icon design-space bounds.
-- It must not own Pebble layer helpers, module lifecycle APIs, or runtime
-  watchface orchestration.
+- Product-constants headers must not own Pebble layer helpers, module
+  lifecycle APIs, or runtime watchface orchestration.
 
 Acceptance checks:
 
-- `DEBUG_ATAGLANCE` is defined here when local debug support is enabled.
+- `DEBUG_ATAGLANCE` is defined in `ataglance.h` when local debug support is
+  enabled.
 - Module APIs are not declared here.
 
 ### Component Model
@@ -98,42 +119,44 @@ Acceptance checks:
 - No layout-private metrics are exposed in `WatchfaceSurface`.
 - No renderer functions are declared in `watchface_components.h`.
 
-### Surface Builder
+### Layout API
 
-Decision: the public surface-construction boundary is
-`surface_builder_prepare()`.
+Decision: the public layout boundary is split between first-time geometry
+initialization and repeatable style updates:
 
-TODO: Rename current `layout.c/.h` to `surface_builder.c/.h` and update the
-public API to `surface_builder_prepare()`. That function should clear the
-caller-owned surface, call the active architect, call the stylist, and return.
+- `layout_watchface_initialize()`
+- `layout_update_watchface_style()`
 
 TODO: After this commit series lands, make helper macros defensive with fully
 parenthesized parameters and expressions.
 
 Invariants:
 
-- Watchface owns `WatchfaceSurface` storage and lifetime, but it does not
-  coordinate geometry and styling directly.
-- The surface builder prepares the caller-owned surface from scratch:
-  it clears the surface, asks the active architect to apply the blueprint, and
-  then applies style.
-- The `memset(surface, 0, sizeof(*surface))` belongs in the surface builder
-  because clearing the surface is step one of preparing a fresh calculated
-  surface, not defensive cleanup in runtime code.
-- The architect contract is singular. Platform-specific rectangular and round
-  implementations provide the same architect entry point behind shape guards.
+- Watchface owns `WatchfaceSurface` storage, lifetime, and initialization
+  idempotence.
+- Shape-specific layout initialization prepares the caller-owned surface from
+  scratch: it clears the surface and applies its blueprint/geometry.
+- The `memset(surface, 0, sizeof(*surface))` belongs in the active shape
+  implementation because clearing the surface is step one of first-time
+  layout initialization.
+- The layout initialization contract is singular. Platform-specific
+  rectangular and round implementations provide the same public entry point
+  behind shape guards.
 - Shape architects resolve geometry and compact/full classification once, then
   store the compact/full state on `WatchfaceSurfaceStyle`.
 - The stylist consumes the resolved `WatchfaceSurfaceStyle` state; it does not
   re-derive compact/full from dimensions.
-- Surface preparation calculates data; it does not create Pebble layers.
+- Style updates are separate from geometry initialization so repaint can
+  cascade display-mode changes without clearing or reinitializing geometry.
+- Layout initialization calculates data; it does not create Pebble layers.
 
 Acceptance checks:
 
-- `watchface.c` calls one public surface-preparation API when creating the
-  watchface surface.
-- `watchface.c` does not call the architect and stylist separately.
-- Public surface-preparation headers do not expose text-layer creation, icon
+- `watchface.c` calls `layout_watchface_initialize()` during watchface
+  creation only.
+- `watchface_repaint()` calls `layout_update_watchface_style()` but never
+  calls `layout_watchface_initialize()`.
+- Public layout headers do not expose text-layer creation, icon
   scaling, private blueprint metrics, or color-role lookup.
 
 ### Layout Stylist
@@ -151,8 +174,7 @@ Invariants:
 - Modules may load/unload custom fonts as lifecycle owners, but they do not
   decide which font resource should be used.
 - Compact classification is architect-owned because the active architect owns
-  the geometry context. With the current rectangular blueprint, compact means
-  face width below `200` or face height below `228`.
+  the geometry context and active blueprint policy.
 
 Acceptance checks:
 
@@ -182,16 +204,16 @@ Invariants:
   `content_margin` owns edge spacing.
 - Blueprint values are initialized from canonical product constants.
 - Rectangular dimensions only scale in the compact blueprint where approved.
-  Full rectangular displays use canonical values directly, including `40`
-  data-field width and `28x28` icon size.
+  Full rectangular displays use canonical values directly.
 - Layout is not a generic row engine; product strata remain fixed and known.
-- Round support must not be enabled until a real round architect exists.
+- Round platform support requires a real round architect, clean builds, and
+  emulator screenshot validation for the enabled round targets.
 
 Acceptance checks:
 
 - Rectangle geometry does not leak private metrics into
   `WatchfaceSurface`.
-- No round platform support is added in a rectangle-only slice.
+- Rectangle-only slices do not add or alter round platform support.
 
 ### Substratum Renderer
 
@@ -328,21 +350,19 @@ Acceptance checks:
 
 ### Visual Redesign
 
-Decision: The rectangle/round visual redesign is documented but not yet
-implemented.
+Decision: rectangle and round visual changes must stay separate from
+architecture cleanup unless the user explicitly approves the combined slice.
 
 Invariants:
 
 - Do not mix visual redesign with architecture cleanup.
-- Rectangle visual redesign is a future visual slice.
-- Round visual redesign is a separate future visual slice after rectangle
-  redesign is validated.
-- Round support requires `layout_round.c/.h` and screenshot review before
-  enabling round platforms.
+- Rectangle visual redesign remains its own visual slice.
+- Round visual changes remain their own visual slice.
+- Round support requires a shape-specific round architect and screenshot
+  review on round emulators before claiming visual readiness.
 
 Acceptance checks:
 
-- Current source does not enable Chalk/Gabbro.
 - `layout-architect-role-flow.md` documents the proposed visual slices.
 
 ## Reconciliation Checklist
@@ -366,8 +386,11 @@ Before marking a task complete, answer these explicitly:
 
 ## Current Validation Baseline
 
-As of this ledger creation:
+As of the latest ledger refresh:
 
-- `pebble build` passes for the configured rectangular platforms.
-- Worktree was clean before this ledger file was added.
-- Round support is not implemented or enabled.
+- Rectangular and round architects exist behind the shared architect contract.
+- `package.json` includes rectangular and round target platforms.
+- Build and emulator validation are task-scoped; rerun them before claiming a
+  code slice is complete.
+- The worktree may contain active user changes; inspect live status before
+  staging or committing.

@@ -90,9 +90,10 @@ Module ownership after the latest refactor:
 - `climate_glyphs.c`: procedural weather glyph drawing only. It receives
   condition and palette explicitly; it must not reach back into climate
   state.
-- `layout.c`: `WatchfaceSurface` calculation, palette selection,
-  typography resolution, and shared text-layer update behavior. It should
-  not create Pebble layers.
+- `layout.h`: public layout initialization and style-update API.
+- `layout_rect.c` / `layout_round.c`: shape-specific `WatchfaceSurface`
+  initialization. The active implementation clears the caller-owned surface
+  and calculates geometry; it does not create Pebble layers.
 - `settings.c`: persisted user settings defaults, validation, load, save, and
   HR sampling interval mapping.
 - `helper.c/.h`: shared helpers such as strict tuple parsing and scaling.
@@ -180,9 +181,10 @@ watchface.
 
 Current boundary:
 
-- `layout_update_surface_style()` owns palette selection.
-- palette storage in `layout.c` should remain file-local unless there is a
-  clear external contract.
+- `layout_update_watchface_style()` owns palette selection behind the public
+  layout boundary.
+- palette storage in `layout_stylist.c` should remain file-local unless
+  there is a clear external contract.
 - renderers that already have palette/background context should use Pebble's
   legibility helpers directly, such as `gcolor_legible_over()`.
 - low-level display code should not reach into `main.c` or watchface state.
