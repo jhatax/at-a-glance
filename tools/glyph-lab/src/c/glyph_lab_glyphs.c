@@ -104,6 +104,58 @@ static GRect offset_rect(GRect rect, GPoint offset) {
   return rect;
 }
 
+static void draw_scaled_polygon(
+    GContext* ctx,
+    const GRect* frame,
+    const GPoint* design_points,
+    uint32_t point_count,
+    GColor stroke_color,
+    GColor halo_color,
+    int16_t stroke_width,
+    bool draw_halo) {
+  GPoint scaled_points[8];
+  GPathInfo path_info;
+  GPath* path;
+
+  if (!ctx || !frame || !design_points || point_count < 3 ||
+      point_count > 8) {
+    return;
+  }
+
+  for (uint32_t i = 0; i < point_count; ++i) {
+    scaled_points[i] = GPoint(
+        frame->origin.x + HELPER_SCALE_ROUND(
+            design_points[i].x,
+            frame->size.w,
+            DESIGN_ICON_WIDTH),
+        frame->origin.y + HELPER_SCALE_ROUND(
+            design_points[i].y,
+            frame->size.h,
+            DESIGN_ICON_HEIGHT));
+  }
+
+  path_info = (GPathInfo) {
+    .num_points = point_count,
+    .points = scaled_points,
+  };
+  path = gpath_create(&path_info);
+  if (!path) {
+    return;
+  }
+
+  if (draw_halo) {
+    graphics_context_set_stroke_color(ctx, halo_color);
+    graphics_context_set_stroke_width(ctx, stroke_width + 2);
+    gpath_draw_outline(ctx, path);
+  }
+
+  graphics_context_set_stroke_color(ctx, stroke_color);
+  graphics_context_set_stroke_width(ctx, stroke_width);
+  gpath_draw_outline(ctx, path);
+
+  gpath_destroy(path);
+}
+
 static GColor battery_color(
     const ColorPalette* palette,
     bool is_light_mode,
@@ -132,23 +184,27 @@ static void draw_battery_charging_bolt(
     const GRect* frame,
     const ColorPalette* palette,
     GColor color) {
-  graphics_context_set_stroke_color(ctx, palette->background);
-  graphics_context_set_stroke_width(ctx, 1);
-  draw_scaled_line_in_frame(ctx, frame, 17, 3, 10, 14);
-  draw_scaled_line_in_frame(ctx, frame, 10, 14, 16, 14);
-  draw_scaled_line_in_frame(ctx, frame, 16, 14, 11, 25);
-  draw_scaled_line_in_frame(ctx, frame, 11, 25, 22, 11);
-  draw_scaled_line_in_frame(ctx, frame, 22, 11, 16, 11);
-  draw_scaled_line_in_frame(ctx, frame, 16, 11, 17, 3);
+  int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
+  int16_t bolt_stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(frame_min);
+  static const GPoint bolt_points[] = {
+    {14, 0},
+    {5, 11},
+    {10, 11},
+    {5, 27},
+    {17, 13},
+    {23, 13},
+    {14, 5},
+  };
 
-  graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line_in_frame(ctx, frame, 17, 3, 10, 14);
-  draw_scaled_line_in_frame(ctx, frame, 10, 14, 16, 14);
-  draw_scaled_line_in_frame(ctx, frame, 16, 14, 11, 25);
-  draw_scaled_line_in_frame(ctx, frame, 11, 25, 22, 11);
-  draw_scaled_line_in_frame(ctx, frame, 22, 11, 16, 11);
-  draw_scaled_line_in_frame(ctx, frame, 16, 11, 17, 3);
+  draw_scaled_polygon(
+      ctx,
+      frame,
+      bolt_points,
+      ARRAY_LENGTH(bolt_points),
+      color,
+      palette->background,
+      bolt_stroke_width,
+      true);
 }
 
 void glyph_lab_draw_battery_icon(
@@ -233,7 +289,11 @@ void glyph_lab_draw_battery_icon(
       GCornerNone);
 
   if (is_charging) {
-    draw_battery_charging_bolt(ctx, frame, palette, draw_color);
+    draw_battery_charging_bolt(
+        ctx,
+        frame,
+        palette,
+        palette->primary_text);
   }
 }
 
@@ -306,13 +366,27 @@ static void draw_bpm_icon_with_color(
     GContext* ctx,
     GColor color,
     const GRect* frame) {
+  int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
+  int16_t waveform_stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(frame_min);
+
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  draw_scaled_line_in_frame(ctx, frame, 3, 15, 8, 15);
-  draw_scaled_line_in_frame(ctx, frame, 8, 15, 11, 8);
-  draw_scaled_line_in_frame(ctx, frame, 11, 8, 15, 22);
-  draw_scaled_line_in_frame(ctx, frame, 15, 22, 19, 12);
-  draw_scaled_line_in_frame(ctx, frame, 19, 12, 24, 12);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_rect(
+      ctx,
+      GRect(frame->origin.x + glyph_lab_scale_icon_x(&frame->size, 3),
+            frame->origin.y + glyph_lab_scale_icon_y(&frame->size, 4),
+            glyph_lab_scale_icon_x(&frame->size, 25) -
+                glyph_lab_scale_icon_x(&frame->size, 3),
+            glyph_lab_scale_icon_y(&frame->size, 23) -
+                glyph_lab_scale_icon_y(&frame->size, 4)));
+
+  graphics_context_set_stroke_width(ctx, waveform_stroke_width);
+  draw_scaled_line_in_frame(ctx, frame, 2, 16, 7, 16);
+  draw_scaled_line_in_frame(ctx, frame, 7, 16, 10, 9);
+  draw_scaled_line_in_frame(ctx, frame, 10, 9, 14, 23);
+  draw_scaled_line_in_frame(ctx, frame, 14, 23, 18, 10);
+  draw_scaled_line_in_frame(ctx, frame, 18, 10, 21, 16);
+  draw_scaled_line_in_frame(ctx, frame, 21, 16, 26, 16);
 }
 
 void glyph_lab_draw_bpm_icon(
@@ -381,23 +455,6 @@ static void weather_line(
       ctx,
       weather_point(frame, x0, y0),
       weather_point(frame, x1, y1));
-}
-
-static void weather_fill_rect(
-    GContext* ctx,
-    const GRect* frame,
-    int16_t x,
-    int16_t y,
-    int16_t w,
-    int16_t h) {
-  graphics_fill_rect(
-      ctx,
-      GRect(weather_scale_x(frame, x),
-            weather_scale_y(frame, y),
-            HELPER_SCALE_ROUND(w, frame->size.w, WEATHER_ICON_WIDTH),
-            HELPER_SCALE_ROUND(h, frame->size.h, WEATHER_ICON_HEIGHT)),
-      0,
-      GCornerNone);
 }
 
 static void weather_fill_rect_from_corners(
@@ -475,7 +532,7 @@ static GColor weather_color_for_kind(
     case WEATHER_ICON_HEAVY_RAIN:
     case WEATHER_ICON_SHOWERS:
     case WEATHER_ICON_HEAVY_SHOWERS:
-      return PBL_IF_COLOR_ELSE(GColorVividCerulean, fallback);
+      return PBL_IF_COLOR_ELSE(GColorCobaltBlue, fallback);
     case WEATHER_ICON_CLOUD:
     case WEATHER_ICON_PARTLY_CLOUDY:
     case WEATHER_ICON_FOG:
@@ -594,11 +651,6 @@ static void draw_weather_filled_cloud(
   const int16_t cloud_base_y = 18;
   GColor color = weather_color_for_kind(icon_kind, palette);
   GColor cloud_fill = is_filled ? color : palette->background;
-  GColor left_cloud_debug = PBL_IF_COLOR_ELSE(GColorRed, color);
-  GColor center_cloud_debug = PBL_IF_COLOR_ELSE(GColorIslamicGreen, color);
-  GColor right_cloud_debug = PBL_IF_COLOR_ELSE(GColorBlueMoon, color);
-  GColor cloud_body_debug = PBL_IF_COLOR_ELSE(GColorChromeYellow, color);
-  GColor cloud_base_debug = PBL_IF_COLOR_ELSE(GColorMagenta, color);
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_fill_color(ctx, cloud_fill);
@@ -623,23 +675,19 @@ static void draw_weather_filled_cloud(
       right_cloud_center_y,
       right_cloud_radius);
 
-  graphics_context_set_fill_color(ctx, left_cloud_debug);
   weather_fill_circle(ctx, frame, left_cloud_center_x, left_cloud_center_y, 3);
-  graphics_context_set_fill_color(ctx, center_cloud_debug);
   weather_fill_circle(
       ctx,
       frame,
       center_cloud_center_x,
       center_cloud_center_y,
       4);
-  graphics_context_set_fill_color(ctx, right_cloud_debug);
   weather_fill_circle(
       ctx,
       frame,
       right_cloud_center_x,
       right_cloud_center_y,
       3);
-  graphics_context_set_fill_color(ctx, cloud_body_debug);
   weather_fill_rect_from_corners(
       ctx,
       frame,
@@ -647,7 +695,6 @@ static void draw_weather_filled_cloud(
       cloud_fill_top,
       cloud_fill_right,
       cloud_fill_bottom);
-  graphics_context_set_stroke_color(ctx, cloud_base_debug);
   weather_line(
       ctx,
       frame,
@@ -726,10 +773,10 @@ static void draw_weather_drizzle_icon(
   graphics_context_set_stroke_color(
       ctx,
       weather_color_for_kind(WEATHER_ICON_DRIZZLE, palette));
-  graphics_context_set_stroke_width(ctx, 1);
-  weather_line(ctx, frame, 7, 7, 5, 14);
-  weather_line(ctx, frame, 14, 6, 12, 13);
-  weather_line(ctx, frame, 21, 7, 19, 14);
+  graphics_context_set_stroke_width(ctx, 2);
+  weather_line(ctx, frame, 7, 5, 4, 16);
+  weather_line(ctx, frame, 14, 10, 11, 21);
+  weather_line(ctx, frame, 21, 15, 18, 26);
 }
 
 static void draw_weather_rain_marks(
@@ -865,30 +912,30 @@ static void draw_weather_bolt_icon(
     GContext* ctx,
     const GRect* frame,
     const ColorPalette* palette) {
+  int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
+  int16_t bolt_stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(frame_min);
+  static const GPoint bolt_points[] = {
+    {14, 0},
+    {5, 11},
+    {10, 11},
+    {5, 27},
+    {17, 13},
+    {23, 13},
+    {14, 5},
+  };
   GColor color = weather_color_for_kind(
       WEATHER_ICON_THUNDERSTORM,
       palette);
-  GColor border_color = PBL_IF_COLOR_ELSE(
-      weather_subtle_color(palette),
-      palette->primary_text);
 
-  graphics_context_set_stroke_color(ctx, border_color);
-  graphics_context_set_stroke_width(ctx, 1);
-  weather_line(ctx, frame, 17, 4, 9, 15);
-  weather_line(ctx, frame, 9, 15, 15, 15);
-  weather_line(ctx, frame, 15, 15, 10, 25);
-  weather_line(ctx, frame, 10, 25, 22, 11);
-  weather_line(ctx, frame, 22, 11, 16, 11);
-  weather_line(ctx, frame, 16, 11, 17, 4);
-
-  graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
-  weather_line(ctx, frame, 17, 4, 9, 15);
-  weather_line(ctx, frame, 9, 15, 15, 15);
-  weather_line(ctx, frame, 15, 15, 10, 25);
-  weather_line(ctx, frame, 10, 25, 22, 11);
-  weather_line(ctx, frame, 22, 11, 16, 11);
-  weather_line(ctx, frame, 16, 11, 17, 4);
+  draw_scaled_polygon(
+      ctx,
+      frame,
+      bolt_points,
+      ARRAY_LENGTH(bolt_points),
+      color,
+      color,
+      bolt_stroke_width,
+      false);
 }
 
 static void draw_weather_unavailable_icon(

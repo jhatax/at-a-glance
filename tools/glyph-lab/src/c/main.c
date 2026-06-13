@@ -28,7 +28,12 @@ typedef struct {
 typedef struct {
   const char* title;
   GlyphCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
-} GlyphPage;
+} GlyphPageTemplate;
+
+typedef struct {
+  const char* title;
+  int16_t icon_size;
+} GlyphSizeMode;
 
 static Window* s_window;
 static Layer* s_canvas_layer;
@@ -37,7 +42,7 @@ static GFont s_label_font;
 static bool s_is_light_mode = false;
 static int s_page_index = 0;
 
-static const GlyphPage GLYPH_PAGES[] = {
+static const GlyphPageTemplate GLYPH_PAGE_TEMPLATES[] = {
   {
     .title = "OVERVIEW",
     .cells = {
@@ -112,8 +117,18 @@ static const GlyphPage GLYPH_PAGES[] = {
   },
 };
 
+static const GlyphSizeMode GLYPH_SIZE_MODES[] = {
+  {.title = "28", .icon_size = 28},
+  {.title = "20", .icon_size = 20},
+  {.title = "16", .icon_size = 16},
+};
+
+static const int GLYPH_PAGE_TEMPLATE_COUNT =
+    sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0]);
+
 static const int GLYPH_PAGE_COUNT =
-    sizeof(GLYPH_PAGES) / sizeof(GLYPH_PAGES[0]);
+    (sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0])) *
+    (sizeof(GLYPH_SIZE_MODES) / sizeof(GLYPH_SIZE_MODES[0]));
 
 static void mark_canvas_dirty(void) {
   if (s_canvas_layer) {
@@ -126,14 +141,20 @@ static void draw_status(
     const GRect* bounds,
     const ColorPalette* palette) {
   char status[32];
+  int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
+  int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
+  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
+  const GlyphPageTemplate* page_template =
+      &GLYPH_PAGE_TEMPLATES[template_index];
 
   snprintf(
       status,
       sizeof(status),
-      "%d/%d %s %s",
+      "%d/%d %s %s %s",
       s_page_index + 1,
       GLYPH_PAGE_COUNT,
-      GLYPH_PAGES[s_page_index].title,
+      size_mode->title,
+      page_template->title,
       s_is_light_mode ? "LIGHT" : "DARK");
 
   graphics_context_set_text_color(ctx, palette->primary_text);
@@ -170,13 +191,19 @@ static void draw_glyph_cell(
     GContext* ctx,
     const GRect* cell_frame,
     const GlyphCell* cell,
-    const ColorPalette* palette) {
+    const ColorPalette* palette,
+    int16_t icon_size_override) {
   GRect icon_area = GRect(
       cell_frame->origin.x + CELL_PADDING,
       cell_frame->origin.y + CELL_PADDING,
       cell_frame->size.w - (CELL_PADDING * 2),
       cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
   int16_t icon_size = HELPER_MIN(icon_area.size.w, icon_area.size.h);
+
+  if (icon_size_override > 0 && icon_size_override < icon_size) {
+    icon_size = icon_size_override;
+  }
+
   GRect icon_frame = GRect(
       icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
       icon_area.origin.y + ((icon_area.size.h - icon_size) / 2),
@@ -229,6 +256,8 @@ static void draw_glyph_cell(
 static void canvas_update_proc(Layer* layer, GContext* ctx) {
   GRect bounds = layer_get_bounds(layer);
   ColorPalette palette;
+  int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
+  int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
   int16_t outer_padding = PBL_IF_ROUND_ELSE(
       OUTER_PADDING_ROUND,
       OUTER_PADDING_RECT);
@@ -245,7 +274,9 @@ static void canvas_update_proc(Layer* layer, GContext* ctx) {
       content_bounds.size.h - STATUS_HEIGHT);
   int16_t cell_w = grid_bounds.size.w / GLYPH_COL_COUNT;
   int16_t cell_h = grid_bounds.size.h / GLYPH_ROW_COUNT;
-  const GlyphPage* page = &GLYPH_PAGES[s_page_index];
+  const GlyphPageTemplate* page_template =
+      &GLYPH_PAGE_TEMPLATES[template_index];
+  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
 
   glyph_lab_select_palette(&palette, s_is_light_mode);
   graphics_context_set_fill_color(ctx, palette.background);
@@ -264,8 +295,9 @@ static void canvas_update_proc(Layer* layer, GContext* ctx) {
       draw_glyph_cell(
           ctx,
           &cell_frame,
-          &page->cells[index],
-          &palette);
+          &page_template->cells[index],
+          &palette,
+          size_mode->icon_size);
     }
   }
 }

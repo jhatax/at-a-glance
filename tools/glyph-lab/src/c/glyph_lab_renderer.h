@@ -2,6 +2,9 @@
 
 #include <pebble.h>
 
+#define GLYPH_LAB_ICON_STROKE_WIDTH(frame_min) \
+  (((frame_min) < 20) ? 1 : 2)
+
 int16_t glyph_lab_scale_icon_x(
     const GSize* size,
     int16_t coord);
