@@ -24,28 +24,33 @@ Every non-trivial change follows this cycle:
 5. Agree on invariants.
    Explicitly name the contracts, ownership boundaries, lifecycle assumptions,
    and behavior that must remain unchanged.
-6. Edit narrowly.
+6. Challenge foundational assumptions.
+   For platform/layout work, name the design authority and identify whether
+   the slice reuses architecture, geometry, constants, scaling policy, or
+   behavior. Record open risks, assumptions, active issues, and decisions in
+   `RAID_LOG.md`.
+7. Edit narrowly.
    Keep the slice coherent but local. Do not mix refactors, visual changes,
    AppMessage changes, and platform enablement unless explicitly approved.
-7. Validate.
+8. Validate.
    Run `git diff --check`; run `pebble build` for code changes unless the user
    explicitly pauses validation. Use emulator screenshots for visual slices.
-8. Document flow before commit.
+9. Document flow before commit.
    For any new API, changed API, changed lifecycle path, or changed caller
    behavior, create a clean before/after flow diagram and a proposed commit
    message. The flow review must cover callers and users of the API, not only
    the implementation diff.
-9. Get approval before commit.
+10. Get approval before commit.
    The revised flow(s) and commit message must be approved before staging or
    committing. A successful build and post-hoc diff review are not sufficient
    approval for API, lifecycle, or caller-flow changes.
-10. Reconcile.
+11. Reconcile.
    Confirm each invariant and acceptance check as implemented, violated,
    intentionally deferred, or not applicable.
-11. Commit cleanly.
+12. Commit cleanly.
    Stage only intended files. Do not commit build artifacts, screenshots, or
    unrelated scratch files.
-12. Update the ledger.
+13. Update the ledger.
    After the accepted code flow lands, update this ledger for any changed
    architecture decision, invariant, or acceptance check.
 
@@ -72,6 +77,9 @@ Every non-trivial change follows this cycle:
   or glyph behavior inside unrelated refactor slices.
 - Do not commit a new API, changed API, or changed API caller flow without an
   approved before/after flow diagram and approved commit message.
+- Do not let a cleaned-up implementation hide an unresolved product premise.
+  If a slice depends on a foundational assumption, state it and either defend
+  it, challenge it, or record it in `RAID_LOG.md`.
 - Preserve user changes. Never revert unrelated dirty work.
 
 ## Current Architecture Decisions
@@ -99,6 +107,29 @@ Acceptance checks:
 - `DEBUG_ATAGLANCE` is defined in `ataglance.h` when local debug support is
   enabled.
 - Module APIs are not declared here.
+
+TODO: Retire `src/c/ataglance.h` in a focused header cleanup slice.
+
+- Remove `ATAGLANCE_USE_AND_PERSIST_SETTINGS`; settings persistence is the
+  expected product behavior now that Clay exposes a configuration page.
+  `main.c` should always load persisted settings on init and save settings on
+  deinit.
+- Replace `ATAGLANCE_MAX_STR_LEN` with module-local buffer constants. Date,
+  time, climate, battery, BPM, and steps should size their own buffers based
+  on the strings they actually format.
+- Move `DEBUG_ATAGLANCE` out of `ataglance.h`. Prefer a compiler/build define
+  if the Pebble build path supports it cleanly; otherwise use a narrowly named
+  debug configuration header instead of a product constants header.
+- Remove `ataglance.h` includes from files that do not use its symbols,
+  including current dead includes in layout/style/renderer/glyph modules.
+- Remove `ataglance.h` includes from public module headers by relocating the
+  debug declaration gate or debug key ownership to a narrower boundary.
+- Delete `src/c/ataglance.h` after all call sites and docs are reconciled.
+- Update `agents.md`, this ledger, and any active handoff docs that still
+  describe `ataglance.h` as an app/product constants owner.
+- Remove or move `src/c/scratch.txt` out of the source tree after confirming
+  it is disposable; source-tree scratch files pollute header and symbol
+  audits.
 
 ### Component Model
 
@@ -161,8 +192,8 @@ Acceptance checks:
 
 ### Layout Stylist
 
-Decision: `src/modules/layout_stylist.c/.h` privately owns visual style
-resolution for layout.
+Decision: `src/modules/layout_stylist.c` owns visual style resolution for
+layout behind the public `layout.h` API.
 
 Invariants:
 
@@ -224,6 +255,12 @@ Invariants:
 
 - It may create text layers, create icon layers, update text layers, resolve
   static color roles, and scale design icon coordinates.
+- It owns shared glyph primitives when the geometry contract is reused across
+  modules, including the unavailable slash, shared polygon outlines, and
+  frame-aware line/circle/corner-derived fill helpers.
+- Weather glyph composition may keep private helpers such as
+  `weather_subframe()`, but repeated frame-aware primitive math belongs in the
+  renderer once it is shared.
 - It does not own module source state, text formatting, dynamic colors, icon
   update procs, service data, AppMessage data, or glyph behavior decisions.
 - Icon update procs are passed into icon creation by the owning module.
@@ -231,6 +268,8 @@ Invariants:
 Acceptance checks:
 
 - Feature modules call renderer helpers for common TextLayer/Icon layer setup.
+- Shared glyph contracts are not reimplemented privately in multiple feature
+  modules.
 - Dynamic BPM and battery colors remain module-owned.
 
 ### Watchface Runtime
@@ -245,8 +284,9 @@ Invariants:
 - `watchface` destroys only strata that were actually created.
 - `watchface_refresh(WatchfaceUpdateMask updates)` is the only public render
   dispatcher.
-- Display-mode handling is inline in the `WATCHFACE_UPDATE_DISPLAY_MODE`
-  branch of `watchface_refresh()`.
+- Display-mode handling is an explicit global repaint path. `main.c` updates
+  settings and calls `watchface_repaint()`, which cascades style and refreshes
+  existing strata without reinitializing geometry.
 - The strata-only redraw mask is private to `watchface.c`; `main.c` must not
   know about strata.
 - Setters mutate source state only. Rendering happens through a later refresh.
@@ -373,6 +413,7 @@ Before marking a task complete, answer these explicitly:
 - Which invariants were touched?
 - Which files changed?
 - Which call sites were audited?
+- Were public and private headers audited for unnecessary includes?
 - Were similar patterns searched and fixed where appropriate?
 - Was any public header changed? If yes, why is that exposure necessary?
 - Did `main.c` learn module details? It should not.

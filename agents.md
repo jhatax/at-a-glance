@@ -89,6 +89,12 @@ At A Glance: Configuration
 - Do not commit API changes, new APIs, or changed callers until the old and
   new flows have been reviewed and approved. A clean build plus post-hoc diff
   review is not sufficient for API or lifecycle changes.
+- Before implementing platform layout work, name the design authority and
+  challenge foundational assumptions. In particular, distinguish reusing
+  architecture from reusing geometry, constants, or scaling policy.
+- Maintain `RAID_LOG.md` for non-trivial layout, platform, lifecycle, or API
+  work. Record risks, assumptions, active issues, and decisions before they
+  become invisible momentum.
 
 Required API-change workflow:
 
@@ -164,7 +170,10 @@ Core invariants:
 - `src/modules/layout_stylist.c`: style helper for palette,
   font-role, custom-font, and compact/full style consumption.
 - `src/modules/substratum_renderer.c/.h`: shared Pebble rendering helper for
-  calculated substrata: text-layer setup/update and icon-coordinate scaling.
+  calculated substrata: text-layer setup/update, icon-coordinate scaling,
+  and shared glyph primitives. Keep repeated frame-aware primitive math here;
+  keep glyph-specific composition helpers such as `weather_subframe()`
+  private to the owning module.
 - `src/modules/settings.c`: persisted settings defaults, validation, load,
   save, and HR sampling interval mapping.
 - `src/modules/helper.c/.h`: shared arithmetic, color, and parsing helpers.
