@@ -60,13 +60,28 @@ void glyph_lab_select_palette(
   };
 }
 
+static void draw_scaled_line_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  graphics_draw_line(
+      ctx,
+      GPoint(frame->origin.x + glyph_lab_scale_icon_x(&frame->size, x0),
+             frame->origin.y + glyph_lab_scale_icon_y(&frame->size, y0)),
+      GPoint(frame->origin.x + glyph_lab_scale_icon_x(&frame->size, x1),
+             frame->origin.y + glyph_lab_scale_icon_y(&frame->size, y1)));
+}
+
 static void draw_unavailable_slash(
     GContext* ctx,
-    const GSize* bounds_size,
+    const GRect* frame,
     GColor color) {
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 3);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 5, 5, 24, 24);
+  draw_scaled_line_in_frame(ctx, frame, 5, 5, 24, 24);
 }
 
 static GRect battery_scaled_rect_from_corners(
@@ -114,26 +129,26 @@ static GColor battery_color(
 
 static void draw_battery_charging_bolt(
     GContext* ctx,
-    const GSize* bounds_size,
+    const GRect* frame,
     const ColorPalette* palette,
     GColor color) {
   graphics_context_set_stroke_color(ctx, palette->background);
   graphics_context_set_stroke_width(ctx, 1);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
+  draw_scaled_line_in_frame(ctx, frame, 17, 3, 10, 14);
+  draw_scaled_line_in_frame(ctx, frame, 10, 14, 16, 14);
+  draw_scaled_line_in_frame(ctx, frame, 16, 14, 11, 25);
+  draw_scaled_line_in_frame(ctx, frame, 11, 25, 22, 11);
+  draw_scaled_line_in_frame(ctx, frame, 22, 11, 16, 11);
+  draw_scaled_line_in_frame(ctx, frame, 16, 11, 17, 3);
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 17, 3, 10, 14);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 10, 14, 16, 14);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 16, 14, 11, 25);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 11, 25, 22, 11);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 22, 11, 16, 11);
-  glyph_lab_draw_scaled_line(ctx, bounds_size, 16, 11, 17, 3);
+  draw_scaled_line_in_frame(ctx, frame, 17, 3, 10, 14);
+  draw_scaled_line_in_frame(ctx, frame, 10, 14, 16, 14);
+  draw_scaled_line_in_frame(ctx, frame, 16, 14, 11, 25);
+  draw_scaled_line_in_frame(ctx, frame, 11, 25, 22, 11);
+  draw_scaled_line_in_frame(ctx, frame, 22, 11, 16, 11);
+  draw_scaled_line_in_frame(ctx, frame, 16, 11, 17, 3);
 }
 
 void glyph_lab_draw_battery_icon(
@@ -147,18 +162,47 @@ void glyph_lab_draw_battery_icon(
     return;
   }
 
-  const int stroke_width = 2;
+  const int16_t shell_left = 2;
+  const int16_t shell_top = 4;
+  const int16_t shell_right = 24;
+  const int16_t shell_bottom = 19;
+  const int16_t nub_left = 24;
+  const int16_t nub_top = 8;
+  const int16_t nub_right = 26;
+  const int16_t nub_bottom = 15;
+  const int16_t shell_stroke_width = 2;
+  const int16_t inner_breathing_room = 1;
+  const int16_t fill_inset = shell_stroke_width + inner_breathing_room;
+  const int16_t fill_left = shell_left + fill_inset;
+  const int16_t fill_top = shell_top + fill_inset;
+  const int16_t fill_right = shell_right - fill_inset;
+  const int16_t fill_bottom = shell_bottom - fill_inset;
+  // battery_scaled_rect_from_corners() treats right/bottom as exclusive
+  // edges, so the maximum unscaled fill span comes from the shell endpoints
+  // minus the shell stroke and one extra pixel of inner breathing room on
+  // each side.
+  const int16_t fill_width_max = fill_right - fill_left;
   GColor draw_color = battery_color(
       palette,
       is_light_mode,
       percent,
       is_charging);
-  int fill_w = (percent * 18) / 100;
+  int16_t fill_width = (percent * fill_width_max) / 100;
   GRect body = offset_rect(
-      battery_scaled_rect_from_corners(&frame->size, 2, 4, 24, 19),
+      battery_scaled_rect_from_corners(
+          &frame->size,
+          shell_left,
+          shell_top,
+          shell_right,
+          shell_bottom),
       frame->origin);
   GRect nub = offset_rect(
-      battery_scaled_rect_from_corners(&frame->size, 24, 8, 26, 15),
+      battery_scaled_rect_from_corners(
+          &frame->size,
+          nub_left,
+          nub_top,
+          nub_right,
+          nub_bottom),
       frame->origin);
 
   graphics_context_set_fill_color(ctx, palette->background);
@@ -166,13 +210,13 @@ void glyph_lab_draw_battery_icon(
 
   graphics_context_set_stroke_color(ctx, draw_color);
   graphics_context_set_fill_color(ctx, draw_color);
-  graphics_context_set_stroke_width(ctx, stroke_width);
+  graphics_context_set_stroke_width(ctx, shell_stroke_width);
 
   graphics_draw_rect(ctx, body);
   graphics_fill_rect(ctx, nub, 0, GCornerNone);
 
-  if (fill_w < 1) {
-    fill_w = 1;
+  if (fill_width < 1) {
+    fill_width = 1;
   }
 
   graphics_fill_rect(
@@ -180,16 +224,16 @@ void glyph_lab_draw_battery_icon(
       offset_rect(
           battery_scaled_rect_from_corners(
               &frame->size,
-              5,
-              7,
-              5 + fill_w,
-              16),
+              fill_left,
+              fill_top,
+              fill_left + fill_width,
+              fill_bottom),
           frame->origin),
       0,
       GCornerNone);
 
   if (is_charging) {
-    draw_battery_charging_bolt(ctx, &frame->size, palette, draw_color);
+    draw_battery_charging_bolt(ctx, frame, palette, draw_color);
   }
 }
 
@@ -233,7 +277,7 @@ void glyph_lab_draw_steps_icon(
       glyph_lab_scale_icon_coord(&frame->size, 4));
 
   if (!is_available) {
-    draw_unavailable_slash(ctx, &frame->size, palette->primary_text);
+    draw_unavailable_slash(ctx, frame, palette->primary_text);
   }
 }
 
@@ -264,11 +308,11 @@ static void draw_bpm_icon_with_color(
     const GRect* frame) {
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, 2);
-  glyph_lab_draw_scaled_line(ctx, &frame->size, 3, 15, 8, 15);
-  glyph_lab_draw_scaled_line(ctx, &frame->size, 8, 15, 11, 8);
-  glyph_lab_draw_scaled_line(ctx, &frame->size, 11, 8, 15, 22);
-  glyph_lab_draw_scaled_line(ctx, &frame->size, 15, 22, 19, 12);
-  glyph_lab_draw_scaled_line(ctx, &frame->size, 19, 12, 24, 12);
+  draw_scaled_line_in_frame(ctx, frame, 3, 15, 8, 15);
+  draw_scaled_line_in_frame(ctx, frame, 8, 15, 11, 8);
+  draw_scaled_line_in_frame(ctx, frame, 11, 8, 15, 22);
+  draw_scaled_line_in_frame(ctx, frame, 15, 22, 19, 12);
+  draw_scaled_line_in_frame(ctx, frame, 19, 12, 24, 12);
 }
 
 void glyph_lab_draw_bpm_icon(
@@ -291,7 +335,7 @@ void glyph_lab_draw_bpm_icon(
       frame);
 
   if (!is_available) {
-    draw_unavailable_slash(ctx, &frame->size, palette->primary_text);
+    draw_unavailable_slash(ctx, frame, palette->primary_text);
   }
 }
 
@@ -352,6 +396,23 @@ static void weather_fill_rect(
             weather_scale_y(frame, y),
             HELPER_SCALE_ROUND(w, frame->size.w, WEATHER_ICON_WIDTH),
             HELPER_SCALE_ROUND(h, frame->size.h, WEATHER_ICON_HEIGHT)),
+      0,
+      GCornerNone);
+}
+
+static void weather_fill_rect_from_corners(
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
+  graphics_fill_rect(
+      ctx,
+      GRect(weather_scale_x(frame, x0),
+            weather_scale_y(frame, y0),
+            weather_scale_x(frame, x1) - weather_scale_x(frame, x0),
+            weather_scale_y(frame, y1) - weather_scale_y(frame, y0)),
       0,
       GCornerNone);
 }
@@ -515,22 +576,85 @@ static void draw_weather_filled_cloud(
     const ColorPalette* palette,
     WeatherIconKind icon_kind,
     bool is_filled) {
+  const int16_t left_cloud_center_x = 8;
+  const int16_t left_cloud_center_y = 14;
+  const int16_t left_cloud_radius = 4;
+  const int16_t center_cloud_center_x = 14;
+  const int16_t center_cloud_center_y = 10;
+  const int16_t center_cloud_radius = 5;
+  const int16_t right_cloud_center_x = 19;
+  const int16_t right_cloud_center_y = 14;
+  const int16_t right_cloud_radius = 4;
+  const int16_t cloud_fill_left = 6;
+  const int16_t cloud_fill_top = 12;
+  const int16_t cloud_fill_right = 21;
+  const int16_t cloud_fill_bottom = 18;
+  const int16_t cloud_base_left = 4;
+  const int16_t cloud_base_right = 23;
+  const int16_t cloud_base_y = 18;
   GColor color = weather_color_for_kind(icon_kind, palette);
   GColor cloud_fill = is_filled ? color : palette->background;
+  GColor left_cloud_debug = PBL_IF_COLOR_ELSE(GColorRed, color);
+  GColor center_cloud_debug = PBL_IF_COLOR_ELSE(GColorIslamicGreen, color);
+  GColor right_cloud_debug = PBL_IF_COLOR_ELSE(GColorBlueMoon, color);
+  GColor cloud_body_debug = PBL_IF_COLOR_ELSE(GColorChromeYellow, color);
+  GColor cloud_base_debug = PBL_IF_COLOR_ELSE(GColorMagenta, color);
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_fill_color(ctx, cloud_fill);
   graphics_context_set_stroke_width(ctx, 2);
 
-  weather_draw_circle(ctx, frame, 8, 16, 5);
-  weather_draw_circle(ctx, frame, 14, 11, 6);
-  weather_draw_circle(ctx, frame, 19, 15, 5);
+  weather_draw_circle(
+      ctx,
+      frame,
+      left_cloud_center_x,
+      left_cloud_center_y,
+      left_cloud_radius);
+  weather_draw_circle(
+      ctx,
+      frame,
+      center_cloud_center_x,
+      center_cloud_center_y,
+      center_cloud_radius);
+  weather_draw_circle(
+      ctx,
+      frame,
+      right_cloud_center_x,
+      right_cloud_center_y,
+      right_cloud_radius);
 
-  weather_fill_circle(ctx, frame, 8, 16, 4);
-  weather_fill_circle(ctx, frame, 14, 11, 5);
-  weather_fill_circle(ctx, frame, 19, 15, 4);
-  weather_fill_rect(ctx, frame, 6, 13, 15, 7);
-  weather_line(ctx, frame, 4, 20, 23, 20);
+  graphics_context_set_fill_color(ctx, left_cloud_debug);
+  weather_fill_circle(ctx, frame, left_cloud_center_x, left_cloud_center_y, 3);
+  graphics_context_set_fill_color(ctx, center_cloud_debug);
+  weather_fill_circle(
+      ctx,
+      frame,
+      center_cloud_center_x,
+      center_cloud_center_y,
+      4);
+  graphics_context_set_fill_color(ctx, right_cloud_debug);
+  weather_fill_circle(
+      ctx,
+      frame,
+      right_cloud_center_x,
+      right_cloud_center_y,
+      3);
+  graphics_context_set_fill_color(ctx, cloud_body_debug);
+  weather_fill_rect_from_corners(
+      ctx,
+      frame,
+      cloud_fill_left,
+      cloud_fill_top,
+      cloud_fill_right,
+      cloud_fill_bottom);
+  graphics_context_set_stroke_color(ctx, cloud_base_debug);
+  weather_line(
+      ctx,
+      frame,
+      cloud_base_left,
+      cloud_base_y,
+      cloud_base_right,
+      cloud_base_y);
 }
 
 static void draw_weather_cloud(
@@ -772,7 +896,7 @@ static void draw_weather_unavailable_icon(
     const GRect* frame,
     const ColorPalette* palette) {
   draw_weather_cloud(ctx, frame, palette, WEATHER_ICON_UNKNOWN);
-  draw_unavailable_slash(ctx, &frame->size, palette->primary_text);
+  draw_unavailable_slash(ctx, frame, palette->primary_text);
 }
 
 static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
