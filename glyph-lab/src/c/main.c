@@ -1,222 +1,272 @@
 #include <pebble.h>
 
-#define GLYPH_GRID_SIZE 28
+#include "glyph_lab_glyphs.h"
+#include "glyph_lab_helper.h"
+
 #define GLYPH_COL_COUNT 2
+#define GLYPH_ROW_COUNT 2
+#define STATUS_HEIGHT 18
+#define LABEL_HEIGHT 14
+#define OUTER_PADDING_RECT 6
+#define OUTER_PADDING_ROUND 12
+#define CELL_PADDING 4
 
 typedef enum {
-  GLYPH_THEME_DARK = 0,
-  GLYPH_THEME_LIGHT,
-} GlyphTheme;
-
-typedef enum {
-  GLYPH_RENDER_BW = 0,
-  GLYPH_RENDER_COLOR,
-} GlyphRenderMode;
+  GLYPH_KIND_BATTERY = 0,
+  GLYPH_KIND_WEATHER,
+  GLYPH_KIND_STEPS,
+  GLYPH_KIND_BPM,
+} GlyphKind;
 
 typedef struct {
-  GColor background;
-  GColor primary;
-  GColor muted;
-  GColor steps;
-} GlyphPalette;
+  const char* label;
+  GlyphKind kind;
+  int value;
+  bool flag;
+} GlyphCell;
 
-typedef void (*GlyphDrawProc)(
-    GContext* ctx,
-    GRect frame,
-    const GlyphPalette* palette);
+typedef struct {
+  const char* title;
+  GlyphCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
+} GlyphPage;
 
 static Window* s_window;
 static Layer* s_canvas_layer;
 static GFont s_status_font;
-static GlyphTheme s_theme = GLYPH_THEME_DARK;
-static GlyphRenderMode s_render_mode = GLYPH_RENDER_BW;
-static GPath* s_shoe_body_path;
+static GFont s_label_font;
+static bool s_is_light_mode = false;
+static int s_page_index = 0;
 
-static const GPathInfo SHOE_BODY_PATH_INFO = {
-  .num_points = 5,
-  .points = (GPoint[]) {
-    {4, 16},
-    {10, 4},
-    {24, 16},
-    {25, 21},
-    {8, 21},
+static const GlyphPage GLYPH_PAGES[] = {
+  {
+    .title = "OVERVIEW",
+    .cells = {
+      {"BAT 74", GLYPH_KIND_BATTERY, 74, false},
+      {"W 02", GLYPH_KIND_WEATHER, 2, false},
+      {"STEPS", GLYPH_KIND_STEPS, 1, true},
+      {"BPM 72", GLYPH_KIND_BPM, 72, true},
+    },
+  },
+  {
+    .title = "BATTERY",
+    .cells = {
+      {"100", GLYPH_KIND_BATTERY, 100, false},
+      {"45", GLYPH_KIND_BATTERY, 45, false},
+      {"18", GLYPH_KIND_BATTERY, 18, false},
+      {"CHG", GLYPH_KIND_BATTERY, 43, true},
+    },
+  },
+  {
+    .title = "WEATHER 1",
+    .cells = {
+      {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
+      {"SUN", GLYPH_KIND_WEATHER, 1, false},
+      {"PART", GLYPH_KIND_WEATHER, 2, false},
+      {"CLOUD", GLYPH_KIND_WEATHER, 3, false},
+    },
+  },
+  {
+    .title = "WEATHER 2",
+    .cells = {
+      {"FOG", GLYPH_KIND_WEATHER, 45, false},
+      {"DRIZ", GLYPH_KIND_WEATHER, 51, false},
+      {"RAIN", GLYPH_KIND_WEATHER, 61, false},
+      {"H RAIN", GLYPH_KIND_WEATHER, 65, false},
+    },
+  },
+  {
+    .title = "WEATHER 3",
+    .cells = {
+      {"SLEET", GLYPH_KIND_WEATHER, 56, false},
+      {"SNOW", GLYPH_KIND_WEATHER, 71, false},
+      {"SHOW", GLYPH_KIND_WEATHER, 80, false},
+      {"H SHOW", GLYPH_KIND_WEATHER, 82, false},
+    },
+  },
+  {
+    .title = "WEATHER 4",
+    .cells = {
+      {"S SHOW", GLYPH_KIND_WEATHER, 85, false},
+      {"STORM", GLYPH_KIND_WEATHER, 95, false},
+      {"UNAV", GLYPH_KIND_WEATHER, -1, false},
+      {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
+    },
+  },
+  {
+    .title = "HEALTH",
+    .cells = {
+      {"STEPS", GLYPH_KIND_STEPS, 1, true},
+      {"NO STEP", GLYPH_KIND_STEPS, 0, false},
+      {"BPM 72", GLYPH_KIND_BPM, 72, true},
+      {"BPM HI", GLYPH_KIND_BPM, 128, true},
+    },
+  },
+  {
+    .title = "UNAVAIL",
+    .cells = {
+      {"LOW", GLYPH_KIND_BATTERY, 9, false},
+      {"UNAV", GLYPH_KIND_WEATHER, -1, false},
+      {"NO STEP", GLYPH_KIND_STEPS, 0, false},
+      {"NO BPM", GLYPH_KIND_BPM, 0, false},
+    },
   },
 };
 
-static int16_t glyph_min(int16_t a, int16_t b) {
-  return a < b ? a : b;
-}
-
-static int16_t glyph_draw_size(GRect frame) {
-  return glyph_min(frame.size.w, frame.size.h);
-}
-
-static int16_t glyph_scale(GRect frame, int16_t value) {
-  return (value * glyph_draw_size(frame)) / GLYPH_GRID_SIZE;
-}
-
-static int16_t glyph_x(GRect frame, int16_t value) {
-  return frame.origin.x + ((value * frame.size.w) / GLYPH_GRID_SIZE);
-}
-
-static int16_t glyph_y(GRect frame, int16_t value) {
-  return frame.origin.y + ((value * frame.size.h) / GLYPH_GRID_SIZE);
-}
-
-static GPoint glyph_point(GRect frame, int16_t x, int16_t y) {
-  return GPoint(glyph_x(frame, x), glyph_y(frame, y));
-}
-
-static GRect glyph_rect(
-    GRect frame,
-    int16_t x,
-    int16_t y,
-    int16_t w,
-    int16_t h) {
-  return GRect(glyph_x(frame, x),
-               glyph_y(frame, y),
-               (w * frame.size.w) / GLYPH_GRID_SIZE,
-               (h * frame.size.h) / GLYPH_GRID_SIZE);
-}
-
-static void glyph_line(
-    GContext* ctx,
-    GRect frame,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  graphics_draw_line(ctx,
-                     glyph_point(frame, x0, y0),
-                     glyph_point(frame, x1, y1));
-}
-
-static void fill_circle(
-    GContext* ctx,
-    GRect frame,
-    int16_t x,
-    int16_t y,
-    int16_t r) {
-  graphics_fill_circle(ctx,
-                       glyph_point(frame, x, y),
-                       glyph_scale(frame, r));
-}
-
-static GColor glyph_ink_color(const GlyphPalette* palette) {
-  if (s_render_mode == GLYPH_RENDER_COLOR) {
-    return palette->steps;
-  }
-
-  return palette->primary;
-}
-
-static void select_palette(GlyphPalette* palette) {
-  bool dark = s_theme == GLYPH_THEME_DARK;
-  bool color = s_render_mode == GLYPH_RENDER_COLOR;
-
-  palette->background = dark ? GColorBlack : GColorWhite;
-  palette->primary = dark ? GColorWhite : GColorBlack;
-  palette->muted = dark ? GColorLightGray : GColorDarkGray;
-  palette->steps = color ?
-      PBL_IF_COLOR_ELSE(GColorChromeYellow, palette->primary) :
-      palette->primary;
-}
-
-static void draw_tread_icon(
-    GContext* ctx,
-    GRect frame,
-    const GlyphPalette* palette) {
-  GColor color = glyph_ink_color(palette);
-
-  graphics_context_set_fill_color(ctx, color);
-
-  fill_circle(ctx, frame, 14, 9, 7);
-
-  graphics_context_set_fill_color(ctx, palette->background);
-  graphics_fill_rect(ctx, glyph_rect(frame, 6, 15, 16, 4),
-                     0, GCornerNone);
-
-  graphics_context_set_fill_color(ctx, color);
-  fill_circle(ctx, frame, 14, 22, 4);
-}
-
-static void draw_shoe_icon(
-    GContext* ctx,
-    GRect frame,
-    const GlyphPalette* palette) {
-  GColor color = glyph_ink_color(palette);
-
-  graphics_context_set_fill_color(ctx, color);
-  graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 3);
-
-  gpath_move_to(s_shoe_body_path, frame.origin);
-  gpath_draw_filled(ctx, s_shoe_body_path);
-
-  fill_circle(ctx, frame, 6, 15, 4);
-  glyph_line(ctx, frame, 3, 23, 25, 23);
-}
-
-static GlyphDrawProc proc_for_col(int col) {
-  static GlyphDrawProc procs[] = {
-    draw_tread_icon,
-    draw_shoe_icon,
-  };
-
-  return procs[col];
-}
-
-static void draw_status(
-    GContext* ctx,
-    GRect bounds,
-    const GlyphPalette* palette) {
-  char text[32];
-
-  snprintf(text,
-           sizeof(text),
-           "%s %s STEP",
-           s_render_mode == GLYPH_RENDER_COLOR ? "COLOR" : "BW",
-           s_theme == GLYPH_THEME_DARK ? "DARK" : "LIGHT");
-
-  graphics_context_set_text_color(ctx, palette->muted);
-  graphics_draw_text(ctx,
-                     text,
-                     s_status_font,
-                     GRect(4, 0, bounds.size.w - 8, 18),
-                     GTextOverflowModeTrailingEllipsis,
-                     GTextAlignmentLeft,
-                     NULL);
-}
-
-static void canvas_update_proc(Layer* layer, GContext* ctx) {
-  GRect bounds = layer_get_bounds(layer);
-  GlyphPalette palette;
-  int top = 18;
-  int cell_w = bounds.size.w / GLYPH_COL_COUNT;
-  int cell_h = bounds.size.h - top;
-  int icon_size = glyph_min(cell_w - 8, cell_h - 8);
-
-  if (icon_size > GLYPH_GRID_SIZE) {
-    icon_size = GLYPH_GRID_SIZE;
-  }
-
-  select_palette(&palette);
-  graphics_context_set_fill_color(ctx, palette.background);
-  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-  draw_status(ctx, bounds, &palette);
-
-  for (int col = 0; col < GLYPH_COL_COUNT; ++col) {
-    int x = (cell_w * col) + ((cell_w - icon_size) / 2);
-    int y = top + ((cell_h - icon_size) / 2);
-    GRect frame = GRect(x, y, icon_size, icon_size);
-    GlyphDrawProc proc = proc_for_col(col);
-    proc(ctx, frame, &palette);
-  }
-}
+static const int GLYPH_PAGE_COUNT =
+    sizeof(GLYPH_PAGES) / sizeof(GLYPH_PAGES[0]);
 
 static void mark_canvas_dirty(void) {
   if (s_canvas_layer) {
     layer_mark_dirty(s_canvas_layer);
+  }
+}
+
+static void draw_status(
+    GContext* ctx,
+    const GRect* bounds,
+    const ColorPalette* palette) {
+  char status[32];
+
+  snprintf(
+      status,
+      sizeof(status),
+      "%d/%d %s %s",
+      s_page_index + 1,
+      GLYPH_PAGE_COUNT,
+      GLYPH_PAGES[s_page_index].title,
+      s_is_light_mode ? "LIGHT" : "DARK");
+
+  graphics_context_set_text_color(ctx, palette->primary_text);
+  graphics_draw_text(
+      ctx,
+      status,
+      s_status_font,
+      GRect(bounds->origin.x,
+            bounds->origin.y,
+            bounds->size.w,
+            STATUS_HEIGHT),
+      GTextOverflowModeTrailingEllipsis,
+      GTextAlignmentCenter,
+      NULL);
+}
+
+static void draw_cell_label(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    const char* label) {
+  graphics_context_set_text_color(ctx, palette->unavailable_text);
+  graphics_draw_text(
+      ctx,
+      label,
+      s_label_font,
+      *frame,
+      GTextOverflowModeTrailingEllipsis,
+      GTextAlignmentCenter,
+      NULL);
+}
+
+static void draw_glyph_cell(
+    GContext* ctx,
+    const GRect* cell_frame,
+    const GlyphCell* cell,
+    const ColorPalette* palette) {
+  GRect icon_area = GRect(
+      cell_frame->origin.x + CELL_PADDING,
+      cell_frame->origin.y + CELL_PADDING,
+      cell_frame->size.w - (CELL_PADDING * 2),
+      cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
+  int16_t icon_size = HELPER_MIN(icon_area.size.w, icon_area.size.h);
+  GRect icon_frame = GRect(
+      icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
+      icon_area.origin.y + ((icon_area.size.h - icon_size) / 2),
+      icon_size,
+      icon_size);
+  GRect label_frame = GRect(
+      cell_frame->origin.x + 2,
+      cell_frame->origin.y + cell_frame->size.h - LABEL_HEIGHT,
+      cell_frame->size.w - 4,
+      LABEL_HEIGHT);
+
+  switch (cell->kind) {
+    case GLYPH_KIND_BATTERY:
+      glyph_lab_draw_battery_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          s_is_light_mode,
+          cell->value,
+          cell->flag);
+      break;
+    case GLYPH_KIND_WEATHER:
+      glyph_lab_draw_climate_icon(
+          ctx,
+          &icon_frame,
+          cell->value,
+          palette);
+      break;
+    case GLYPH_KIND_STEPS:
+      glyph_lab_draw_steps_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          cell->flag);
+      break;
+    case GLYPH_KIND_BPM:
+      glyph_lab_draw_bpm_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          s_is_light_mode,
+          cell->value,
+          cell->flag);
+      break;
+  }
+
+  draw_cell_label(ctx, &label_frame, palette, cell->label);
+}
+
+static void canvas_update_proc(Layer* layer, GContext* ctx) {
+  GRect bounds = layer_get_bounds(layer);
+  ColorPalette palette;
+  int16_t outer_padding = PBL_IF_ROUND_ELSE(
+      OUTER_PADDING_ROUND,
+      OUTER_PADDING_RECT);
+  GRect content_bounds = grect_inset(
+      bounds,
+      GEdgeInsets(outer_padding,
+                  outer_padding,
+                  outer_padding,
+                  outer_padding));
+  GRect grid_bounds = GRect(
+      content_bounds.origin.x,
+      content_bounds.origin.y + STATUS_HEIGHT,
+      content_bounds.size.w,
+      content_bounds.size.h - STATUS_HEIGHT);
+  int16_t cell_w = grid_bounds.size.w / GLYPH_COL_COUNT;
+  int16_t cell_h = grid_bounds.size.h / GLYPH_ROW_COUNT;
+  const GlyphPage* page = &GLYPH_PAGES[s_page_index];
+
+  glyph_lab_select_palette(&palette, s_is_light_mode);
+  graphics_context_set_fill_color(ctx, palette.background);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  draw_status(ctx, &content_bounds, &palette);
+
+  for (int row = 0; row < GLYPH_ROW_COUNT; ++row) {
+    for (int col = 0; col < GLYPH_COL_COUNT; ++col) {
+      int index = (row * GLYPH_COL_COUNT) + col;
+      GRect cell_frame = GRect(
+          grid_bounds.origin.x + (col * cell_w),
+          grid_bounds.origin.y + (row * cell_h),
+          cell_w,
+          cell_h);
+
+      draw_glyph_cell(
+          ctx,
+          &cell_frame,
+          &page->cells[index],
+          &palette);
+    }
   }
 }
 
@@ -226,8 +276,7 @@ static void select_click_handler(
   (void)recognizer;
   (void)ctx;
 
-  s_render_mode = s_render_mode == GLYPH_RENDER_BW ?
-      GLYPH_RENDER_COLOR : GLYPH_RENDER_BW;
+  s_is_light_mode = !s_is_light_mode;
   mark_canvas_dirty();
 }
 
@@ -237,31 +286,34 @@ static void up_click_handler(
   (void)recognizer;
   (void)ctx;
 
-  s_theme = s_theme == GLYPH_THEME_DARK ?
-      GLYPH_THEME_LIGHT : GLYPH_THEME_DARK;
+  s_page_index = (s_page_index + GLYPH_PAGE_COUNT - 1) % GLYPH_PAGE_COUNT;
+  mark_canvas_dirty();
+}
+
+static void down_click_handler(
+    ClickRecognizerRef recognizer,
+    void* ctx) {
+  (void)recognizer;
+  (void)ctx;
+
+  s_page_index = (s_page_index + 1) % GLYPH_PAGE_COUNT;
   mark_canvas_dirty();
 }
 
 static void click_config_provider(void* ctx) {
   (void)ctx;
 
-  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, select_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
 static void main_window_load(Window* window) {
   Layer* root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
-  s_shoe_body_path = gpath_create(&SHOE_BODY_PATH_INFO);
-  if (!s_shoe_body_path) {
-    return;
-  }
-
   s_canvas_layer = layer_create(bounds);
   if (!s_canvas_layer) {
-    gpath_destroy(s_shoe_body_path);
-    s_shoe_body_path = NULL;
     return;
   }
 
@@ -276,15 +328,11 @@ static void main_window_unload(Window* window) {
     layer_destroy(s_canvas_layer);
     s_canvas_layer = NULL;
   }
-
-  if (s_shoe_body_path) {
-    gpath_destroy(s_shoe_body_path);
-    s_shoe_body_path = NULL;
-  }
 }
 
 static void init(void) {
-  s_status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  s_status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  s_label_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   s_window = window_create();
   if (!s_window) {
     return;
