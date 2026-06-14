@@ -18,12 +18,10 @@
     "enableMultiJS": true,
     "targetPlatforms": [
       "aplite",
-      "basalt",
-      "diorite",
-      "emery",
       "flint",
-      "chalk",
-      "gabbro"
+      "emery",
+      "basalt",
+      "diorite"
     ],
     "watchapp": {
       "watchface": true

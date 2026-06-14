@@ -9,21 +9,9 @@ typedef enum {
   DESIGN_FACE_HEIGHT = 228,
   DESIGN_FACE_WIDTH = 200,
 
-  // Aesthetic layout decisions
-  DESIGN_MARGIN = 8,
-  DESIGN_ICON_TEXT_GAP = 3,
-  DESIGN_ROW_GAP = 4,
-  DESIGN_HORIZON_H = 1,
-
   // Reference size for all designed glyphs
   DESIGN_ICON_HEIGHT = 28,
   DESIGN_ICON_WIDTH = 28,
-
-  // Aligned to font choices
-  DESIGN_DATE_TEXT_HEIGHT = 28,
-  DESIGN_TIME_TEXT_HEIGHT = 54,
-  DESIGN_DATA_TEXT_HEIGHT = 20,
-  DESIGN_DATA_TEXT_WIDTH = 40
 } WatchfaceDesignInputs;
 
 typedef enum {

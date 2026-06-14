@@ -185,7 +185,7 @@ static void update_battery(void) {
   snprintf(
       s_battery_buffer,
       ATAGLANCE_MAX_STR_LEN,
-      "%d%%",
+      "%d",
       s_battery_state.charge_percent);
 
   substratum_renderer_update_text_layer(
