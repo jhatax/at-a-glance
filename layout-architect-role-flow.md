@@ -297,20 +297,21 @@ as the live baseline for future refinements.
 Current visual order:
 
 ```text
-Steps icon + text
-Time
+Top margin
+Dominant time
 Battery track and bolt
-Date
-Weather icon + temperature    BPM icon + text
+Weather icon + temperature    Right-aligned date
+Steps icon + text             BPM icon + text
 ```
 
 Current intent:
 
 - time remains dominant
 - the battery becomes a centered system-status band instead of a corner metric
-- date remains centered below the battery band
-- the top row stays sparse
-- the bottom row becomes the denser supporting metric row
+- weather and date share the row below the battery, with date aligned to the
+  right edge of the content area
+- steps and BPM occupy the bottom support row
+- the top of the surface stays intentionally open
 
 This is now the baseline that any future round layout should translate, rather
 than an unimplemented proposal.

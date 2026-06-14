@@ -17,20 +17,16 @@ static void architect_get_layout_from_blueprint(
   const int16_t x_start = margin;
   const int16_t x_end = face_width - margin;
   const int16_t content_width = x_end - x_start;
-#ifdef PBL_HEALTH
-  const int16_t top_row_y = margin;
-#endif
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
   const int16_t data_text_height = blueprint->data_text_height;
+#ifdef PBL_HEALTH
   const int16_t icon_text_pair_height = HELPER_MAX(icon_h, data_text_height);
   const int16_t bottom_row_y = face_height - margin - icon_text_pair_height;
+#endif
   const int16_t time_y = (face_height * DESIGN_RECT_TIME_Y_PERCENT) / 100;
   const int16_t rule_w = (face_width * DESIGN_RECT_RULE_WIDTH_PERCENT) / 100;
   const int16_t rule_x = (face_width - rule_w) >> 1;
-
-  const int16_t date_w = (content_width * DESIGN_RECT_DATE_WIDTH_PERCENT) / 100;
-  const int16_t date_x = x_start + ((content_width - date_w) >> 1);
 
   const int16_t battery_band_y = time_y + blueprint->time_text_height;
   const int16_t battery_band_height = DESIGN_RECT_BATTERY_BAND_HEIGHT;
@@ -49,6 +45,10 @@ static void architect_get_layout_from_blueprint(
 
   const int16_t left_text_x =
     left_icon_x + icon_w + blueprint->icon_text_gap;
+  const int16_t weather_end_x = left_text_x +
+      blueprint->climate_text_width;
+  const int16_t date_x = weather_end_x + blueprint->icon_text_gap;
+  const int16_t date_text_width = x_end - date_x;
 
 #ifdef PBL_HEALTH
   const int16_t right_text_x = blueprint->right_text_x;
@@ -74,7 +74,7 @@ static void architect_get_layout_from_blueprint(
   computed->date = GRect(
       date_x,
       date_y,
-      date_w,
+      date_text_width,
       blueprint->date_text_height);
 
   computed->battery.track = GRect(
@@ -95,26 +95,26 @@ static void architect_get_layout_from_blueprint(
 
   computed->climate.icon = GRect(
       left_icon_x,
-      bottom_row_y + icon_offset_y,
+      date_y + icon_offset_y,
       icon_w,
       icon_h);
 
   computed->climate.text = GRect(
       left_text_x,
-      bottom_row_y + text_offset_y,
+      date_y + text_offset_y,
       blueprint->climate_text_width,
       data_text_height);
 
 #ifdef PBL_HEALTH
   computed->steps.icon = GRect(
       left_icon_x,
-      top_row_y + icon_offset_y,
+      bottom_row_y + icon_offset_y,
       icon_w,
       icon_h);
 
   computed->steps.text = GRect(
       left_text_x,
-      top_row_y + text_offset_y,
+      bottom_row_y + text_offset_y,
       blueprint->steps_text_width,
       data_text_height);
 
@@ -176,7 +176,7 @@ bool layout_watchface_initialize(
   // Date
   surface->date.text = (WatchfaceTextSubstratum) {
     .frame = computed.date,
-    .alignment = GTextAlignmentCenter,
+    .alignment = GTextAlignmentRight,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };

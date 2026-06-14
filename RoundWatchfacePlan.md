@@ -142,11 +142,11 @@ Architect invariants:
 The rectangular architect currently calculates this visual sequence:
 
 ```text
-Steps icon + text
-Centered time
+Open top space
+Dominant centered time
 Centered battery track and bolt
-Centered date
-Climate icon + text        BPM icon + text
+Climate icon + temperature    Right-aligned date
+Steps icon + text             BPM icon + text
 ```
 
 The rectangular layout is the product baseline, not a geometry template
@@ -266,19 +266,18 @@ Preserve the current visual vocabulary across rectangular and round
 faces:
 
 ```text
-Top context: steps and battery
+Top space remains open when possible
 Dominant centered time
-Centered rule
-Centered date
-Bottom context: climate and bpm
+Battery context below time
+Weather/date context below battery
+Bottom context: steps and bpm
 ```
 
 Chalk should start from a compact, text-first interpretation:
 
-- top metric slots may need stacking or aggressively compact placement
 - time remains centered and dominant
-- rule remains centered and short enough to fit its safe span
-- date remains centered
+- battery context must not crowd the dominant time
+- weather and date may need row-specific safe spans or stacked text
 - bottom metric slots may need text-first placement or stacked icon/text
   treatment
 - battery and climate text can be more self-labeling than steps and BPM, but

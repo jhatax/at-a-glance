@@ -158,19 +158,18 @@ callers reconstruct positions from shared row metrics.
 The round layout should feel related to the current rectangular face:
 
 ```text
-Top context: battery and climate
+Top space remains open when possible
 Dominant centered time
-Centered rule
-Centered date
+Battery context below time
+Weather/date context below battery
 Bottom health context: steps and bpm
 ```
 
 Chalk (`180x180`) is the hard target. Start text-first and compact:
 
 - time remains centered and dominant
-- rule remains centered and short enough for its safe span
-- date remains centered
-- top context may need stacking or compact placement
+- battery context must not crowd the dominant time
+- weather and date may need row-specific safe spans or stacked text
 - bottom health may need text-first or stacked icon/text treatment
 - icons are optional when they do not fit cleanly
 

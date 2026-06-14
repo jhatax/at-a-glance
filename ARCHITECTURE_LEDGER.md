@@ -236,6 +236,12 @@ Invariants:
 - Blueprint values are initialized from canonical product constants.
 - Rectangular dimensions only scale in the compact blueprint where approved.
   Full rectangular displays use canonical values directly.
+- The current rectangular visual order is open top space, dominant time,
+  centered battery track, weather/date context, then bottom steps/BPM
+  context.
+- Rectangular weather/date context places climate icon plus temperature first,
+  then starts the date text box after that weather stratum plus
+  `icon_text_gap`. Date text is right-aligned in the remaining content width.
 - Layout is not a generic row engine; product strata remain fixed and known.
 - Round platform support requires a real round architect, clean builds, and
   emulator screenshot validation for the enabled round targets.

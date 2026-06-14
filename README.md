@@ -56,11 +56,11 @@ The current rectangular layout places those six strata into this visual
 hierarchy:
 
 ```text
-steps row
-centered time
+top margin
+dominant time
 centered battery track and bolt
-centered date
-climate row                     bpm row
+weather icon + temperature      right-aligned date
+steps icon + text               bpm icon + text
 ```
 
 The rectangular layout is computed from design decisions and display bounds,
@@ -68,8 +68,8 @@ not from fixed Emery-only coordinates. Full rectangular displays use the
 reference blueprint directly. Compact rectangular displays use a compact
 blueprint rather than passive scaling of every metric.
 
-Text columns remain left-aligned inside their own frames. Time and date are
-centered.
+Text columns remain left-aligned inside their own frames. Time is centered.
+Date is right-aligned in the space after the weather stratum.
 
 ### Rectangular Geometry
 
@@ -80,15 +80,15 @@ content margin: 7
 icon: 28x28
 icon/text gap: 2
 
-steps icon:       GRect(7, 7, 28, 28)
-steps text:       GRect(37, 11, 40, 20)
-time text:        GRect(7, 57, 186, 54)
-battery track:    GRect(50, 116, 100, 8)
-battery fill:     GRect(51, 117, 98, 6)
-battery bolt:     GRect(152, 112, 16, 16)
-date text:        GRect(26, 129, 148, 28)
-climate icon:     GRect(7, 193, 28, 28)
-temperature text: GRect(37, 197, 40, 20)
+time text:        GRect(7, 45, 186, 54)
+battery track:    GRect(50, 104, 100, 8)
+battery fill:     GRect(51, 105, 98, 6)
+battery bolt:     GRect(152, 100, 16, 16)
+climate icon:     GRect(7, 117, 28, 28)
+temperature text: GRect(37, 121, 40, 20)
+date text:        GRect(79, 117, 114, 28)
+steps icon:       GRect(7, 193, 28, 28)
+steps text:       GRect(37, 197, 40, 20)
 bpm icon:         GRect(123, 193, 28, 28)
 bpm text:         GRect(153, 197, 40, 20)
 ```
@@ -101,15 +101,15 @@ content margin: 7
 icon: 20x20
 icon/text gap: 2
 
-steps icon:       GRect(7, 7, 20, 20)
-steps text:       GRect(29, 9, 40, 16)
-time text:        GRect(7, 42, 130, 42)
-battery track:    GRect(36, 89, 72, 8)
-battery fill:     GRect(37, 90, 70, 6)
-battery bolt:     GRect(110, 85, 16, 16)
-date text:        GRect(20, 102, 104, 20)
-climate icon:     GRect(7, 141, 20, 20)
-temperature text: GRect(29, 143, 40, 16)
+time text:        GRect(7, 33, 130, 42)
+battery track:    GRect(36, 80, 72, 8)
+battery fill:     GRect(37, 81, 70, 6)
+battery bolt:     GRect(110, 76, 16, 16)
+climate icon:     GRect(7, 93, 20, 20)
+temperature text: GRect(29, 95, 40, 16)
+date text:        GRect(71, 93, 66, 20)
+steps icon:       GRect(7, 141, 20, 20)
+steps text:       GRect(29, 143, 40, 16)
 bpm icon:         GRect(84, 141, 20, 20)
 bpm text:         GRect(106, 143, 33, 16)
 ```
@@ -132,7 +132,7 @@ displays use:
 
 Compact rectangular displays use:
 
-- Date: `FONT_KEY_GOTHIC_18_BOLD`
+- Date: `FONT_KEY_GOTHIC_14_BOLD`
 - Time: `FONT_KEY_BITHAM_34_MEDIUM_NUMBERS`
 - BPM: `FONT_KEY_GOTHIC_14`
 - Steps: `FONT_KEY_GOTHIC_14`
