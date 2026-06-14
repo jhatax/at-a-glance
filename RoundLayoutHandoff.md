@@ -1,6 +1,6 @@
 # Round Layout Implementation Handoff
 
-This handoff is for the agent who will build round-display layout support
+This handoff is for the agent who will continue round-display layout work
 from the current `WatchfaceSurface` architecture.
 
 It is not approval to enable `chalk` or `gabbro` immediately. It is not
@@ -14,9 +14,9 @@ Read these first, in order:
 1. `ARCHITECTURE_LEDGER.md`
 2. `RoundWatchfacePlan.md`
 3. `layout-restructuring-plan.md`
-4. `AGENTS.md`
+4. `agents.md`
 
-If any inherited guidance in `AGENTS.md` cannot be read, stop and say so
+If any inherited guidance in `agents.md` cannot be read, stop and say so
 before editing.
 
 ## Operating Protocol
@@ -43,47 +43,35 @@ The relevant current flow is:
 
 ```c
 watchface_create()
-  -> surface_builder_prepare(face_width,
-                             face_height,
-                             display_mode,
-                             &s_surface)
+  -> layout_watchface_initialize(face_width,
+                                 face_height,
+                                 &s_surface)
        -> memset(surface, 0, sizeof(*surface))
-       -> architect_apply_blueprint(face_width,
-                                    face_height,
-                                    surface)
-       -> layout_stylist_update_surface_style(&surface->style, display_mode)
+       -> apply active shape geometry
+  -> layout_update_watchface_style(&surface->style, display_mode)
 ```
 
-Round should use the same public entry point:
+Round uses the same public entry point:
 
 ```c
 memset(surface, 0, sizeof(*surface));
-architect_apply_blueprint(face_width, face_height, surface);
-layout_stylist_update_surface_style(&surface->style, display_mode);
+/* apply active shape geometry */
+layout_update_watchface_style(&surface->style, display_mode);
 ```
 
-The surface builder is the only public surface-construction boundary.
-Feature modules and `watchface.c` must not include private architect or
-stylist headers.
+`layout.h` is the only public surface-construction boundary. Feature modules
+and `watchface.c` must not include private architect or stylist headers.
 
-## First Implementation Slice
+## Current Round Slice State
 
-The first code slice should be architect scaffolding and geometry only:
+The scaffolding slice has already landed:
 
-- add `src/modules/layout_round.c`
-- implement the same `architect_apply_blueprint()` contract under
-  `PBL_ROUND`
-- keep `package.json` targets unchanged until geometry is real and reviewed
-- keep all existing rectangular targets building
-
-The intended architect API is shared by rectangle and round:
-
-```c
-void architect_apply_blueprint(
-    int16_t face_width,
-    int16_t face_height,
-    WatchfaceSurface* surface);
-```
+- `src/modules/layout_round.c` exists
+- round and rectangular geometry share the public
+  `layout_watchface_initialize()` contract
+- `package.json` targets remain rectangular-only until round geometry is
+  reviewed and accepted
+- rectangular targets continue to build
 
 Do not pass or return `WatchfaceSurface` by value.
 
@@ -172,7 +160,7 @@ The round layout should feel related to the current rectangular face:
 ```text
 Top context: battery and climate
 Dominant centered time
-Centered 2px horizon rule
+Centered rule
 Centered date
 Bottom health context: steps and bpm
 ```
@@ -248,12 +236,11 @@ For the scaffolding slice:
 
 For first round geometry:
 
-1. Build with round target support only after geometry exists.
-2. Add `chalk` first.
-3. Build and install Chalk.
-4. Capture screenshots in dark and light mode if practical.
-5. Check clipping for time, date, rule, top context, and bottom health.
-6. Only then consider `gabbro`.
+1. Enable `chalk` only after the next round geometry slice is ready.
+2. Build and install Chalk.
+3. Capture screenshots in dark and light mode if practical.
+4. Check clipping for time, date, rule, top context, and bottom health.
+5. Only then consider enabling `gabbro`.
 
 For any visual approval:
 
@@ -279,11 +266,10 @@ For any visual approval:
 
 Commit round support in focused slices:
 
-1. round architect scaffolding and rectangular no-drift build
-2. round geometry for Chalk
-3. target enablement and screenshot-reviewed adjustments
-4. Gabbro adjustments if needed
-5. docs updates after the visuals are proven
+1. round geometry refinement for Chalk
+2. target enablement and screenshot-reviewed adjustments
+3. Gabbro adjustments if needed
+4. docs updates after the visuals are proven
 
 Stage only intended files. Do not commit screenshots, build artifacts, or
 scratch files unless the user explicitly asks.

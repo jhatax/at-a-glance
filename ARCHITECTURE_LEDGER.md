@@ -315,6 +315,15 @@ Invariants:
   final `watchface_refresh()` call for coalesced updates.
 - `main.c` may call watchface source-state setters for temperature, weather
   condition, and debug health values.
+- The boundary between `main.c` and `watchface` remains narrow: `main.c`
+  parses AppMessage transport data into typed runtime values, then calls
+  watchface setters. `watchface` must not parse raw dictionaries or own
+  transport-level message semantics.
+- Do not introduce a shared runtime-update package between `main.c` and
+  `watchface` unless message volume, update frequency, or atomic multi-field
+  coherence makes the narrow-setter contract meaningfully worse. Revisit this
+  boundary explicitly if AppMessage traffic becomes large, frequent, or hard to
+  coalesce cleanly.
 
 Acceptance checks:
 
@@ -383,6 +392,10 @@ Invariants:
 - Background color and line color come from `ColorPalette`.
 - The rule is part of background substratum data, not ad hoc watchface drawing.
 
+TODO: In a focused follow-up slice, standardize rule naming across live code
+and current guardrail docs. Use `rule` as the canonical term wherever
+`horizon` or similar shorthand still refers to the background rule.
+
 Acceptance checks:
 
 - `watchface.c` does not draw the rule directly.
@@ -430,7 +443,8 @@ Before marking a task complete, answer these explicitly:
 As of the latest ledger refresh:
 
 - Rectangular and round architects exist behind the shared architect contract.
-- `package.json` includes rectangular and round target platforms.
+- `package.json` currently targets rectangular platforms only; round layout
+  code exists but `chalk` and `gabbro` are not enabled in the manifest.
 - Build and emulator validation are task-scoped; rerun them before claiming a
   code slice is complete.
 - The worktree may contain active user changes; inspect live status before

@@ -82,6 +82,26 @@ When multiple modules reuse the same glyph primitive math, move that math into
 includes unavailable slash rendering, scaled polygon outlines, and
 frame-aware line/circle/corner-derived fill helpers.
 
+### Battery text drops the percent sign
+
+Type: Decision
+Status: Accepted
+
+Battery text no longer shows `%`. This is a product decision to reduce visual
+noise and align compact battery text width with BPM text width, since the
+left-most digit is `1`.
+
+### Keep the main/watchface boundary narrow
+
+Type: Decision
+Status: Accepted
+
+`main.c` parses AppMessage transport tuples and converts them to typed runtime
+facts before calling narrow watchface setters. `watchface` should not parse
+raw dictionaries or take a shared runtime-update package unless message volume
+or atomic multi-field coherence makes the current setter path meaningfully
+worse.
+
 ### Weather subframe call sites may hide overlap or clipping drift
 
 Type: Risk

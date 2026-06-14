@@ -2,8 +2,8 @@
 
 This is the planning and development artifact for round-display support. It
 started as the planning handoff before round support existed; it now tracks
-the first-pass round architecture present on this branch and the remaining
-design work needed before the round layout should be treated as final.
+the first-pass round architecture present in source and the remaining design
+work needed before round targets should be enabled in `package.json`.
 
 The current codebase uses the `WatchfaceSurface` architecture, a shared
 architect contract, and private rectangular and round architect
@@ -67,7 +67,8 @@ Current branch state:
   `layout_watchface_initialize()`.
 - `layout_rect.c` provides the `PBL_RECT` implementation of
   `layout_watchface_initialize()`.
-- `package.json` includes `chalk` and `gabbro` targets on this branch.
+- `layout_round.c` exists in source, but `chalk` and `gabbro` are not
+  currently enabled in `package.json`.
 - The latest committed round candidate uses four metric slots around the
   centered time/rule/date core: steps top-left, battery top-right, climate
   bottom-left, and BPM bottom-right.
@@ -115,8 +116,7 @@ dynamic strata array.
 
 Text substrata carry final frame, text alignment, font role, and color
 role. Icon substrata carry final frame and enabled flag.
-The background substratum carries the full-face frame and the horizon
-line coordinates.
+The background substratum carries the full-face frame and the rule rectangle.
 
 Architect invariants:
 
@@ -142,9 +142,9 @@ Architect invariants:
 The rectangular architect currently calculates this visual sequence:
 
 ```text
-Steps icon + text          Battery icon + text
+Steps icon + text
 Centered time
-Horizon rule rectangle
+Centered battery track and bolt
 Centered date
 Climate icon + text        BPM icon + text
 ```
@@ -268,7 +268,7 @@ faces:
 ```text
 Top context: steps and battery
 Dominant centered time
-Centered horizon rule
+Centered rule
 Centered date
 Bottom context: climate and bpm
 ```
@@ -352,8 +352,9 @@ Conditional compilation flow:
 
 ## Guardrails And Invariants
 
-- `chalk` and `gabbro` are enabled on this branch. Any further round geometry
-  change requires round build and screenshot review before product approval.
+- Round geometry remains present in source, but round targets are currently
+  disabled in `package.json`. Any future enablement requires round build and
+  screenshot review before product approval.
 - Do not add dormant or speculative round code without an implementation slice
   that can be built and inspected.
 - Preserve current rectangular behavior while planning and implementing
@@ -398,7 +399,8 @@ Completed foundation:
 - private `layout_round.c` exists
 - shared `layout_watchface_initialize()` contract exists
 - `PBL_RECT` and `PBL_ROUND` shape implementations exist
-- `chalk` and `gabbro` are present in `package.json`
+- round architect source exists, but round targets remain disabled in
+  `package.json`
 - the background rule is represented as a rectangle on the calculated surface
 
 Phase 1: audit the first-pass round geometry.

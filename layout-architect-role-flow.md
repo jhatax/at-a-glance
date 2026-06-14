@@ -1,15 +1,15 @@
 # Layout Architect Role And Flow
 
 This document captures the current surface/watchface boundary and the next
-round architect direction after the stylist, rectangle architect, component,
-and substratum renderer extractions. It is a handoff for future rectangle and
-round surface work.
+round architect direction after the stylist, rectangular architect,
+component, and substratum renderer extractions. It is a handoff for future
+rectangle and round surface work.
 
 ## Current State
 
-- The public surface builder prepares the calculated `WatchfaceSurface`.
-- The surface builder owns the construction sequence: clear the surface, ask
-  the active architect to apply its blueprint, then apply style.
+- The public layout API prepares the calculated `WatchfaceSurface`.
+- The layout API owns the construction sequence: clear the surface in the
+  active shape implementation, calculate geometry, then apply style.
 - `layout_stylist.c/.h` is private to layout and owns palette/font style
   resolution.
 - `layout_rect.c` is private to layout and owns rectangular geometry.
@@ -23,10 +23,10 @@ round surface work.
 - `watchface` remains the clearing house for module creation, refresh,
   destroy, source-state intake, and mask-based render dispatch.
 
-The next major surface step is round architecture. Rectangle geometry is
-already private to layout, but future visual redesigns should keep the same
-ownership model: the surface builder prepares a `WatchfaceSurface`; modules
-render their own strata from that surface; watchface coordinates lifecycle and
+The next major surface step is round geometry refinement. Rectangle geometry
+is already private to layout, but future visual redesigns should keep the
+same ownership model: layout prepares a `WatchfaceSurface`; modules render
+their own strata from that surface; watchface coordinates lifecycle and
 refresh.
 
 ## Primary Drivers
@@ -48,7 +48,7 @@ Three files define the top-level product/runtime relationship:
   - calls only watchface runtime APIs for display behavior
 
 - `src/modules/watchface.c`
-  - asks the surface builder to prepare the calculated surface
+  - asks layout to prepare the calculated surface
   - creates/destroys feature modules
   - owns the created-strata mask
   - accepts source-state setters from `main.c`
@@ -68,6 +68,7 @@ Current watchface-level source-state setters:
 ```c
 void watchface_set_temperature(int celsius_tenths);
 void watchface_set_weather_condition(int weather_condition);
+void watchface_set_is_day(bool is_day);
 ```
 
 Debug-only health setters are separate and guarded by both `DEBUG_ATAGLANCE`
@@ -84,23 +85,21 @@ setters nor module setters may update Pebble layers directly. Rendering occurs
 only when `watchface_refresh()` receives a mask. Debug health overrides are
 one-shot when consumed by refresh and can also be cleared explicitly.
 
-Current update categories:
+Current public update categories:
 
 ```c
 WATCHFACE_UPDATE_TIME
 WATCHFACE_UPDATE_DATE
 WATCHFACE_UPDATE_BATTERY
 WATCHFACE_UPDATE_CLIMATE
+WATCHFACE_UPDATE_BACKGROUND
 WATCHFACE_UPDATE_HEALTH
-WATCHFACE_UPDATE_DISPLAY_MODE
-WATCHFACE_UPDATE_ALL
 ```
 
-`WATCHFACE_UPDATE_DISPLAY_MODE` is special. It updates surface style once,
-updates the window/background color, refreshes the background layer if it was
-created, then replaces the dispatch mask with a private strata-only redraw
-mask. That private mask lives in `watchface.c`, not `watchface.h`, because
-`main.c` should not know about strata.
+Display-mode repaint is explicit via `watchface_repaint()`. It updates style,
+updates the window/background color, and refreshes all existing strata through
+a private strata-only redraw mask in `watchface.c`. `main.c` should not know
+that private full-redraw mask.
 
 ## Surface, Strata, And Substrata
 
@@ -220,9 +219,8 @@ Private implementation files:
   - owns color-role lookup from a `ColorPalette`
   - owns icon coordinate scaling helpers
 
-Only the surface builder should include architect and stylist headers. Feature
-modules and `watchface.c` should not include private architect/stylist
-headers.
+Only layout implementation files should include private architect/stylist
+headers. Feature modules and `watchface.c` should not include them.
 
 ## Rectangle Architect Flow
 
@@ -291,34 +289,33 @@ face dimensions, and they own compact/full classification because they own the
 geometry context. Full rectangular displays use canonical values directly,
 including `40` data-field width and `28x28` icon size.
 
-## Proposed Rectangle Redesign
+## Current Rectangle Visual Order
 
-Do not mix this with the behavior-preserving rectangle architect extraction.
-This has not been implemented. Treat it as a future committed visual slice,
-separate from the completed layout-boundary refactor.
+The current rectangular visual slice is implemented and should now be treated
+as the live baseline for future refinements.
 
-Proposed visual order:
+Current visual order:
 
 ```text
-Battery icon + text    Weather icon + temperature
+Steps icon + text
 Time
-Rule
+Battery track and bolt
 Date
-Steps icon + text      BPM icon + text
+Weather icon + temperature    BPM icon + text
 ```
 
-Intent:
+Current intent:
 
 - time remains dominant
-- rule remains the horizon line
-- date becomes less subordinate with a larger Gothic font
-- top row becomes quiet system context
-- bottom row becomes health context
+- the battery becomes a centered system-status band instead of a corner metric
+- date remains centered below the battery band
+- the top row stays sparse
+- the bottom row becomes the denser supporting metric row
 
-This reads more like a centered instrument than the current dashboard-like
-four-row layout.
+This is now the baseline that any future round layout should translate, rather
+than an unimplemented proposal.
 
-Implementation scope for the rectangle visual slice:
+Guardrails for future rectangle refinements:
 
 - revise `layout_rect.c` geometry only after auditing the current rectangular
   screenshots
@@ -335,8 +332,8 @@ the visual vocabulary that the later round architect can translate.
 
 ## Proposed Round Redesign
 
-This has not been implemented. Treat it as a separate future visual slice
-after the rectangle redesign has been validated.
+Round source exists, but target enablement and final visual approval have not
+been completed. Treat this as the future visual slice after screenshot review.
 
 The round design should preserve the same product sequence where possible:
 
@@ -355,8 +352,8 @@ must still calculate safe spans from the actual face size.
 
 Implementation scope for the round visual slice:
 
-- introduce `layout_round.c` as the round implementation of the shared
-  architect contract
+- refine the existing `layout_round.c` implementation of the shared architect
+  contract
 - calculate row-specific safe spans from chord width
 - assign final frames directly to each substratum
 - keep the same six fixed strata: date, time, bpm, steps, battery, climate

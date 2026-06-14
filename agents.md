@@ -43,6 +43,7 @@ AppMessage keys currently required:
 - `TEMP_UNIT`
 - `TEMPERATURE`
 - `WEATHER_CONDITION`
+- `IS_DAY`
 - `HR_SAMPLE_MINUTES`
 - `DISPLAY_MODE`
 
@@ -194,7 +195,7 @@ Core invariants:
 - `src/modules/battery.c`: battery source state, text/icon layers, procedural
   battery drawing, colors, and battery callback updates.
 - `src/modules/background.c`: background layer, palette background, and
-  horizon rule rendering.
+  rule rendering.
 
 Do not move behavior across these boundaries unless the new boundary is
 cleaner, behavior-preserving, and reflected in the ledger.
@@ -212,6 +213,10 @@ cleaner, behavior-preserving, and reflected in the ledger.
 - AppMessage handling in `main.c` should accumulate a local
   `WatchfaceUpdateMask` and make one final coalesced `watchface_refresh()`
   call.
+- `main.c` should parse AppMessage transport values itself, convert them to
+  typed runtime facts, and call narrow watchface setters. Do not pass raw
+  dictionaries into `watchface`, and do not introduce a shared runtime-update
+  package unless traffic volume or atomic multi-field updates justify it.
 - Dynamic icon/text colors are module-owned when they depend on live source
   state, such as BPM or battery.
 - Palette resolution should degrade to simple legible black-and-white choices

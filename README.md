@@ -3,8 +3,9 @@
 A glanceable Pebble watchface inspired by Swiss railway signage.
 
 Life at a Glance keeps the screen focused on the essentials: date, time,
-heart rate, steps, temperature, and battery. The layout is tuned for
-rectangular Pebble displays and supports color and monochrome devices.
+heart rate, steps, temperature, and battery. The current shipped build is
+tuned for rectangular Pebble displays and supports color and monochrome
+devices.
 
 Screenshots will be added before publishing once the final color and
 monochrome emulator captures are selected.
@@ -14,10 +15,11 @@ monochrome emulator captures are selected.
 - Large hero time with a compact date row
 - Heart rate and step count from Pebble Health when available
 - Temperature from Open-Meteo through the phone companion app
-- Battery icon and percentage
+- Rectangular battery track with charging bolt
 - Dark and light display modes
 - Color-aware and monochrome-aware visual palette
-- Procedural icons for BPM, steps, climate, and battery
+- Procedural climate, BPM, and battery glyphs
+- Recolored walking bitmap for steps
 - Rebble Clay configuration page
 
 ## Supported Watches
@@ -30,8 +32,8 @@ The current build targets rectangular Pebble platforms:
 - `emery` - Pebble Time 2, color
 - `flint` - Pebble 2 Duo, black and white
 
-Round platforms such as Chalk and Gabbro are not supported by this layout
-pass.
+Round layout code exists in `src/modules/layout_round.c`, but `chalk` and
+`gabbro` are not currently enabled in `package.json`.
 
 ## Layout
 
@@ -50,109 +52,100 @@ initialized through the shape-specific layout implementation declared in
 - battery
 - climate, which is weather icon plus temperature text
 
-Rectangular layout places those six strata into this visual hierarchy:
+The current rectangular layout places those six strata into this visual
+hierarchy:
 
 ```text
-top boundary
-  spacing
-date row
-
-time row
-  spacing
-horizontal rule
-  spacing
-health metrics row
-
-bottom row
-  spacing
-bottom boundary
+steps row
+centered time
+centered battery track and bolt
+centered date
+climate row                     bpm row
 ```
 
-The rectangular layout is computed from the display bounds instead of fixed
-Emery-only coordinates. Coordinates are scaled from the `200x228` Emery
-design baseline with rounded integer scaling.
+The rectangular layout is computed from design decisions and display bounds,
+not from fixed Emery-only coordinates. Full rectangular displays use the
+reference blueprint directly. Compact rectangular displays use a compact
+blueprint rather than passive scaling of every metric.
 
-All text columns are left-aligned. The left health and bottom columns
-start at the content margin. The right health and bottom columns are
-positioned by column math, but their text alignment remains left.
+Text columns remain left-aligned inside their own frames. Time and date are
+centered.
 
 ### Rectangular Geometry
 
 For Emery and other full rectangular displays, `200x228` computes to:
 
 ```text
-content margin: 4
-row gap: 8
+content margin: 7
 icon: 28x28
-icon/text gap: 4
+icon/text gap: 2
 
-date text:      GRect(4, 4, 192, 20)
-time text:      GRect(4, 58, 192, 48)
-rule:           (4, 114) -> (196, 114)
-BPM icon:       GRect(4, 122, 28, 28)
-BPM text:       GRect(36, 126, 40, 20)
-steps icon:     GRect(124, 122, 28, 28)
-steps text:     GRect(156, 126, 40, 20)
-climate icon:   GRect(4, 196, 28, 28)
-temperature:    GRect(36, 200, 40, 20)
-battery icon:   GRect(124, 196, 28, 28)
-battery text:   GRect(156, 200, 40, 20)
+steps icon:       GRect(7, 7, 28, 28)
+steps text:       GRect(37, 11, 40, 20)
+time text:        GRect(7, 57, 186, 54)
+battery track:    GRect(50, 116, 100, 8)
+battery fill:     GRect(51, 117, 98, 6)
+battery bolt:     GRect(152, 112, 16, 16)
+date text:        GRect(26, 129, 148, 28)
+climate icon:     GRect(7, 193, 28, 28)
+temperature text: GRect(37, 197, 40, 20)
+bpm icon:         GRect(123, 193, 28, 28)
+bpm text:         GRect(153, 197, 40, 20)
 ```
 
 For compact rectangular displays such as Aplite, Basalt, Diorite, and
 Flint, `144x168` computes to:
 
 ```text
-content margin: 3
-row gap: 6
-icon: 20x21
-icon/text gap: 3
+content margin: 7
+icon: 20x20
+icon/text gap: 2
 
-date text:      GRect(3, 3, 138, 15)
-time text:      GRect(3, 43, 138, 35)
-rule:           (3, 84) -> (141, 84)
-BPM icon:       GRect(3, 90, 20, 21)
-BPM text:       GRect(26, 93, 29, 15)
-steps icon:     GRect(89, 90, 20, 21)
-steps text:     GRect(112, 93, 29, 15)
-climate icon:   GRect(3, 144, 20, 21)
-temperature:    GRect(26, 147, 29, 15)
-battery icon:   GRect(89, 144, 20, 21)
-battery text:   GRect(112, 147, 29, 15)
+steps icon:       GRect(7, 7, 20, 20)
+steps text:       GRect(29, 9, 40, 16)
+time text:        GRect(7, 42, 130, 42)
+battery track:    GRect(36, 89, 72, 8)
+battery fill:     GRect(37, 90, 70, 6)
+battery bolt:     GRect(110, 85, 16, 16)
+date text:        GRect(20, 102, 104, 20)
+climate icon:     GRect(7, 141, 20, 20)
+temperature text: GRect(29, 143, 40, 16)
+bpm icon:         GRect(84, 141, 20, 20)
+bpm text:         GRect(106, 143, 33, 16)
 ```
 
-The horizontal rule is 1 pixel wide. Value text frames for BPM, steps,
-temperature, and battery use compact rectangular sizing to preserve negative
-space on `144x168` displays.
+The rectangular battery is a filled track plus a charging bolt, not a text
+percentage stratum. Battery text remains part of the round layout only.
 
 ### Fonts
 
 Font roles are stored in the surface per text stratum. Full rectangular
 displays use:
 
-- Date: `FONT_KEY_GOTHIC_18_BOLD`
-- Time: `FONT_KEY_BITHAM_42_BOLD`
+- Date: `FONT_KEY_GOTHIC_24_BOLD`
+- Time: `FONT_KEY_LECO_42_NUMBERS` on most full rectangular targets
+- Time: `FONT_KEY_ROBOTO_BOLD_SUBSET_49` on `emery`
 - BPM: `FONT_KEY_GOTHIC_18`
 - Steps: `FONT_KEY_GOTHIC_18`
 - Temperature: `FONT_KEY_GOTHIC_18`
-- Battery: `FONT_KEY_GOTHIC_18_BOLD`
+- Battery: not applicable on rectangular layout; battery uses a track
 
 Compact rectangular displays use:
 
-- Date: `FONT_KEY_GOTHIC_14_BOLD`
-- Time: `FONT_KEY_BITHAM_30_BLACK`
+- Date: `FONT_KEY_GOTHIC_18_BOLD`
+- Time: `FONT_KEY_BITHAM_34_MEDIUM_NUMBERS`
 - BPM: `FONT_KEY_GOTHIC_14`
 - Steps: `FONT_KEY_GOTHIC_14`
 - Temperature: `FONT_KEY_GOTHIC_14`
-- Battery: `FONT_KEY_GOTHIC_14_BOLD`
+- Battery: not applicable on rectangular layout; battery uses a track
 
 ## Icons
 
-- BPM uses a procedural heart icon.
-- Steps uses a procedural paw-style icon.
-- Battery uses a horizontal procedural icon drawn inside a 28x28 layer.
-- Battery fill moves left to right and uses the same color state as the
-  battery percentage.
+- BPM uses a procedural boxed waveform icon.
+- Steps uses a recolored walking bitmap resource.
+- Climate uses procedural condition glyphs.
+- Rectangular battery uses a centered track and charging bolt layer.
+- Round battery continues to use icon-plus-text rendering.
 
 When BPM or steps data is unavailable on health-capable watches, the
 corresponding icon uses a diagonal data-gap slash and unavailable text color.
@@ -195,7 +188,7 @@ BPM zones:
 
 Battery zones:
 
-- Charging: Islamic Green on color
+- Charging: Islamic Green on color, primary text on monochrome
 - `>50%`: current mode primary text color
 - `21-50%`: Rajah on dark, Windsor Tan on light
 - `<=20%`: red on dark, Bulgarian Rose on light
@@ -234,6 +227,8 @@ falls back to OAK, the home location for this watchface:
 
 Temperature is sent to the watch in Celsius tenths and rendered as Fahrenheit
 or Celsius according to the selected setting.
+Open-Meteo `is_day` is also sent so clear conditions can render as a sun by
+day and a clear-sky icon by night.
 
 ## Build
 
@@ -292,7 +287,7 @@ that is how your local SDK is configured.
 
 - Add final README screenshots for color and monochrome rectangular devices.
 - Run an emulator screenshot pass for Emery, Diorite, Aplite, and Flint.
-- Decide whether round platforms need a separate future layout.
+- Finish the screenshot-led round design pass before enabling round targets.
 - Publish release PBW once the visual pass is complete.
 
 ## Project Structure
