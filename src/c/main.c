@@ -136,6 +136,21 @@ static void inbox_received_callback(
             "AppMessage inbox invalid WEATHER_CONDITION");
   }
 
+  Tuple* ti = dict_find(iter, MESSAGE_KEY_IS_DAY);
+  if (ti && ti->type == TUPLE_INT) {
+    int is_day = (int)ti->value->int32;
+    if (is_day == 0 || is_day == 1) {
+      watchface_set_is_day(is_day == 1);
+      updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
+    } else {
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+              "AppMessage inbox invalid IS_DAY");
+    }
+  } else if (ti) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid IS_DAY");
+  }
+
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
   int hr_minutes = 0;
   if (th &&
@@ -230,9 +245,10 @@ static void outbox_sent_callback(
 static uint32_t app_message_inbox_size(void) {
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
   return dict_calc_buffer_size(
-      8,
+      9,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
       sizeof(int32_t),
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -241,9 +257,10 @@ static uint32_t app_message_inbox_size(void) {
       sizeof(int32_t));
 #else
   return dict_calc_buffer_size(
-      6,
+      7,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
       sizeof(int32_t),
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE,

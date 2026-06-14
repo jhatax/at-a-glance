@@ -32,6 +32,7 @@ void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
 void watchface_set_temperature(int celsius_tenths);
 void watchface_set_weather_condition(int weather_condition);
+void watchface_set_is_day(bool is_day);
 
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
 void watchface_debug_set_bpm(int bpm);

@@ -36,6 +36,7 @@
       "TEMP_UNIT",
       "TEMPERATURE",
       "WEATHER_CONDITION",
+      "IS_DAY",
       "HR_SAMPLE_MINUTES",
       "DISPLAY_MODE"
     ],

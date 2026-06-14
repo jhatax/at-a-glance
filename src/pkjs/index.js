@@ -11,11 +11,12 @@ const WEATHER_CONDITION_UNKNOWN = -1;
 const OAK_WEATHER_LATITUDE = 37.85626;
 const OAK_WEATHER_LONGITUDE = -122.21383;
 
-function sendWeather(celsius, weatherCode) {
+function sendWeather(celsius, weatherCode, isDay) {
   Pebble.sendAppMessage(
     {
       TEMPERATURE: Math.round(celsius * 10),
-      WEATHER_CONDITION: weatherCode
+      WEATHER_CONDITION: weatherCode,
+      IS_DAY: isDay ? 1 : 0
     },
     null,
     function (e) {
@@ -29,7 +30,8 @@ function sendWeatherUnavailable(reason) {
   Pebble.sendAppMessage(
     {
       TEMPERATURE: WEATHER_TEMP_INVALID,
-      WEATHER_CONDITION: WEATHER_CONDITION_UNKNOWN
+      WEATHER_CONDITION: WEATHER_CONDITION_UNKNOWN,
+      IS_DAY: 0
     },
     null,
     function (e) {
@@ -45,7 +47,7 @@ function fetchWeather(lat, lon) {
     lat +
     "&longitude=" +
     lon +
-    "&current=temperature_2m,weather_code&temperature_unit=celsius";
+    "&current=temperature_2m,weather_code,is_day&temperature_unit=celsius";
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
@@ -57,10 +59,12 @@ function fetchWeather(lat, lon) {
         if (
           data.current &&
           typeof data.current.temperature_2m === "number" &&
-          typeof data.current.weather_code === "number"
+          typeof data.current.weather_code === "number" &&
+          typeof data.current.is_day === "number"
         ) {
           sendWeather(data.current.temperature_2m,
-                      data.current.weather_code);
+                      data.current.weather_code,
+                      data.current.is_day === 1);
         } else {
           sendWeatherUnavailable("malformed response");
         }

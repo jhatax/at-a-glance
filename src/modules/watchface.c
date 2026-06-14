@@ -249,6 +249,10 @@ void watchface_set_weather_condition(int weather_condition) {
   climate_module_set_condition(weather_condition);
 }
 
+void watchface_set_is_day(bool is_day) {
+  climate_module_set_is_day(is_day);
+}
+
 #if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
 void watchface_debug_set_bpm(int bpm) {
   bpm_module_debug_set_bpm(bpm);

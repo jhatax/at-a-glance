@@ -15,6 +15,7 @@ static TextLayer* s_temperature_layer = NULL;
 static char s_temperature_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
+static bool s_is_day = false;
 static const WatchfaceSurface* s_surface = NULL;
 static bool s_weather_condition_known = false;
 
@@ -110,7 +111,7 @@ static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
     condition = WEATHER_CONDITION_UNKNOWN;
   }
 
-  draw_climate_icon(ctx, &bounds, condition, palette);
+  draw_climate_icon(ctx, &bounds, condition, s_is_day, palette);
 }
 
 // APIs called by other components of the watchface
@@ -184,4 +185,8 @@ void climate_module_set_condition(int weather_condition) {
   }
 
   s_weather_condition = weather_condition;
+}
+
+void climate_module_set_is_day(bool is_day) {
+  s_is_day = is_day;
 }

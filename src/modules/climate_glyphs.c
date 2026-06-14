@@ -318,9 +318,9 @@ static void draw_weather_partly_cloudy_icon(
     const GRect* frame,
     const ColorPalette* palette) {
   GRect cloud_frame;
-  GRect sun_frame;
-  weather_subframe(frame, &sun_frame, 0, 0, 22, 22);
-  draw_weather_outline_sun(ctx, &sun_frame, palette, true);
+  GRect clear_frame;
+  weather_subframe(frame, &clear_frame, 0, 0, 22, 22);
+  draw_weather_clear_icon(ctx, &clear_frame, palette);
 
   weather_subframe(frame, &cloud_frame, 5, 10, 23, 17);
   draw_weather_filled_cloud(ctx, &cloud_frame, palette, WEATHER_ICON_PARTLY_CLOUDY, true);
@@ -497,11 +497,8 @@ static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
   if (weather_condition < 0) {
     return WEATHER_ICON_UNKNOWN;
   }
-  if (weather_condition == 0) {
+  if (weather_condition <= 1) {
     return WEATHER_ICON_CLEAR;
-  }
-  if (weather_condition == 1) {
-    return WEATHER_ICON_SUNNY;
   }
   if (weather_condition == 2) {
     return WEATHER_ICON_PARTLY_CLOUDY;
@@ -550,6 +547,7 @@ void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
+    bool is_day,
     const ColorPalette* palette) {
   if (!ctx || !frame || !palette) {
     return;
@@ -559,7 +557,11 @@ void draw_climate_icon(
 
   switch (icon_kind) {
     case WEATHER_ICON_CLEAR:
-      draw_weather_clear_icon(ctx, frame, palette);
+      if (is_day) {
+        draw_weather_sun(ctx, frame, palette);
+      } else {
+        draw_weather_clear_icon(ctx, frame, palette);
+      }
       break;
     case WEATHER_ICON_SUNNY:
       draw_weather_sun(ctx, frame, palette);
