@@ -20,9 +20,9 @@ static void architect_get_layout_from_blueprint(
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
   const int16_t data_text_height = blueprint->data_text_height;
+  const int16_t icon_text_row_height = HELPER_MAX(icon_h, data_text_height);
 #ifdef PBL_HEALTH
-  const int16_t icon_text_pair_height = HELPER_MAX(icon_h, data_text_height);
-  const int16_t bottom_row_y = face_height - margin - icon_text_pair_height;
+  const int16_t bottom_row_y = face_height - margin - icon_text_row_height;
 #endif
   const int16_t time_y = (face_height * DESIGN_RECT_TIME_Y_PERCENT) / 100;
   const int16_t rule_w = (face_width * DESIGN_RECT_RULE_WIDTH_PERCENT) / 100;
@@ -39,7 +39,17 @@ static void architect_get_layout_from_blueprint(
       ((battery_band_height - battery_track_height) >> 1);
   const int16_t fill_y = track_y +
       ((battery_track_height - battery_fill_height) >> 1);
-  const int16_t date_y = battery_band_y + battery_band_height;
+  const int16_t weather_date_row_y = battery_band_y + battery_band_height;
+  const int16_t date_text_height = blueprint->date_text_height;
+  const int16_t weather_date_row_height = HELPER_MAX(
+      icon_text_row_height,
+      date_text_height);
+  const int16_t climate_row_offset_y =
+      (weather_date_row_height - icon_text_row_height) / 2;
+  const int16_t date_text_offset_y =
+      (weather_date_row_height - date_text_height) / 2;
+  const int16_t climate_y = weather_date_row_y + climate_row_offset_y;
+  const int16_t date_text_y = weather_date_row_y + date_text_offset_y;
 
   const int16_t left_icon_x = x_start;
 
@@ -56,14 +66,8 @@ static void architect_get_layout_from_blueprint(
     right_text_x - blueprint->icon_text_gap - icon_w;
 #endif
 
-  int16_t text_offset_y = 0;
-  int16_t icon_offset_y = 0;
-  int16_t height_diff = (icon_h - data_text_height) / 2;
-  if (height_diff > 0) {
-    text_offset_y = height_diff;
-  } else if (height_diff < 0) {
-    icon_offset_y = -height_diff;
-  }
+  const int16_t text_offset_y = (icon_text_row_height - data_text_height) >> 1;
+  const int16_t icon_offset_y = (icon_text_row_height - icon_h) >> 1;
 
   computed->time = GRect(
       x_start,
@@ -73,9 +77,9 @@ static void architect_get_layout_from_blueprint(
 
   computed->date = GRect(
       date_x,
-      date_y,
+      date_text_y,
       date_text_width,
-      blueprint->date_text_height);
+      date_text_height);
 
   computed->battery.track = GRect(
       rule_x,
@@ -95,13 +99,13 @@ static void architect_get_layout_from_blueprint(
 
   computed->climate.icon = GRect(
       left_icon_x,
-      date_y + icon_offset_y,
+      climate_y + icon_offset_y,
       icon_w,
       icon_h);
 
   computed->climate.text = GRect(
       left_text_x,
-      date_y + text_offset_y,
+      climate_y + text_offset_y,
       blueprint->climate_text_width,
       data_text_height);
 
