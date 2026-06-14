@@ -18,6 +18,20 @@ typedef enum {
   // Design decision to scale everything to DESIGN_FACE_HEIGHT
 } RoundDesignInputs;
 
+typedef enum {
+  DESIGN_ROUND_MARGIN = 4,
+  DESIGN_ROUND_ICON_TEXT_GAP = 2,
+  DESIGN_ROUND_ROW_GAP = 4,
+  DESIGN_ROUND_HORIZON_H = 1,
+} DesignCommonRound;
+
+typedef enum {
+  DESIGN_ROUND_REFERENCE_DATE_TEXT_HEIGHT = 28,
+  DESIGN_ROUND_REFERENCE_TIME_TEXT_HEIGHT = 54,
+  DESIGN_ROUND_REFERENCE_DATA_TEXT_HEIGHT = 20,
+  DESIGN_ROUND_REFERENCE_DATA_TEXT_WIDTH = 40,
+} DesignReferenceRound;
+
 typedef struct {
   int16_t margin;
   int16_t y_start;
@@ -64,38 +78,42 @@ typedef struct {
   PBL_DISPLAY_HEIGHT <= DESIGN_FACE_HEIGHT)
 // Blueprint for compact devices
 static const LayoutBlueprint c_round_blueprint = {
-  .margin = DESIGN_MARGIN,
+  .margin = DESIGN_ROUND_MARGIN,
   .y_start = ROUND_HEADER_FOOTER,
   .y_end = PBL_DISPLAY_HEIGHT - ROUND_HEADER_FOOTER,
-  .row_gap = DESIGN_SCALE_Y(DESIGN_ROW_GAP),
+  .row_gap = DESIGN_SCALE_Y(DESIGN_ROUND_ROW_GAP),
   .icon_w = DESIGN_SCALE_X(DESIGN_ICON_WIDTH),
   .icon_h = DESIGN_SCALE_Y(DESIGN_ICON_HEIGHT),
-  .icon_text_gap = DESIGN_SCALE_X(DESIGN_ICON_TEXT_GAP),
-  .date_text_height = DESIGN_SCALE_Y(DESIGN_DATE_TEXT_HEIGHT),
-  .time_text_height = DESIGN_SCALE_Y(DESIGN_TIME_TEXT_HEIGHT),
-  .data_text_width = DESIGN_SCALE_X(DESIGN_DATA_TEXT_WIDTH),
-  .data_text_height = DESIGN_SCALE_Y(DESIGN_DATA_TEXT_HEIGHT),
+  .icon_text_gap = DESIGN_SCALE_X(DESIGN_ROUND_ICON_TEXT_GAP),
+  .date_text_height = DESIGN_SCALE_Y(
+      DESIGN_ROUND_REFERENCE_DATE_TEXT_HEIGHT),
+  .time_text_height = DESIGN_SCALE_Y(
+      DESIGN_ROUND_REFERENCE_TIME_TEXT_HEIGHT),
+  .data_text_width = DESIGN_SCALE_X(
+      DESIGN_ROUND_REFERENCE_DATA_TEXT_WIDTH),
+  .data_text_height = DESIGN_SCALE_Y(
+      DESIGN_ROUND_REFERENCE_DATA_TEXT_HEIGHT),
   .icon_text_pair_height = DESIGN_SCALE_Y(HELPER_MAX(
       DESIGN_ICON_HEIGHT,
-      DESIGN_DATA_TEXT_HEIGHT)),
+      DESIGN_ROUND_REFERENCE_DATA_TEXT_HEIGHT)),
 };
 #else
 // Blueprint for larger devices
 static const LayoutBlueprint c_round_blueprint = {
-  .margin = DESIGN_MARGIN,
+  .margin = DESIGN_ROUND_MARGIN,
   .y_start = ROUND_HEADER_FOOTER, // Should be bigger than defined
   .y_end = PBL_DISPLAY_HEIGHT - ROUND_HEADER_FOOTER,
-  .row_gap = DESIGN_ROW_GAP,
+  .row_gap = DESIGN_ROUND_ROW_GAP,
   .icon_w = DESIGN_ICON_WIDTH,
   .icon_h = DESIGN_ICON_HEIGHT,
-  .icon_text_gap = DESIGN_ICON_TEXT_GAP,
-  .date_text_height = DESIGN_DATE_TEXT_HEIGHT,
-  .time_text_height = DESIGN_TIME_TEXT_HEIGHT,
-  .data_text_width = DESIGN_DATA_TEXT_WIDTH,
-  .data_text_height = DESIGN_DATA_TEXT_HEIGHT,
+  .icon_text_gap = DESIGN_ROUND_ICON_TEXT_GAP,
+  .date_text_height = DESIGN_ROUND_REFERENCE_DATE_TEXT_HEIGHT,
+  .time_text_height = DESIGN_ROUND_REFERENCE_TIME_TEXT_HEIGHT,
+  .data_text_width = DESIGN_ROUND_REFERENCE_DATA_TEXT_WIDTH,
+  .data_text_height = DESIGN_ROUND_REFERENCE_DATA_TEXT_HEIGHT,
   .icon_text_pair_height = HELPER_MAX(
       DESIGN_ICON_HEIGHT,
-      DESIGN_DATA_TEXT_HEIGHT),
+      DESIGN_ROUND_REFERENCE_DATA_TEXT_HEIGHT),
 };
 #endif
 
@@ -127,7 +145,7 @@ static void architect_get_layout_from_blueprint(
       center_x - (face_width >> 2),
       time_y + blueprint->time_text_height + row_gap,
       face_width >> 1,
-      DESIGN_HORIZON_H);
+      DESIGN_ROUND_HORIZON_H);
 
   const int16_t date_w = ROUND_SCALE_VALUE(ROUND_DATE_WIDTH);
   const int16_t date_y = computed->rule.origin.y + row_gap;
@@ -211,6 +229,102 @@ static void architect_get_layout_from_blueprint(
 #endif
 }
 
+#if defined(DEBUG_ATAGLANCE) && defined(PBL_PLATFORM_GABBRO)
+static void architect_apply_debug_gabbro_layout(
+    CalculatedLayout* computed,
+    int16_t face_width,
+    int16_t face_height) {
+  if (!computed || face_width != 260 || face_height != 260) {
+    return;
+  }
+
+  const int16_t center_x = face_width >> 1;
+  const int16_t top_row_y = 44;
+  const int16_t bottom_row_y = 183;
+  const int16_t icon_size = 26;
+  const int16_t icon_text_gap = 3;
+  const int16_t data_text_w = 44;
+  const int16_t data_text_h = 22;
+  const int16_t col_gap = 2;
+  const int16_t time_w = 202;
+  const int16_t time_y = 70;
+  const int16_t time_h = 58;
+  const int16_t row_gap = 8;
+  const int16_t rule_w = face_width >> 1;
+  const int16_t rule_y = time_y + time_h + row_gap;
+  const int16_t date_w = 173;
+  const int16_t date_y = rule_y + DESIGN_ROUND_HORIZON_H + row_gap;
+  const int16_t date_h = 30;
+
+  const int16_t left_text_x = center_x - col_gap - data_text_w;
+  const int16_t left_icon_x = left_text_x - icon_text_gap - icon_size;
+  const int16_t right_icon_x = center_x + col_gap;
+  const int16_t right_text_x = right_icon_x + icon_size + icon_text_gap;
+
+  computed->time = GRect(
+      center_x - (time_w >> 1),
+      time_y,
+      time_w,
+      time_h);
+  computed->rule = GRect(
+      center_x - (rule_w >> 1),
+      rule_y,
+      rule_w,
+      DESIGN_ROUND_HORIZON_H);
+  computed->date = GRect(
+      center_x - (date_w >> 1),
+      date_y,
+      date_w,
+      date_h);
+
+  computed->battery.icon = GRect(
+      right_icon_x,
+      top_row_y,
+      icon_size,
+      icon_size);
+  computed->battery.text = GRect(
+      right_text_x,
+      top_row_y + 2,
+      data_text_w,
+      data_text_h);
+
+  computed->climate.icon = GRect(
+      left_icon_x,
+      bottom_row_y,
+      icon_size,
+      icon_size);
+  computed->climate.text = GRect(
+      left_text_x,
+      bottom_row_y + 2,
+      data_text_w,
+      data_text_h);
+
+#ifdef PBL_HEALTH
+  computed->steps.icon = GRect(
+      left_icon_x,
+      top_row_y,
+      icon_size,
+      icon_size);
+  computed->steps.text = GRect(
+      left_text_x,
+      top_row_y + 2,
+      data_text_w,
+      data_text_h);
+
+  computed->bpm.icon = GRect(
+      right_icon_x,
+      bottom_row_y,
+      icon_size,
+      icon_size);
+  computed->bpm.text = GRect(
+      right_text_x,
+      bottom_row_y + 2,
+      data_text_w,
+      data_text_h);
+#endif
+}
+#endif
+
 bool layout_watchface_initialize(
     int16_t face_width,
     int16_t face_height,
@@ -234,6 +348,12 @@ bool layout_watchface_initialize(
       &computed,
       face_width,
       face_height);
+#if defined(DEBUG_ATAGLANCE) && defined(PBL_PLATFORM_GABBRO)
+  architect_apply_debug_gabbro_layout(
+      &computed,
+      face_width,
+      face_height);
+#endif
 
   // Calculating the surface, one stratum at a time
   // Background
