@@ -86,6 +86,7 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
     return false;
   }
 
+  // Update the style
   layout_update_watchface_style(
       &(s_surface.style),
       s_wf_settings->display_mode);
@@ -123,6 +124,7 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   #endif
 
   s_watchface_initialized = true;
+
   if (s_surface.style.palette) {
     window_set_background_color(
         s_wf_window,
