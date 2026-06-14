@@ -41,6 +41,51 @@ static GPoint scale_icon_point_in_frame(
       scale_icon_y_in_frame(frame, y));
 }
 
+// A valid polygon has 3-8 points
+static void draw_filled_polygon_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    const GPoint* design_points,
+    uint32_t point_count,
+    GColor fill_color) {
+  if (!ctx || !frame || !design_points ||
+    (point_count < 3 || point_count > 8)) {
+    return;
+  }
+
+  GPoint* scaled_points = malloc(point_count*sizeof(GPoint));
+  if (!scaled_points) {
+    return;
+  }
+
+  GPathInfo path_info;
+  GPath* path;
+
+  for (uint32_t i = 0; i < point_count; ++i) {
+    scaled_points[i] = GPoint(
+        scale_icon_x_in_frame(frame, design_points[i].x),
+        scale_icon_y_in_frame(frame, design_points[i].y));
+  }
+
+  path_info = (GPathInfo) {
+    .num_points = point_count,
+    .points = scaled_points,
+  };
+  path = gpath_create(&path_info);
+  if (!path) {
+    return;
+  }
+
+  graphics_context_set_fill_color(ctx, fill_color);
+  gpath_draw_filled(ctx, path);
+
+  gpath_destroy(path);
+  if (scaled_points) {
+    free(scaled_points);
+    scaled_points = NULL;
+  }
+}
+
 TextLayer* substratum_renderer_create_text_layer(
     Layer* parent,
     const WatchfaceTextSubstratum* text,
@@ -304,6 +349,29 @@ void substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       scale_icon_point_in_frame(frame, x, y),
       substratum_renderer_scale_icon_coord(&frame->size, r));
+}
+
+void substratum_renderer_draw_filled_bolt_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    GColor fill_color) {
+  // Need 7-bolt points to form a path
+  static const GPoint bolt_points[] = {
+    {8, 0},
+    {4, 14},
+    {8, 14},
+    {6, 28},
+    {24, 6},
+    {16, 6},
+    {20, 0},
+  };
+
+  draw_filled_polygon_in_frame(
+      ctx,
+      frame,
+      bolt_points,
+      ARRAY_LENGTH(bolt_points),
+      fill_color);
 }
 
 void substratum_renderer_draw_unavailable_slash(

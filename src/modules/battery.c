@@ -39,7 +39,6 @@ static GColor calculate_battery_color(void) {
 
 static Layer* s_battery_rule_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
-static GBitmap* s_battery_bolt_bitmap = NULL;
 
 static void draw_battery_track(
     GContext* ctx,
@@ -55,18 +54,6 @@ static void draw_battery_fill(
 static void battery_rule_update_proc(Layer* layer, GContext* ctx);
 static void battery_bolt_update_proc(Layer* layer, GContext* ctx);
 static void update_battery_rule(void);
-
-static uint32_t get_battery_bolt_resource_id(const GSize* size) {
-  if (!size) {
-    return RESOURCE_ID_BATTERY_BOLT_16;
-  }
-
-  int16_t frame_min = HELPER_MIN(size->w, size->h);
-  if (frame_min <= 16) {
-    return RESOURCE_ID_BATTERY_BOLT_16;
-  }
-  return RESOURCE_ID_BATTERY_BOLT_24;
-}
 
 static void draw_battery_track(
     GContext* ctx,
@@ -132,12 +119,10 @@ static void battery_bolt_update_proc(Layer* layer, GContext* ctx) {
   }
 
   GRect bounds = layer_get_bounds(layer);
-  if (!s_battery_bolt_bitmap) {
-    return;
-  }
-
-  graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, s_battery_bolt_bitmap, bounds);
+  substratum_renderer_draw_filled_bolt_in_frame(
+      ctx,
+      &bounds,
+      calculate_battery_color());
 }
 
 static void update_battery_rule(void) {
@@ -149,7 +134,7 @@ static void update_battery_rule(void) {
   if (s_battery_bolt_layer) {
     layer_set_hidden(
         s_battery_bolt_layer,
-        !s_battery_state.is_charging || !s_battery_bolt_bitmap);
+        !s_battery_state.is_charging);
     layer_mark_dirty(s_battery_bolt_layer);
   }
 }
@@ -164,22 +149,10 @@ bool battery_module_create(
   s_battery_state = battery_state_service_peek();
   s_surface = surface;
   s_palette = surface->style.palette;
-  s_battery_bolt_bitmap = gbitmap_create_with_resource(
-      get_battery_bolt_resource_id(&surface->battery.bolt.size));
-
-  if (!s_battery_bolt_bitmap) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create battery bolt bitmap");
-  }
-
   s_battery_rule_layer = layer_create(surface->battery.track);
   if (!s_battery_rule_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create battery rule layer");
-    if (s_battery_bolt_bitmap) {
-      gbitmap_destroy(s_battery_bolt_bitmap);
-      s_battery_bolt_bitmap = NULL;
-    }
     return false;
   }
 
@@ -192,7 +165,7 @@ bool battery_module_create(
     layer_add_child(root, s_battery_bolt_layer);
     layer_set_hidden(
         s_battery_bolt_layer,
-        !s_battery_state.is_charging || !s_battery_bolt_bitmap);
+        !s_battery_state.is_charging);
   }
 
   return true;
@@ -202,11 +175,6 @@ void battery_module_destroy(void) {
   if (s_battery_bolt_layer) {
     layer_destroy(s_battery_bolt_layer);
     s_battery_bolt_layer = NULL;
-  }
-
-  if (s_battery_bolt_bitmap) {
-    gbitmap_destroy(s_battery_bolt_bitmap);
-    s_battery_bolt_bitmap = NULL;
   }
 
   if (s_battery_rule_layer) {
@@ -269,28 +237,11 @@ static void draw_battery_charging_bolt(
     GContext* ctx,
     const GSize* bounds_size,
     GColor color) {
-  int16_t frame_min = HELPER_MIN(bounds_size->w, bounds_size->h);
-  int16_t bolt_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
-      frame_min);
-  static const GPoint bolt_points[] = {
-    {14, 0},
-    {5, 11},
-    {10, 11},
-    {5, 27},
-    {17, 13},
-    {23, 13},
-    {14, 5},
-  };
-
-  substratum_renderer_draw_scaled_polygon_outline(
+  GRect frame = GRect(0, 0, bounds_size->w, bounds_size->h);
+  substratum_renderer_draw_filled_bolt_in_frame(
       ctx,
-      bounds_size,
-      bolt_points,
-      ARRAY_LENGTH(bolt_points),
-      s_palette->primary_text,
-      s_palette->background,
-      bolt_stroke_width,
-      true);
+      &frame,
+      color);
 }
 
 static void battery_icon_update_proc(Layer* layer, GContext* ctx) {

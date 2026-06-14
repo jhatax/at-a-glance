@@ -95,3 +95,8 @@ void substratum_renderer_draw_unavailable_slash(
     GContext* ctx,
     const GSize* size,
     GColor color);
+
+void substratum_renderer_draw_filled_bolt_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    GColor fill_color);
