@@ -61,6 +61,11 @@
           "file": "images/lightning-bolt_24.png",
           "name": "BATTERY_BOLT_24",
           "type": "bitmap"
+        },
+        {
+          "file": "images/walking_24.png",
+          "name": "STEPS_WALKING_24",
+          "type": "bitmap"
         }
       ]
     }

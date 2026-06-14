@@ -1,23 +1,66 @@
 #ifdef PBL_HEALTH
 #include "steps.h"
+
+#include "helper.h"
 #include "substratum_renderer.h"
 #include "../c/ataglance.h"
 
 #define STEPS_INVALID -1
 
 static char s_steps_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static GBitmap* s_steps_bitmap = NULL;
 static Layer* s_steps_icon_layer = NULL;
 static TextLayer* s_steps_layer = NULL;
 static bool s_steps_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
+static GColor s_steps_icon_color = {0};
 #ifdef DEBUG_ATAGLANCE
 static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
 #endif
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx);
+static void draw_steps_bitmap_in_frame(
+    GContext* ctx,
+    const GRect* frame);
 static void apply_steps_value(int steps, bool is_available);
 static void update_steps(void);
+
+static void draw_steps_bitmap_in_frame(
+    GContext* ctx,
+    const GRect* frame) {
+  if (!ctx || !frame || !s_steps_bitmap) {
+    return;
+  }
+
+  GRect bitmap_bounds = gbitmap_get_bounds(s_steps_bitmap);
+  GRect draw_frame;
+
+  if (bitmap_bounds.size.w > 0 && bitmap_bounds.size.h > 0) {
+    // Fit the portrait-oriented walking bitmap into the icon frame
+    // while preserving aspect ratio.
+    int16_t draw_w = frame->size.w;
+    int16_t draw_h = (bitmap_bounds.size.h * draw_w) /
+        bitmap_bounds.size.w;
+
+    if (draw_h > frame->size.h) {
+      draw_h = frame->size.h;
+      draw_w = (bitmap_bounds.size.w * draw_h) /
+          bitmap_bounds.size.h;
+    }
+
+    draw_frame = GRect(
+        frame->origin.x + ((frame->size.w - draw_w) / 2),
+        frame->origin.y + ((frame->size.h - draw_h) / 2),
+        draw_w,
+        draw_h);
+  } else {
+    draw_frame = *frame;
+  }
+
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, draw_frame);
+}
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
@@ -26,35 +69,21 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
 
   const ColorPalette* palette = s_surface->style.palette;
   GRect bounds = layer_get_bounds(layer);
-
   graphics_context_set_fill_color(ctx, palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  GColor icon_color = palette->primary_text;
 
-  GColor steps_icon_color = s_steps_is_available ?
-      palette->primary_text : palette->unavailable_text;
+  if (s_steps_bitmap &&
+      !helper_color_equal(s_steps_icon_color, icon_color)) {
+    if (helper_replace_color_in_bitmap(
+            s_steps_bitmap,
+            s_steps_icon_color,
+            icon_color)) {
+      s_steps_icon_color = icon_color;
+    }
+  }
 
-  graphics_context_set_fill_color(ctx, steps_icon_color);
-
-  graphics_fill_circle(
-      ctx,
-      substratum_renderer_scale_icon_point(&bounds.size, 14, 9),
-      substratum_renderer_scale_icon_coord(&bounds.size, 7));
-
-  graphics_context_set_fill_color(ctx, palette->background);
-  graphics_fill_rect(
-      ctx,
-      GRect(substratum_renderer_scale_icon_x(&bounds.size, 6),
-            substratum_renderer_scale_icon_y(&bounds.size, 15),
-            substratum_renderer_scale_icon_x(&bounds.size, 16),
-            substratum_renderer_scale_icon_y(&bounds.size, 4)),
-      0,
-      GCornerNone);
-
-  graphics_context_set_fill_color(ctx, steps_icon_color);
-  graphics_fill_circle(
-      ctx,
-      substratum_renderer_scale_icon_point(&bounds.size, 14, 22),
-      substratum_renderer_scale_icon_coord(&bounds.size, 4));
+  draw_steps_bitmap_in_frame(ctx, &bounds);
 
   if (!s_steps_is_available) {
     substratum_renderer_draw_unavailable_slash(
@@ -139,6 +168,13 @@ bool steps_module_create(
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
 #endif
+  // The walking bitmap ships with black foreground pixels. Seed the
+  // cached color to that source palette value so the first recolor
+  // pass knows which color to replace.
+  s_steps_icon_color = GColorBlack;
+
+  s_steps_bitmap = gbitmap_create_with_resource(
+      RESOURCE_ID_STEPS_WALKING_24);
 
   s_steps_layer = substratum_renderer_create_text_layer(
       root,
@@ -152,7 +188,7 @@ bool steps_module_create(
   }
 
   s_surface = surface;
-  if (icon->is_enabled) {
+  if (icon->is_enabled && s_steps_bitmap) {
     s_steps_icon_layer = substratum_renderer_create_icon_layer(
         root,
         icon,
@@ -166,6 +202,10 @@ void steps_module_destroy(void) {
     layer_destroy(s_steps_icon_layer);
     s_steps_icon_layer = NULL;
   }
+  if (s_steps_bitmap) {
+    gbitmap_destroy(s_steps_bitmap);
+    s_steps_bitmap = NULL;
+  }
   if (s_steps_layer) {
     text_layer_destroy(s_steps_layer);
     s_steps_layer = NULL;
@@ -174,6 +214,7 @@ void steps_module_destroy(void) {
   s_steps_buffer[0] = '\0';
   s_steps_is_available = false;
   s_surface = NULL;
+  s_steps_icon_color = GColorBlack;
   #ifdef DEBUG_ATAGLANCE
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
