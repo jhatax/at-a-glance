@@ -1,16 +1,19 @@
 #ifdef PBL_RECT
 #include "layout.h"
-#include "../c/ataglance.h"
 #include "helper.h"
 
 typedef enum {
   DESIGN_RECT_MARGIN = 7,
   DESIGN_RECT_ICON_TEXT_GAP = 2,
-  DESIGN_RECT_ROW_GAP = 4,
-  DESIGN_RECT_RULE_HEIGHT = 1,
   DESIGN_RECT_TIME_Y_PERCENT = 25,
   DESIGN_RECT_RULE_WIDTH_PERCENT = 50,
   DESIGN_RECT_DATE_WIDTH_PERCENT = 80,
+  DESIGN_RECT_BATTERY_BAND_HEIGHT = 18,
+  DESIGN_RECT_BATTERY_TRACK_HEIGHT = 8,
+  DESIGN_RECT_BATTERY_FILL_HEIGHT = 6,
+  DESIGN_RECT_BATTERY_BOLT_GAP = 2,
+  DESIGN_RECT_BATTERY_BOLT_WIDTH = 16,
+  DESIGN_RECT_BATTERY_BOLT_HEIGHT = 16,
 } DesignCommonRect;
 
 typedef enum {
@@ -18,7 +21,6 @@ typedef enum {
   DESIGN_RECT_REFERENCE_TIME_TEXT_HEIGHT = 54,
   DESIGN_RECT_REFERENCE_DATA_TEXT_HEIGHT = 20,
   DESIGN_RECT_REFERENCE_RIGHT_TEXT_X = 153,
-  DESIGN_RECT_REFERENCE_BATTERY_TEXT_WIDTH = 40,
   DESIGN_RECT_REFERENCE_CLIMATE_TEXT_WIDTH = 40,
 #ifdef PBL_HEALTH
   DESIGN_RECT_REFERENCE_STEPS_TEXT_WIDTH = 40,
@@ -33,7 +35,6 @@ typedef enum {
   DESIGN_RECT_COMPACT_TIME_TEXT_HEIGHT = 42,
   DESIGN_RECT_COMPACT_DATA_TEXT_HEIGHT = 16,
   DESIGN_RECT_COMPACT_RIGHT_TEXT_X = 106,
-  DESIGN_RECT_COMPACT_BATTERY_TEXT_WIDTH = 33,
   DESIGN_RECT_COMPACT_CLIMATE_TEXT_WIDTH = 40,
 #ifdef PBL_HEALTH
   DESIGN_RECT_COMPACT_STEPS_TEXT_WIDTH = 40,
@@ -43,7 +44,6 @@ typedef enum {
 
 typedef struct {
   int16_t margin;
-  int16_t row_gap;
   int16_t icon_w;
   int16_t icon_h;
   int16_t icon_text_gap;
@@ -52,7 +52,6 @@ typedef struct {
   int16_t data_text_height;
   int16_t icon_text_pair_height;
   int16_t right_text_x;
-  int16_t battery_text_width;
   int16_t climate_text_width;
 #ifdef PBL_HEALTH
   int16_t steps_text_width;
@@ -66,11 +65,9 @@ typedef struct {
 } CalculatedMetricPair;
 
 typedef struct {
-  GRect rule;
   GRect time;
   GRect date;
-
-  CalculatedMetricPair battery;
+  WatchfaceBatteryStratum battery;
   CalculatedMetricPair climate;
 #ifdef PBL_HEALTH
   CalculatedMetricPair steps;
@@ -80,7 +77,6 @@ typedef struct {
 
 static const LayoutBlueprint c_rect_reference_blueprint = {
   .margin = DESIGN_RECT_MARGIN,
-  .row_gap = DESIGN_RECT_ROW_GAP,
   .icon_w = DESIGN_ICON_WIDTH,
   .icon_h = DESIGN_ICON_HEIGHT,
   .icon_text_gap = DESIGN_RECT_ICON_TEXT_GAP,
@@ -89,7 +85,6 @@ static const LayoutBlueprint c_rect_reference_blueprint = {
   .data_text_height = DESIGN_RECT_REFERENCE_DATA_TEXT_HEIGHT,
   .icon_text_pair_height = HELPER_MAX((int)DESIGN_ICON_HEIGHT, (int)DESIGN_RECT_REFERENCE_DATA_TEXT_HEIGHT),
   .right_text_x = DESIGN_RECT_REFERENCE_RIGHT_TEXT_X,
-  .battery_text_width = DESIGN_RECT_REFERENCE_BATTERY_TEXT_WIDTH,
   .climate_text_width = DESIGN_RECT_REFERENCE_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
   .steps_text_width = DESIGN_RECT_REFERENCE_STEPS_TEXT_WIDTH,
@@ -99,7 +94,6 @@ static const LayoutBlueprint c_rect_reference_blueprint = {
 
 static const LayoutBlueprint c_rect_compact_blueprint = {
   .margin = DESIGN_RECT_MARGIN,
-  .row_gap = DESIGN_RECT_ROW_GAP,
   .icon_w = DESIGN_RECT_COMPACT_ICON_WIDTH,
   .icon_h = DESIGN_RECT_COMPACT_ICON_HEIGHT,
   .icon_text_gap = DESIGN_RECT_ICON_TEXT_GAP,
@@ -108,7 +102,6 @@ static const LayoutBlueprint c_rect_compact_blueprint = {
   .data_text_height = DESIGN_RECT_COMPACT_DATA_TEXT_HEIGHT,
   .icon_text_pair_height = HELPER_MAX(DESIGN_RECT_COMPACT_ICON_HEIGHT, DESIGN_RECT_COMPACT_DATA_TEXT_HEIGHT),
   .right_text_x = DESIGN_RECT_COMPACT_RIGHT_TEXT_X,
-  .battery_text_width = DESIGN_RECT_COMPACT_BATTERY_TEXT_WIDTH,
   .climate_text_width = DESIGN_RECT_COMPACT_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
   .steps_text_width = DESIGN_RECT_COMPACT_STEPS_TEXT_WIDTH,
@@ -132,7 +125,9 @@ static void architect_get_layout_from_blueprint(
   const int16_t x_start = margin;
   const int16_t x_end = face_width - margin;
   const int16_t content_width = x_end - x_start;
+#ifdef PBL_HEALTH
   const int16_t top_row_y = margin;
+#endif
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
   const int16_t data_text_height = blueprint->data_text_height;
@@ -142,24 +137,32 @@ static void architect_get_layout_from_blueprint(
   const int16_t rule_w = (face_width * DESIGN_RECT_RULE_WIDTH_PERCENT) / 100;
   const int16_t rule_x = (face_width - rule_w) >> 1;
 
-  const int16_t rule_y =
-    time_y + blueprint->time_text_height + blueprint->row_gap;
-
   const int16_t date_w = (content_width * DESIGN_RECT_DATE_WIDTH_PERCENT) / 100;
   const int16_t date_x = x_start + ((content_width - date_w) >> 1);
 
-  const int16_t date_y =
-    rule_y + DESIGN_RECT_RULE_HEIGHT + blueprint->row_gap;
+  const int16_t battery_band_y = time_y + blueprint->time_text_height;
+  const int16_t battery_band_height = DESIGN_RECT_BATTERY_BAND_HEIGHT;
+  const int16_t battery_track_height = DESIGN_RECT_BATTERY_TRACK_HEIGHT;
+  const int16_t battery_fill_height = DESIGN_RECT_BATTERY_FILL_HEIGHT;
+  const int16_t battery_bolt_gap = DESIGN_RECT_BATTERY_BOLT_GAP;
+  const int16_t battery_bolt_width = DESIGN_RECT_BATTERY_BOLT_WIDTH;
+  const int16_t battery_bolt_height = DESIGN_RECT_BATTERY_BOLT_HEIGHT;
+  const int16_t track_y = battery_band_y +
+      ((battery_band_height - battery_track_height) >> 1);
+  const int16_t fill_y = track_y +
+      ((battery_track_height - battery_fill_height) >> 1);
+  const int16_t date_y = battery_band_y + battery_band_height;
 
   const int16_t left_icon_x = x_start;
 
   const int16_t left_text_x =
     left_icon_x + icon_w + blueprint->icon_text_gap;
 
+#ifdef PBL_HEALTH
   const int16_t right_text_x = blueprint->right_text_x;
-
   const int16_t right_icon_x =
     right_text_x - blueprint->icon_text_gap - icon_w;
+#endif
 
   int16_t text_offset_y = 0;
   int16_t icon_offset_y = 0;
@@ -169,8 +172,6 @@ static void architect_get_layout_from_blueprint(
   } else if (height_diff < 0) {
     icon_offset_y = -height_diff;
   }
-
-  computed->rule = GRect(rule_x, rule_y, rule_w, DESIGN_RECT_RULE_HEIGHT);
 
   computed->time = GRect(
       x_start,
@@ -184,17 +185,21 @@ static void architect_get_layout_from_blueprint(
       date_w,
       blueprint->date_text_height);
 
-  computed->battery.icon = GRect(
-      right_icon_x,
-      top_row_y + icon_offset_y,
-      icon_w,
-      icon_h);
-
-  computed->battery.text = GRect(
-      right_text_x,
-      top_row_y + text_offset_y,
-      blueprint->battery_text_width,
-      data_text_height);
+  computed->battery.track = GRect(
+      rule_x,
+      track_y,
+      rule_w,
+      battery_track_height);
+  computed->battery.fill = GRect(
+      rule_x + 1,
+      fill_y,
+      rule_w - 2,
+      battery_fill_height);
+  computed->battery.bolt = GRect(
+        rule_x + rule_w + battery_bolt_gap,
+        battery_band_y + ((battery_band_height - battery_bolt_height) >> 1),
+        battery_bolt_width,
+        battery_bolt_height);
 
   computed->climate.icon = GRect(
       left_icon_x,
@@ -264,8 +269,8 @@ bool layout_watchface_initialize(
   // Background
   surface->background = (WatchfaceBackgroundStratum) {
     .frame = GRect(0, 0, face_width, face_height),
-    .rule_enabled = true,
-    .rule = computed.rule,
+    .rule_enabled = false,
+    .rule = GRectZero,
   };
 
   // Time
@@ -284,16 +289,7 @@ bool layout_watchface_initialize(
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
 
-  surface->battery.icon = (WatchfaceIconSubstratum) {
-    .frame = computed.battery.icon,
-    .is_enabled = true,
-  };
-
-  surface->battery.text = (WatchfaceTextSubstratum) {
-    .frame = computed.battery.text,
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_BATTERY,
-  };
+  surface->battery = computed.battery;
 
   surface->climate.icon = (WatchfaceIconSubstratum) {
     .frame = computed.climate.icon,

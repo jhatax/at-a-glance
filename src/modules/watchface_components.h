@@ -56,6 +56,12 @@ typedef struct {
 } WatchfaceIconSubstratum;
 
 typedef struct {
+  GRect track;
+  GRect fill;
+  GRect bolt;
+} WatchfaceBatteryStratum;
+
+typedef struct {
   GRect frame;
   bool rule_enabled;
   GRect rule;
@@ -92,6 +98,10 @@ typedef struct {
   WatchfaceTextWithIconStratum bpm;
   WatchfaceTextWithIconStratum steps;
 #endif
+#ifdef PBL_RECT
+  WatchfaceBatteryStratum battery;
+#else
   WatchfaceTextWithIconStratum battery;
+#endif
   WatchfaceTextWithIconStratum climate;
 } WatchfaceSurface;

@@ -51,6 +51,16 @@
           "file": "fonts/unbounded-semibold-600-time.ttf",
           "name": "FONT_TIME_UNBOUNDED_48",
           "type": "font"
+        },
+        {
+          "file": "images/lightning-bolt_16.png",
+          "name": "BATTERY_BOLT_16",
+          "type": "bitmap"
+        },
+        {
+          "file": "images/lightning-bolt_24.png",
+          "name": "BATTERY_BOLT_24",
+          "type": "bitmap"
         }
       ]
     }
