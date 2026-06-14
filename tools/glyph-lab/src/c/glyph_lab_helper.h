@@ -8,3 +8,7 @@
   (((n) == (d)) ? (v) : ((((v) * (n)) + ((d) / 2)) / (d)))
 
 bool helper_color_equal(GColor first, GColor second);
+bool helper_replace_color_in_bitmap(
+    GBitmap* bmp,
+    GColor original_color,
+    GColor new_color);

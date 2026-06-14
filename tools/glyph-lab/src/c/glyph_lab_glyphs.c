@@ -4,6 +4,20 @@
 #include "glyph_lab_renderer.h"
 
 typedef enum {
+  STEPS_BITMAP_WALKING_16 = 0,
+  STEPS_BITMAP_WALKING_24,
+  STEPS_BITMAP_BLUE_SHOE,
+  STEPS_BITMAP_GREEN_SHOE,
+  STEPS_BITMAP_COUNT,
+} StepsBitmapKind;
+
+typedef enum {
+  CHARGE_ICON_CUSTOM_BOLT = 0,
+  CHARGE_ICON_BITMAP_BOLT,
+  CHARGE_ICON_COUNT,
+} ChargeIconKind;
+
+typedef enum {
   WEATHER_ICON_CLEAR = 0,
   WEATHER_ICON_SUNNY,
   WEATHER_ICON_PARTLY_CLOUDY,
@@ -27,6 +41,56 @@ typedef enum {
   WEATHER_ICON_WIDTH = DESIGN_ICON_WIDTH,
   WEATHER_ICON_HEIGHT = DESIGN_ICON_HEIGHT,
 } WeatherIconGeometry;
+
+typedef struct {
+  uint32_t resource_id;
+  GBitmap* bitmap;
+} GlyphLabBitmapCandidate;
+
+static GlyphLabBitmapCandidate s_steps_bitmaps[STEPS_BITMAP_COUNT] = {
+  {RESOURCE_ID_STEPS_WALKING_16, NULL},
+  {RESOURCE_ID_STEPS_WALKING_24, NULL},
+  {RESOURCE_ID_STEPS_BLUE_SHOE, NULL},
+  {RESOURCE_ID_STEPS_GREEN_SHOE, NULL},
+};
+
+static GBitmap* s_charge_bitmap_bolt = NULL;
+
+static void destroy_steps_bitmaps(void) {
+  for (int i = 0; i < STEPS_BITMAP_COUNT; ++i) {
+    if (s_steps_bitmaps[i].bitmap) {
+      gbitmap_destroy(s_steps_bitmaps[i].bitmap);
+      s_steps_bitmaps[i].bitmap = NULL;
+    }
+  }
+}
+
+static void destroy_charge_bitmaps(void) {
+  if (s_charge_bitmap_bolt) {
+    gbitmap_destroy(s_charge_bitmap_bolt);
+    s_charge_bitmap_bolt = NULL;
+  }
+}
+
+bool glyph_lab_glyphs_init(void) {
+  destroy_steps_bitmaps();
+  destroy_charge_bitmaps();
+
+  for (int i = 0; i < STEPS_BITMAP_COUNT; ++i) {
+    s_steps_bitmaps[i].bitmap = gbitmap_create_with_resource(
+        s_steps_bitmaps[i].resource_id);
+  }
+
+  s_charge_bitmap_bolt = gbitmap_create_with_resource(
+      RESOURCE_ID_BATTERY_BOLT_24);
+
+  return true;
+}
+
+void glyph_lab_glyphs_deinit(void) {
+  destroy_steps_bitmaps();
+  destroy_charge_bitmaps();
+}
 
 void glyph_lab_select_palette(
     ColorPalette* palette,
@@ -156,6 +220,57 @@ static void draw_scaled_polygon(
   gpath_destroy(path);
 }
 
+static void draw_scaled_filled_polygon(
+    GContext* ctx,
+    const GRect* frame,
+    const GPoint* design_points,
+    uint32_t point_count,
+    GColor fill_color,
+    GColor outline_color,
+    int16_t outline_width,
+    bool draw_outline) {
+  GPoint scaled_points[8];
+  GPathInfo path_info;
+  GPath* path;
+
+  if (!ctx || !frame || !design_points || point_count < 3 ||
+      point_count > 8) {
+    return;
+  }
+
+  for (uint32_t i = 0; i < point_count; ++i) {
+    scaled_points[i] = GPoint(
+        frame->origin.x + HELPER_SCALE_ROUND(
+            design_points[i].x,
+            frame->size.w,
+            DESIGN_ICON_WIDTH),
+        frame->origin.y + HELPER_SCALE_ROUND(
+            design_points[i].y,
+            frame->size.h,
+            DESIGN_ICON_HEIGHT));
+  }
+
+  path_info = (GPathInfo) {
+    .num_points = point_count,
+    .points = scaled_points,
+  };
+  path = gpath_create(&path_info);
+  if (!path) {
+    return;
+  }
+
+  graphics_context_set_fill_color(ctx, fill_color);
+  gpath_draw_filled(ctx, path);
+
+  if (draw_outline) {
+    graphics_context_set_stroke_color(ctx, outline_color);
+    graphics_context_set_stroke_width(ctx, outline_width);
+    gpath_draw_outline(ctx, path);
+  }
+
+  gpath_destroy(path);
+}
+
 static GColor battery_color(
     const ColorPalette* palette,
     bool is_light_mode,
@@ -184,19 +299,97 @@ static void draw_battery_charging_bolt(
     const GRect* frame,
     const ColorPalette* palette,
     GColor color) {
+  glyph_lab_draw_bolt_icon(ctx, frame, palette, color);
+}
+
+static void draw_bitmap_in_frame(
+    GContext* ctx,
+    const GRect* frame,
+    GBitmap* bitmap) {
+  if (!ctx || !frame || !bitmap) {
+    return;
+  }
+
+  GRect bitmap_bounds = gbitmap_get_bounds(bitmap);
+  GRect draw_frame = *frame;
+
+  if (bitmap_bounds.size.w > 0 && bitmap_bounds.size.h > 0) {
+    int16_t draw_w = frame->size.w;
+    int16_t draw_h = (bitmap_bounds.size.h * draw_w) /
+        bitmap_bounds.size.w;
+
+    if (draw_h > frame->size.h) {
+      draw_h = frame->size.h;
+      draw_w = (bitmap_bounds.size.w * draw_h) /
+          bitmap_bounds.size.h;
+    }
+
+    draw_frame = GRect(
+        frame->origin.x + ((frame->size.w - draw_w) / 2),
+        frame->origin.y + ((frame->size.h - draw_h) / 2),
+        draw_w,
+        draw_h);
+  }
+
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, bitmap, draw_frame);
+}
+
+void glyph_lab_draw_bolt_icon(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    GColor color) {
+  if (!ctx || !frame || !palette) {
+    return;
+  }
+
   int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
+  if (frame_min <= 10) {
+    GPoint points[] = {
+      GPoint(frame->origin.x + ((frame->size.w * 5) / 10),
+             frame->origin.y),
+      GPoint(frame->origin.x + ((frame->size.w * 2) / 10),
+             frame->origin.y + ((frame->size.h * 4) / 10)),
+      GPoint(frame->origin.x + ((frame->size.w * 5) / 10),
+             frame->origin.y + ((frame->size.h * 4) / 10)),
+      GPoint(frame->origin.x + ((frame->size.w * 3) / 10),
+             frame->origin.y + frame->size.h - 1),
+      GPoint(frame->origin.x + frame->size.w - 1,
+             frame->origin.y + ((frame->size.h * 5) / 10)),
+      GPoint(frame->origin.x + ((frame->size.w * 6) / 10),
+             frame->origin.y + ((frame->size.h * 5) / 10)),
+    };
+
+    graphics_context_set_stroke_color(ctx, color);
+    graphics_context_set_stroke_width(ctx, 1);
+    for (uint32_t i = 0; i + 1 < ARRAY_LENGTH(points); ++i) {
+      graphics_draw_line(ctx, points[i], points[i + 1]);
+    }
+    return;
+  }
+
   int16_t bolt_stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(frame_min);
+  // static const GPoint bolt_points[] = {
+    // {10, 0},
+    // {2, 14},
+    // {6, 14},
+    // {4, 28},
+  //   {24, 8},
+  //   {16, 8},
+  //   {24, 0},
+  // };
   static const GPoint bolt_points[] = {
-    {14, 0},
-    {5, 11},
-    {10, 11},
-    {5, 27},
-    {17, 13},
-    {23, 13},
-    {14, 5},
+    {8, 0},
+    {4, 14},
+    {8, 14},
+    {6, 28},
+    {24, 6},
+    {16, 6},
+    {20, 0},
   };
 
-  draw_scaled_polygon(
+  draw_scaled_filled_polygon(
       ctx,
       frame,
       bolt_points,
@@ -205,6 +398,40 @@ static void draw_battery_charging_bolt(
       palette->background,
       bolt_stroke_width,
       true);
+}
+
+void glyph_lab_draw_charge_icon(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    int variant) {
+  if (!ctx || !frame || !palette) {
+    return;
+  }
+
+  graphics_context_set_fill_color(ctx, palette->background);
+  graphics_fill_rect(ctx, *frame, 0, GCornerNone);
+
+  switch (variant) {
+    case CHARGE_ICON_CUSTOM_BOLT:
+      glyph_lab_draw_bolt_icon(
+          ctx,
+          frame,
+          palette,
+          GColorYellow);
+      return;
+    case CHARGE_ICON_BITMAP_BOLT:
+#ifdef PBL_BW
+      helper_replace_color_in_bitmap(
+          s_charge_bitmap_bolt,
+          palette->background,
+          palette->primary_text);
+#endif
+      draw_bitmap_in_frame(ctx, frame, s_charge_bitmap_bolt);
+      return;
+    default:
+      return;
+  }
 }
 
 void glyph_lab_draw_battery_icon(
@@ -339,6 +566,53 @@ void glyph_lab_draw_steps_icon(
   if (!is_available) {
     draw_unavailable_slash(ctx, frame, palette->primary_text);
   }
+}
+
+void glyph_lab_draw_steps_bitmap_icon(
+    GContext* ctx,
+    const GRect* frame,
+    const ColorPalette* palette,
+    int bitmap_kind) {
+  if (!ctx || !frame || !palette) {
+    return;
+  }
+
+  if (bitmap_kind < 0 || bitmap_kind >= STEPS_BITMAP_COUNT) {
+    return;
+  }
+
+  GBitmap* bitmap = s_steps_bitmaps[bitmap_kind].bitmap;
+  if (!bitmap) {
+    return;
+  }
+
+  GRect bitmap_bounds = gbitmap_get_bounds(bitmap);
+  GRect draw_frame = *frame;
+
+  if (bitmap_bounds.size.w > 0 && bitmap_bounds.size.h > 0) {
+    int16_t draw_w = frame->size.w;
+    int16_t draw_h = (bitmap_bounds.size.h * draw_w) / bitmap_bounds.size.w;
+
+    if (draw_h > frame->size.h) {
+      draw_h = frame->size.h;
+      draw_w = (bitmap_bounds.size.w * draw_h) / bitmap_bounds.size.h;
+    }
+
+    draw_frame = GRect(
+        frame->origin.x + ((frame->size.w - draw_w) / 2),
+        frame->origin.y + ((frame->size.h - draw_h) / 2),
+        draw_w,
+        draw_h);
+  }
+
+  graphics_context_set_fill_color(ctx, palette->background);
+  graphics_fill_rect(ctx, *frame, 0, GCornerNone);
+  helper_replace_color_in_bitmap(
+      bitmap,
+      palette->background,
+      palette->primary_text);
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, bitmap, draw_frame);
 }
 
 static GColor bpm_color(
@@ -915,19 +1189,20 @@ static void draw_weather_bolt_icon(
   int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
   int16_t bolt_stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(frame_min);
   static const GPoint bolt_points[] = {
-    {14, 0},
-    {5, 11},
-    {10, 11},
+    {10, 0},
+    {2, 18},
+    {8, 18},
     {5, 27},
-    {17, 13},
-    {23, 13},
-    {14, 5},
+    {26, 6},
+    {19, 8},
+    {23, 0},
   };
+
   GColor color = weather_color_for_kind(
       WEATHER_ICON_THUNDERSTORM,
       palette);
 
-  draw_scaled_polygon(
+  draw_scaled_filled_polygon(
       ctx,
       frame,
       bolt_points,

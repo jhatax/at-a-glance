@@ -13,8 +13,11 @@
 
 typedef enum {
   GLYPH_KIND_BATTERY = 0,
+  GLYPH_KIND_BOLT,
+  GLYPH_KIND_CHARGE,
   GLYPH_KIND_WEATHER,
   GLYPH_KIND_STEPS,
+  GLYPH_KIND_STEPS_BITMAP,
   GLYPH_KIND_BPM,
 } GlyphKind;
 
@@ -59,6 +62,33 @@ static const GlyphPageTemplate GLYPH_PAGE_TEMPLATES[] = {
       {"45", GLYPH_KIND_BATTERY, 45, false},
       {"18", GLYPH_KIND_BATTERY, 18, false},
       {"CHG", GLYPH_KIND_BATTERY, 43, true},
+    },
+  },
+  {
+    .title = "STEP BMPS",
+    .cells = {
+      {"W16", GLYPH_KIND_STEPS_BITMAP, 0, false},
+      {"W24", GLYPH_KIND_STEPS_BITMAP, 1, false},
+      {"BLUE", GLYPH_KIND_STEPS_BITMAP, 2, false},
+      {"GREEN", GLYPH_KIND_STEPS_BITMAP, 3, false},
+    },
+  },
+  {
+    .title = "BOLT",
+    .cells = {
+      {"BOLT", GLYPH_KIND_BOLT, 0, false},
+      {"BOLT", GLYPH_KIND_BOLT, 0, false},
+      {"BOLT", GLYPH_KIND_BOLT, 0, false},
+      {"BOLT", GLYPH_KIND_BOLT, 0, false},
+    },
+  },
+  {
+    .title = "CHARGE",
+    .cells = {
+      {"PROC", GLYPH_KIND_CHARGE, 0, false},
+      {"BMP", GLYPH_KIND_CHARGE, 1, false},
+      {"PROC", GLYPH_KIND_CHARGE, 0, false},
+      {"BMP", GLYPH_KIND_CHARGE, 1, false},
     },
   },
   {
@@ -121,6 +151,7 @@ static const GlyphSizeMode GLYPH_SIZE_MODES[] = {
   {.title = "28", .icon_size = 28},
   {.title = "20", .icon_size = 20},
   {.title = "16", .icon_size = 16},
+  {.title = "10", .icon_size = 10},
 };
 
 static const int GLYPH_PAGE_TEMPLATE_COUNT =
@@ -225,6 +256,20 @@ static void draw_glyph_cell(
           cell->value,
           cell->flag);
       break;
+    case GLYPH_KIND_BOLT:
+      glyph_lab_draw_bolt_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          palette->primary_text);
+      break;
+    case GLYPH_KIND_CHARGE:
+      glyph_lab_draw_charge_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          cell->value);
+      break;
     case GLYPH_KIND_WEATHER:
       glyph_lab_draw_climate_icon(
           ctx,
@@ -238,6 +283,13 @@ static void draw_glyph_cell(
           &icon_frame,
           palette,
           cell->flag);
+      break;
+    case GLYPH_KIND_STEPS_BITMAP:
+      glyph_lab_draw_steps_bitmap_icon(
+          ctx,
+          &icon_frame,
+          palette,
+          cell->value);
       break;
     case GLYPH_KIND_BPM:
       glyph_lab_draw_bpm_icon(
@@ -365,6 +417,7 @@ static void main_window_unload(Window* window) {
 static void init(void) {
   s_status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
   s_label_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  glyph_lab_glyphs_init();
   s_window = window_create();
   if (!s_window) {
     return;
@@ -379,6 +432,7 @@ static void init(void) {
 }
 
 static void deinit(void) {
+  glyph_lab_glyphs_deinit();
   if (s_window) {
     window_destroy(s_window);
     s_window = NULL;

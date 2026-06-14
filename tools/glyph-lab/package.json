@@ -19,6 +19,35 @@
     "watchapp": {
       "watchface": false
     },
-    "capabilities": []
+    "capabilities": [],
+    "resources": {
+      "media": [
+        {
+          "file": "images/walking_16.png",
+          "name": "STEPS_WALKING_16",
+          "type": "bitmap"
+        },
+        {
+          "file": "images/walking_24.png",
+          "name": "STEPS_WALKING_24",
+          "type": "bitmap"
+        },
+        {
+          "file": "images/blue_shoe.png",
+          "name": "STEPS_BLUE_SHOE",
+          "type": "bitmap"
+        },
+        {
+          "file": "images/green_shoe.png",
+          "name": "STEPS_GREEN_SHOE",
+          "type": "bitmap"
+        },
+        {
+          "file": "images/lightning-bolt_24.png",
+          "name": "BATTERY_BOLT_24",
+          "type": "bitmap"
+        }
+      ]
+    }
   }
 }
