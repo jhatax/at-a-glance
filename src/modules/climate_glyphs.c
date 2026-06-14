@@ -482,39 +482,6 @@ static void draw_weather_showers_icon(
   draw_weather_rain_marks(ctx, &rain_frame, color, heavy);
 }
 
-static void draw_weather_bolt_icon(
-    GContext* ctx,
-    const GRect* frame,
-    const ColorPalette* palette) {
-  int16_t frame_min = HELPER_MIN(frame->size.w, frame->size.h);
-  int16_t bolt_stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
-      frame_min);
-  // Thunderstorm bolt contract: reuse the same 28x28 stroke-only polygon
-  // as the charging glyph so both bolt silhouettes stay in sync.
-  static const GPoint bolt_points[] = {
-    {14, 0},
-    {5, 11},
-    {10, 11},
-    {5, 27},
-    {17, 13},
-    {23, 13},
-    {14, 5},
-  };
-  GColor color = weather_color_for_kind(
-      WEATHER_ICON_THUNDERSTORM,
-      palette);
-
-  substratum_renderer_draw_scaled_polygon_outline(
-      ctx,
-      &frame->size,
-      bolt_points,
-      ARRAY_LENGTH(bolt_points),
-      color,
-      color,
-      bolt_stroke_width,
-      true);
-}
-
 static void draw_weather_unavailable_icon(
     GContext* ctx,
     const GRect* frame,
@@ -634,7 +601,10 @@ void draw_climate_icon(
       draw_weather_snow_showers_icon(ctx, frame, palette);
       break;
     case WEATHER_ICON_THUNDERSTORM:
-      draw_weather_bolt_icon(ctx, frame, palette);
+      substratum_renderer_draw_filled_bolt_in_frame(
+          ctx,
+          frame,
+          weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, palette));
       break;
     case WEATHER_ICON_UNKNOWN:
       draw_weather_unavailable_icon(ctx, frame, palette);
