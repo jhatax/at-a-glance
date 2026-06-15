@@ -11,6 +11,8 @@ const WEATHER_CONDITION_UNKNOWN = -1;
 const OAK_WEATHER_LATITUDE = 37.85626;
 const OAK_WEATHER_LONGITUDE = -122.21383;
 
+var s_weatherRequestId = 0;
+
 function sendWeather(celsius, weatherCode, isDay) {
   Pebble.sendAppMessage(
     {
@@ -41,7 +43,7 @@ function sendWeatherUnavailable(reason) {
   );
 }
 
-function fetchWeather(lat, lon) {
+function fetchWeather(lat, lon, requestId) {
   var url =
     "https://api.open-meteo.com/v1/forecast?latitude=" +
     lat +
@@ -53,6 +55,10 @@ function fetchWeather(lat, lon) {
   xhr.open("GET", url, true);
   xhr.timeout = WEATHER_INTERVAL_MS;
   xhr.onload = function () {
+    if (requestId !== s_weatherRequestId) {
+      return;
+    }
+
     if (xhr.readyState === 4 && xhr.status === 200) {
       try {
         var data = JSON.parse(xhr.responseText);
@@ -76,27 +82,48 @@ function fetchWeather(lat, lon) {
     }
   };
   xhr.onerror = function () {
+    if (requestId !== s_weatherRequestId) {
+      return;
+    }
+
     sendWeatherUnavailable("request failed");
   };
   xhr.ontimeout = function () {
+    if (requestId !== s_weatherRequestId) {
+      return;
+    }
+
     sendWeatherUnavailable("request timed out");
   };
   xhr.send(null);
 }
 
 function updateWeather() {
+  var requestId = ++s_weatherRequestId;
+
   if (typeof navigator !== "undefined" && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function (pos) {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+        if (requestId !== s_weatherRequestId) {
+          return;
+        }
+
+        fetchWeather(pos.coords.latitude, pos.coords.longitude, requestId);
       },
       function () {
-        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
+        if (requestId !== s_weatherRequestId) {
+          return;
+        }
+
+        fetchWeather(
+            OAK_WEATHER_LATITUDE,
+            OAK_WEATHER_LONGITUDE,
+            requestId);
       },
       { timeout: WEATHER_INTERVAL_MS, maximumAge: WEATHER_INTERVAL_MS }
     );
   } else {
-    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
+    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE, requestId);
   }
 }
 
