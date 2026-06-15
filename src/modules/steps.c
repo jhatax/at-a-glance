@@ -14,7 +14,7 @@ static TextLayer* s_steps_layer = NULL;
 static bool s_steps_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
 static GColor s_steps_icon_color = {0};
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
 static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
 #endif
@@ -124,7 +124,7 @@ static void apply_steps_value(int steps, bool is_available) {
 }
 
 static void update_steps(void) {
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
   if (s_debug_steps_is_set) {
     apply_steps_value(s_debug_steps, s_debug_steps >= 0);
     s_debug_steps_is_set = false;
@@ -163,18 +163,6 @@ bool steps_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->steps.text;
   const WatchfaceIconSubstratum* icon = &surface->steps.icon;
-  s_steps_is_available = false;
-#ifdef DEBUG_ATAGLANCE
-  s_debug_steps_is_set = false;
-  s_debug_steps = STEPS_INVALID;
-#endif
-  // The walking bitmap ships with black foreground pixels. Seed the
-  // cached color to that source palette value so the first recolor
-  // pass knows which color to replace.
-  s_steps_icon_color = GColorBlack;
-
-  s_steps_bitmap = gbitmap_create_with_resource(
-      RESOURCE_ID_STEPS_WALKING_24);
 
   s_steps_layer = substratum_renderer_create_text_layer(
       root,
@@ -187,17 +175,37 @@ bool steps_module_create(
     return false;
   }
 
+  s_steps_is_available = false;
+#if DEBUG_ATAGLANCE
+  s_debug_steps_is_set = false;
+  s_debug_steps = STEPS_INVALID;
+#endif
+  // The walking bitmap ships with black foreground pixels. Seed the
+  // cached color to that source palette value so the first recolor
+  // pass knows which color to replace.
+  s_steps_icon_color = GColorBlack;
+
+  s_steps_bitmap = gbitmap_create_with_resource(
+      RESOURCE_ID_STEPS_WALKING_24);
+
   s_surface = surface;
   if (icon->is_enabled && s_steps_bitmap) {
-    s_steps_icon_layer = substratum_renderer_create_icon_layer(
-        root,
-        icon,
-        steps_icon_update_proc);
+    s_steps_icon_layer = substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
+    if (!s_steps_icon_layer) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
+      gbitmap_destroy(s_steps_bitmap);
+      s_steps_bitmap = NULL;
+    }
   }
   return true;
 }
 
 void steps_module_destroy(void) {
+  if (s_steps_layer) {
+    text_layer_destroy(s_steps_layer);
+    s_steps_layer = NULL;
+  }
+
   if (s_steps_icon_layer) {
     layer_destroy(s_steps_icon_layer);
     s_steps_icon_layer = NULL;
@@ -206,16 +214,12 @@ void steps_module_destroy(void) {
     gbitmap_destroy(s_steps_bitmap);
     s_steps_bitmap = NULL;
   }
-  if (s_steps_layer) {
-    text_layer_destroy(s_steps_layer);
-    s_steps_layer = NULL;
-  }
 
   s_steps_buffer[0] = '\0';
   s_steps_is_available = false;
   s_surface = NULL;
   s_steps_icon_color = GColorBlack;
-  #ifdef DEBUG_ATAGLANCE
+  #if DEBUG_ATAGLANCE
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
   #endif
@@ -225,7 +229,7 @@ void steps_module_refresh(void) {
   update_steps();
 }
 
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
 void steps_module_debug_set_steps(int steps) {
   s_debug_steps = steps;
   s_debug_steps_is_set = true;

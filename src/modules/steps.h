@@ -12,7 +12,7 @@ bool steps_module_create(
 void steps_module_destroy(void);
 void steps_module_refresh(void);
 
-#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
 void steps_module_debug_set_steps(int steps);
 void steps_module_debug_clear_steps(void);
 #endif

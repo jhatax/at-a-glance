@@ -130,8 +130,7 @@ bool climate_module_create(
       text,
       surface->style.fonts[text->font_role]);
   if (!s_temperature_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create climate temperature layer");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create climate temperature layer");
     return false;
   }
 
@@ -141,7 +140,12 @@ bool climate_module_create(
         root,
         icon,
         climate_icon_update_proc);
+
+    if (!s_climate_icon_layer) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create climate condition icon");
+    }
   }
+
   // Update display now that this module has been created
   climate_module_update_display(temp_unit);
   return true;

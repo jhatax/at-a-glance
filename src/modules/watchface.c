@@ -210,17 +210,23 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
 }
 
 static void watchface_refresh_strata(WatchfaceUpdateMask updates) {
+  // Don't assume that some strata were created even though that's the contract
+  // By not assuming this detail, if the product's must-create strata decision changes,
+  // this code won't need to be in sync / will avoid drift.
   if ((updates & WATCHFACE_UPDATE_BACKGROUND) &&
       (s_strata_created_mask & BACKGROUND_STRATUM_MASK)) {
     background_module_refresh();
   }
-  if (updates & WATCHFACE_UPDATE_DATE) {
+  if ((updates & WATCHFACE_UPDATE_DATE) &&
+      (s_strata_created_mask & DATE_STRATUM_MASK)) {
     date_module_refresh();
   }
-  if (updates & WATCHFACE_UPDATE_TIME) {
+  if ((updates & WATCHFACE_UPDATE_TIME) &&
+      (s_strata_created_mask & TIME_STRATUM_MASK)) {
     time_module_refresh(s_wf_settings->time_format);
   }
-  if (updates & WATCHFACE_UPDATE_BATTERY) {
+  if ((updates & WATCHFACE_UPDATE_BATTERY) &&
+      (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
     battery_module_refresh();
   }
   if ((updates & WATCHFACE_UPDATE_CLIMATE) &&
@@ -253,7 +259,7 @@ void watchface_set_is_day(bool is_day) {
   climate_module_set_is_day(is_day);
 }
 
-#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+  #if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
 void watchface_debug_set_bpm(int bpm) {
   bpm_module_debug_set_bpm(bpm);
 }

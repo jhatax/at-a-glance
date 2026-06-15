@@ -13,7 +13,7 @@ static int s_bpm = BPM_INVALID;
 static bool s_bpm_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
 static const ColorPalette* s_palette = NULL;
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
 static bool s_debug_bpm_is_set = false;
 static int s_debug_bpm = BPM_INVALID;
 #endif
@@ -137,7 +137,7 @@ static void apply_bpm_value(int bpm, bool is_available) {
 }
 
 static void update_bpm(void) {
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
   if (s_debug_bpm_is_set) {
     apply_bpm_value(s_debug_bpm, s_debug_bpm > 0);
     s_debug_bpm_is_set = false;
@@ -174,12 +174,6 @@ bool bpm_module_create(
 
   const WatchfaceTextSubstratum* text = &surface->bpm.text;
   const WatchfaceIconSubstratum* icon = &surface->bpm.icon;
-  s_bpm = BPM_INVALID;
-  s_bpm_is_available = false;
-#ifdef DEBUG_ATAGLANCE
-  s_debug_bpm_is_set = false;
-  s_debug_bpm = BPM_INVALID;
-#endif
 
   s_bpm_layer = substratum_renderer_create_text_layer(
       root,
@@ -192,13 +186,20 @@ bool bpm_module_create(
     return false;
   }
 
+  s_bpm = BPM_INVALID;
+  s_bpm_is_available = false;
+#if DEBUG_ATAGLANCE
+  s_debug_bpm_is_set = false;
+  s_debug_bpm = BPM_INVALID;
+#endif
+
   s_surface = surface;
   s_palette = surface->style.palette;
   if (icon->is_enabled) {
-    s_bpm_icon_layer = substratum_renderer_create_icon_layer(
-      root,
-      icon,
-      bpm_icon_update_proc);
+    s_bpm_icon_layer = substratum_renderer_create_icon_layer(root, icon, bpm_icon_update_proc);
+    if (!s_bpm_icon_layer) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create BPM icon");
+    }
   }
   return true;
 }
@@ -218,7 +219,7 @@ void bpm_module_destroy(void) {
   s_bpm_is_available = false;
   s_palette = NULL;
   s_surface = NULL;
-  #ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
   #endif
@@ -233,7 +234,7 @@ void bpm_module_refresh(void) {
   update_bpm();
 }
 
-#ifdef DEBUG_ATAGLANCE
+#if DEBUG_ATAGLANCE
 void bpm_module_debug_set_bpm(int bpm) {
   s_debug_bpm = bpm;
   s_debug_bpm_is_set = true;

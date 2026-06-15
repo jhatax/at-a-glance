@@ -229,7 +229,7 @@ static void architect_get_layout_from_blueprint(
 #endif
 }
 
-#if defined(DEBUG_ATAGLANCE) && defined(PBL_PLATFORM_GABBRO)
+#if defined(PBL_PLATFORM_GABBRO) && (DEBUG_ATAGLANCE == 1)
 static void architect_apply_debug_gabbro_layout(
     CalculatedLayout* computed,
     int16_t face_width,

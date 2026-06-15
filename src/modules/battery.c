@@ -146,16 +146,15 @@ bool battery_module_create(
     return false;
   }
 
-  s_battery_state = battery_state_service_peek();
-  s_surface = surface;
-  s_palette = surface->style.palette;
   s_battery_rule_layer = layer_create(surface->battery.track);
   if (!s_battery_rule_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create battery rule layer");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create battery rule layer");
     return false;
   }
 
+  s_battery_state = battery_state_service_peek();
+  s_surface = surface;
+  s_palette = surface->style.palette;
   layer_set_update_proc(s_battery_rule_layer, battery_rule_update_proc);
   layer_add_child(root, s_battery_rule_layer);
 
@@ -163,9 +162,7 @@ bool battery_module_create(
   if (s_battery_bolt_layer) {
     layer_set_update_proc(s_battery_bolt_layer, battery_bolt_update_proc);
     layer_add_child(root, s_battery_bolt_layer);
-    layer_set_hidden(
-        s_battery_bolt_layer,
-        !s_battery_state.is_charging);
+    layer_set_hidden(s_battery_bolt_layer, !s_battery_state.is_charging);
   }
 
   return true;

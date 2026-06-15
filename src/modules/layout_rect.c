@@ -13,124 +13,208 @@ static void architect_get_layout_from_blueprint(
   // Wipe the layout's state clean
   memset(computed, 0, sizeof(*computed));
 
-  const int16_t margin = blueprint->margin;
-  const int16_t x_start = margin;
-  const int16_t x_end = face_width - margin;
+  const int16_t x_start = DESIGN_RECT_MARGIN;
+  const int16_t x_end = face_width - DESIGN_RECT_MARGIN;
   const int16_t content_width = x_end - x_start;
-  const int16_t icon_w = blueprint->icon_w;
+
+  // Use these transient values to establish x and y for each module
+  // Time, Battery, Date are separated by stacked together, no gaps
+
+  // TIME is center aligned text
+  // X: computed x_start
+  // Y: computed using DESIGN_RECT_TIME_Y_PERCENT
+  // W: content_width
+  // H: blueprint->time_text_height
+  // Anchor current row-y using DESIGN_RECT_TIME_Y_PERCENT
+  int16_t current_row_y = (face_height * DESIGN_RECT_TIME_Y_PERCENT) / 100;
+
+  // Current module's X
+  int16_t module_x = x_start;
+
+  // Current module's Y
+  int16_t module_y = current_row_y;
+
+  // Current module's WIDTH
+  int16_t module_w = content_width;
+
+  computed->time = GRect(
+      module_x,
+      module_y,
+      module_w,
+      blueprint->time_text_height);
+
+  // BATTERY BAND is centered on the viewport and has 4-parts:
+  // 1/ Negative space from where time ends until the battery track
+  // 2/ Battery track: legible-color band @ center for contrast
+  // 3/ State fill: centered showing battery & with calculated color
+  // 4/ Negative space for visual separation from date
+  // X1, X2, X4: all start at X computed using the module's width
+  // X3: offset by 1 for halo, width = total-width - 2
+  // Y1: computed using DESIGN_RECT_TIME_Y_PERCENT
+  // Y2: Y1 + 1/2 (height_band - height_track)
+  // Y3: Y2 + 1/2 (height_track - height_fill)
+  // Y4: irrelevant as it is negative space
+  // W: computed using DESIGN_RECT_BATTERY_BAND_WIDTH_PERCENT
+  // H: DESIGN_RECT_BATTERY_BAND_HEIGHT
+  // H2:DESIGN_RECT_BATTERY_TRACK_HEIGHT
+  // H3:DESIGN_RECT_BATTERY_FILL_HEIGHT
+
+  // Advance the current row's y-position by TIME's HEIGHT: Y1
+  current_row_y += blueprint->time_text_height;
+
+  // Battery Band's width
+  module_w = ((face_width * DESIGN_RECT_BATTERY_BAND_WIDTH_PERCENT) / 100);
+
+  // Center the module horizontally (centered regardless of charging bolt visibility)
+  module_x = (face_width - module_w) >> 1;
+
+  // Y2: Y1 + 1/2 (height_band - height_track)
+  module_y = current_row_y +
+    ((DESIGN_RECT_BATTERY_BAND_HEIGHT - DESIGN_RECT_BATTERY_TRACK_HEIGHT) >> 1);
+  computed->battery.track = GRect(
+      module_x,
+      module_y,
+      module_w,
+      DESIGN_RECT_BATTERY_TRACK_HEIGHT);
+
+  // Y3: Y2 + 1/2 (height_track - height_fill)
+  // The exception to computing module_x and module_w before using them
+  module_y += (DESIGN_RECT_BATTERY_TRACK_HEIGHT - DESIGN_RECT_BATTERY_FILL_HEIGHT) >> 1;
+  computed->battery.fill = GRect(
+      module_x + 1,
+      module_y,
+      module_w - 2,
+      DESIGN_RECT_BATTERY_FILL_HEIGHT);
+
+  // Add the bolt relative to the top of the BATTERY BAND
+  module_y = current_row_y +
+    ((DESIGN_RECT_BATTERY_BAND_HEIGHT - DESIGN_RECT_BATTERY_BOLT_HEIGHT) >> 1);
+  module_x += module_w + DESIGN_RECT_ICON_TEXT_GAP;
+  module_w = DESIGN_RECT_BATTERY_BOLT_WIDTH;
+  computed->battery.bolt = GRect(
+        module_x,
+        module_y,
+        module_w,
+        DESIGN_RECT_BATTERY_BOLT_HEIGHT);
+
+  // The CLIMATE and DATE row
+  // Climate:
+  // X: computed x_start
+  // Y: TIME_Y+BATTERY_BAND_HEIGHT
+
+  // Advance the curent row's Y by DESIGN_RECT_BATTERY_BAND_HEIGHT
+  current_row_y += DESIGN_RECT_BATTERY_BAND_HEIGHT;
+
+  // Center all components in this row vertically relative to one another
   const int16_t icon_h = blueprint->icon_h;
   const int16_t data_text_height = blueprint->data_text_height;
   const int16_t icon_text_row_height = HELPER_MAX(icon_h, data_text_height);
-#ifdef PBL_HEALTH
-  const int16_t bottom_row_y = face_height - margin - icon_text_row_height;
-#endif
-  const int16_t time_y = (face_height * DESIGN_RECT_TIME_Y_PERCENT) / 100;
-  const int16_t rule_w = (face_width * DESIGN_RECT_RULE_WIDTH_PERCENT) / 100;
-  const int16_t rule_x = (face_width - rule_w) >> 1;
-
-  const int16_t battery_band_y = time_y + blueprint->time_text_height;
-  const int16_t battery_band_height = DESIGN_RECT_BATTERY_BAND_HEIGHT;
-  const int16_t battery_track_height = DESIGN_RECT_BATTERY_TRACK_HEIGHT;
-  const int16_t battery_fill_height = DESIGN_RECT_BATTERY_FILL_HEIGHT;
-  const int16_t battery_bolt_gap = DESIGN_RECT_BATTERY_BOLT_GAP;
-  const int16_t battery_bolt_width = DESIGN_RECT_BATTERY_BOLT_WIDTH;
-  const int16_t battery_bolt_height = DESIGN_RECT_BATTERY_BOLT_HEIGHT;
-  const int16_t track_y = battery_band_y +
-      ((battery_band_height - battery_track_height) >> 1);
-  const int16_t fill_y = track_y +
-      ((battery_track_height - battery_fill_height) >> 1);
-  const int16_t weather_date_row_y = battery_band_y + battery_band_height;
   const int16_t date_text_height = blueprint->date_text_height;
-  const int16_t weather_date_row_height = HELPER_MAX(
-      icon_text_row_height,
-      date_text_height);
-  const int16_t climate_row_offset_y =
-      (weather_date_row_height - icon_text_row_height) / 2;
-  const int16_t date_text_offset_y =
-      (weather_date_row_height - date_text_height) / 2;
-  const int16_t climate_y = weather_date_row_y + climate_row_offset_y;
-  const int16_t date_text_y = weather_date_row_y + date_text_offset_y;
+  const int16_t climate_date_row_height = HELPER_MAX(icon_text_row_height, date_text_height);
+  const int16_t climate_row_offset_y = (climate_date_row_height - icon_text_row_height) >> 1;
 
-  const int16_t left_icon_x = x_start;
-
-  const int16_t left_text_x =
-    left_icon_x + icon_w + blueprint->icon_text_gap;
-  const int16_t weather_end_x = left_text_x +
-      blueprint->climate_text_width;
-  const int16_t date_x = weather_end_x + blueprint->icon_text_gap;
-  const int16_t date_text_width = x_end - date_x;
-
-#ifdef PBL_HEALTH
-  const int16_t right_text_x = blueprint->right_text_x;
-  const int16_t right_icon_x =
-    right_text_x - blueprint->icon_text_gap - icon_w;
-#endif
-
+  // Text
+  // The text offset is going to be based on text-height in the icon-text-row
   const int16_t text_offset_y = (icon_text_row_height - data_text_height) >> 1;
-  const int16_t icon_offset_y = (icon_text_row_height - icon_h) >> 1;
-
-  computed->time = GRect(
-      x_start,
-      time_y,
-      content_width,
-      blueprint->time_text_height);
-
-  computed->date = GRect(
-      date_x,
-      date_text_y,
-      date_text_width,
-      date_text_height);
-
-  computed->battery.track = GRect(
-      rule_x,
-      track_y,
-      rule_w,
-      battery_track_height);
-  computed->battery.fill = GRect(
-      rule_x + 1,
-      fill_y,
-      rule_w - 2,
-      battery_fill_height);
-  computed->battery.bolt = GRect(
-        rule_x + rule_w + battery_bolt_gap,
-        battery_band_y + ((battery_band_height - battery_bolt_height) >> 1),
-        battery_bolt_width,
-        battery_bolt_height);
-
-  computed->climate.icon = GRect(
-      left_icon_x,
-      climate_y + icon_offset_y,
-      icon_w,
-      icon_h);
+  module_x = x_start;
+  module_y = current_row_y + climate_row_offset_y + text_offset_y;
+  module_w = blueprint->climate_text_width;
 
   computed->climate.text = GRect(
-      left_text_x,
-      climate_y + text_offset_y,
-      blueprint->climate_text_width,
+      module_x,
+      module_y,
+      module_w,
       data_text_height);
+
+  // Icon
+  // The icon offset is going to be based on icon-height in the icon-text-row
+  const int16_t icon_offset_y = (icon_text_row_height - icon_h) >> 1;
+  module_x += module_w + DESIGN_RECT_ICON_TEXT_GAP;
+  module_y = current_row_y + climate_row_offset_y + icon_offset_y;
+  const int16_t icon_w = blueprint->icon_w;
+  module_w = icon_w;
+  computed->climate.icon = GRect(
+      module_x,
+      module_y,
+      module_w,
+      icon_h);
+
+  // Add the gap between icon and text to show the date next (temperature-gap-climate-icon-gap-date)
+  module_x += module_w + DESIGN_RECT_ICON_TEXT_GAP;
+  module_y = current_row_y + ((climate_date_row_height - date_text_height) >> 1);
+  module_w = face_width - module_x - DESIGN_RECT_MARGIN;
+  computed->date = GRect(
+      module_x,
+      module_y,
+      module_w,
+      date_text_height);
 
 #ifdef PBL_HEALTH
-  computed->steps.icon = GRect(
-      left_icon_x,
-      bottom_row_y + icon_offset_y,
-      icon_w,
+  // BPM centered at top on screen, icon - gap - text
+  // X_module: computed using face_width
+  // X_icon: X_module
+  // X_text: X_icon + icon_module_width
+  // Y: DESIGN_RECT_YTOP_OFFSET
+  current_row_y = DESIGN_RECT_YTOP_OFFSET;
+  // Start with the entire module's width to determine starting X
+  module_w = icon_w + DESIGN_RECT_ICON_TEXT_GAP + blueprint->bpm_text_width;
+
+  // Center horizontally
+  module_x = (face_width - module_w) >> 1;
+
+  // The icon is the next module, set its width
+  module_w = icon_w;
+
+  // Icon
+  module_y = current_row_y + icon_offset_y;
+  computed->bpm.icon = GRect(
+      module_x,
+      module_y,
+      module_w,
       icon_h);
 
-  computed->steps.text = GRect(
-      left_text_x,
-      bottom_row_y + text_offset_y,
-      blueprint->steps_text_width,
+  // Text: X_text = X_icon + icon module's width
+  module_x += module_w + DESIGN_RECT_ICON_TEXT_GAP;
+  module_y = current_row_y + text_offset_y;
+  module_w = blueprint->bpm_text_width;
+  computed->bpm.text = GRect(
+      module_x,
+      module_y,
+      module_w,
       data_text_height);
 
-  computed->bpm.icon = GRect(
-      right_icon_x,
-      bottom_row_y + icon_offset_y,
-      icon_w,
+  // Steps centered at bottom on screen, icon - gap - text
+  // X_module: computed using face_width
+  // X_icon: X_module
+  // X_text: X_icon + icon_module_width
+  // Y: computed using face_height, row-top-offset, row_height
+  current_row_y = face_height - DESIGN_RECT_YBOTTOM_OFFSET - icon_text_row_height;
+
+  // Start with the entire module's width to determine starting X
+  module_w = icon_w + DESIGN_RECT_ICON_TEXT_GAP + blueprint->bpm_text_width;
+
+  // Center horizontally
+  module_x = (face_width - module_w) >> 1;
+
+  // The icon is the next module, set its width
+  module_w = icon_w;
+
+  // Icon
+  module_y = current_row_y + icon_offset_y;
+  computed->steps.icon = GRect(
+      module_x,
+      module_y,
+      module_w,
       icon_h);
-  computed->bpm.text = GRect(
-      right_text_x,
-      bottom_row_y + text_offset_y,
-      blueprint->bpm_text_width,
+
+  // Text: X_text = X_icon + icon module's width
+  module_x += module_w + DESIGN_RECT_ICON_TEXT_GAP;
+  module_y = current_row_y + text_offset_y;
+  module_w = blueprint->steps_text_width;
+  computed->steps.text = GRect(
+      module_x,
+      module_y,
+      module_w,
       data_text_height);
 #endif
 }
@@ -180,7 +264,7 @@ bool layout_watchface_initialize(
   // Date
   surface->date.text = (WatchfaceTextSubstratum) {
     .frame = computed.date,
-    .alignment = GTextAlignmentRight,
+    .alignment = GTextAlignmentLeft,
     .font_role = WATCHFACE_FONT_ROLE_DATE,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
@@ -196,7 +280,7 @@ bool layout_watchface_initialize(
 
   surface->climate.text = (WatchfaceTextSubstratum) {
     .frame = computed.climate.text,
-    .alignment = GTextAlignmentLeft,
+    .alignment = GTextAlignmentRight,
     .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
   };
 

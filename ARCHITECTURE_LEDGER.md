@@ -80,6 +80,12 @@ Every non-trivial change follows this cycle:
 - Do not let a cleaned-up implementation hide an unresolved product premise.
   If a slice depends on a foundational assumption, state it and either defend
   it, challenge it, or record it in `RAID_LOG.md`.
+- Do not allocate heap memory in layer update procs or shared drawing
+  primitives unless a fixed static buffer, exact primitive-specific storage, or
+  a simpler primitive-specific implementation would be worse.
+- Create paths must be transaction-like: if a module returns failure, it must
+  not retain stale surface pointers, palette pointers, layers, fonts, bitmaps,
+  or partially-created resources.
 - Preserve user changes. Never revert unrelated dirty work.
 
 ## Current Architecture Decisions
@@ -120,6 +126,12 @@ TODO: Retire `src/c/ataglance.h` in a focused header cleanup slice.
 - Move `DEBUG_ATAGLANCE` out of `ataglance.h`. Prefer a compiler/build define
   if the Pebble build path supports it cleanly; otherwise use a narrowly named
   debug configuration header instead of a product constants header.
+- Do not ship with `DEBUG_ATAGLANCE` unconditionally defined as `1`. Debug
+  AppMessage keys and debug platform layout overrides must be local-only.
+- Audit every debug-gated code path using value checks such as
+  `#if DEBUG_ATAGLANCE` or `#if DEBUG_ATAGLANCE == 1`, not presence checks such
+  as `#ifdef DEBUG_ATAGLANCE`, so `DEBUG_ATAGLANCE 0` does not compile debug
+  behavior.
 - Remove `ataglance.h` includes from files that do not use its symbols,
   including current dead includes in layout/style/renderer/glyph modules.
 - Remove `ataglance.h` includes from public module headers by relocating the
@@ -252,6 +264,16 @@ Acceptance checks:
   `WatchfaceSurface`.
 - Rectangle-only slices do not add or alter round platform support.
 
+TODO: Revisit `src/modules/layout_rect.h` after Round lands.
+
+- The current rectangular header keeps layout types and blueprint constants
+  readable while the code moves toward a consolidated architect structure.
+- After Chalk/Round validation, decide whether shape-private types should stay
+  split by shape header or move into a single architect implementation file.
+- Remove stale rectangular blueprint fields such as `right_text_x` and
+  `icon_text_pair_height` when the active rectangular calculation no longer
+  consumes them.
+
 ### Substratum Renderer
 
 Decision: `src/modules/substratum_renderer.c/.h` owns common Pebble rendering
@@ -277,6 +299,18 @@ Acceptance checks:
 - Shared glyph contracts are not reimplemented privately in multiple feature
   modules.
 - Dynamic BPM and battery colors remain module-owned.
+
+TODO: Remove heap allocation from shared drawing primitives.
+
+- `substratum_renderer_draw_filled_bolt_in_frame()` currently reaches a helper
+  that allocates scaled polygon points in a render path. The point count is
+  bounded, so prefer primitive-specific exact storage, fixed static storage, or
+  an inline bolt-specific draw path over per-frame heap allocation.
+- Any allocation failure branch in a renderer helper must release resources
+  acquired earlier in the same helper before returning.
+- `substratum_renderer_update_text_layer()` should keep text-layer backgrounds
+  transparent unless a specific design decision introduces boxed text as a
+  product-level visual rule.
 
 ### Watchface Runtime
 
@@ -308,6 +342,9 @@ Acceptance checks:
 - No `watchface_update_style`, `watchface_update_palette`, or
   `watchface_update_display_mode` helper exists.
 - `WATCHFACE_UPDATE_ALL_STRATA` is not exposed in `watchface.h`.
+- `watchface_refresh_strata()` gates every module refresh by that stratum's
+  creation mask, including must-have strata, so failed create paths and
+  teardown paths cannot refresh stale module state.
 
 ### Main Runtime
 
@@ -337,6 +374,29 @@ Acceptance checks:
   modules.
 - No feature-module headers included by `main.c`.
 
+### PebbleKit JS And AppMessage
+
+Decision: PebbleKit JS owns phone-side weather fetches and Clay configuration,
+while `main.c` owns C-side tuple validation and conversion.
+
+Invariants:
+
+- Message keys remain compact and validated on both sides.
+- Phone geolocation and Open-Meteo responses are untrusted inputs.
+- Weather unavailable state is explicit and sent through the same narrow
+  AppMessage surface as successful weather.
+- Clay settings imply persistence; settings must not depend on a runtime flag
+  that can silently disable load/save.
+
+Acceptance checks:
+
+- `package.json`, Clay config, JS sends, C tuple parsing, settings defaults,
+  README/docs, and manual AppMessage commands agree on message keys and values.
+- JS guards network errors, timeouts, parse errors, and malformed weather
+  responses.
+- Repeated weather requests cannot let an older response overwrite a newer
+  response without an explicit last-write-wins decision.
+
 ### Feature Modules
 
 Decision: Feature modules own their own Pebble layer lifecycle.
@@ -362,6 +422,18 @@ Acceptance checks:
 - Watchface records creation success only from module create return values.
 - No feature-module `*_refresh()` declaration accepts `WatchfaceSurface`.
 - Payload-bearing refresh APIs pass only the runtime value needed to render.
+
+TODO: Audit and harden module create failure paths.
+
+- Required layer creation must happen before retained `s_surface` and
+  `s_palette` assignments, or the failure branch must clear them before
+  returning.
+- If a module creates optional resources before a required layer succeeds, its
+  failure branch must destroy those resources before returning false.
+- Optional icon failure may remain non-fatal, but it should not leave stale
+  resource state that assumes the icon layer exists.
+- Refresh functions should tolerate missing layers, but watchface should still
+  avoid calling refresh for strata that were not created.
 
 ### Climate And Health Boundaries
 

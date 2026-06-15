@@ -166,7 +166,7 @@ static void inbox_received_callback(
             "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
 
-#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
   Tuple* t_debug_bpm = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM);
   int debug_bpm = 0;
   if (t_debug_bpm && helper_tuple_to_int(t_debug_bpm, &debug_bpm)) {
@@ -243,7 +243,7 @@ static void outbox_sent_callback(
 }
 
 static uint32_t app_message_inbox_size(void) {
-#if defined(PBL_HEALTH) && defined(DEBUG_ATAGLANCE)
+#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
   return dict_calc_buffer_size(
       9,
       APP_MESSAGE_CONFIG_VALUE_SIZE,

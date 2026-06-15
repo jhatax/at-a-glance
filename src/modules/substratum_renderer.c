@@ -72,14 +72,14 @@ static void draw_filled_polygon_in_frame(
     .points = scaled_points,
   };
   path = gpath_create(&path_info);
-  if (!path) {
-    return;
+
+  if (path) {
+    graphics_context_set_fill_color(ctx, fill_color);
+    gpath_draw_filled(ctx, path);
+
+    gpath_destroy(path);
   }
 
-  graphics_context_set_fill_color(ctx, fill_color);
-  gpath_draw_filled(ctx, path);
-
-  gpath_destroy(path);
   if (scaled_points) {
     free(scaled_points);
     scaled_points = NULL;
@@ -135,7 +135,14 @@ void substratum_renderer_update_text_layer(
   }
 
   text_layer_set_background_color(layer, GColorClear);
+#if DEBUG_ATAGLANCE
+  // Visual indicator of text layer size and text rendering
+  GColor switched = gcolor_legible_over(text_color);
+  text_layer_set_background_color(layer, text_color);
+  text_layer_set_text_color(layer, switched);
+#else
   text_layer_set_text_color(layer, text_color);
+#endif
   text_layer_set_text(layer, text);
 }
 

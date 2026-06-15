@@ -21,6 +21,111 @@ architecture.
 
 ## Active Entries
 
+### Dirty visual and renderer changes need design review
+
+Type: Risk
+Status: Open
+
+The current working tree changes rectangular geometry, date/climate alignment,
+and shared text-layer background behavior. It builds, but it mixes product
+layout movement with a renderer-wide visual rule.
+
+Next action: review the prior and new flows before committing. Either approve
+the visual rule intentionally or split renderer behavior from rectangular
+layout work.
+
+### Create failure paths may retain stale module state
+
+Type: Issue
+Status: Open
+
+Some module create paths assign retained surface or palette pointers before all
+required resources exist, and one path allocates a bitmap before required text
+layer creation. If creation then fails, watchface may not record the stratum
+as created and therefore will not call that module's destroy path.
+
+Next action: make create paths transaction-like. On failure, destroy resources
+created in that function and clear retained pointers before returning false.
+
+### Watchface refresh should gate every created stratum
+
+Type: Issue
+Status: Open
+
+`watchface_refresh_strata()` gates optional background, climate, BPM, and steps
+refreshes by `s_strata_created_mask`, but required date, time, and battery
+refreshes are called whenever their update bit is set. Required modules are
+expected to exist after successful create, but failure and teardown paths are
+safer if the mask is used consistently.
+
+Next action: gate date, time, and battery refreshes by creation mask in the
+same focused lifecycle cleanup slice as create failure hardening.
+
+### Renderer allocation strategy in draw path
+
+Type: Issue
+Status: Open
+
+The shared filled-polygon renderer allocates scaled point storage in a drawing
+path even though the point count is bounded. Its `gpath_create()` failure path
+also returns without freeing that allocation.
+
+Next action: avoid per-frame heap allocation without wasting stack. Use exact
+primitive-specific storage, fixed static storage, or a bolt-specific draw path;
+ensure every acquired resource is released on all return paths.
+
+### Revisit rectangular architect header after Round
+
+Type: Assumption
+Status: Open
+
+`layout_rect.h` currently contains rectangular constants, blueprint objects,
+and calculated layout structs. Keeping that split is acceptable while the code
+moves toward a consolidated architect file, because putting everything in
+`layout_rect.c` made the active layout harder to read.
+
+Next action: revisit after Round lands. Decide whether rectangular and round
+architect details should live in shape headers or be rationalized into one
+architect implementation.
+
+### Gabbro debug override can become accidental product geometry
+
+Type: Risk
+Status: Open
+
+Round layout has a `DEBUG_ATAGLANCE && PBL_PLATFORM_GABBRO` geometry override,
+while debug is currently globally enabled in `ataglance.h`. If Gabbro enters
+`targetPlatforms` before debug ownership is cleaned up, hard-coded debug
+geometry can silently become the active product layout.
+
+Next action: move debug enablement out of product constants before enabling
+round targets, and require explicit review for any platform debug override.
+
+### DEBUG_ATAGLANCE gate style needs full audit
+
+Type: Issue
+Status: Open
+
+Debug code was previously gated by presence checks such as
+`#ifdef DEBUG_ATAGLANCE`, so defining `DEBUG_ATAGLANCE 0` still compiled debug
+paths. Live code is moving to value checks, but every debug-gated branch should
+be reviewed before this is considered closed.
+
+Next action: audit all `DEBUG_ATAGLANCE` gates and standardize on value checks
+such as `#if DEBUG_ATAGLANCE` or `#if DEBUG_ATAGLANCE == 1`.
+
+### Weather responses can arrive out of order
+
+Type: Risk
+Status: Open
+
+PebbleKit JS starts weather fetches on ready and on an interval. Network or
+geolocation delays can allow older requests to complete after newer ones and
+overwrite fresher weather data.
+
+Next action: add a small request sequence or in-flight policy so weather
+updates are applied deliberately.
+
 ### Compact rectangular layout may inherit Emery-native assumptions
 
 Type: Risk
