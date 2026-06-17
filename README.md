@@ -62,6 +62,12 @@ Core layout invariant:
 - the result is stored on `WatchfaceSurfaceStyle.is_compact`
 - the stylist consumes that state
 - downstream modules use prepared substrata and do not rederive layout policy
+- text widths and heights are per-field decisions dictated by font selection,
+  field role, row ownership, and platform geometry
+- there is no uniform text-width invariant across all fields
+
+Detailed UI reference, including computed geometry, font selections, palettes,
+and screenshot slots, lives in [`User Interface.md`](User%20Interface.md).
 
 ## Visual Vocabulary
 

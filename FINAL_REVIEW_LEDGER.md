@@ -203,26 +203,31 @@ weather remains possible
   - No release gate remains for separate round-architect absence. Keep
     Chalk/Gabbro screenshot review as product validation before publication.
 
-### FR-202: Text width constants do not consistently match the established
-40px text-width invariant
+### FR-202: Text width constants are per-field product decisions
 
-- Severity: P2
-- Evidence:
+- Status: Closed.
+- Resolution:
+  - The former uniform text-width invariant has been removed. Text widths and
+    heights are now documented as per-field layout decisions dictated by font
+    selection, role, row ownership, and available geometry.
+- Original severity: P2
+- Historical evidence:
   - Full climate and steps widths are `46`.
   - Full BPM width is `40`.
   - Compact climate, steps, and BPM widths are `39`.
-- Risk:
-  - The user-established design invariant is that text width should be 40 and
-    not larger. The current constants encode older rectangular widths and can
-    cause product drift during layout work.
-- Gate:
-  - Reconcile the invariant against live rectangular and round designs, then
-    make the constants intentional and documented.
+- Decision:
+  - These differing constants are intentional unless a specific field's font,
+    value range, or geometry changes.
+  - No release gate remains for this finding.
 
 ### FR-203: Weather unavailable slash color is inconsistent with unavailable
 weather glyph color
 
-- Severity: P2
+- Status: Closed.
+- Resolution:
+  - The primary-text slash is intentional for contrast over the unavailable
+    weather glyph.
+- Original severity: P2
 - Evidence:
   - `WEATHER_ICON_UNKNOWN` maps to `palette->unavailable_text`.
   - `draw_weather_unavailable_icon()` draws the slash using
@@ -231,9 +236,8 @@ weather glyph color
   - The unavailable glyph mixes unavailable and primary semantics in one icon.
     That weakens the current visual rule that unavailable state should use a
     shared calm unavailable vocabulary.
-- Gate:
-  - Decide whether the slash intentionally remains primary for contrast. If not,
-    use `palette->unavailable_text` for the unavailable weather slash.
+- Decision:
+  - No release gate remains for this finding.
 
 ### FR-204: Battery and weather bolt share a renderer path, but not necessarily
 the same visual contract

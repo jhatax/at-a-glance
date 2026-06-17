@@ -29,6 +29,23 @@ glyphs that work on both color and black-and-white Pebble displays.
 - A text-only metric is acceptable when an icon cannot be created or
   does not fit the platform. An icon-only metric is not acceptable.
 
+## Text Metrics
+
+Text widths and heights are per-field layout decisions. There is no uniform
+text-width invariant.
+
+Rules:
+
+- The font role, selected font, and platform geometry dictate each text
+  frame.
+- Time, date, climate, BPM, and steps may use different widths because they
+  carry different content and occupy different row contracts.
+- Text heights follow the selected font role and the row's visual alignment
+  needs.
+- Width changes are product/layout changes. Do not change them during cleanup.
+- A field's text frame should be large enough for its expected extreme value
+  without making unrelated fields inherit that width.
+
 ## Surface Composition
 
 The current selected watchface composition is:

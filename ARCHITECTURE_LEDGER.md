@@ -164,6 +164,8 @@ ataglance.c updates settings
   same watchface.
 - Time remains visually dominant.
 - Text is primary. Icons support recognition.
+- Text widths and heights are per-field product/layout decisions dictated by
+  font selection, value role, row ownership, and available geometry.
 - Battery uses a primary-color outline track and module-owned state-color fill.
 - Weather/date share one row; weather owns icon plus temperature and date is
   aligned in the remaining space.
