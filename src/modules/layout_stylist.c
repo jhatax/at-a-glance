@@ -10,17 +10,13 @@
 #endif
 #define DESIGN_FONT_CLIMATE_COMPACT FONT_KEY_GOTHIC_14
 
-#define DESIGN_FONT_DATE_FULL FONT_KEY_GOTHIC_24_BOLD
-#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+#define DESIGN_FONT_DATE_FULL FONT_KEY_GOTHIC_18_BOLD
 #define DESIGN_FONT_TIME_FULL FONT_KEY_ROBOTO_BOLD_SUBSET_49
-#else
-#define DESIGN_FONT_TIME_FULL FONT_KEY_LECO_42_NUMBERS
-#endif
 #ifdef PBL_HEALTH
-#define DESIGN_FONT_BPM_FULL FONT_KEY_GOTHIC_24
-#define DESIGN_FONT_STEPS_FULL FONT_KEY_GOTHIC_24
+#define DESIGN_FONT_BPM_FULL FONT_KEY_GOTHIC_18
+#define DESIGN_FONT_STEPS_FULL FONT_KEY_GOTHIC_18
 #endif
-#define DESIGN_FONT_CLIMATE_FULL FONT_KEY_GOTHIC_24
+#define DESIGN_FONT_CLIMATE_FULL FONT_KEY_GOTHIC_18
 
 static const ColorPalette c_dark_palette = {
   .background = GColorBlack,
@@ -38,9 +34,7 @@ static const ColorPalette c_light_palette = {
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
 };
 
-static const char* layout_font_key_for_role(
-    WatchfaceFontRole role,
-    bool is_compact) {
+static const char* layout_font_key_for_role(WatchfaceFontRole role, bool is_compact) {
   switch (role) {
     case WATCHFACE_FONT_ROLE_DATE:
       return is_compact ?
@@ -74,11 +68,31 @@ static const char* layout_font_key_for_role(
 static uint32_t layout_custom_font_resource_id_for_role(
     WatchfaceFontRole role,
     bool is_compact) {
-  if (role == WATCHFACE_FONT_ROLE_TIME && !is_compact) {
-    return RESOURCE_ID_FONT_TIME_UNBOUNDED_48;
+  switch (role) {
+    case WATCHFACE_FONT_ROLE_DATE:
+      return is_compact ?
+          RESOURCE_ID_FONT_CABIN_TEXT_14_MEDIUM :
+          RESOURCE_ID_FONT_CABIN_TEXT_18_MEDIUM;
+    case WATCHFACE_FONT_ROLE_TIME:
+      return is_compact ?
+          RESOURCE_ID_FONT_CABIN_TIME_36_SEMIBOLD :
+          RESOURCE_ID_FONT_CABIN_TIME_48_SEMIBOLD;
+#ifdef PBL_HEALTH
+    case WATCHFACE_FONT_ROLE_BPM:
+    case WATCHFACE_FONT_ROLE_STEPS:
+      return is_compact ?
+          RESOURCE_ID_FONT_CABIN_TEXT_14_MEDIUM :
+          RESOURCE_ID_FONT_CABIN_TEXT_18_MEDIUM;
+#endif
+    case WATCHFACE_FONT_ROLE_CLIMATE:
+      return is_compact ?
+          RESOURCE_ID_FONT_CABIN_TEXT_14_MEDIUM :
+          RESOURCE_ID_FONT_CABIN_TEXT_18_MEDIUM;
+    case WATCHFACE_FONT_ROLE_COUNT:
+      return 0;
+    default:
+      return 0;
   }
-
-  return 0;
 }
 
 static const ColorPalette* layout_palette_for_display_mode(uint8_t display_mode) {

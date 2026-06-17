@@ -82,7 +82,6 @@ bool helper_replace_color_in_bitmap(GBitmap* bmp, GColor originalColor, GColor n
     if (helper_color_equal(palette[i], originalColor)) {
       palette[i] = newColor;
       replaced = true;
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Replaced Color");
       break;
     }
   }
@@ -133,7 +132,6 @@ bool helper_swap_colors_in_bitmap(GBitmap* bmp, GColor color1, GColor color2) {
     palette[pos_1] = palette[pos_2];
     palette[pos_2] = toSwap;
     swapped = true;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Swapped Colors");
   }
 
   return swapped;

@@ -353,8 +353,7 @@ static void init(void) {
         health_handler,
         NULL);
     if (!health_available) {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Health service subscription failed");
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Health service subscription failed");
     } else {
       s_health_events_subscribed = true;
       apply_hr_sample_period();

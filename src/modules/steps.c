@@ -185,16 +185,25 @@ bool steps_module_create(
   // pass knows which color to replace.
   s_steps_icon_color = GColorBlack;
 
-  s_steps_bitmap = gbitmap_create_with_resource(
-      RESOURCE_ID_STEPS_WALKING_24);
-
   s_surface = surface;
-  if (icon->is_enabled && s_steps_bitmap) {
-    s_steps_icon_layer = substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
-    if (!s_steps_icon_layer) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
-      gbitmap_destroy(s_steps_bitmap);
-      s_steps_bitmap = NULL;
+  if (icon->is_enabled) {
+    uint32_t resource_id = 0;
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+    resource_id = RESOURCE_ID_WALK_FULL;
+  #else
+    resource_id = RESOURCE_ID_WALK_COMPACT;
+  #endif
+    s_steps_bitmap = gbitmap_create_with_resource(resource_id);
+
+    if(s_steps_bitmap) {
+      s_steps_icon_layer = substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
+      if (!s_steps_icon_layer) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
+        gbitmap_destroy(s_steps_bitmap);
+        s_steps_bitmap = NULL;
+      }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon bitmap");
     }
   }
   return true;

@@ -181,8 +181,7 @@ bool bpm_module_create(
       surface->style.fonts[text->font_role]);
 
   if (!s_bpm_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create BPM text layer");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create BPM text layer");
     return false;
   }
 

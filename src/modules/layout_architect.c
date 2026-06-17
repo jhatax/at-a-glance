@@ -8,9 +8,6 @@ static const LayoutBlueprint c_rect_reference_blueprint = {
   .date_text_height = DESIGN_FULL_DATE_TEXT_HEIGHT,
   .time_text_height = DESIGN_FULL_TIME_TEXT_HEIGHT,
   .data_text_height = DESIGN_FULL_DATA_TEXT_HEIGHT,
-  .icon_text_pair_height = HELPER_MAX(
-      (int)DESIGN_FULL_ICON_HEIGHT,
-      (int)DESIGN_FULL_DATA_TEXT_HEIGHT),
   .climate_text_width = DESIGN_FULL_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
   .steps_text_width = DESIGN_FULL_STEPS_TEXT_WIDTH,
@@ -26,7 +23,6 @@ static const LayoutBlueprint c_rect_compact_blueprint = {
   .time_text_height = DESIGN_COMPACT_TIME_TEXT_HEIGHT,
   .date_text_height = DESIGN_COMPACT_DATE_TEXT_HEIGHT,
   .data_text_height = DESIGN_COMPACT_DATA_TEXT_HEIGHT,
-  .icon_text_pair_height = HELPER_MAX(DESIGN_COMPACT_ICON_HEIGHT, DESIGN_COMPACT_DATA_TEXT_HEIGHT),
   .climate_text_width = DESIGN_COMPACT_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
   .steps_text_width = DESIGN_COMPACT_STEPS_TEXT_WIDTH,
@@ -138,21 +134,16 @@ static void architect_get_layout_from_blueprint(
   // Advance the curent row's Y by DESIGN_BATTERY_BAND_HEIGHT
   current_row_y += DESIGN_BATTERY_BAND_HEIGHT;
 
-  // Center all components in this row vertically relative to one another
-  const int16_t icon_h = blueprint->icon_h;
-  const int16_t data_text_height = blueprint->data_text_height;
-  const int16_t icon_text_row_height = HELPER_MAX(icon_h, data_text_height);
-  const int16_t date_text_height = blueprint->date_text_height;
-  const int16_t climate_date_row_height = HELPER_MAX(icon_text_row_height, date_text_height);
-  const int16_t climate_row_offset_y = (climate_date_row_height - icon_text_row_height) >> 1;
+  // const int16_t date_text_height = blueprint->date_text_height;
+  // const int16_t climate_date_row_height = HELPER_MAX(icon_text_row_height, date_text_height);
+  // const int16_t climate_row_offset_y = (climate_date_row_height - icon_text_row_height) >> 1;
 
   // Text
-  // The text offset is going to be based on text-height in the icon-text-row
-  const int16_t text_offset_y = (icon_text_row_height - data_text_height) >> 1;
-
+  // For this row, anchor all modules at current-row's y
   module_x = x_start;
-  module_y = current_row_y + climate_row_offset_y + text_offset_y;
+  module_y = current_row_y; // + climate_row_offset_y + text_offset_y;
   module_w = blueprint->climate_text_width;
+  const int16_t data_text_height = blueprint->data_text_height;
 
   computed->climate.text = GRect(
       module_x,
@@ -160,12 +151,13 @@ static void architect_get_layout_from_blueprint(
       module_w,
       data_text_height);
 
-  // Icon
-  // The icon offset is going to be based on icon-height in the icon-text-row
-  const int16_t icon_offset_y = (icon_text_row_height - icon_h) >> 1;
-  module_x += module_w + DESIGN_ICON_TEXT_GAP;
-  module_y = current_row_y + climate_row_offset_y + icon_offset_y;
-  const int16_t icon_w = blueprint->icon_w;
+    // Icon
+    // For this row, anchor all modules at current-row's y
+    module_x += module_w + DESIGN_ICON_TEXT_GAP;
+    const int16_t icon_w = blueprint->icon_w;
+    const int16_t icon_h = blueprint->icon_h;
+
+  module_y = current_row_y; // + climate_row_offset_y + icon_offset_y;
   module_w = icon_w;
   computed->climate.icon = GRect(
       module_x,
@@ -175,13 +167,13 @@ static void architect_get_layout_from_blueprint(
 
   // Add the gap between icon and text to show the date next (temperature-gap-climate-icon-gap-date)
   module_x += module_w + DESIGN_ICON_TEXT_GAP;
-  module_y = current_row_y + ((climate_date_row_height - date_text_height) >> 1);
+  module_y = current_row_y; //  + ((climate_date_row_height - date_text_height) >> 1);
   module_w = face_width - module_x - blueprint->margin;
   computed->date = GRect(
       module_x,
       module_y,
       module_w,
-      date_text_height);
+      blueprint->date_text_height);
 
 #ifdef PBL_HEALTH
   // BPM centered at top on screen, icon - gap - text
@@ -199,6 +191,9 @@ static void architect_get_layout_from_blueprint(
   // The icon is the next module, set its width
   module_w = icon_w;
 
+  const int16_t icon_text_row_height = HELPER_MAX(icon_h, data_text_height);
+  const int16_t icon_offset_y = (icon_text_row_height - icon_h) >> 1;
+
   // Icon
   module_y = current_row_y + icon_offset_y;
   computed->bpm.icon = GRect(
@@ -208,6 +203,7 @@ static void architect_get_layout_from_blueprint(
       icon_h);
 
   // Text: X_text = X_icon + icon module's width
+  const int16_t text_offset_y = (icon_text_row_height - data_text_height) >> 1;
   module_x += module_w + DESIGN_ICON_TEXT_GAP;
   module_y = current_row_y + text_offset_y;
   module_w = blueprint->bpm_text_width;

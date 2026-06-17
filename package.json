@@ -51,14 +51,40 @@
           "menuIcon": true
         },
         {
-          "file": "fonts/unbounded-semibold-600-time.ttf",
-          "name": "FONT_TIME_UNBOUNDED_48",
+          "characterRegex": "[0-9: A-Z°-]",
+          "file": "fonts/cabin-medium-500-text-subset.ttf",
+          "name": "FONT_CABIN_TEXT_14_MEDIUM",
           "type": "font"
         },
         {
-          "file": "images/walking_24.png",
-          "name": "STEPS_WALKING_24",
-          "type": "bitmap"
+          "characterRegex": "[0-9: A-Z°-]",
+          "file": "fonts/cabin-medium-500-text-subset.ttf",
+          "name": "FONT_CABIN_TEXT_18_MEDIUM",
+          "type": "font"
+        },
+        {
+          "characterRegex": "[0-9:]",
+          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "name": "FONT_CABIN_TIME_36_SEMIBOLD",
+          "type": "font"
+        },
+        {
+          "characterRegex": "[0-9:]",
+          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "name": "FONT_CABIN_TIME_48_SEMIBOLD",
+          "type": "font"
+        },
+        {
+          "file": "images/walk_16.png",
+          "name": "WALK_COMPACT",
+          "type": "bitmap",
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"]
+        },
+        {
+          "file": "images/walk_24.png",
+          "name": "WALK_FULL",
+          "type": "bitmap",
+          "targetPlatforms": ["emery", "gabbro"]
         }
       ]
     }

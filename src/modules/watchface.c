@@ -12,6 +12,7 @@
 
 // A consequence of this is that s_surface.is_compact = false by default
 static WatchfaceSurface s_surface = {0};
+static GFont s_custom_fonts[WATCHFACE_FONT_ROLE_COUNT] = {0};
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
@@ -41,9 +42,72 @@ typedef enum {
 } StratumMask;
 static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
+static void watchface_apply_custom_fonts(void);
+static bool watchface_load_custom_fonts(void);
+static void watchface_unload_custom_fonts(void);
 static void watchface_exit_path() {
   watchface_destroy();
   window_stack_pop_all(false);
+}
+
+static GFont watchface_find_loaded_custom_font(
+    uint8_t max_role,
+    uint32_t resource_id) {
+  for (uint8_t i = 0; i < max_role; ++i) {
+    if (s_surface.style.custom_font_resource_ids[i] == resource_id &&
+        s_custom_fonts[i]) {
+      return s_custom_fonts[i];
+    }
+  }
+
+  return NULL;
+}
+
+static void watchface_apply_custom_fonts(void) {
+  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
+    if (s_custom_fonts[i]) {
+      s_surface.style.fonts[i] = s_custom_fonts[i];
+    }
+  }
+}
+
+static bool watchface_load_custom_fonts(void) {
+  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
+    const uint32_t resource_id = s_surface.style.custom_font_resource_ids[i];
+    if (!resource_id) {
+      continue;
+    }
+
+    GFont shared_font = watchface_find_loaded_custom_font(i, resource_id);
+    if (shared_font) {
+      s_custom_fonts[i] = shared_font;
+      continue;
+    }
+
+    s_custom_fonts[i] = fonts_load_custom_font(resource_get_handle(resource_id));
+    if (!s_custom_fonts[i]) {
+      APP_LOG(APP_LOG_LEVEL_ERROR,
+              "Failed to load watchface custom font resource %lu",
+              (unsigned long) resource_id);
+      watchface_unload_custom_fonts();
+      return false;
+    }
+  }
+
+  watchface_apply_custom_fonts();
+  return true;
+}
+
+static void watchface_unload_custom_fonts(void) {
+  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
+    const uint32_t resource_id = s_surface.style.custom_font_resource_ids[i];
+    if (s_custom_fonts[i] &&
+        resource_id &&
+        !watchface_find_loaded_custom_font(i, resource_id)) {
+      fonts_unload_custom_font(s_custom_fonts[i]);
+    }
+    s_custom_fonts[i] = NULL;
+  }
 }
 
 bool watchface_create(Window* window, const WatchfaceSettings* settings) {
@@ -87,6 +151,11 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   layout_update_watchface_style(
       &(s_surface.style),
       s_wf_settings->display_mode);
+  if (!watchface_load_custom_fonts()) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface custom font initialization failed");
+    watchface_exit_path();
+    return false;
+  }
 
   s_strata_created_mask |= date_module_create(root, &s_surface) ?
       DATE_STRATUM_MASK : 0;
@@ -163,6 +232,8 @@ void watchface_destroy() {
     #endif
   }
 
+  watchface_unload_custom_fonts();
+
   s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
   s_wf_settings = NULL;
   s_wf_window = NULL;
@@ -179,6 +250,7 @@ void watchface_repaint(void) {
   layout_update_watchface_style(
       &(s_surface.style),
       s_wf_settings->display_mode);
+  watchface_apply_custom_fonts();
 
   if (s_surface.style.palette) {
     window_set_background_color(

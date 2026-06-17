@@ -360,16 +360,18 @@ static void draw_weather_rain_marks(
     GColor color,
     bool heavy) {
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, 2);
 
   if (heavy) {
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 6, 3, 2, 25);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 12, 2, 8, 24);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 4, 14, 26);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 24, 2, 20, 24);
+    graphics_context_set_stroke_width(ctx, 1);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 3, 2, 1, 25);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 8, 4, 6, 25);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 13, 2, 11, 25);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 4, 16, 25);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 23, 2, 21, 25);
     return;
   }
 
+  graphics_context_set_stroke_width(ctx, 2);
   substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 8, 7, 5, 21);
   substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 15, 7, 12, 21);
   substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 22, 7, 19, 21);
