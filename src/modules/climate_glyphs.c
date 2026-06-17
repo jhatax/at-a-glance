@@ -22,24 +22,24 @@ typedef enum {
 } WeatherIconKind;
 
 typedef enum {
-  WEATHER_ICON_CENTER_X = DESIGN_ICON_WIDTH / 2,
-  WEATHER_ICON_CENTER_Y = DESIGN_ICON_HEIGHT / 2,
-  WEATHER_ICON_WIDTH = DESIGN_ICON_WIDTH,
-  WEATHER_ICON_HEIGHT = DESIGN_ICON_HEIGHT,
+  WEATHER_ICON_GRID_W = 28,
+  WEATHER_ICON_GRID_H = 28,
+  WEATHER_ICON_CENTER_X = WEATHER_ICON_GRID_W / 2,
+  WEATHER_ICON_CENTER_Y = WEATHER_ICON_GRID_H / 2,
 } WeatherIconGeometry;
 
 static int16_t weather_scale_x(const GRect* frame, int16_t value) {
   return frame->origin.x + HELPER_SCALE_ROUND(
       value,
       frame->size.w,
-      WEATHER_ICON_WIDTH);
+      WEATHER_ICON_GRID_W);
 }
 
 static int16_t weather_scale_y(const GRect* frame, int16_t value) {
   return frame->origin.y + HELPER_SCALE_ROUND(
       value,
       frame->size.h,
-      WEATHER_ICON_HEIGHT
+      WEATHER_ICON_GRID_H
   );
 }
 
@@ -59,11 +59,11 @@ static void weather_subframe(
   out->size.w = HELPER_SCALE_ROUND(
       w,
       frame->size.w,
-      WEATHER_ICON_WIDTH);
+      WEATHER_ICON_GRID_W);
   out->size.h = HELPER_SCALE_ROUND(
       h,
       frame->size.h,
-      WEATHER_ICON_HEIGHT);
+      WEATHER_ICON_GRID_H);
 }
 
 static GColor weather_subtle_color(

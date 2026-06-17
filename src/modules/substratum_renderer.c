@@ -2,6 +2,11 @@
 #include "helper.h"
 #include "../c/ataglance.h"
 
+typedef enum {
+  SUBSTRATUM_RENDERER_ICON_GRID_W = 28,
+  SUBSTRATUM_RENDERER_ICON_GRID_H = 28,
+} SubstratumRendererIconGrid;
+
 static bool is_valid_design_x_coord(int16_t x, int16_t design_width) {
   return (x >= 0 && x <= design_width);
 }
@@ -170,21 +175,21 @@ GColor substratum_renderer_color_for_role(
 int16_t substratum_renderer_scale_icon_x(
     const GSize* size,
     int16_t coord) {
-  if (!size || !is_valid_design_x_coord(coord, DESIGN_ICON_WIDTH)) {
+  if (!size || !is_valid_design_x_coord(coord, SUBSTRATUM_RENDERER_ICON_GRID_W)) {
     return 0;
   }
 
-  return HELPER_SCALE_ROUND(coord, size->w, DESIGN_ICON_WIDTH);
+  return HELPER_SCALE_ROUND(coord, size->w, SUBSTRATUM_RENDERER_ICON_GRID_W);
 }
 
 int16_t substratum_renderer_scale_icon_y(
     const GSize* size,
     int16_t coord) {
-  if (!size || !is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT)) {
+  if (!size || !is_valid_design_y_coord(coord, SUBSTRATUM_RENDERER_ICON_GRID_H)) {
     return 0;
   }
 
-  return HELPER_SCALE_ROUND(coord, size->h, DESIGN_ICON_HEIGHT);
+  return HELPER_SCALE_ROUND(coord, size->h, SUBSTRATUM_RENDERER_ICON_GRID_H);
 }
 
 int16_t substratum_renderer_scale_icon_coord(
@@ -194,14 +199,14 @@ int16_t substratum_renderer_scale_icon_coord(
     return 0;
   }
 
-  if (!(is_valid_design_x_coord(coord, DESIGN_ICON_WIDTH) ||
-      is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT))) {
+  if (!(is_valid_design_x_coord(coord, SUBSTRATUM_RENDERER_ICON_GRID_W) ||
+      is_valid_design_y_coord(coord, SUBSTRATUM_RENDERER_ICON_GRID_H))) {
     return 0;
   }
 
   int16_t chosen_dimension = HELPER_MIN(size->w, size->h);
   int16_t design_dimension = (chosen_dimension == size->w) ?
-      DESIGN_ICON_WIDTH : DESIGN_ICON_HEIGHT;
+      SUBSTRATUM_RENDERER_ICON_GRID_W : SUBSTRATUM_RENDERER_ICON_GRID_H;
   return HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension);
 }
 
@@ -209,8 +214,8 @@ GPoint substratum_renderer_scale_icon_point(
     const GSize* size,
     int16_t x,
     int16_t y) {
-  if (!(is_valid_design_x_coord(x, DESIGN_ICON_WIDTH) &&
-      is_valid_design_y_coord(y, DESIGN_ICON_HEIGHT))) {
+  if (!(is_valid_design_x_coord(x, SUBSTRATUM_RENDERER_ICON_GRID_W) &&
+      is_valid_design_y_coord(y, SUBSTRATUM_RENDERER_ICON_GRID_H))) {
     return GPoint(0, 0);
   }
 

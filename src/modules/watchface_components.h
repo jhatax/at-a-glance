@@ -5,16 +5,6 @@
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 
 typedef enum {
-  // Reference display used for all layout decisions and icon styling.
-  DESIGN_FACE_HEIGHT = 228,
-  DESIGN_FACE_WIDTH = 200,
-
-  // Reference size for all designed glyphs
-  DESIGN_ICON_HEIGHT = 28,
-  DESIGN_ICON_WIDTH = 28,
-} WatchfaceDesignInputs;
-
-typedef enum {
   WATCHFACE_FONT_ROLE_DATE = 0,
   WATCHFACE_FONT_ROLE_TIME,
 #ifdef PBL_HEALTH

@@ -1,21 +1,25 @@
 #include "design.h"
 
 static const LayoutBlueprint c_rect_reference_blueprint = {
-  .icon_w = DESIGN_ICON_WIDTH,
-  .icon_h = DESIGN_ICON_HEIGHT,
+  .margin = DESIGN_FULL_MARGIN,
+  .icon_w = DESIGN_FULL_ICON_WIDTH,
+  .icon_h = DESIGN_FULL_ICON_HEIGHT,
   .time_y_percent = DESIGN_TIME_Y_PERCENT,
-  .date_text_height = DESIGN_REFERENCE_DATE_TEXT_HEIGHT,
-  .time_text_height = DESIGN_REFERENCE_TIME_TEXT_HEIGHT,
-  .data_text_height = DESIGN_REFERENCE_DATA_TEXT_HEIGHT,
-  .icon_text_pair_height = HELPER_MAX((int)DESIGN_ICON_HEIGHT, (int)DESIGN_REFERENCE_DATA_TEXT_HEIGHT),
-  .climate_text_width = DESIGN_REFERENCE_CLIMATE_TEXT_WIDTH,
+  .date_text_height = DESIGN_FULL_DATE_TEXT_HEIGHT,
+  .time_text_height = DESIGN_FULL_TIME_TEXT_HEIGHT,
+  .data_text_height = DESIGN_FULL_DATA_TEXT_HEIGHT,
+  .icon_text_pair_height = HELPER_MAX(
+      (int)DESIGN_FULL_ICON_HEIGHT,
+      (int)DESIGN_FULL_DATA_TEXT_HEIGHT),
+  .climate_text_width = DESIGN_FULL_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
-  .steps_text_width = DESIGN_REFERENCE_STEPS_TEXT_WIDTH,
-  .bpm_text_width = DESIGN_REFERENCE_BPM_TEXT_WIDTH,
+  .steps_text_width = DESIGN_FULL_STEPS_TEXT_WIDTH,
+  .bpm_text_width = DESIGN_FULL_BPM_TEXT_WIDTH,
 #endif
 };
 
 static const LayoutBlueprint c_rect_compact_blueprint = {
+  .margin = DESIGN_COMPACT_MARGIN,
   .icon_w = DESIGN_COMPACT_ICON_WIDTH,
   .icon_h = DESIGN_COMPACT_ICON_HEIGHT,
   .time_y_percent = DESIGN_COMPACT_TIME_Y_PERCENT,
@@ -42,8 +46,8 @@ static void architect_get_layout_from_blueprint(
   // Wipe the layout's state clean
   memset(computed, 0, sizeof(*computed));
 
-  const int16_t x_start = DESIGN_MARGIN;
-  const int16_t x_end = face_width - DESIGN_MARGIN;
+  const int16_t x_start = blueprint->margin;
+  const int16_t x_end = face_width - blueprint->margin;
   const int16_t content_width = x_end - x_start;
 
   // Use these transient values to establish x and y for each module
@@ -172,7 +176,7 @@ static void architect_get_layout_from_blueprint(
   // Add the gap between icon and text to show the date next (temperature-gap-climate-icon-gap-date)
   module_x += module_w + DESIGN_ICON_TEXT_GAP;
   module_y = current_row_y + ((climate_date_row_height - date_text_height) >> 1);
-  module_w = face_width - module_x - DESIGN_MARGIN;
+  module_w = face_width - module_x - blueprint->margin;
   computed->date = GRect(
       module_x,
       module_y,
@@ -184,8 +188,8 @@ static void architect_get_layout_from_blueprint(
   // X_module: computed using face_width
   // X_icon: X_module
   // X_text: X_icon + icon_module_width
-  // Y: DESIGN_YTOP_OFFSET
-  current_row_y = DESIGN_YTOP_OFFSET;
+  // Y: blueprint->margin
+  current_row_y = blueprint->margin;
   // Start with the entire module's width to determine starting X
   module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->bpm_text_width;
 
@@ -218,10 +222,10 @@ static void architect_get_layout_from_blueprint(
   // X_icon: X_module
   // X_text: X_icon + icon_module_width
   // Y: computed using face_height, row-top-offset, row_height
-  current_row_y = face_height - DESIGN_YBOTTOM_OFFSET - icon_text_row_height;
+  current_row_y = face_height - blueprint->margin - icon_text_row_height;
 
   // Start with the entire module's width to determine starting X
-  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->bpm_text_width;
+  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->steps_text_width;
 
   // Center horizontally
   module_x = (face_width - module_w) >> 1;
@@ -259,8 +263,8 @@ bool layout_watchface_initialize(
   // Wipe the slate clean
   memset(surface, 0, sizeof(*surface));
 
-  bool is_compact = face_width < DESIGN_FACE_WIDTH &&
-      face_height < DESIGN_FACE_HEIGHT;
+  bool is_compact = face_width < DESIGN_FULL_FACE_WIDTH &&
+      face_height < DESIGN_FULL_FACE_HEIGHT;
   surface->style.is_compact = is_compact;
   surface->face_width = face_width;
   surface->face_height = face_height;
