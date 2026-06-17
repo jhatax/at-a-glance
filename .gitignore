@@ -3,7 +3,10 @@ node_modules/
 .DS_Store
 .lock-waf_darwin_build
 .clangd
+.continue/
 compile_commands.json
 compile_flags.txt
+.prompts/
 resources/images/backup-images/
 src/c/scratch.txt
+.vscode/

@@ -84,7 +84,7 @@ At A Glance: Configuration
   so makes the code easier to audit.
 - Do not pass or return large watchface/layout structs by value. Use scalar
   values or pointers to caller-owned storage.
-- Keep programming source lines at or below 80 characters where practical.
+- Keep programming source lines at or below 100 characters where practical.
 - If a fix reveals a broken pattern, audit sibling modules and analogous call
   sites before declaring the slice complete.
 - Do not commit API changes, new APIs, or changed callers until the old and
