@@ -62,12 +62,11 @@ static void draw_battery_track(
     return;
   }
 
-  graphics_context_set_fill_color(ctx, color);
-  graphics_fill_rect(
+  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 1);
+  graphics_draw_rect(
       ctx,
-      GRect(bounds->origin.x, bounds->origin.y, track->size.w, track->size.h),
-      0,
-      GCornerNone);
+      GRect(bounds->origin.x, bounds->origin.y, track->size.w, track->size.h));
 }
 
 static void draw_battery_fill(
@@ -106,7 +105,9 @@ static void battery_rule_update_proc(Layer* layer, GContext* ctx) {
     fill_width = 1;
   }
 
-  draw_battery_track(ctx, &bounds, track, s_palette->background);
+  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  draw_battery_track(ctx, &bounds, track, s_palette->primary_text);
   draw_battery_fill(ctx, track, fill, fill_width, fill_color);
 }
 
@@ -189,204 +190,3 @@ void battery_module_refresh(void) {
   s_battery_state = battery_state_service_peek();
   update_battery_rule();
 }
-
-/*
-static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
-static Layer* s_battery_icon_layer = NULL;
-static TextLayer* s_battery_layer = NULL;
-
-static GRect battery_scaled_rect_from_corners(
-    const GSize* size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1);
-static void draw_battery_charging_bolt(
-    GContext* ctx,
-    const GSize* bounds_size,
-    GColor color);
-static void battery_icon_update_proc(Layer* layer, GContext* ctx);
-static void update_battery(void);
-
-static GRect battery_scaled_rect_from_corners(
-    const GSize* size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!size) {
-    return GRectZero;
-  }
-
-  int16_t left = substratum_renderer_scale_icon_x(size, x0);
-  int16_t top = substratum_renderer_scale_icon_y(size, y0);
-  int16_t right = substratum_renderer_scale_icon_x(size, x1);
-  int16_t bottom = substratum_renderer_scale_icon_y(size, y1);
-
-  return GRect(left, top, right - left, bottom - top);
-}
-
-static void draw_battery_charging_bolt(
-    GContext* ctx,
-    const GSize* bounds_size,
-    GColor color) {
-  GRect frame = GRect(0, 0, bounds_size->w, bounds_size->h);
-  substratum_renderer_draw_filled_bolt_in_frame(
-      ctx,
-      &frame,
-      color);
-}
-
-static void battery_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_surface || !s_palette) {
-    return;
-  }
-
-  GRect bounds = layer_get_bounds(layer);
-  const int16_t shell_left = 2;
-  const int16_t shell_top = 4;
-  const int16_t shell_right = 24;
-  const int16_t shell_bottom = 19;
-  const int16_t nub_left = 24;
-  const int16_t nub_top = 8;
-  const int16_t nub_right = 26;
-  const int16_t nub_bottom = 15;
-  const int16_t shell_stroke_width = 2;
-  const int16_t inner_breathing_room = 1;
-  const int16_t fill_inset = shell_stroke_width + inner_breathing_room;
-  const int16_t fill_left = shell_left + fill_inset;
-  const int16_t fill_top = shell_top + fill_inset;
-  const int16_t fill_right = shell_right - fill_inset;
-  const int16_t fill_bottom = shell_bottom - fill_inset;
-  const int16_t fill_width_max = fill_right - fill_left;
-  int percent = s_battery_state.charge_percent;
-  GColor draw_color = calculate_battery_color();
-  int16_t fill_width = (percent * fill_width_max) / 100;
-
-  graphics_context_set_fill_color(ctx, s_palette->background);
-  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-
-  graphics_context_set_stroke_color(ctx, draw_color);
-  graphics_context_set_fill_color(ctx, draw_color);
-  graphics_context_set_stroke_width(ctx, shell_stroke_width);
-
-  graphics_draw_rect(
-      ctx,
-      battery_scaled_rect_from_corners(
-          &bounds.size,
-          shell_left,
-          shell_top,
-          shell_right,
-          shell_bottom));
-  graphics_fill_rect(
-      ctx,
-      battery_scaled_rect_from_corners(
-          &bounds.size,
-          nub_left,
-          nub_top,
-          nub_right,
-          nub_bottom),
-      0,
-      GCornerNone);
-
-  if (fill_width < 1) {
-    fill_width = 1;
-  }
-
-  graphics_fill_rect(
-      ctx,
-      battery_scaled_rect_from_corners(
-          &bounds.size,
-          fill_left,
-          fill_top,
-          fill_left + fill_width,
-          fill_bottom),
-      0,
-      GCornerNone);
-
-  if (s_battery_state.is_charging) {
-    draw_battery_charging_bolt(ctx, &bounds.size, draw_color);
-  }
-}
-
-static void update_battery(void) {
-  if (!s_battery_layer || !s_surface || !s_palette) {
-    return;
-  }
-
-  snprintf(
-      s_battery_buffer,
-      ATAGLANCE_MAX_STR_LEN,
-      "%d",
-      s_battery_state.charge_percent);
-
-  substratum_renderer_update_text_layer(
-      s_battery_layer,
-      s_battery_buffer,
-      calculate_battery_color());
-
-  if (s_battery_icon_layer) {
-    layer_mark_dirty(s_battery_icon_layer);
-  }
-}
-
-bool battery_module_create(
-    Layer* root,
-    const WatchfaceSurface* surface) {
-  if (!root || !surface || !surface->style.palette) {
-    return false;
-  }
-
-  const WatchfaceTextSubstratum* text = &surface->battery.text;
-  const WatchfaceIconSubstratum* icon = &surface->battery.icon;
-  s_battery_state = battery_state_service_peek();
-
-  s_battery_layer = substratum_renderer_create_text_layer(
-      root,
-      text,
-      surface->style.fonts[text->font_role]);
-
-  if (!s_battery_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create battery text layer");
-    return false;
-  }
-
-  s_surface = surface;
-  s_palette = surface->style.palette;
-  if (icon->is_enabled) {
-    s_battery_icon_layer = substratum_renderer_create_icon_layer(
-        root,
-        icon,
-        battery_icon_update_proc);
-  }
-  return true;
-}
-
-void battery_module_destroy(void) {
-  if (s_battery_icon_layer) {
-    layer_destroy(s_battery_icon_layer);
-    s_battery_icon_layer = NULL;
-  }
-
-  if (s_battery_layer) {
-    text_layer_destroy(s_battery_layer);
-    s_battery_layer = NULL;
-  }
-
-  s_battery_buffer[0] = '\0';
-  s_palette = NULL;
-  s_surface = NULL;
-}
-
-void battery_module_refresh(void) {
-  if (!s_surface || !s_surface->style.palette) {
-    return;
-  }
-
-  s_palette = s_surface->style.palette;
-  s_battery_state = battery_state_service_peek();
-  update_battery();
-}
-
-*/
