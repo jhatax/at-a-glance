@@ -115,7 +115,7 @@ Settings:
 
 - Time format: 24-hour or 12-hour
 - Temperature unit: Fahrenheit or Celsius
-- Display mode: dark or light
+- Display mode: light by default, with dark mode available
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 
 The watchface persists settings through Pebble persistent storage.

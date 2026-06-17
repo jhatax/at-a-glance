@@ -11,6 +11,7 @@
 #endif
 
 // A consequence of this is that s_surface.is_compact = false by default
+// is_compact is then determined during layout_watchface_initialize
 static WatchfaceSurface s_surface = {0};
 static GFont s_custom_fonts[WATCHFACE_FONT_ROLE_COUNT] = {0};
 static Window* s_wf_window = NULL;
@@ -138,10 +139,7 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
   GRect bounds = layer_get_bounds(root);
-  if (!layout_watchface_initialize(
-      bounds.size.w,
-      bounds.size.h,
-      &s_surface)) {
+  if (!layout_watchface_initialize(bounds.size.w, bounds.size.h, &s_surface)) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
     watchface_exit_path();
     return false;

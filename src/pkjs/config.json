@@ -46,7 +46,7 @@
         "type": "select",
         "messageKey": "DISPLAY_MODE",
         "label": "Display mode",
-        "defaultValue": "0",
+        "defaultValue": "1",
         "options": [
           {
             "value": "0",

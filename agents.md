@@ -83,7 +83,7 @@ Persisted defaults:
 - time format: `24h`
 - temperature unit: `°F`
 - HR sampling: `10` minutes
-- display mode: dark
+- display mode: light
 
 PebbleKit JS uses phone geolocation when available and falls back to OAK at
 `37.85626, -122.21383`.

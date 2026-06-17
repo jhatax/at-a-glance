@@ -1,19 +1,22 @@
 # Layout Architect Role And Flow
 
-This document captures the current surface/watchface boundary and the next
-round architect direction after the stylist, rectangular architect,
-component, and substratum renderer extractions. It is a handoff for future
-rectangle and round surface work.
+This document captures the current surface/watchface boundary and the active
+layout architect direction after the stylist, component, and substratum
+renderer extractions. It is a handoff for future geometry work across
+rectangular and round displays.
 
 ## Current State
 
 - The public layout API prepares the calculated `WatchfaceSurface`.
 - The layout API owns the construction sequence: clear the surface in the
-  active shape implementation, calculate geometry, then apply style.
+  active architect, calculate geometry, then apply style.
 - `layout_stylist.c/.h` is private to layout and owns palette/font style
   resolution.
-- `layout_rect.c` is private to layout and owns rectangular geometry.
-- `layout_round.c` is private to layout and owns round geometry.
+- `layout_architect.c` is the current geometry provider. It owns
+  compact/full classification and any platform-specific geometry decisions
+  needed by the singular architect contract.
+- `layout_design.h` contains the architect's private design constants,
+  blueprints, and calculated layout structs.
 - `watchface_components.h` defines the display component types shared by
   layout, watchface, renderer helpers, and feature modules.
 - `substratum_renderer.c/.h` owns common text/icon layer creation, text-layer
@@ -23,11 +26,9 @@ rectangle and round surface work.
 - `watchface` remains the clearing house for module creation, refresh,
   destroy, source-state intake, and mask-based render dispatch.
 
-The next major surface step is round geometry refinement. Rectangle geometry
-is already private to layout, but future visual redesigns should keep the
-same ownership model: layout prepares a `WatchfaceSurface`; modules render
-their own strata from that surface; watchface coordinates lifecycle and
-refresh.
+Future visual redesigns should keep the same ownership model: layout prepares
+a `WatchfaceSurface`; modules render their own strata from that surface;
+watchface coordinates lifecycle and refresh.
 
 ## Primary Drivers
 
@@ -203,14 +204,10 @@ Private implementation files:
   - consumes compact/full classification from the calculated surface style
     instead of recomputing it from face dimensions
 
-- `layout_rect.c`
-  - implements `layout_watchface_initialize()` under `PBL_RECT`
-  - owns rectangular geometry
-  - fills every rectangular substratum frame
-
-- `layout_round.c`
-  - implements `layout_watchface_initialize()` under `PBL_ROUND`
-  - owns round geometry
+- `layout_architect.c`
+  - implements `layout_watchface_initialize()`
+  - owns compact/full classification and geometry decisions
+  - fills every calculated substratum frame
 
 - `substratum_renderer.c/.h`
   - helper boundary for rendering calculated substrata
@@ -222,22 +219,22 @@ Private implementation files:
 Only layout implementation files should include private architect/stylist
 headers. Feature modules and `watchface.c` should not include them.
 
-## Rectangle Architect Flow
+## Architect Flow
 
-The rectangle architect is already extracted and should remain geometry-only.
-Future rectangle visual redesigns should change calculated substratum frames
-inside `layout_rect.c`, not layer creation or module lifecycle.
+The architect is already extracted and should remain geometry-only. Future
+visual redesigns should change calculated substratum frames inside
+`layout_architect.c`, not layer creation or module lifecycle.
 
 Private flow:
 
 ```c
-void layout_rect_calculate_surface(
+void layout_watchface_initialize(
     int16_t face_width,
     int16_t face_height,
     WatchfaceSurface* surface);
 ```
 
-Inside `layout_rect.c`, prefer small file-local helpers:
+Inside `layout_architect.c`, prefer small file-local helpers:
 
 ```c
 static void assign_background(...);
@@ -318,7 +315,7 @@ than an unimplemented proposal.
 
 Guardrails for future rectangle refinements:
 
-- revise `layout_rect.c` geometry only after auditing the current rectangular
+- revise `layout_architect.c` geometry only after auditing the current
   screenshots
 - keep each substratum responsible for its own final `x`, `y`, `w`, and `h`
 - keep module lifecycle unchanged: modules still create, refresh, and destroy
@@ -328,15 +325,12 @@ Guardrails for future rectangle refinements:
 - avoid adding helper functions for calculations that are clearer inline
 - build and screenshot at least Emery and one compact rectangular platform
 
-The rectangle slice should not introduce round support. It should establish
-the visual vocabulary that the later round architect can translate.
+## Round Geometry Notes
 
-## Proposed Round Redesign
+Round target enablement and final visual approval depend on screenshot review.
+The singular architect owns any round-specific decisions needed to preserve
+the same product sequence where possible:
 
-Round source exists, but target enablement and final visual approval have not
-been completed. Treat this as the future visual slice after screenshot review.
-
-The round design should preserve the same product sequence where possible:
 
 ```text
 Battery / Climate
@@ -353,13 +347,10 @@ must still calculate safe spans from the actual face size.
 
 Implementation scope for the round visual slice:
 
-- refine the existing `layout_round.c` implementation of the shared architect
-  contract
+- refine `layout_architect.c` within the shared architect contract
 - calculate row-specific safe spans from chord width
 - assign final frames directly to each substratum
 - keep the same six fixed strata: date, time, bpm, steps, battery, climate
-- do not enable round platforms until the layout is built, installed, and
-  screenshot-reviewed
 - do not scale rectangular coordinates wholesale and call that round support
 
 ## Round Architect Flow
@@ -441,13 +432,14 @@ y=246  x=77..183    width=105
 ```
 
 Gabbro can preserve more of the rectangular horizontal vocabulary than Chalk.
-The round architect should still calculate from chord width rather than use a
-hard-coded platform layout whenever possible.
+Round geometry decisions should still calculate from chord width rather than
+use a hard-coded platform layout whenever possible.
 
 ## Guardrails
 
-- Extract rectangle architect before redesigning rectangle.
-- Do not add round code in the rectangle extraction slice.
+- Keep geometry decisions inside `layout_architect.c`.
+- Do not introduce a separate shape-owned implementation unless the singular
+  architect contract stops being clear.
 - Do not move Pebble layer creation out of feature modules.
 - Do not introduce generic dynamic strata arrays.
 - Do not pass or return large watchface structs by value.

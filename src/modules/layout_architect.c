@@ -250,6 +250,7 @@ static void architect_get_layout_from_blueprint(
       data_text_height);
 #endif
 }
+
 bool layout_watchface_initialize(
     int16_t face_width,
     int16_t face_height,
@@ -258,7 +259,7 @@ bool layout_watchface_initialize(
     return false;
   }
 
-  // Wipe the slate clean
+  // Wipe the "surface" clean
   memset(surface, 0, sizeof(*surface));
 
   bool is_compact = face_width < DESIGN_FULL_FACE_WIDTH &&
