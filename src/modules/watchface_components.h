@@ -21,7 +21,6 @@ typedef enum {
   WATCHFACE_FONT_ROLE_BPM,
   WATCHFACE_FONT_ROLE_STEPS,
 #endif
-  WATCHFACE_FONT_ROLE_BATTERY,
   WATCHFACE_FONT_ROLE_CLIMATE,
   WATCHFACE_FONT_ROLE_COUNT
 } WatchfaceFontRole;
@@ -98,10 +97,6 @@ typedef struct {
   WatchfaceTextWithIconStratum bpm;
   WatchfaceTextWithIconStratum steps;
 #endif
-#ifdef PBL_RECT
   WatchfaceBatteryStratum battery;
-#else
-  WatchfaceTextWithIconStratum battery;
-#endif
   WatchfaceTextWithIconStratum climate;
 } WatchfaceSurface;

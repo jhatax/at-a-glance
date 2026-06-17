@@ -1,5 +1,4 @@
 #include "watchface.h"
-#include "background.h"
 #include "battery.h"
 #include "climate.h"
 #include "date.h"
@@ -17,7 +16,6 @@ static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
-    WATCHFACE_UPDATE_BACKGROUND |
     WATCHFACE_UPDATE_TIME |
     WATCHFACE_UPDATE_DATE |
     WATCHFACE_UPDATE_BATTERY |
@@ -36,10 +34,9 @@ typedef enum {
   BATTERY_STRATUM_MASK = 4,
   MUST_HAVE_STRATA_MASK = 7,
   CLIMATE_STRATUM_MASK = 8,
-  BACKGROUND_STRATUM_MASK = 16,
 #ifdef PBL_HEALTH
-  BPM_STRATUM_MASK = 32,
-  STEPS_STRATUM_MASK = 64
+  BPM_STRATUM_MASK = 16,
+  STEPS_STRATUM_MASK = 32
 #endif
 } StratumMask;
 static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
@@ -91,9 +88,6 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
       &(s_surface.style),
       s_wf_settings->display_mode);
 
-  s_strata_created_mask |= background_module_create(root, &s_surface) ?
-      BACKGROUND_STRATUM_MASK : 0;
-
   s_strata_created_mask |= date_module_create(root, &s_surface) ?
       DATE_STRATUM_MASK : 0;
 
@@ -136,11 +130,6 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
 
 void watchface_destroy() {
   if (s_strata_created_mask) {
-    if (s_strata_created_mask & BACKGROUND_STRATUM_MASK) {
-      background_module_destroy();
-      s_strata_created_mask &= ~BACKGROUND_STRATUM_MASK;
-    }
-
     if (s_strata_created_mask & DATE_STRATUM_MASK) {
       date_module_destroy();
       s_strata_created_mask &= ~DATE_STRATUM_MASK;
@@ -213,10 +202,6 @@ static void watchface_refresh_strata(WatchfaceUpdateMask updates) {
   // Don't assume that some strata were created even though that's the contract
   // By not assuming this detail, if the product's must-create strata decision changes,
   // this code won't need to be in sync / will avoid drift.
-  if ((updates & WATCHFACE_UPDATE_BACKGROUND) &&
-      (s_strata_created_mask & BACKGROUND_STRATUM_MASK)) {
-    background_module_refresh();
-  }
   if ((updates & WATCHFACE_UPDATE_DATE) &&
       (s_strata_created_mask & DATE_STRATUM_MASK)) {
     date_module_refresh();

@@ -134,13 +134,13 @@ void substratum_renderer_update_text_layer(
     return;
   }
 
-  text_layer_set_background_color(layer, GColorClear);
 #if DEBUG_ATAGLANCE
   // Visual indicator of text layer size and text rendering
   GColor switched = gcolor_legible_over(text_color);
   text_layer_set_background_color(layer, text_color);
   text_layer_set_text_color(layer, switched);
 #else
+  text_layer_set_background_color(layer, GColorClear);
   text_layer_set_text_color(layer, text_color);
 #endif
   text_layer_set_text(layer, text);

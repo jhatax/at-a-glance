@@ -131,19 +131,19 @@ static void draw_weather_outline_sun(
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y,
-      6);
+      8);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y - 13,
       WEATHER_ICON_CENTER_X,
-      WEATHER_ICON_CENTER_Y - 9);
+      WEATHER_ICON_CENTER_Y - 10);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
-      WEATHER_ICON_CENTER_Y + 9,
+      WEATHER_ICON_CENTER_Y + 10,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y + 13);
   substratum_renderer_draw_scaled_line_in_frame(
@@ -151,43 +151,43 @@ static void draw_weather_outline_sun(
       frame,
       WEATHER_ICON_CENTER_X - 13,
       WEATHER_ICON_CENTER_Y,
-      WEATHER_ICON_CENTER_X - 9,
+      WEATHER_ICON_CENTER_X - 10,
       WEATHER_ICON_CENTER_Y);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
-      WEATHER_ICON_CENTER_X + 9,
+      WEATHER_ICON_CENTER_X + 10,
       WEATHER_ICON_CENTER_Y,
       WEATHER_ICON_CENTER_X + 13,
       WEATHER_ICON_CENTER_Y);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
-      WEATHER_ICON_CENTER_X - 10,
-      WEATHER_ICON_CENTER_Y - 10,
-      WEATHER_ICON_CENTER_X - 7,
-      WEATHER_ICON_CENTER_Y - 7);
+      WEATHER_ICON_CENTER_X - 11,
+      WEATHER_ICON_CENTER_Y - 11,
+      WEATHER_ICON_CENTER_X - 9,
+      WEATHER_ICON_CENTER_Y - 9);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
-      WEATHER_ICON_CENTER_X + 7,
-      WEATHER_ICON_CENTER_Y - 7,
-      WEATHER_ICON_CENTER_X + 10,
-      WEATHER_ICON_CENTER_Y - 10);
+      WEATHER_ICON_CENTER_X + 9,
+      WEATHER_ICON_CENTER_Y - 9,
+      WEATHER_ICON_CENTER_X + 11,
+      WEATHER_ICON_CENTER_Y - 11);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
-      WEATHER_ICON_CENTER_X - 10,
-      WEATHER_ICON_CENTER_Y + 10,
-      WEATHER_ICON_CENTER_X - 7,
-      WEATHER_ICON_CENTER_Y + 7);
+      WEATHER_ICON_CENTER_X - 11,
+      WEATHER_ICON_CENTER_Y + 11,
+      WEATHER_ICON_CENTER_X - 9,
+      WEATHER_ICON_CENTER_Y + 9);
   substratum_renderer_draw_scaled_line_in_frame(
       ctx,
       frame,
-      WEATHER_ICON_CENTER_X + 7,
-      WEATHER_ICON_CENTER_Y + 7,
-      WEATHER_ICON_CENTER_X + 10,
-      WEATHER_ICON_CENTER_Y + 10);
+      WEATHER_ICON_CENTER_X + 9,
+      WEATHER_ICON_CENTER_Y + 9,
+      WEATHER_ICON_CENTER_X + 11,
+      WEATHER_ICON_CENTER_Y + 11);
 }
 
 static void draw_weather_sun(
@@ -302,7 +302,7 @@ static void draw_weather_clear_icon(
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y,
-      11);
+      12);
 
   graphics_context_set_fill_color(ctx, weather_clear_fill_color(palette));
   substratum_renderer_fill_scaled_circle_in_frame(
@@ -310,7 +310,7 @@ static void draw_weather_clear_icon(
       frame,
       WEATHER_ICON_CENTER_X,
       WEATHER_ICON_CENTER_Y,
-      9);
+      10);
 }
 
 static void draw_weather_partly_cloudy_icon(

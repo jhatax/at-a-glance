@@ -8,7 +8,6 @@
 #define DESIGN_FONT_BPM_COMPACT FONT_KEY_GOTHIC_14
 #define DESIGN_FONT_STEPS_COMPACT FONT_KEY_GOTHIC_14
 #endif
-#define DESIGN_FONT_BATTERY_COMPACT FONT_KEY_GOTHIC_14
 #define DESIGN_FONT_CLIMATE_COMPACT FONT_KEY_GOTHIC_14
 
 #define DESIGN_FONT_DATE_FULL FONT_KEY_GOTHIC_24_BOLD
@@ -18,16 +17,13 @@
 #define DESIGN_FONT_TIME_FULL FONT_KEY_LECO_42_NUMBERS
 #endif
 #ifdef PBL_HEALTH
-#define DESIGN_FONT_BPM_FULL FONT_KEY_GOTHIC_18
-#define DESIGN_FONT_STEPS_FULL FONT_KEY_GOTHIC_18
+#define DESIGN_FONT_BPM_FULL FONT_KEY_GOTHIC_24
+#define DESIGN_FONT_STEPS_FULL FONT_KEY_GOTHIC_24
 #endif
-#define DESIGN_FONT_BATTERY_FULL FONT_KEY_GOTHIC_18
-#define DESIGN_FONT_CLIMATE_FULL FONT_KEY_GOTHIC_18
+#define DESIGN_FONT_CLIMATE_FULL FONT_KEY_GOTHIC_24
 
 static const ColorPalette c_dark_palette = {
   .background = GColorBlack,
-  .background_layer_background = GColorBlack,
-  .background_layer_rule = GColorWhite,
   .primary_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .date = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
@@ -36,8 +32,6 @@ static const ColorPalette c_dark_palette = {
 
 static const ColorPalette c_light_palette = {
   .background = GColorWhite,
-  .background_layer_background = GColorWhite,
-  .background_layer_rule = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
   .primary_text = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
   .date = GColorBlack,
@@ -66,10 +60,6 @@ static const char* layout_font_key_for_role(
           DESIGN_FONT_STEPS_COMPACT :
           DESIGN_FONT_STEPS_FULL;
 #endif
-    case WATCHFACE_FONT_ROLE_BATTERY:
-      return is_compact ?
-          DESIGN_FONT_BATTERY_COMPACT :
-          DESIGN_FONT_BATTERY_FULL;
     case WATCHFACE_FONT_ROLE_CLIMATE:
       return is_compact ?
           DESIGN_FONT_CLIMATE_COMPACT :

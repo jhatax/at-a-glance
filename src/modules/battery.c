@@ -35,8 +35,6 @@ static GColor calculate_battery_color(void) {
       s_palette->primary_text);
 }
 
-#ifdef PBL_RECT
-
 static Layer* s_battery_rule_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
 
@@ -102,14 +100,13 @@ static void battery_rule_update_proc(Layer* layer, GContext* ctx) {
   const GRect* fill = &s_surface->battery.fill;
   GRect bounds = layer_get_bounds(layer);
   int16_t fill_width = (s_battery_state.charge_percent * fill->size.w) / 100;
-  GColor track_color = s_palette->unavailable_text;
   GColor fill_color = calculate_battery_color();
 
   if (fill_width < 1) {
     fill_width = 1;
   }
 
-  draw_battery_track(ctx, &bounds, track, track_color);
+  draw_battery_track(ctx, &bounds, track, s_palette->background);
   draw_battery_fill(ctx, track, fill, fill_width, fill_color);
 }
 
@@ -193,8 +190,7 @@ void battery_module_refresh(void) {
   update_battery_rule();
 }
 
-#else
-
+/*
 static char s_battery_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
 static Layer* s_battery_icon_layer = NULL;
 static TextLayer* s_battery_layer = NULL;
@@ -393,4 +389,4 @@ void battery_module_refresh(void) {
   update_battery();
 }
 
-#endif
+*/
