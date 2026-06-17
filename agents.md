@@ -28,8 +28,7 @@ requested change against it, and update it when a decision changes.
 - Build entry: `wscript`
 - Design reference: `DESIGN.md`
 - Architecture contract: `ARCHITECTURE_LEDGER.md`
-- Round plan and handoff: `RoundWatchfacePlan.md` and
-  `RoundLayoutHandoff.md`
+- Round reference: `RoundWatchfacePlan.md`
 
 Pebble manifest capabilities currently required:
 
@@ -116,7 +115,7 @@ Required API-change workflow:
 The current watchface is organized around a prepared `WatchfaceSurface`:
 
 ```text
-main.c
+ataglance.c
   -> watchface_create(window, settings)
   -> layout_watchface_initialize(width, height, &surface)
   -> layout_update_watchface_style(&surface.style, display_mode)
@@ -157,7 +156,7 @@ Core invariants:
 
 ## Module Boundaries
 
-- `src/c/main.c`: Pebble window lifecycle, service subscriptions, settings,
+- `src/c/ataglance.c`: Pebble window lifecycle, service subscriptions, settings,
   AppMessage parsing, and watchface dispatch.
 - `src/modules/watchface.c`: active watchface runtime, root layer discovery,
   `WatchfaceSurface` ownership, module create/destroy order,
@@ -166,8 +165,11 @@ Core invariants:
 - `src/modules/watchface_components.h`: shared display component model:
   palette, font/color roles, surface, strata, and substrata types.
 - `src/modules/layout.h`: public layout initialization and style-update API.
-- `src/modules/layout_rect.c`: rectangular architect and rectangular geometry.
-- `src/modules/layout_round.c`: round architect and round geometry.
+- `src/modules/layout_architect.c`: unified surface architect and geometry
+  provider for current rectangular and round targets.
+- `src/modules/design.h`: private layout design constants, blueprints, and
+  calculated layout structs. This is currently an implementation header and a
+  cleanup candidate, not a public module API.
 - `src/modules/layout_stylist.c`: style helper for palette,
   font-role, custom-font, and compact/full style consumption.
 - `src/modules/substratum_renderer.c/.h`: shared Pebble rendering helper for
@@ -194,8 +196,8 @@ Core invariants:
   steps icon, colors, and movement update handling.
 - `src/modules/battery.c`: battery source state, text/icon layers, procedural
   battery drawing, colors, and battery callback updates.
-- `src/modules/background.c`: background layer, palette background, and
-  rule rendering.
+- Background is currently represented by surface data and window background
+  color. There is no separate background module in the live source.
 
 Do not move behavior across these boundaries unless the new boundary is
 cleaner, behavior-preserving, and reflected in the ledger.
@@ -209,11 +211,11 @@ cleaner, behavior-preserving, and reflected in the ledger.
 - Setters mutate source state only. Rendering happens through
   `watchface_refresh()`.
 - `watchface_refresh(WatchfaceUpdateMask updates)` is the public render
-  dispatcher. `main.c` knows update categories, not feature modules.
-- AppMessage handling in `main.c` should accumulate a local
+  dispatcher. `ataglance.c` knows update categories, not feature modules.
+- AppMessage handling in `ataglance.c` should accumulate a local
   `WatchfaceUpdateMask` and make one final coalesced `watchface_refresh()`
   call.
-- `main.c` should parse AppMessage transport values itself, convert them to
+- `ataglance.c` should parse AppMessage transport values itself, convert them to
   typed runtime facts, and call narrow watchface setters. Do not pass raw
   dictionaries into `watchface`, and do not introduce a shared runtime-update
   package unless traffic volume or atomic multi-field updates justify it.
@@ -330,7 +332,7 @@ Use the parent Pebble checklist plus these repo-specific checks:
 - Resource filenames and generated IDs match.
 - `PBL_HEALTH` guardrails protect `bpm.h`, `steps.h`, and every `Health*`
   symbol.
-- `main.c` includes `watchface.h`, not feature module headers.
+- `ataglance.c` includes `watchface.h`, not feature module headers.
 - `watchface_components.h` stays type-focused and does not gain behavior.
 - No feature-module `*_refresh()` declaration accepts `WatchfaceSurface`.
 - Text does not clip at likely extremes: `WED 30 SEP`, `12:59`, `100`,

@@ -1,8 +1,8 @@
 # Visual Vocabulary
 
-This document defines the glyph direction for Life at a Glance. It is a
-design and implementation reference for procedural watchface icons, especially
-the 28px complication glyphs.
+This document defines the visual direction for Life at a Glance. It covers
+the shared watchface composition, color vocabulary, and procedural glyph
+direction.
 
 The goal is not decorative detail. The goal is glanceable, compact, confident
 glyphs that work on both color and black-and-white Pebble displays.
@@ -10,6 +10,9 @@ glyphs that work on both color and black-and-white Pebble displays.
 ## Principles
 
 - Design for one-second recognition.
+- Keep the product hierarchy stable across display families: top metric
+  context, dominant time, battery track, weather/date context, and bottom
+  metric context.
 - Treat text as the primary glance surface. Icons support recognition,
   but they do not carry the product alone.
 - Prefer solid filled silhouettes over hollow outlines.
@@ -25,6 +28,35 @@ glyphs that work on both color and black-and-white Pebble displays.
 - Create review variants in `glyph-lab` before porting into production code.
 - A text-only metric is acceptable when an icon cannot be created or
   does not fit the platform. An icon-only metric is not acceptable.
+
+## Surface Composition
+
+The current selected watchface composition is:
+
+```text
+top metric context
+dominant centered time
+centered battery track and charging bolt
+weather/date context
+bottom metric context
+```
+
+This shared stack is the visual DNA between rectangular and round displays.
+The implementation may calculate different geometry by shape, but the user
+should recognize the same product immediately.
+
+Rules:
+
+- Time remains the dominant visual object.
+- The battery track sits directly under time and uses a primary-color outline
+  with a state-colored fill.
+- Weather/date share one context row. Weather owns the temperature and icon
+  group; date is aligned in the remaining space.
+- Health metrics are centered relative to the display centerline, not pushed
+  into the far corners.
+- The layout should preserve negative space instead of filling every pixel.
+- Round displays require screenshot review because a shared stack does not
+  guarantee safe chord width at each vertical position.
 
 ## Implementation Rules
 
@@ -297,8 +329,10 @@ current test.
 
 ## Battery
 
-Battery can remain a horizontal status cell because the adjacent text carries
-the exact percentage.
+Rectangular and current unified layouts use a horizontal battery track rather
+than a text percentage. The track is a small status band: the outer six-pixel
+track is drawn as a primary-color outline, and the inner fill uses the
+module-owned battery state color.
 
 Rules:
 
@@ -306,6 +340,8 @@ Rules:
 - Charging must use a visible shape cue, not color alone.
 - Charging bolt should be prominent enough to read at watch scale.
 - Use color for charge state only as a secondary cue.
+- The track outline belongs to the primary-color visual vocabulary.
+- The fill color is module-owned because it depends on live battery state.
 - Medium battery should use `GColorRajah` on color displays.
   `GColorYellow` is too washed out in light mode.
 
@@ -320,16 +356,18 @@ Charging state should not rely on green alone.
 
 ## Round Displays
 
-Round displays should preserve the text-first hierarchy.
+Round displays should preserve the shared text-first hierarchy while using
+round-aware geometry. Chalk `180x180` remains the pressure target and Gabbro
+`260x260` is the larger expansion case.
 
-For Chalk `180x180`, bottom-row weather and battery icons are optional
-because temperature and battery percentage are self-labeling through
-`°F`/`°C` and `%`. Health icons are more useful on Chalk because BPM
-and steps values are otherwise unlabeled numbers.
+Rules:
 
-For larger round displays such as Gabbro, use the same row order and
-text-first model first. Restore additional icons only when the row safe
-span leaves comfortable slack.
+- Use the same surface stack before inventing a separate round-only product.
+- Confirm readable chord width at each y-position.
+- Keep time, battery, and date visually centered.
+- Keep metric icons close to center-left or center-right vocabulary when
+  they fit; do not default to corner-pinned complications.
+- Disable optional icons before allowing text to clip.
 
 ## Review Workflow
 
