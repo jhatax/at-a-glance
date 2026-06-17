@@ -10,7 +10,7 @@ remain in `ARCHITECTURE_LEDGER.md`.
 ## Current Source State
 
 - `src/modules/layout_architect.c` is the live geometry provider.
-- `src/modules/design.h` holds private design constants, blueprints, and
+- `src/modules/layout_design.h` holds private design constants, blueprints, and
   calculated layout structs.
 - `package.json` currently includes rectangular and round targets.
 - `WatchfaceSurface` remains the calculated UI contract and must not expose

@@ -88,6 +88,10 @@ ataglance.c updates settings
 - Layout-private metrics do not leak into `WatchfaceSurface`.
 - Feature modules own Pebble layer lifecycle and source state.
 - `create(root, surface)` may retain the calculated surface once.
+- Required layer/resource creation gates module success and retained state.
+  Optional resources may be attempted after retaining `surface` only when their
+  failure is explicitly non-fatal and their partial resources are cleaned up
+  before returning success.
 - `refresh()` APIs do not accept `WatchfaceSurface`; they accept only narrow
   runtime payloads where needed.
 - `ataglance.c` knows update categories, not feature module internals.
@@ -112,8 +116,8 @@ ataglance.c updates settings
 - `src/modules/layout.h`: public layout initialization/style API.
 - `src/modules/layout_architect.c`: current geometry provider and surface
   preparation implementation.
-- `src/modules/design.h`: private design constants, blueprints, and calculated
-  layout structs; cleanup candidate.
+- `src/modules/layout_design.h`: private design constants, blueprints, and
+  calculated layout structs.
 - `src/modules/layout_stylist.c`: palette, font-role, and custom-font
   resolution.
 - `src/modules/substratum_renderer.c/.h`: shared TextLayer/Icon setup,
@@ -194,11 +198,11 @@ intentionally:
   `ataglance.h` only for `ATAGLANCE_MAX_STR_LEN`.
 - `battery.c`, `substratum_renderer.c`, `bpm.c`, and `steps.c` include
   `ataglance.h` only for debug-gated code or inherited debug state.
-- `src/modules/design.h` is included only by `layout_architect.c`; its structs
+- `src/modules/layout_design.h` is included only by `layout_architect.c`; its structs
   and constants are implementation details.
-- `src/modules/design.h` includes `layout.h`, which exposes the public layout
-  API to a private design header. If this header survives, it should include
-  only the component types it directly needs.
+- `layout_architect.c` includes `layout.h` directly because it implements the
+  public layout initialization contract. `layout_design.h` includes only the
+  component types it directly needs.
 - `HELPER_CLAMP_MIN` is unused and not fully parenthesized.
 - `HELPER_SCALE_ROUND` is used, but not fully parenthesized.
 - `helper_swap_colors_in_bitmap()` is declared and implemented but unused.
@@ -251,10 +255,8 @@ intentionally:
 5. Remove `ataglance.h` from public module headers.
 6. Remove dead `ataglance.h` includes from implementation files.
 7. Delete `src/c/ataglance.h` when no symbols remain.
-8. Decide whether `design.h` should collapse into `layout_architect.c` or be
-   renamed as an explicit private architect header.
-9. If `design.h` remains, replace its `layout.h` include with the narrowest
-   direct dependency needed for `WatchfaceBatteryStratum` and `GRect`.
+8. Keep private design constants and calculated layout structs in
+   `layout_design.h` unless that header stops clarifying `layout_architect.c`.
 
 ### Phase 3: Dead Code And Struct Cleanup
 
@@ -278,15 +280,13 @@ intentionally:
 1. Make module create paths transaction-like across battery, climate, BPM,
    steps, time, and date.
 2. Ensure optional resource failures never leave stale retained pointers.
-3. Remove heap allocation from shared drawing paths where bounded static or
-   primitive-specific storage is practical.
-4. Validate that every acquired resource is released on every failure branch.
+3. Validate that every acquired resource is released on every failure branch.
 
 ### Phase 5: Round And Visual Validation
 
 1. Capture Chalk and Gabbro screenshots in dark and light modes.
 2. Validate time, battery, weather/date, and health rows at likely extremes.
-3. Confirm the current round margin in `src/modules/design.h` as a product
+3. Confirm the current round margin in `src/modules/layout_design.h` as a product
    decision.
 4. Confirm whether unified layout needs shape-specific safe-span math before
    publication.

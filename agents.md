@@ -130,7 +130,7 @@ PebbleKit JS uses phone geolocation when available and falls back to OAK at
   strata, and substrata types.
 - `src/modules/layout.h`: public layout initialization and style API.
 - `src/modules/layout_architect.c`: active geometry provider.
-- `src/modules/design.h`: private design constants, blueprints, and calculated
+- `src/modules/layout_design.h`: private design constants, blueprints, and calculated
   layout structs; cleanup candidate.
 - `src/modules/layout_stylist.c`: palette, font-role, custom-font, compact/full
   style consumption.

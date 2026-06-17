@@ -1,4 +1,6 @@
-#include "design.h"
+#include "layout.h"
+#include "layout_design.h"
+#include "helper.h"
 
 static const LayoutBlueprint c_rect_reference_blueprint = {
   .margin = DESIGN_FULL_MARGIN,

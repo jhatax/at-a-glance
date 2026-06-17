@@ -1,7 +1,6 @@
 #pragma once
 #include <pebble.h>
-#include "layout.h"
-#include "helper.h"
+#include "watchface_components.h"
 
 typedef enum {
   #if defined(PBL_RECT)

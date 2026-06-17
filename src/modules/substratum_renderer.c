@@ -2,6 +2,8 @@
 #include "helper.h"
 #include "../c/ataglance.h"
 
+#define SUBSTRATUM_RENDERER_MAX_POLYGON_POINTS 8
+
 typedef enum {
   SUBSTRATUM_RENDERER_ICON_GRID_W = 28,
   SUBSTRATUM_RENDERER_ICON_GRID_H = 28,
@@ -46,7 +48,7 @@ static GPoint scale_icon_point_in_frame(
       scale_icon_y_in_frame(frame, y));
 }
 
-// A valid polygon has 3-8 points
+// A valid polygon has at least 3 points and no more than the bounded renderer max.
 static void draw_filled_polygon_in_frame(
     GContext* ctx,
     const GRect* frame,
@@ -54,15 +56,12 @@ static void draw_filled_polygon_in_frame(
     uint32_t point_count,
     GColor fill_color) {
   if (!ctx || !frame || !design_points ||
-    (point_count < 3 || point_count > 8)) {
+      (point_count < 3 ||
+          point_count > SUBSTRATUM_RENDERER_MAX_POLYGON_POINTS)) {
     return;
   }
 
-  GPoint* scaled_points = malloc(point_count*sizeof(GPoint));
-  if (!scaled_points) {
-    return;
-  }
-
+  GPoint scaled_points[SUBSTRATUM_RENDERER_MAX_POLYGON_POINTS];
   GPathInfo path_info;
   GPath* path;
 
@@ -83,11 +82,6 @@ static void draw_filled_polygon_in_frame(
     gpath_draw_filled(ctx, path);
 
     gpath_destroy(path);
-  }
-
-  if (scaled_points) {
-    free(scaled_points);
-    scaled_points = NULL;
   }
 }
 

@@ -27,13 +27,14 @@ and clear retained pointers before returning false.
 ### Renderer allocation strategy in draw path
 
 Type: Issue
-Status: Open
+Status: Closed
 
-The shared filled-polygon renderer allocates scaled point storage in a drawing
-path even though the point count is bounded.
+The shared filled-polygon renderer now uses a bounded local `GPoint` array
+after input validation instead of heap-allocating scaled point storage in a
+drawing path.
 
-Next action: avoid per-frame heap allocation without wasting stack. Use exact
-primitive-specific storage, fixed static storage, or a bolt-specific draw path.
+Decision: accept the small bounded stack reservation because Pebble heap
+fragmentation is a larger draw-path risk than an explicit eight-point array.
 
 ### Weather responses can arrive out of order
 
