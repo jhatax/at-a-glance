@@ -295,11 +295,13 @@ intentionally:
 
 ### Phase 6: PebbleKit JS And Data Robustness
 
-1. Validate JS weather request sequencing on emulator/device.
-2. Confirm behavior when geolocation is denied.
-3. Confirm behavior when Open-Meteo is unreachable or returns malformed data.
-4. Decide whether OAK fallback should remain fixed, documented only, or
-   configurable.
+Status: Closed.
+
+PebbleKit JS weather handling uses request ids to ignore stale callbacks.
+Geolocation denial or unavailability falls back to the fixed OAK weather
+location. Open-Meteo network errors, timeouts, non-200 responses, parse
+failures, and malformed current-weather payloads send unavailable weather
+sentinels. OAK remains the fixed documented fallback location.
 
 ---
 

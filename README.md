@@ -124,7 +124,7 @@ The watchface persists settings through Pebble persistent storage.
 
 The phone companion app requests current weather from Open-Meteo every
 30 minutes. It uses phone geolocation when available. When location is
-unavailable, it falls back to OAK:
+unavailable, the fixed fallback weather location is OAK:
 
 ```text
 37.85626, -122.21383

@@ -39,13 +39,16 @@ fragmentation is a larger draw-path risk than an explicit eight-point array.
 ### Weather responses can arrive out of order
 
 Type: Risk
-Status: Open
+Status: Closed
 
-PebbleKit JS starts weather fetches on ready and on an interval. The current
-request id prevents stale callbacks from applying, but this should be validated
-on device before publication.
+PebbleKit JS starts weather fetches on ready and on an interval. Request ids
+prevent stale callbacks from applying. Geolocation denial falls back to the
+fixed OAK weather location, and network errors, timeouts, non-200 responses,
+parse failures, and malformed current-weather payloads send unavailable weather
+sentinels.
 
-Next action: test repeated weather refreshes and unreachable-network behavior.
+Decision: code-path robustness is the test for this issue. OAK remains the
+fixed documented weather fallback.
 
 ### Round visual validation is not final
 
