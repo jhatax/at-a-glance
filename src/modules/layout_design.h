@@ -2,6 +2,14 @@
 #include <pebble.h>
 #include "watchface_components.h"
 
+// Fonts
+#define DESIGN_FONT_TIME_COMPACT FONT_KEY_BITHAM_34_MEDIUM_NUMBERS
+#define DESIGN_FONT_COMPACT_PRIMARY_TEXT FONT_KEY_GOTHIC_14
+
+#define DESIGN_FONT_TIME_FULL FONT_KEY_ROBOTO_BOLD_SUBSET_49
+#define DESIGN_FONT_PRIMARY_TEXT FONT_KEY_GOTHIC_18
+
+// Blueprints
 typedef enum {
   #if defined(PBL_RECT)
   DESIGN_MARGIN = 4,
@@ -52,6 +60,7 @@ typedef enum {
 #endif
 } DesignCompact;
 
+// Blueprint support structures
 typedef struct {
   int16_t margin;
   int16_t icon_w;

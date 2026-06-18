@@ -96,8 +96,8 @@ PebbleKit JS uses phone geolocation when available and falls back to OAK at
 - `layout_watchface_initialize(width, height, &surface)` is the single public
   layout initialization contract. The active shape implementation clears and
   prepares the caller-owned surface.
-- `layout_update_watchface_style(&surface.style, display_mode)` applies style
-  without recalculating geometry.
+- `layout_watchface_update_palette(&surface.style, display_mode)` applies color
+  style without recalculating geometry.
 - The active architect owns geometry and compact/full classification.
 - Compact/full is resolved once by the architect and stored on
   `WatchfaceSurfaceStyle.is_compact`; the stylist consumes it and does not

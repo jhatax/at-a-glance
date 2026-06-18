@@ -1,8 +1,8 @@
 #include <pebble.h>
 
-#include "ataglance.h"
 #include "../modules/helper.h"
 #include "../modules/watchface.h"
+// if we are debugging, set the flag in the watchface-runtime
 
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
@@ -84,19 +84,17 @@ static void inbox_received_callback(
   (void)context;
 
   if (!iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox received NULL iterator");
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
     return;
   }
+
   bool changed = false;
   bool repaint_requested = false;
   WatchfaceUpdateMask updates = WATCHFACE_UPDATE_NONE;
 
   Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
   int time_fmt = 0;
-  if (tf &&
-      helper_tuple_to_int(tf, &time_fmt) &&
-      TIME_FORMAT_VALID(time_fmt)) {
+  if (tf && helper_tuple_to_int(tf, &time_fmt) && TIME_FORMAT_VALID(time_fmt)) {
     s_settings.time_format = (uint8_t)time_fmt;
     changed = true;
     updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_TIME);
@@ -107,9 +105,7 @@ static void inbox_received_callback(
 
   Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
   int temp_unit = 0;
-  if (tu &&
-      helper_tuple_to_int(tu, &temp_unit) &&
-      TEMP_UNIT_VALID(temp_unit)) {
+  if (tu && helper_tuple_to_int(tu, &temp_unit) && TEMP_UNIT_VALID(temp_unit)) {
     s_settings.temp_unit = (uint8_t)temp_unit;
     changed = true;
     updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
@@ -151,22 +147,20 @@ static void inbox_received_callback(
             "AppMessage inbox invalid IS_DAY");
   }
 
+#ifdef PBL_HEALTH
+
   Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
   int hr_minutes = 0;
-  if (th &&
-      helper_tuple_to_int(th, &hr_minutes) &&
-      HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
+  if (th && helper_tuple_to_int(th, &hr_minutes) && HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
     s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
-    #ifdef PBL_HEALTH
     apply_hr_sample_period();
-    #endif
     changed = true;
   } else if (th) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid HR_SAMPLE_MINUTES");
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
 
-#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
+#if ATAGLANCE_DEBUG
+
   Tuple* t_debug_bpm = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM);
   int debug_bpm = 0;
   if (t_debug_bpm && helper_tuple_to_int(t_debug_bpm, &debug_bpm)) {
@@ -186,6 +180,9 @@ static void inbox_received_callback(
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "AppMessage inbox invalid DEBUG_STEPS");
   }
+// End Debug Mode
+#endif
+// End check for health module
 #endif
 
   Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
@@ -194,14 +191,12 @@ static void inbox_received_callback(
     bool display_mode_is_valid =
         helper_tuple_to_int(td, &display_mode) &&
         DISPLAY_MODE_VALID(display_mode);
-    if (display_mode_is_valid &&
-        s_settings.display_mode != (uint8_t)display_mode) {
+    if (display_mode_is_valid && s_settings.display_mode != (uint8_t)display_mode) {
       s_settings.display_mode = (uint8_t)display_mode;
       repaint_requested = true;
       changed = true;
     } else if (!display_mode_is_valid) {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "AppMessage inbox invalid DISPLAY_MODE");
+      APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox invalid DISPLAY_MODE");
     }
   }
 
@@ -219,9 +214,7 @@ static void inbox_dropped_callback(
     AppMessageResult reason,
     void* context) {
   (void)context;
-  APP_LOG(APP_LOG_LEVEL_WARNING,
-          "AppMessage inbox dropped: reason=%d",
-          reason);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox dropped: reason=%d", reason);
 }
 
 static void outbox_failed_callback(
@@ -230,9 +223,7 @@ static void outbox_failed_callback(
     void* context) {
   (void)iterator;
   (void)context;
-  APP_LOG(APP_LOG_LEVEL_ERROR,
-          "AppMessage outbox failed: reason=%d",
-          reason);
+  APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
 }
 
 static void outbox_sent_callback(
@@ -243,7 +234,8 @@ static void outbox_sent_callback(
 }
 
 static uint32_t app_message_inbox_size(void) {
-#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
+  // the only debug messages we can receive for state are for health
+#if defined(PBL_HEALTH) && (ATAGLANCE_DEBUG)
   return dict_calc_buffer_size(
       9,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -272,9 +264,7 @@ static AppMessageResult open_app_message(void) {
   uint32_t inbox_size = app_message_inbox_size();
   bool pebblekit_connected =
       connection_service_peek_pebblekit_connection();
-  AppMessageResult result = app_message_open(
-      inbox_size,
-      APP_MESSAGE_OUTBOX_SIZE);
+  AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE);
   if (result == APP_MSG_OK) {
     return result;
   }
@@ -288,9 +278,7 @@ static AppMessageResult open_app_message(void) {
           APP_MESSAGE_OUTBOX_SIZE,
           pebblekit_connected);
 
-  result = app_message_open(
-      APP_MESSAGE_INBOX_SIZE_MINIMUM,
-      APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "AppMessage retry failed: result=%d kit=%d",
@@ -303,21 +291,18 @@ static AppMessageResult open_app_message(void) {
 
 static void main_window_load(Window* window) {
   if (!window) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Main window load received NULL window");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
     return;
   }
 
   if (!watchface_create(window, &s_settings)) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Watchface create failed");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface creation failed");
     return;
   }
 }
 
 static void main_window_unload(Window* window) {
   (void)window;
-
   watchface_destroy();
 }
 
@@ -333,11 +318,7 @@ static void init(void) {
     return;
   }
 
-  if (ATAGLANCE_USE_AND_PERSIST_SETTINGS) {
-    settings_load(&s_settings);
-  } else {
-    settings_apply_defaults(&s_settings);
-  }
+  settings_load(&s_settings);
 
   window_set_window_handlers(s_window, (WindowHandlers) {
     .load = main_window_load,
@@ -374,15 +355,13 @@ static void deinit(void) {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   app_message_deregister_callbacks();
-  #ifdef PBL_HEALTH
+#ifdef PBL_HEALTH
     if (s_health_events_subscribed) {
       health_service_events_unsubscribe();
       s_health_events_subscribed = false;
     }
-  #endif
-  if (ATAGLANCE_USE_AND_PERSIST_SETTINGS) {
-    settings_save(&s_settings);
-  }
+#endif
+  settings_save(&s_settings);
   window_destroy(s_window);
   s_window = NULL;
 }

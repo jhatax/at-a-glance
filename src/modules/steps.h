@@ -1,8 +1,6 @@
 #pragma once
 
 #include <pebble.h>
-
-#include "../c/ataglance.h"
 #include "watchface_components.h"
 
 #ifdef PBL_HEALTH
@@ -12,8 +10,9 @@ bool steps_module_create(
 void steps_module_destroy(void);
 void steps_module_refresh(void);
 
-#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
+#if ATAGLANCE_DEBUG
 void steps_module_debug_set_steps(int steps);
 void steps_module_debug_clear_steps(void);
 #endif
+
 #endif

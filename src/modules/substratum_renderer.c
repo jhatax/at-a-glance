@@ -1,6 +1,9 @@
 #include "substratum_renderer.h"
 #include "helper.h"
-#include "../c/ataglance.h"
+
+#ifndef ATAGLANCE_DEBUG
+#define ATAGLANCE_DEBUG 0
+#endif
 
 #define SUBSTRATUM_RENDERER_MAX_POLYGON_POINTS 8
 
@@ -133,7 +136,7 @@ void substratum_renderer_update_text_layer(
     return;
   }
 
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
   // Visual indicator of text layer size and text rendering
   GColor switched = gcolor_legible_over(text_color);
   text_layer_set_background_color(layer, text_color);

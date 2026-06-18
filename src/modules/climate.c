@@ -2,17 +2,16 @@
 #include "climate_glyphs.h"
 #include "settings.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
 #define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
 #define WEATHER_TEMP_MAX_CELSIUS_TENTHS 1000
 #define WEATHER_CONDITION_MIN 0
 #define WEATHER_CONDITION_MAX 99
-
+#define MAX_STR_LEN 16
 // Initialize static variables to known starting state values
 static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
-static char s_temperature_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static char s_temperature_buffer[MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
 static bool s_is_day = false;
@@ -73,7 +72,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
   const ColorPalette* palette = s_surface->style.palette;
   bool is_temperature_available = format_temperature(
       s_temperature_buffer,
-      ATAGLANCE_MAX_STR_LEN,
+      MAX_STR_LEN,
       temp_unit);
   GColor text_color = is_temperature_available ?
       palette->primary_text :
@@ -128,7 +127,7 @@ bool climate_module_create(
   s_temperature_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.fonts[text->font_role]);
+      surface->style.system_fonts[text->font_role]);
   if (!s_temperature_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create climate temperature layer");
     return false;

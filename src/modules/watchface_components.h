@@ -4,14 +4,13 @@
 
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 
-typedef enum {
-  WATCHFACE_FONT_ROLE_DATE = 0,
-  WATCHFACE_FONT_ROLE_TIME,
-#ifdef PBL_HEALTH
-  WATCHFACE_FONT_ROLE_BPM,
-  WATCHFACE_FONT_ROLE_STEPS,
+#ifndef ATAGLANCE_DEBUG
+#define ATAGLANCE_DEBUG 0
 #endif
-  WATCHFACE_FONT_ROLE_CLIMATE,
+
+typedef enum {
+  WATCHFACE_FONT_ROLE_TIME = 0,
+  WATCHFACE_FONT_ROLE_TEXT,
   WATCHFACE_FONT_ROLE_COUNT
 } WatchfaceFontRole;
 
@@ -72,7 +71,8 @@ typedef struct {
   const ColorPalette* palette;
   bool is_light_mode;
   bool is_compact;
-  GFont fonts[WATCHFACE_FONT_ROLE_COUNT];
+  // These two MUST ALWAYS BE THE SAME SIZE
+  GFont system_fonts[WATCHFACE_FONT_ROLE_COUNT];
   uint32_t custom_font_resource_ids[WATCHFACE_FONT_ROLE_COUNT];
 } WatchfaceSurfaceStyle;
 

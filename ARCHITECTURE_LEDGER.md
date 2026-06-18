@@ -56,7 +56,7 @@ ataglance.c
             -> memset(surface, 0, sizeof(*surface))
             -> calculate active blueprint and final geometry
             -> store compact/full on surface.style.is_compact
-       -> layout_update_watchface_style(&surface.style, display_mode)
+       -> layout_watchface_update_palette(&surface.style, display_mode)
        -> feature_module_create(root, &surface)
        -> watchface_refresh(...)
 ```
@@ -66,7 +66,7 @@ Display-mode repaint:
 ```text
 ataglance.c updates settings
   -> watchface_repaint()
-       -> layout_update_watchface_style(&surface.style, display_mode)
+       -> layout_watchface_update_palette(&surface.style, display_mode)
        -> window_set_background_color(...)
        -> refresh created strata
 ```
@@ -107,8 +107,6 @@ ataglance.c updates settings
 
 - `src/c/ataglance.c`: Pebble lifecycle, services, settings, AppMessage
   parsing, and dispatch to `watchface`.
-- `src/c/ataglance.h`: temporary app-level constants/debug header; retirement
-  is planned.
 - `src/modules/watchface.c/.h`: runtime clearing house, surface owner, module
   create/destroy order, refresh dispatch, and source-state setter boundary.
 - `src/modules/watchface_components.h`: shared display component types and
@@ -178,28 +176,18 @@ ataglance.c updates settings
 
 ## Header And Code Audit Findings
 
-Observed in the live tree during the June 17, 2026 audit and deferred
-intentionally:
+Observed in the live tree during the June 17, 2026 audit and resolved:
 
-- `src/c/ataglance.h` has only `DEBUG_ATAGLANCE`,
-  `ATAGLANCE_USE_AND_PERSIST_SETTINGS`, and `ATAGLANCE_MAX_STR_LEN`.
-- `ATAGLANCE_USE_AND_PERSIST_SETTINGS` is obsolete because Clay settings imply
-  persistence as product behavior.
-- `ATAGLANCE_MAX_STR_LEN` is too broad. Date, time, climate, BPM, and steps
-  should own module-local buffer sizes.
-- Text buffer sizes should not move to `watchface_components.h` unless a caller
-  needs to size or write shared storage. Current buffers are private static
-  storage, so each module should own its own local constant in its `.c` file.
-- `DEBUG_ATAGLANCE` should move out of product constants, preferably to a build
-  define or narrow debug config header.
-- `bpm.h`, `steps.h`, and `watchface.h` include `ataglance.h` only for debug
-  gates. This leaks a temporary debug/product header into public APIs.
-- `layout_stylist.c` and `climate_glyphs.c` include `ataglance.h` without using
-  live symbols from it.
-- `date.c`, `time.c`, `climate.c`, `bpm.c`, and `steps.c` include
-  `ataglance.h` only for `ATAGLANCE_MAX_STR_LEN`.
-- `battery.c`, `substratum_renderer.c`, `bpm.c`, and `steps.c` include
-  `ataglance.h` only for debug-gated code or inherited debug state.
+- `src/c/ataglance.h` was deleted after its constants were removed or moved.
+- `ATAGLANCE_USE_AND_PERSIST_SETTINGS` was removed; settings are loaded during
+  init and saved during deinit.
+- `ATAGLANCE_MAX_STR_LEN` was replaced with module-local buffer constants in
+  date, time, climate, BPM, and steps.
+- `DEBUG_ATAGLANCE` was replaced by the build-defined `ATAGLANCE_DEBUG` gate,
+  with defensive default guards in modules that compile debug branches.
+- Public module headers no longer include the app entrypoint header for debug
+  gates.
+- Dead `ataglance.h` includes were removed from implementation files.
 - `src/modules/layout_design.h` is included only by `layout_architect.c`; its structs
   and constants are implementation details.
 - `layout_architect.c` includes `layout.h` directly because it implements the
@@ -251,9 +239,8 @@ intentionally:
    `climate.c`, `bpm.c`, and `steps.c`.
 3. Keep `WATCHFACE_UNAVAILABLE_TEXT` in `watchface_components.h`; it is shared
    display vocabulary, not buffer storage.
-4. Move `DEBUG_ATAGLANCE` to a build define or narrow debug config header.
-   Public module headers should not include the app entrypoint header for debug
-   gates.
+4. Move debug gating to the build-defined `ATAGLANCE_DEBUG` value. Public
+   module headers should not include the app entrypoint header for debug gates.
 5. Remove `ataglance.h` from public module headers.
 6. Remove dead `ataglance.h` includes from implementation files.
 7. Delete `src/c/ataglance.h` when no symbols remain.
@@ -279,21 +266,22 @@ intentionally:
 
 ### Phase 4: Lifecycle And Renderer Hardening
 
-1. Make module create paths transaction-like across battery, climate, BPM,
-   steps, time, and date.
-2. Ensure optional resource failures never leave stale retained pointers.
-3. Validate that every acquired resource is released on every failure branch.
+Status: Closed.
+
+Required layer/resource creation gates module success and retained state.
+Optional resources are explicitly non-fatal when the text-bearing stratum
+remains usable, and partial optional resources are cleaned up before returning
+success. The shared renderer no longer heap-allocates bounded polygon point
+storage in draw paths.
 
 ### Phase 5: Round And Visual Validation
 
-1. Capture Chalk and Gabbro screenshots in dark and light modes.
-2. Validate time, battery, weather/date, and health rows at likely extremes.
-3. Confirm the current round margin in `src/modules/layout_design.h` as a product
-   decision.
-4. Confirm whether unified layout needs shape-specific safe-span math before
-   publication.
-5. Audit all `DEBUG_ATAGLANCE` gated code before debug geometry or message
-   paths can be considered safe for release.
+Status: Closed for the current milestone.
+
+Round screenshot-led validation on Chalk and Gabbro has been confirmed
+complete. Future round changes still require screenshot review, but there is no
+active round visual validation blocker for the current rectangular-completion
+milestone.
 
 ### Phase 6: PebbleKit JS And Data Robustness
 

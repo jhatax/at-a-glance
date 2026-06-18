@@ -1,8 +1,13 @@
 # At A Glance
 
-At A Glance is a glance-first Pebble watchface inspired by transit signage:
-dominant time, compact status context, and strong alignment across rectangular
-and round displays.
+At A Glance is built for immediate glanceability and readable context across
+color and monochrome Pebbles without making the screen feel crowded. A strong
+centered time display anchors the face, while restrained color and compact
+supporting details keep weather, date, battery, steps, and heart rate easy to
+read. The design borrows from transit signage and instrument panels, favoring
+alignment, contrast, and calm hierarchy over decoration. Use settings to tune
+information displayed to your needs, and share feedback as it becomes part of
+your daily rhythm.
 
 The current source targets color, black-and-white, rectangular, and round
 Pebble platforms. Final App Store screenshots are still pending.

@@ -3,18 +3,18 @@
 
 #include "helper.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
+#define MAX_STR_LEN 12
 #define STEPS_INVALID -1
 
-static char s_steps_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+static char s_steps_buffer[MAX_STR_LEN] = {0};
 static GBitmap* s_steps_bitmap = NULL;
 static Layer* s_steps_icon_layer = NULL;
 static TextLayer* s_steps_layer = NULL;
 static bool s_steps_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
 static GColor s_steps_icon_color = {0};
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
 static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
 #endif
@@ -104,11 +104,11 @@ static void apply_steps_value(int steps, bool is_available) {
       palette->primary_text : palette->unavailable_text;
 
   if (s_steps_is_available) {
-    snprintf(s_steps_buffer, ATAGLANCE_MAX_STR_LEN, "%d", steps);
+    snprintf(s_steps_buffer, MAX_STR_LEN, "%d", steps);
   } else {
     snprintf(
         s_steps_buffer,
-        ATAGLANCE_MAX_STR_LEN,
+        MAX_STR_LEN,
         "%s",
         WATCHFACE_UNAVAILABLE_TEXT);
   }
@@ -124,7 +124,7 @@ static void apply_steps_value(int steps, bool is_available) {
 }
 
 static void update_steps(void) {
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
   if (s_debug_steps_is_set) {
     apply_steps_value(s_debug_steps, s_debug_steps >= 0);
     s_debug_steps_is_set = false;
@@ -167,7 +167,7 @@ bool steps_module_create(
   s_steps_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.fonts[text->font_role]);
+      surface->style.system_fonts[text->font_role]);
 
   if (!s_steps_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -176,7 +176,7 @@ bool steps_module_create(
   }
 
   s_steps_is_available = false;
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
 #endif
@@ -228,7 +228,7 @@ void steps_module_destroy(void) {
   s_steps_is_available = false;
   s_surface = NULL;
   s_steps_icon_color = GColorBlack;
-  #if DEBUG_ATAGLANCE
+  #if ATAGLANCE_DEBUG
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
   #endif
@@ -238,7 +238,7 @@ void steps_module_refresh(void) {
   update_steps();
 }
 
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
 void steps_module_debug_set_steps(int steps) {
   s_debug_steps = steps;
   s_debug_steps_is_set = true;
@@ -249,5 +249,6 @@ void steps_module_debug_clear_steps(void) {
   s_debug_steps = STEPS_INVALID;
 }
 #endif
-
+// Debug Mode
 #endif
+// Health capabilities

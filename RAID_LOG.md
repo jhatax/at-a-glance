@@ -15,14 +15,15 @@ RAID means:
 ### Create failure paths may retain stale module state
 
 Type: Issue
-Status: Open
+Status: Closed
 
-Some module create paths assign retained surface or palette pointers before all
-optional resources are handled. Failure behavior should be made explicitly
-transaction-like across modules.
+Module create paths now gate success on required layers/resources before
+retaining live surface state. Optional resources are explicitly non-fatal, and
+partial optional resources are cleaned up before returning success.
 
-Next action: make create paths destroy resources created in the same function
-and clear retained pointers before returning false.
+Decision: required text/control resources determine module success; optional
+icon resources may fail without failing the module when the text-bearing
+stratum remains usable.
 
 ### Renderer allocation strategy in draw path
 
@@ -53,13 +54,12 @@ fixed documented weather fallback.
 ### Round visual validation is not final
 
 Type: Risk
-Status: Open
+Status: Closed
 
-Round targets are present in `package.json`, but the round visual result still
-needs a final screenshot-led pass on Chalk and Gabbro before publication.
+Round targets are present in `package.json`, and the screenshot-led visual pass
+has been confirmed complete for the current milestone.
 
-Next action: capture dark/light screenshots on Chalk and Gabbro and check
-time, battery, weather/date, and health text at likely extremes.
+Decision: no active round visual validation blocker remains for this milestone.
 
 ### Header cleanup is deferred
 

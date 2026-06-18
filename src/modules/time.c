@@ -1,9 +1,9 @@
 #include "time.h"
 #include "settings.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
-static char s_time_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+#define MAX_STR_LEN 8
+static char s_time_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_time_layer = NULL;
 static const WatchfaceSurface* s_surface = NULL;
 
@@ -45,7 +45,7 @@ bool time_module_create(
   s_time_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.fonts[text->font_role]);
+      surface->style.system_fonts[text->font_role]);
   if (!s_time_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create time text layer");
@@ -77,7 +77,7 @@ void time_module_refresh(uint8_t time_format) {
     return;
   }
 
-  format_time(s_time_buffer, ATAGLANCE_MAX_STR_LEN, t, time_format);
+  format_time(s_time_buffer, MAX_STR_LEN, t, time_format);
   substratum_renderer_update_text_layer(
       s_time_layer,
       s_time_buffer,

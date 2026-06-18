@@ -1,5 +1,4 @@
 #include "climate_glyphs.h"
-#include "../c/ataglance.h"
 #include "helper.h"
 #include "substratum_renderer.h"
 

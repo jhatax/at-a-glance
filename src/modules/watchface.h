@@ -1,15 +1,10 @@
 #pragma once
 
 #include <pebble.h>
-
-#include "../c/ataglance.h"
 #include "settings.h"
 
-#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
-typedef enum {
-  WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020,
-  WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021
-} WatchfaceDebugMessageKey;
+#ifndef ATAGLANCE_DEBUG
+#define ATAGLANCE_DEBUG 0
 #endif
 
 typedef enum {
@@ -24,6 +19,16 @@ typedef enum {
 #endif
 } WatchfaceUpdateMask;
 
+#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
+typedef enum {
+  WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020,
+  WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021
+} WatchfaceDebugMessageKey;
+void watchface_debug_set_bpm(int bpm);
+void watchface_debug_set_steps(int steps);
+void watchface_debug_clear_health(void);
+#endif
+
 bool watchface_create(
     Window* window,
     const WatchfaceSettings* settings);
@@ -33,9 +38,3 @@ void watchface_refresh(WatchfaceUpdateMask updates);
 void watchface_set_temperature(int celsius_tenths);
 void watchface_set_weather_condition(int weather_condition);
 void watchface_set_is_day(bool is_day);
-
-#if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
-void watchface_debug_set_bpm(int bpm);
-void watchface_debug_set_steps(int steps);
-void watchface_debug_clear_health(void);
-#endif

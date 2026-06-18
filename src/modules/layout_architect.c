@@ -297,7 +297,7 @@ bool layout_watchface_initialize(
   surface->date.text = (WatchfaceTextSubstratum) {
     .frame = computed.date,
     .alignment = GTextAlignmentCenter,
-    .font_role = WATCHFACE_FONT_ROLE_DATE,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
     .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
 
@@ -313,7 +313,7 @@ bool layout_watchface_initialize(
   surface->climate.text = (WatchfaceTextSubstratum) {
     .frame = computed.climate.text,
     .alignment = GTextAlignmentRight,
-    .font_role = WATCHFACE_FONT_ROLE_CLIMATE,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
   };
 
 #ifdef PBL_HEALTH
@@ -326,7 +326,7 @@ surface->steps.icon = (WatchfaceIconSubstratum) {
   surface->steps.text = (WatchfaceTextSubstratum) {
     .frame = computed.steps.text,
     .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_STEPS,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
   };
 
   // BPM
@@ -337,7 +337,7 @@ surface->steps.icon = (WatchfaceIconSubstratum) {
   surface->bpm.text = (WatchfaceTextSubstratum) {
     .frame = computed.bpm.text,
     .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_BPM,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
   };
 #endif
   return true;

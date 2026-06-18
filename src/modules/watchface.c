@@ -13,7 +13,11 @@
 // A consequence of this is that s_surface.is_compact = false by default
 // is_compact is then determined during layout_watchface_initialize
 static WatchfaceSurface s_surface = {0};
-static GFont s_custom_fonts[WATCHFACE_FONT_ROLE_COUNT] = {0};
+
+// Font lifecycle management
+static GFont s_custom_fonts[WATCHFACE_FONT_ROLE_COUNT] = {NULL};
+static bool s_fonts_initialized = false;
+static bool s_custom_fonts_loaded = false;
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
@@ -26,8 +30,6 @@ static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
     | WATCHFACE_UPDATE_HEALTH
 #endif
     ;
-
-static void watchface_refresh_strata(WatchfaceUpdateMask updates);
 
 typedef enum {
   NO_STRATA_MASK = 0,
@@ -43,71 +45,32 @@ typedef enum {
 } StratumMask;
 static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
-static void watchface_apply_custom_fonts(void);
-static bool watchface_load_custom_fonts(void);
-static void watchface_unload_custom_fonts(void);
 static void watchface_exit_path() {
   watchface_destroy();
   window_stack_pop_all(false);
 }
 
-static GFont watchface_find_loaded_custom_font(
-    uint8_t max_role,
-    uint32_t resource_id) {
-  for (uint8_t i = 0; i < max_role; ++i) {
-    if (s_surface.style.custom_font_resource_ids[i] == resource_id &&
-        s_custom_fonts[i]) {
-      return s_custom_fonts[i];
-    }
-  }
+void watchface_load_and_apply_palette() {
+  // Update the palette
+  layout_watchface_update_palette(&(s_surface.style), s_wf_settings->display_mode);
 
-  return NULL;
-}
-
-static void watchface_apply_custom_fonts(void) {
-  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
-    if (s_custom_fonts[i]) {
-      s_surface.style.fonts[i] = s_custom_fonts[i];
-    }
+  // set the background color according to palette
+  if (s_surface.style.palette) {
+    window_set_background_color(s_wf_window, s_surface.style.palette->background);
   }
 }
 
-static bool watchface_load_custom_fonts(void) {
-  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
-    const uint32_t resource_id = s_surface.style.custom_font_resource_ids[i];
-    if (!resource_id) {
-      continue;
-    }
+void watchface_load_and_apply_fonts() {
 
-    GFont shared_font = watchface_find_loaded_custom_font(i, resource_id);
-    if (shared_font) {
-      s_custom_fonts[i] = shared_font;
-      continue;
-    }
+  if (!s_fonts_initialized) {
+  // Fragile font-loading and sharing code.
+  // Update and modify carefully.
 
-    s_custom_fonts[i] = fonts_load_custom_font(resource_get_handle(resource_id));
-    if (!s_custom_fonts[i]) {
-      APP_LOG(APP_LOG_LEVEL_ERROR,
-              "Failed to load watchface custom font resource %lu",
-              (unsigned long) resource_id);
-      watchface_unload_custom_fonts();
-      return false;
-    }
-  }
+    s_fonts_initialized = layout_watchface_initialize_fonts(&(s_surface.style));
 
-  watchface_apply_custom_fonts();
-  return true;
-}
-
-static void watchface_unload_custom_fonts(void) {
-  for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
-    const uint32_t resource_id = s_surface.style.custom_font_resource_ids[i];
-    if (s_custom_fonts[i] &&
-        resource_id &&
-        !watchface_find_loaded_custom_font(i, resource_id)) {
-      fonts_unload_custom_font(s_custom_fonts[i]);
+    if (s_fonts_initialized && !s_custom_fonts_loaded) {
+      s_custom_fonts_loaded = layout_watchface_load_custom_fonts(&(s_surface.style), s_custom_fonts);
     }
-    s_custom_fonts[i] = NULL;
   }
 }
 
@@ -145,15 +108,11 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
     return false;
   }
 
-  // Update the style
-  layout_update_watchface_style(
-      &(s_surface.style),
-      s_wf_settings->display_mode);
-  if (!watchface_load_custom_fonts()) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface custom font initialization failed");
-    watchface_exit_path();
-    return false;
-  }
+  // Load & Apply Style
+  watchface_load_and_apply_palette();
+
+  // Load & Apply Fonts (one-time activity for every launch)
+  watchface_load_and_apply_fonts();
 
   s_strata_created_mask |= date_module_create(root, &s_surface) ?
       DATE_STRATUM_MASK : 0;
@@ -164,34 +123,24 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   s_strata_created_mask |= battery_module_create(root, &s_surface) ?
       BATTERY_STRATUM_MASK : 0;
 
-  if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) !=
-      MUST_HAVE_STRATA_MASK) {
+  if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
     watchface_exit_path();
     return false;
   }
 
-  s_strata_created_mask |= climate_module_create(
-      root,
-      &s_surface,
-      s_wf_settings->temp_unit) ? CLIMATE_STRATUM_MASK : 0;
+  s_strata_created_mask |=
+    climate_module_create(root, &s_surface, s_wf_settings->temp_unit) ? CLIMATE_STRATUM_MASK : 0;
 
   #ifdef PBL_HEALTH
-  s_strata_created_mask |= bpm_module_create(root, &s_surface) ?
-      BPM_STRATUM_MASK : 0;
+  s_strata_created_mask |= bpm_module_create(root, &s_surface) ? BPM_STRATUM_MASK : 0;
 
-  s_strata_created_mask |= steps_module_create(root, &s_surface) ?
-      STEPS_STRATUM_MASK : 0;
+  s_strata_created_mask |= steps_module_create(root, &s_surface) ? STEPS_STRATUM_MASK : 0;
   #endif
 
   s_watchface_initialized = true;
 
-  if (s_surface.style.palette) {
-    window_set_background_color(
-        s_wf_window,
-        s_surface.style.palette->background);
-  }
-  watchface_refresh_strata(WATCHFACE_UPDATE_ALL_STRATA);
+  watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
   return true;
 }
 
@@ -217,45 +166,53 @@ void watchface_destroy() {
       s_strata_created_mask &= ~CLIMATE_STRATUM_MASK;
     }
 
-    #ifdef PBL_HEALTH
-    if (s_strata_created_mask & BPM_STRATUM_MASK) {
-      bpm_module_destroy();
-      s_strata_created_mask &= ~BPM_STRATUM_MASK;
-    }
+  #ifdef PBL_HEALTH
 
+  #if ATAGLANCE_DEBUG
+    // First clear the debug state before modules are destroyed
+    watchface_debug_clear_health();
+  #endif
+
+    if (s_strata_created_mask & BPM_STRATUM_MASK) {
+        bpm_module_destroy();
+        s_strata_created_mask &= ~BPM_STRATUM_MASK;
+    }
     if (s_strata_created_mask & STEPS_STRATUM_MASK) {
       steps_module_destroy();
       s_strata_created_mask &= ~STEPS_STRATUM_MASK;
     }
+
     #endif
+    // End Health Capability check
   }
 
-  watchface_unload_custom_fonts();
+  if (s_custom_fonts_loaded) {
+    layout_watchface_unload_custom_fonts(s_custom_fonts);
+    s_custom_fonts_loaded = false;
+  }
 
   s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
   s_wf_settings = NULL;
   s_wf_window = NULL;
+  s_fonts_initialized = false;
   s_watchface_initialized = false;
+
+  // Zero out custom-fonts and the watchface surface
+  // Technically, custom fonts should hang off the surface as well
+  memset(s_custom_fonts, 0, sizeof(s_custom_fonts));
   memset(&s_surface, 0, sizeof(s_surface));
+
 }
 
+
 void watchface_repaint(void) {
-  if (!s_wf_window ||
-      !s_wf_settings) {
+  if (!s_wf_window || !s_wf_settings) {
     return;
   }
 
-  layout_update_watchface_style(
-      &(s_surface.style),
-      s_wf_settings->display_mode);
-  watchface_apply_custom_fonts();
-
-  if (s_surface.style.palette) {
-    window_set_background_color(
-        s_wf_window,
-        s_surface.style.palette->background);
-  }
-  watchface_refresh_strata(WATCHFACE_UPDATE_ALL_STRATA);
+  // Re-style
+  watchface_load_and_apply_palette();
+  watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
 }
 
 void watchface_refresh(WatchfaceUpdateMask updates) {
@@ -265,10 +222,6 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
     return;
   }
 
-  watchface_refresh_strata(updates);
-}
-
-static void watchface_refresh_strata(WatchfaceUpdateMask updates) {
   // Don't assume that some strata were created even though that's the contract
   // By not assuming this detail, if the product's must-create strata decision changes,
   // this code won't need to be in sync / will avoid drift.
@@ -314,7 +267,7 @@ void watchface_set_is_day(bool is_day) {
   climate_module_set_is_day(is_day);
 }
 
-  #if defined(PBL_HEALTH) && (DEBUG_ATAGLANCE == 1)
+#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
 void watchface_debug_set_bpm(int bpm) {
   bpm_module_debug_set_bpm(bpm);
 }
@@ -324,7 +277,11 @@ void watchface_debug_set_steps(int steps) {
 }
 
 void watchface_debug_clear_health(void) {
-  bpm_module_debug_clear_bpm();
-  steps_module_debug_clear_steps();
+  if (s_strata_created_mask & BPM_STRATUM_MASK) {
+    bpm_module_debug_clear_bpm();
+  }
+  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
+    steps_module_debug_clear_steps();
+  }
 }
 #endif

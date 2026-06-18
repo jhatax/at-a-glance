@@ -2,18 +2,17 @@
 #include "bpm.h"
 #include "helper.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
 #define BPM_INVALID -1
-
-static char s_bpm_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+#define MAX_STR_LEN 12
+static char s_bpm_buffer[MAX_STR_LEN] = {0};
 static Layer* s_bpm_icon_layer = NULL;
 static TextLayer* s_bpm_layer = NULL;
 static int s_bpm = BPM_INVALID;
 static bool s_bpm_is_available = false;
 static const WatchfaceSurface* s_surface = NULL;
 static const ColorPalette* s_palette = NULL;
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
 static bool s_debug_bpm_is_set = false;
 static int s_debug_bpm = BPM_INVALID;
 #endif
@@ -119,12 +118,12 @@ static void apply_bpm_value(int bpm, bool is_available) {
   s_bpm_is_available = is_available && bpm > 0;
 
   if (s_bpm_is_available) {
-    snprintf(s_bpm_buffer, ATAGLANCE_MAX_STR_LEN, "%d", s_bpm);
+    snprintf(s_bpm_buffer, MAX_STR_LEN, "%d", s_bpm);
     text_color = calculate_bpm_color(s_bpm);
   } else {
     snprintf(
         s_bpm_buffer,
-        ATAGLANCE_MAX_STR_LEN,
+        MAX_STR_LEN,
         "%s",
         WATCHFACE_UNAVAILABLE_TEXT);
   }
@@ -137,7 +136,8 @@ static void apply_bpm_value(int bpm, bool is_available) {
 }
 
 static void update_bpm(void) {
-#if DEBUG_ATAGLANCE
+
+#if ATAGLANCE_DEBUG
   if (s_debug_bpm_is_set) {
     apply_bpm_value(s_debug_bpm, s_debug_bpm > 0);
     s_debug_bpm_is_set = false;
@@ -178,7 +178,7 @@ bool bpm_module_create(
   s_bpm_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.fonts[text->font_role]);
+      surface->style.system_fonts[text->font_role]);
 
   if (!s_bpm_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create BPM text layer");
@@ -187,7 +187,7 @@ bool bpm_module_create(
 
   s_bpm = BPM_INVALID;
   s_bpm_is_available = false;
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
 #endif
@@ -218,10 +218,10 @@ void bpm_module_destroy(void) {
   s_bpm_is_available = false;
   s_palette = NULL;
   s_surface = NULL;
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
-  #endif
+#endif
 }
 
 void bpm_module_refresh(void) {
@@ -233,7 +233,7 @@ void bpm_module_refresh(void) {
   update_bpm();
 }
 
-#if DEBUG_ATAGLANCE
+#if ATAGLANCE_DEBUG
 void bpm_module_debug_set_bpm(int bpm) {
   s_debug_bpm = bpm;
   s_debug_bpm_is_set = true;

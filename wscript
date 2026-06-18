@@ -29,6 +29,8 @@ def build(ctx):
             'src/c/**/*.c',
             'src/modules/**/*.c',
         ])
+        # To enable debug gates, add:
+        # defines=['ATAGLANCE_DEBUG=1']
         ctx.pbl_build(source=app_sources,
                       target=app_elf,
                       bin_type='app')

@@ -2,7 +2,6 @@
 
 #include "helper.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
 static BatteryChargeState s_battery_state = {0};
 static const WatchfaceSurface* s_surface = NULL;

@@ -1,8 +1,8 @@
 #include "date.h"
 #include "substratum_renderer.h"
-#include "../c/ataglance.h"
 
-static char s_date_buffer[ATAGLANCE_MAX_STR_LEN] = {0};
+#define MAX_STR_LEN 16
+static char s_date_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_date_layer = NULL;
 static const WatchfaceSurface* s_surface = NULL;
 
@@ -32,7 +32,7 @@ bool date_module_create(
   s_date_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.fonts[text->font_role]);
+      surface->style.system_fonts[text->font_role]);
   if (!s_date_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create date text layer");
@@ -64,7 +64,7 @@ void date_module_refresh(void) {
     return;
   }
 
-  strftime(s_date_buffer, ATAGLANCE_MAX_STR_LEN, "%a %d %b", t);
+  strftime(s_date_buffer, MAX_STR_LEN, "%a %d %b", t);
   uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(
       s_date_layer,
