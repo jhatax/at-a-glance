@@ -333,9 +333,9 @@ static void draw_weather_fog_icon(
       WEATHER_ICON_FOG,
       palette));
   graphics_context_set_stroke_width(ctx, 2);
-  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 5, 10, 23, 10);
-  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 2, 15, 26, 15);
-  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 7, 20, 21, 20);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 5, 6, 23, 6);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 2, 14, 26, 14);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 7, 22, 21, 22);
 }
 
 static void draw_weather_drizzle_icon(
