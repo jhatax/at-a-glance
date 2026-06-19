@@ -19,8 +19,6 @@ typedef enum {
 
 typedef struct {
   GColor background;
-  GColor background_layer_background;
-  GColor background_layer_rule;
   GColor primary_text;
   GColor unavailable_text;
   GColor date;
@@ -46,12 +44,6 @@ typedef struct {
 } WatchfaceBatteryStratum;
 
 typedef struct {
-  GRect frame;
-  bool rule_enabled;
-  GRect rule;
-} WatchfaceBackgroundStratum;
-
-typedef struct {
   WatchfaceTextSubstratum text;
 } WatchfaceTextStratum;
 
@@ -75,7 +67,6 @@ typedef struct {
 typedef struct {
   int16_t face_width;
   int16_t face_height;
-  WatchfaceBackgroundStratum background;
   WatchfaceSurfaceStyle style;
   WatchfaceTextStratum date;
   WatchfaceTextStratum time;

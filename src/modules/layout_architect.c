@@ -277,14 +277,6 @@ bool layout_watchface_initialize(
       face_width,
       face_height);
 
-  // Initialize the surface, one stratum at a time
-  // Background
-  surface->background = (WatchfaceBackgroundStratum) {
-    .frame = GRect(0, 0, face_width, face_height),
-    .rule_enabled = false,
-    .rule = GRectZero,
-  };
-
   // Time
   surface->time.text = (WatchfaceTextSubstratum) {
     .frame = computed.time,
