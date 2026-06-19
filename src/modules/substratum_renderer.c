@@ -1,9 +1,6 @@
 #include "substratum_renderer.h"
 #include "helper.h"
-
-#ifndef ATAGLANCE_DEBUG
-#define ATAGLANCE_DEBUG 0
-#endif
+#include "watchface_debug.h"
 
 #define SUBSTRATUM_RENDERER_MAX_POLYGON_POINTS 8
 

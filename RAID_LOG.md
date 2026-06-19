@@ -66,10 +66,53 @@ Decision: no active round visual validation blocker remains for this milestone.
 Type: Issue
 Status: Open
 
-`ataglance.h`, `design.h`, and several public module headers still expose or
-import symbols more broadly than the steady-state architecture should require.
+Some public module headers still expose or import symbols more broadly than the
+steady-state architecture should require. `layout_design.h` is now accepted as
+private design vocabulary for the architect/stylist boundary, but public header
+exposure still needs a focused audit.
 
 Next action: execute the header cleanup plan in `ARCHITECTURE_LEDGER.md`.
+
+### Runtime helper boundaries need audit
+
+Type: Issue
+Status: Open
+
+Some functions that help `watchface` manage runtime state still accept broad
+watchface-owned types where narrower inputs would better preserve helper
+boundaries. Example: stylist functions currently receive
+`WatchfaceSurfaceStyle*`, while some operations may only need palette/font
+fields or specific style members.
+
+Next action: audit runtime-management helpers and narrow signatures where the
+callee does not need to understand the full watchface surface/style type.
+
+### Weather glyph visual defects need a focused pass
+
+Type: Issue
+Status: Open
+
+The screenshot grid `weather-condition-watchface-grid.png` exposed several
+weather glyph defects across compact and full targets. These are product/visual
+issues, not part of the runtime-boundary migration.
+
+TODO:
+
+- Clear/sun glyph should not be filled; the filled sun reads poorly on Chalk
+  and Flint.
+- Weather condition `45` is visually broken on smaller watchfaces. The wind/fog
+  line scaling appears wrong, likely due to frame/subframe compaction.
+- Revisit the sun geometry. Recent radius and ray-length changes made the sun
+  worse; recover an earlier, better-balanced visual contract.
+- Weather condition `80` has the same compacted-line issue. Subframed line
+  glyphs likely need shorter strokes and/or thinner stroke widths inside
+  subframes.
+- Partly-clear/cloud composition needs legibility work. The cloud should be
+  filled with the background color, and the sun behind it should remain clear so
+  the icon reads on light backgrounds.
+
+Next action: use `tools/glyph-lab` or an equivalent screenshot-led glyph pass
+to tune these weather glyphs before porting changes back to the watchface.
 
 ## Accepted Decisions
 

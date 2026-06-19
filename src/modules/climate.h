@@ -14,6 +14,8 @@ bool climate_module_create(
     uint8_t temp_unit);
 void climate_module_destroy(void);
 void climate_module_refresh(uint8_t temp_unit);
-void climate_module_set_temperature(int celsius_tenths);
-void climate_module_set_condition(int weather_condition);
-void climate_module_set_is_day(bool is_day);
+void climate_module_set_weather(
+    int celsius_tenths,
+    int weather_condition,
+    int is_day);
+void climate_module_set_weather_unavailable(void);

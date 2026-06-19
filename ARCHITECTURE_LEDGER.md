@@ -94,9 +94,12 @@ ataglance.c updates settings
   before returning success.
 - `refresh()` APIs do not accept `WatchfaceSurface`; they accept only narrow
   runtime payloads where needed.
-- `ataglance.c` knows update categories, not feature module internals.
-- AppMessage parsing converts raw tuples into typed runtime facts before
-  calling watchface setters.
+- `ataglance.c` is the Pebble container and transport/service adapter. It may
+  construct `WatchfaceEventData` for AppMessage tuples and Pebble service
+  events, but it must not interpret domain meaning, mutate module state, or
+  compute refresh/repaint behavior.
+- `watchface_apply_received_data()` is the single runtime ingress for watchface
+  updates.
 - Dynamic colors remain module-owned when they depend on live source state,
   such as BPM or battery.
 - Public headers expose only concepts callers need.

@@ -2,10 +2,7 @@
 
 #include <pebble.h>
 #include "settings.h"
-
-#ifndef ATAGLANCE_DEBUG
-#define ATAGLANCE_DEBUG 0
-#endif
+#include "watchface_debug.h"
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
@@ -19,14 +16,54 @@ typedef enum {
 #endif
 } WatchfaceUpdateMask;
 
+typedef enum {
+  WATCHFACE_DATA_NONE = 0,
+  WATCHFACE_DATA_TIME_FORMAT = 1 << 0,
+  WATCHFACE_DATA_TEMP_UNIT = 1 << 1,
+  WATCHFACE_DATA_TEMPERATURE = 1 << 2,
+  WATCHFACE_DATA_WEATHER_CONDITION = 1 << 3,
+  WATCHFACE_DATA_IS_DAY = 1 << 4,
+  WATCHFACE_DATA_HR_SAMPLE_MINUTES = 1 << 5,
+  WATCHFACE_DATA_DISPLAY_MODE = 1 << 6,
+  WATCHFACE_DATA_TIME_TICK = 1 << 7,
+  WATCHFACE_DATA_DATE_TICK = 1 << 8,
+  WATCHFACE_DATA_BATTERY_EVENT = 1 << 9,
+#ifdef PBL_HEALTH
+  WATCHFACE_DATA_HEALTH_EVENT = 1 << 10,
+#endif
+#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
+  WATCHFACE_DATA_DEBUG_BPM = 1 << 11,
+  WATCHFACE_DATA_DEBUG_STEPS = 1 << 12,
+#endif
+} WatchfaceDataMask;
+
+typedef struct {
+  WatchfaceDataMask received;
+  WatchfaceDataMask parsed;
+
+  int time_format;
+  int temp_unit;
+  int temperature_celsius_tenths;
+  int weather_condition;
+  int is_day;
+  int hr_sample_minutes;
+  int display_mode;
+  int time_units_changed;
+#ifdef PBL_HEALTH
+  int health_event;
+#endif
+
+#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
+  int debug_bpm;
+  int debug_steps;
+#endif
+} WatchfaceEventData;
+
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
 typedef enum {
   WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020,
   WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021
 } WatchfaceDebugMessageKey;
-void watchface_debug_set_bpm(int bpm);
-void watchface_debug_set_steps(int steps);
-void watchface_debug_clear_health(void);
 #endif
 
 bool watchface_create(
@@ -35,6 +72,6 @@ bool watchface_create(
 void watchface_destroy();
 void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
-void watchface_set_temperature(int celsius_tenths);
-void watchface_set_weather_condition(int weather_condition);
-void watchface_set_is_day(bool is_day);
+void watchface_apply_received_data(
+    const WatchfaceEventData* data,
+    WatchfaceSettings* settings);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pebble.h>
+#include "watchface_debug.h"
 #include "watchface_components.h"
 
 #ifdef PBL_HEALTH

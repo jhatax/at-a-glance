@@ -88,7 +88,12 @@ Severity:
 
 ### FR-004: Shared text buffer size is still broad product leakage
 
-- Severity: P3
+- Status: Fixed.
+- Resolution:
+  - `ATAGLANCE_MAX_STR_LEN` and `src/c/ataglance.h` were removed. Date, time,
+    climate, BPM, and steps now use module-local buffer constants sized to
+    their own formatted values.
+- Original severity: P3
 - Evidence:
   - `ATAGLANCE_MAX_STR_LEN` lives in `src/c/ataglance.h`.
   - Date, time, climate, BPM, and steps modules use it for private static text
@@ -148,7 +153,12 @@ Severity:
 
 ### FR-103: Health setting is exposed even where health strata are absent
 
-- Severity: P2
+- Status: Closed.
+- Resolution:
+  - The Clay configuration screen now states that health update settings apply
+    only on Pebble models with health capabilities. The broad target platform
+    set and guarded C health paths remain intentional.
+- Original severity: P2
 - Evidence:
   - `package.json` includes `aplite` in target platforms.
   - Health modules and `Health*` usage are correctly guarded by `PBL_HEALTH`.
@@ -242,7 +252,12 @@ weather glyph color
 ### FR-204: Battery and weather bolt share a renderer path, but not necessarily
 the same visual contract
 
-- Severity: P3
+- Status: Closed.
+- Resolution:
+  - This is an accepted product decision. The shared bolt is intentionally a
+    low-level glyph primitive reused by battery charging and thunderstorm
+    weather, not a product-level semantic component.
+- Original severity: P3
 - Evidence:
   - `substratum_renderer_draw_filled_bolt_in_frame()` is used for both charging
     battery and thunderstorm weather.
@@ -257,7 +272,10 @@ the same visual contract
 
 ### FR-205: Tracked prototype/scratch artifact remains in source tree
 
-- Severity: P3
+- Status: Fixed.
+- Resolution:
+  - `src/scratch.txt` has been deleted.
+- Original severity: P3
 - Evidence:
   - `src/scratch.txt` is tracked.
   - The architecture ledger already calls out tracked prototype artifacts for

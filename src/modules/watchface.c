@@ -45,6 +45,10 @@ typedef enum {
 } StratumMask;
 static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
+#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
+static void watchface_debug_clear_health(void);
+#endif
+
 static void watchface_exit_path() {
   watchface_destroy();
   window_stack_pop_all(false);
@@ -69,7 +73,8 @@ void watchface_load_and_apply_fonts() {
     s_fonts_initialized = layout_watchface_initialize_fonts(&(s_surface.style));
 
     if (s_fonts_initialized && !s_custom_fonts_loaded) {
-      s_custom_fonts_loaded = layout_watchface_load_custom_fonts(&(s_surface.style), s_custom_fonts);
+      s_custom_fonts_loaded =
+          layout_watchface_load_custom_fonts(&(s_surface.style), s_custom_fonts);
     }
   }
 }
@@ -255,28 +260,8 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
   #endif
 }
 
-void watchface_set_temperature(int celsius_tenths) {
-  climate_module_set_temperature(celsius_tenths);
-}
-
-void watchface_set_weather_condition(int weather_condition) {
-  climate_module_set_condition(weather_condition);
-}
-
-void watchface_set_is_day(bool is_day) {
-  climate_module_set_is_day(is_day);
-}
-
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-void watchface_debug_set_bpm(int bpm) {
-  bpm_module_debug_set_bpm(bpm);
-}
-
-void watchface_debug_set_steps(int steps) {
-  steps_module_debug_set_steps(steps);
-}
-
-void watchface_debug_clear_health(void) {
+static void watchface_debug_clear_health(void) {
   if (s_strata_created_mask & BPM_STRATUM_MASK) {
     bpm_module_debug_clear_bpm();
   }

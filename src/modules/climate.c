@@ -21,7 +21,11 @@ static bool s_weather_condition_known = false;
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit);
 static bool climate_temperature_is_valid(int celsius_tenths);
 static bool climate_condition_is_valid(int weather_condition);
+static bool climate_is_day_is_valid(int is_day);
 static void climate_module_update_display(uint8_t temp_unit);
+static void climate_module_set_temperature(int celsius_tenths);
+static void climate_module_set_condition(int weather_condition);
+static void climate_module_set_is_day(bool is_day);
 
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit) {
   if (!buf || buflen == 0) {
@@ -62,6 +66,10 @@ static bool climate_condition_is_valid(int weather_condition) {
           weather_condition >= WEATHER_CONDITION_MIN &&
           weather_condition <= WEATHER_CONDITION_MAX
       );
+}
+
+static bool climate_is_day_is_valid(int is_day) {
+  return is_day == 0 || is_day == 1;
 }
 
 static void climate_module_update_display(uint8_t temp_unit) {
@@ -168,7 +176,34 @@ void climate_module_refresh(uint8_t temp_unit) {
   climate_module_update_display(temp_unit);
 }
 
-void climate_module_set_temperature(int celsius_tenths) {
+void climate_module_set_weather(
+    int celsius_tenths,
+    int weather_condition,
+    int is_day) {
+  if (!climate_temperature_is_valid(celsius_tenths) ||
+      !climate_condition_is_valid(weather_condition) ||
+      !climate_is_day_is_valid(is_day)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Weather data invalid: temp=%d condition=%d is_day=%d",
+            celsius_tenths,
+            weather_condition,
+            is_day);
+    climate_module_set_weather_unavailable();
+    return;
+  }
+
+  climate_module_set_temperature(celsius_tenths);
+  climate_module_set_condition(weather_condition);
+  climate_module_set_is_day(is_day == 1);
+}
+
+void climate_module_set_weather_unavailable(void) {
+  s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
+  s_weather_condition = WEATHER_CONDITION_UNKNOWN;
+  s_is_day = false;
+}
+
+static void climate_module_set_temperature(int celsius_tenths) {
   if (!climate_temperature_is_valid(celsius_tenths)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather temperature invalid: value=%d",
@@ -179,7 +214,7 @@ void climate_module_set_temperature(int celsius_tenths) {
   s_temp_celsius_tenths = celsius_tenths;
 }
 
-void climate_module_set_condition(int weather_condition) {
+static void climate_module_set_condition(int weather_condition) {
   if (!climate_condition_is_valid(weather_condition)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather condition invalid: value=%d",
@@ -190,6 +225,6 @@ void climate_module_set_condition(int weather_condition) {
   s_weather_condition = weather_condition;
 }
 
-void climate_module_set_is_day(bool is_day) {
+static void climate_module_set_is_day(bool is_day) {
   s_is_day = is_day;
 }

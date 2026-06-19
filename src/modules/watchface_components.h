@@ -4,10 +4,6 @@
 
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 
-#ifndef ATAGLANCE_DEBUG
-#define ATAGLANCE_DEBUG 0
-#endif
-
 typedef enum {
   WATCHFACE_FONT_ROLE_TIME = 0,
   WATCHFACE_FONT_ROLE_TEXT,

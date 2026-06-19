@@ -5,7 +5,7 @@
   },
   {
     "type": "text",
-    "defaultValue": "Select units and update frequencies for key capabilities."
+    "defaultValue": "Select units and update frequencies. Health update settings apply only on Pebble models with health capabilities."
   },
   {
     "type": "section",

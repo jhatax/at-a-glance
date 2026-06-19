@@ -29,11 +29,10 @@ def build(ctx):
             'src/c/**/*.c',
             'src/modules/**/*.c',
         ])
-        # To enable debug gates, add:
-        # defines=['ATAGLANCE_DEBUG=1']
         ctx.pbl_build(source=app_sources,
                       target=app_elf,
-                      bin_type='app')
+                      bin_type='app',
+                      defines=['ATAGLANCE_DEBUG=1'])
 
         if build_worker:
             worker_elf = '{}/pebble-worker.elf'.format(

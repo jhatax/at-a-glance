@@ -23,6 +23,28 @@ static void tick_handler(
 static void inbox_received_callback(
     DictionaryIterator* iter,
     void* context);
+static void parse_int_tuple(
+    DictionaryIterator* iter,
+    uint32_t key,
+    WatchfaceEventData* data,
+    WatchfaceDataMask mask,
+    int* value);
+static void parse_settings_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data);
+static void parse_weather_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data);
+#ifdef PBL_HEALTH
+static void parse_health_settings_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data);
+#if ATAGLANCE_DEBUG
+static void parse_debug_health_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data);
+#endif
+#endif
 static void inbox_dropped_callback(
     AppMessageResult reason,
     void* context);
@@ -51,15 +73,23 @@ static void apply_hr_sample_period() {
 
 #ifdef PBL_HEALTH
 static void health_handler(HealthEventType event, void* context) {
-  (void)event;
   (void)context;
-  watchface_refresh(WATCHFACE_UPDATE_HEALTH);
+
+  WatchfaceEventData data = {0};
+  data.received = WATCHFACE_DATA_HEALTH_EVENT;
+  data.parsed = WATCHFACE_DATA_HEALTH_EVENT;
+  data.health_event = (int)event;
+  watchface_apply_received_data(&data, &s_settings);
 }
 #endif
 
 static void battery_handler(BatteryChargeState state) {
   (void)state;
-  watchface_refresh(WATCHFACE_UPDATE_BATTERY);
+
+  WatchfaceEventData data = {0};
+  data.received = WATCHFACE_DATA_BATTERY_EVENT;
+  data.parsed = WATCHFACE_DATA_BATTERY_EVENT;
+  watchface_apply_received_data(&data, &s_settings);
 }
 
 static void tick_handler(
@@ -67,16 +97,100 @@ static void tick_handler(
     TimeUnits units_changed) {
   (void)tick_time;
 
-  WatchfaceUpdateMask updates = WATCHFACE_UPDATE_NONE;
+  WatchfaceEventData data = {0};
   if (units_changed & MINUTE_UNIT) {
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_TIME);
+    data.received = (WatchfaceDataMask)(data.received | WATCHFACE_DATA_TIME_TICK);
+    data.parsed = (WatchfaceDataMask)(data.parsed | WATCHFACE_DATA_TIME_TICK);
   }
   if (units_changed & DAY_UNIT) {
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_DATE);
+    data.received = (WatchfaceDataMask)(data.received | WATCHFACE_DATA_DATE_TICK);
+    data.parsed = (WatchfaceDataMask)(data.parsed | WATCHFACE_DATA_DATE_TICK);
   }
 
-  watchface_refresh(updates);
+  data.time_units_changed = (int)units_changed;
+  watchface_apply_received_data(&data, &s_settings);
 }
+
+static void parse_int_tuple(
+    DictionaryIterator* iter,
+    uint32_t key,
+    WatchfaceEventData* data,
+    WatchfaceDataMask mask,
+    int* value) {
+  if (!iter || !data || !value) {
+    return;
+  }
+
+  Tuple* tuple = dict_find(iter, key);
+  if (!tuple) {
+    return;
+  }
+
+  data->received = (WatchfaceDataMask)(data->received | mask);
+  if (helper_tuple_to_int(tuple, value)) {
+    data->parsed = (WatchfaceDataMask)(data->parsed | mask);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "AppMessage inbox invalid int tuple: key=%lu",
+            key);
+  }
+}
+
+static void parse_settings_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data) {
+  if (!iter || !data) {
+    return;
+  }
+
+  parse_int_tuple(iter, MESSAGE_KEY_TIME_FORMAT, data, WATCHFACE_DATA_TIME_FORMAT,
+                  &data->time_format);
+  parse_int_tuple(iter, MESSAGE_KEY_TEMP_UNIT, data, WATCHFACE_DATA_TEMP_UNIT, &data->temp_unit);
+  parse_int_tuple(iter, MESSAGE_KEY_DISPLAY_MODE, data, WATCHFACE_DATA_DISPLAY_MODE,
+                  &data->display_mode);
+}
+
+static void parse_weather_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data) {
+  if (!iter || !data) {
+    return;
+  }
+
+  parse_int_tuple(iter, MESSAGE_KEY_TEMPERATURE, data, WATCHFACE_DATA_TEMPERATURE,
+                  &data->temperature_celsius_tenths);
+  parse_int_tuple(iter, MESSAGE_KEY_WEATHER_CONDITION, data,
+                  WATCHFACE_DATA_WEATHER_CONDITION, &data->weather_condition);
+  parse_int_tuple(iter, MESSAGE_KEY_IS_DAY, data, WATCHFACE_DATA_IS_DAY, &data->is_day);
+}
+
+#ifdef PBL_HEALTH
+static void parse_health_settings_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data) {
+  if (!iter || !data) {
+    return;
+  }
+
+  parse_int_tuple(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES, data,
+                  WATCHFACE_DATA_HR_SAMPLE_MINUTES, &data->hr_sample_minutes);
+}
+
+#if ATAGLANCE_DEBUG
+static void parse_debug_health_data(
+    DictionaryIterator* iter,
+    WatchfaceEventData* data) {
+  if (!iter || !data) {
+    return;
+  }
+
+  parse_int_tuple(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM, data,
+                  WATCHFACE_DATA_DEBUG_BPM, &data->debug_bpm);
+  parse_int_tuple(iter, WATCHFACE_DEBUG_MESSAGE_KEY_STEPS, data,
+                  WATCHFACE_DATA_DEBUG_STEPS, &data->debug_steps);
+}
+#endif
+#endif
 
 static void inbox_received_callback(
     DictionaryIterator* iter,
@@ -88,126 +202,33 @@ static void inbox_received_callback(
     return;
   }
 
-  bool changed = false;
-  bool repaint_requested = false;
-  WatchfaceUpdateMask updates = WATCHFACE_UPDATE_NONE;
+  WatchfaceEventData data = {0};
+  WatchfaceSettings previous_settings = s_settings;
 
-  Tuple* tf = dict_find(iter, MESSAGE_KEY_TIME_FORMAT);
-  int time_fmt = 0;
-  if (tf && helper_tuple_to_int(tf, &time_fmt) && TIME_FORMAT_VALID(time_fmt)) {
-    s_settings.time_format = (uint8_t)time_fmt;
-    changed = true;
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_TIME);
-  } else if (tf) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid TIME_FORMAT");
-  }
+  parse_settings_data(iter, &data);
+  parse_weather_data(iter, &data);
 
-  Tuple* tu = dict_find(iter, MESSAGE_KEY_TEMP_UNIT);
-  int temp_unit = 0;
-  if (tu && helper_tuple_to_int(tu, &temp_unit) && TEMP_UNIT_VALID(temp_unit)) {
-    s_settings.temp_unit = (uint8_t)temp_unit;
-    changed = true;
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
-  } else if (tu) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid TEMP_UNIT");
-  }
+#ifdef PBL_HEALTH
+  parse_health_settings_data(iter, &data);
+#if ATAGLANCE_DEBUG
+  parse_debug_health_data(iter, &data);
+#endif
+#endif
 
-  Tuple* tt = dict_find(iter, MESSAGE_KEY_TEMPERATURE);
-  if (tt && tt->type == TUPLE_INT) {
-    watchface_set_temperature((int)tt->value->int32);
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
-  } else if (tt) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid TEMPERATURE");
-  }
+  watchface_apply_received_data(&data, &s_settings);
 
-  Tuple* tw = dict_find(iter, MESSAGE_KEY_WEATHER_CONDITION);
-  if (tw && tw->type == TUPLE_INT) {
-    watchface_set_weather_condition((int)tw->value->int32);
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
-  } else if (tw) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid WEATHER_CONDITION");
-  }
-
-  Tuple* ti = dict_find(iter, MESSAGE_KEY_IS_DAY);
-  if (ti && ti->type == TUPLE_INT) {
-    int is_day = (int)ti->value->int32;
-    if (is_day == 0 || is_day == 1) {
-      watchface_set_is_day(is_day == 1);
-      updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_CLIMATE);
-    } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "AppMessage inbox invalid IS_DAY");
-    }
-  } else if (ti) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid IS_DAY");
+  if (previous_settings.time_format != s_settings.time_format ||
+      previous_settings.temp_unit != s_settings.temp_unit ||
+      previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
+      previous_settings.display_mode != s_settings.display_mode) {
+    settings_save(&s_settings);
   }
 
 #ifdef PBL_HEALTH
-
-  Tuple* th = dict_find(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES);
-  int hr_minutes = 0;
-  if (th && helper_tuple_to_int(th, &hr_minutes) && HR_SAMPLE_MINUTES_VALID(hr_minutes)) {
-    s_settings.hr_sample_minutes = (uint8_t)hr_minutes;
+  if (previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes) {
     apply_hr_sample_period();
-    changed = true;
-  } else if (th) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox invalid HR_SAMPLE_MINUTES");
   }
-
-#if ATAGLANCE_DEBUG
-
-  Tuple* t_debug_bpm = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_BPM);
-  int debug_bpm = 0;
-  if (t_debug_bpm && helper_tuple_to_int(t_debug_bpm, &debug_bpm)) {
-    watchface_debug_set_bpm(debug_bpm);
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_HEALTH);
-  } else if (t_debug_bpm) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid DEBUG_BPM");
-  }
-
-  Tuple* t_debug_steps = dict_find(iter, WATCHFACE_DEBUG_MESSAGE_KEY_STEPS);
-  int debug_steps = 0;
-  if (t_debug_steps && helper_tuple_to_int(t_debug_steps, &debug_steps)) {
-    watchface_debug_set_steps(debug_steps);
-    updates = (WatchfaceUpdateMask)(updates | WATCHFACE_UPDATE_HEALTH);
-  } else if (t_debug_steps) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "AppMessage inbox invalid DEBUG_STEPS");
-  }
-// End Debug Mode
 #endif
-// End check for health module
-#endif
-
-  Tuple* td = dict_find(iter, MESSAGE_KEY_DISPLAY_MODE);
-  int display_mode = 0;
-  if (td) {
-    bool display_mode_is_valid =
-        helper_tuple_to_int(td, &display_mode) &&
-        DISPLAY_MODE_VALID(display_mode);
-    if (display_mode_is_valid && s_settings.display_mode != (uint8_t)display_mode) {
-      s_settings.display_mode = (uint8_t)display_mode;
-      repaint_requested = true;
-      changed = true;
-    } else if (!display_mode_is_valid) {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox invalid DISPLAY_MODE");
-    }
-  }
-
-  if (changed) {
-    settings_save(&s_settings);
-  }
-  if (repaint_requested) {
-    watchface_repaint();
-  } else if (updates != WATCHFACE_UPDATE_NONE) {
-    watchface_refresh(updates);
-  }
 }
 
 static void inbox_dropped_callback(
