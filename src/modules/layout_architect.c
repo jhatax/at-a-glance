@@ -101,7 +101,7 @@ static void architect_get_layout_from_blueprint(
 
   // Y2: Y1 + 1/2 (height_band - height_track)
   module_y = current_row_y +
-    ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_TRACK_HEIGHT) >> 1);
+      ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_TRACK_HEIGHT) >> 1);
   computed->battery.track = GRect(
       module_x,
       module_y,
@@ -119,14 +119,14 @@ static void architect_get_layout_from_blueprint(
 
   // Add the bolt relative to the top of the BATTERY BAND
   module_y = current_row_y +
-    ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_BOLT_HEIGHT) >> 1);
+      ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_BOLT_HEIGHT) >> 1);
   module_x += module_w + DESIGN_ICON_TEXT_GAP;
   module_w = DESIGN_BATTERY_BOLT_WIDTH;
   computed->battery.bolt = GRect(
-        module_x,
-        module_y,
-        module_w,
-        DESIGN_BATTERY_BOLT_HEIGHT);
+      module_x,
+      module_y,
+      module_w,
+      DESIGN_BATTERY_BOLT_HEIGHT);
 
   // The CLIMATE and DATE row
   // Climate:
@@ -136,14 +136,10 @@ static void architect_get_layout_from_blueprint(
   // Advance the curent row's Y by DESIGN_BATTERY_BAND_HEIGHT
   current_row_y += DESIGN_BATTERY_BAND_HEIGHT;
 
-  // const int16_t date_text_height = blueprint->date_text_height;
-  // const int16_t climate_date_row_height = HELPER_MAX(icon_text_row_height, date_text_height);
-  // const int16_t climate_row_offset_y = (climate_date_row_height - icon_text_row_height) >> 1;
-
   // Text
   // For this row, anchor all modules at current-row's y
   module_x = x_start;
-  module_y = current_row_y; // + climate_row_offset_y + text_offset_y;
+  module_y = current_row_y;
   module_w = blueprint->climate_text_width;
   const int16_t data_text_height = blueprint->data_text_height;
 
@@ -153,13 +149,13 @@ static void architect_get_layout_from_blueprint(
       module_w,
       data_text_height);
 
-    // Icon
-    // For this row, anchor all modules at current-row's y
-    module_x += module_w + DESIGN_ICON_TEXT_GAP;
-    const int16_t icon_w = blueprint->icon_w;
-    const int16_t icon_h = blueprint->icon_h;
+  // Icon
+  // For this row, anchor all modules at current-row's y
+  module_x += module_w + DESIGN_ICON_TEXT_GAP;
+  const int16_t icon_w = blueprint->icon_w;
+  const int16_t icon_h = blueprint->icon_h;
 
-  module_y = current_row_y; // + climate_row_offset_y + icon_offset_y;
+  module_y = current_row_y;
   module_w = icon_w;
   computed->climate.icon = GRect(
       module_x,
@@ -167,9 +163,9 @@ static void architect_get_layout_from_blueprint(
       module_w,
       icon_h);
 
-  // Add the gap between icon and text to show the date next (temperature-gap-climate-icon-gap-date)
+  // Add the gap between icon and text to show the date next.
   module_x += module_w + DESIGN_ICON_TEXT_GAP;
-  module_y = current_row_y; //  + ((climate_date_row_height - date_text_height) >> 1);
+  module_y = current_row_y;
   module_w = face_width - module_x - blueprint->margin;
   computed->date = GRect(
       module_x,
