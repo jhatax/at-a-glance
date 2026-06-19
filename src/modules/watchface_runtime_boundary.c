@@ -6,24 +6,13 @@
 #include "steps.h"
 #endif
 
-typedef enum {
-  WATCHFACE_RUNTIME_UPDATE_NONE = 0,
-  WATCHFACE_RUNTIME_UPDATE_SETTINGS = 1 << 0,
-  WATCHFACE_RUNTIME_UPDATE_WEATHER = 1 << 1,
-#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-  WATCHFACE_RUNTIME_UPDATE_DEBUG_HEALTH = 1 << 2,
-#endif
-} WatchfaceRuntimeUpdateMask;
-
 static void apply_setting_data(
     const WatchfaceEventData* data,
     WatchfaceSettings* settings,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh,
     bool* repaint);
 static void apply_weather_data(
     const WatchfaceEventData* data,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh);
 static void apply_service_event_data(
     const WatchfaceEventData* data,
@@ -31,12 +20,10 @@ static void apply_service_event_data(
 #ifdef PBL_HEALTH
 static void apply_health_setting_data(
     const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    WatchfaceRuntimeUpdateMask* runtime_updates);
+    WatchfaceSettings* settings);
 #if ATAGLANCE_DEBUG
 static void apply_debug_health_data(
     const WatchfaceEventData* data,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh);
 #endif
 #endif
@@ -44,10 +31,9 @@ static void apply_debug_health_data(
 static void apply_setting_data(
     const WatchfaceEventData* data,
     WatchfaceSettings* settings,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh,
     bool* repaint) {
-  if (!data || !settings || !runtime_updates || !refresh || !repaint) {
+  if (!data || !settings || !refresh || !repaint) {
     return;
   }
 
@@ -55,8 +41,6 @@ static void apply_setting_data(
     if (TIME_FORMAT_VALID(data->time_format)) {
       if (settings->time_format != (uint8_t)data->time_format) {
         settings->time_format = (uint8_t)data->time_format;
-        *runtime_updates =
-            (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_SETTINGS);
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
@@ -70,8 +54,6 @@ static void apply_setting_data(
     if (TEMP_UNIT_VALID(data->temp_unit)) {
       if (settings->temp_unit != (uint8_t)data->temp_unit) {
         settings->temp_unit = (uint8_t)data->temp_unit;
-        *runtime_updates =
-            (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_SETTINGS);
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
       }
     } else {
@@ -85,8 +67,6 @@ static void apply_setting_data(
     if (DISPLAY_MODE_VALID(data->display_mode)) {
       if (settings->display_mode != (uint8_t)data->display_mode) {
         settings->display_mode = (uint8_t)data->display_mode;
-        *runtime_updates =
-            (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_SETTINGS);
         *repaint = true;
       }
     } else {
@@ -99,9 +79,8 @@ static void apply_setting_data(
 
 static void apply_weather_data(
     const WatchfaceEventData* data,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh) {
-  if (!data || !runtime_updates || !refresh) {
+  if (!data || !refresh) {
     return;
   }
 
@@ -118,8 +97,6 @@ static void apply_weather_data(
     return;
   }
 
-  *runtime_updates =
-      (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_WEATHER);
   *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
 
   if (weather_parsed != weather_mask) {
@@ -160,9 +137,8 @@ static void apply_service_event_data(
 #ifdef PBL_HEALTH
 static void apply_health_setting_data(
     const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    WatchfaceRuntimeUpdateMask* runtime_updates) {
-  if (!data || !settings || !runtime_updates) {
+    WatchfaceSettings* settings) {
+  if (!data || !settings) {
     return;
   }
 
@@ -170,8 +146,6 @@ static void apply_health_setting_data(
     if (HR_SAMPLE_MINUTES_VALID(data->hr_sample_minutes)) {
       if (settings->hr_sample_minutes != (uint8_t)data->hr_sample_minutes) {
         settings->hr_sample_minutes = (uint8_t)data->hr_sample_minutes;
-        *runtime_updates =
-            (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_SETTINGS);
       }
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
@@ -184,23 +158,18 @@ static void apply_health_setting_data(
 #if ATAGLANCE_DEBUG
 static void apply_debug_health_data(
     const WatchfaceEventData* data,
-    WatchfaceRuntimeUpdateMask* runtime_updates,
     WatchfaceUpdateMask* refresh) {
-  if (!data || !runtime_updates || !refresh) {
+  if (!data || !refresh) {
     return;
   }
 
   if (data->parsed & WATCHFACE_DATA_DEBUG_BPM) {
     bpm_module_debug_set_bpm(data->debug_bpm);
-    *runtime_updates =
-        (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_DEBUG_HEALTH);
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
   }
 
   if (data->parsed & WATCHFACE_DATA_DEBUG_STEPS) {
     steps_module_debug_set_steps(data->debug_steps);
-    *runtime_updates =
-        (WatchfaceRuntimeUpdateMask)(*runtime_updates | WATCHFACE_RUNTIME_UPDATE_DEBUG_HEALTH);
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
   }
 }
@@ -214,22 +183,19 @@ void watchface_apply_received_data(
     return;
   }
 
-  WatchfaceRuntimeUpdateMask runtime_updates = WATCHFACE_RUNTIME_UPDATE_NONE;
   WatchfaceUpdateMask refresh = WATCHFACE_UPDATE_NONE;
   bool repaint = false;
 
-  apply_setting_data(data, settings, &runtime_updates, &refresh, &repaint);
-  apply_weather_data(data, &runtime_updates, &refresh);
+  apply_setting_data(data, settings, &refresh, &repaint);
+  apply_weather_data(data, &refresh);
   apply_service_event_data(data, &refresh);
 
 #ifdef PBL_HEALTH
-  apply_health_setting_data(data, settings, &runtime_updates);
+  apply_health_setting_data(data, settings);
 #if ATAGLANCE_DEBUG
-  apply_debug_health_data(data, &runtime_updates, &refresh);
+  apply_debug_health_data(data, &refresh);
 #endif
 #endif
-
-  (void)runtime_updates;
 
   if (repaint) {
     watchface_repaint();

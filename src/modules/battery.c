@@ -34,7 +34,7 @@ static GColor calculate_battery_color(void) {
       s_palette->primary_text);
 }
 
-static Layer* s_battery_rule_layer = NULL;
+static Layer* s_battery_track_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
 
 static void draw_battery_track(
@@ -48,9 +48,9 @@ static void draw_battery_fill(
     const GRect* fill,
     int16_t fill_width,
     GColor color);
-static void battery_rule_update_proc(Layer* layer, GContext* ctx);
+static void battery_track_update_proc(Layer* layer, GContext* ctx);
 static void battery_bolt_update_proc(Layer* layer, GContext* ctx);
-static void update_battery_rule(void);
+static void update_battery_track(void);
 
 static void draw_battery_track(
     GContext* ctx,
@@ -89,7 +89,7 @@ static void draw_battery_fill(
       GCornerNone);
 }
 
-static void battery_rule_update_proc(Layer* layer, GContext* ctx) {
+static void battery_track_update_proc(Layer* layer, GContext* ctx) {
   if (!layer || !ctx || !s_surface || !s_palette) {
     return;
   }
@@ -122,12 +122,12 @@ static void battery_bolt_update_proc(Layer* layer, GContext* ctx) {
       calculate_battery_color());
 }
 
-static void update_battery_rule(void) {
-  if (!s_surface || !s_palette || !s_battery_rule_layer) {
+static void update_battery_track(void) {
+  if (!s_surface || !s_palette || !s_battery_track_layer) {
     return;
   }
 
-  layer_mark_dirty(s_battery_rule_layer);
+  layer_mark_dirty(s_battery_track_layer);
   if (s_battery_bolt_layer) {
     layer_set_hidden(
         s_battery_bolt_layer,
@@ -143,17 +143,17 @@ bool battery_module_create(
     return false;
   }
 
-  s_battery_rule_layer = layer_create(surface->battery.track);
-  if (!s_battery_rule_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create battery rule layer");
+  s_battery_track_layer = layer_create(surface->battery.track);
+  if (!s_battery_track_layer) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create battery track layer");
     return false;
   }
 
   s_battery_state = battery_state_service_peek();
   s_surface = surface;
   s_palette = surface->style.palette;
-  layer_set_update_proc(s_battery_rule_layer, battery_rule_update_proc);
-  layer_add_child(root, s_battery_rule_layer);
+  layer_set_update_proc(s_battery_track_layer, battery_track_update_proc);
+  layer_add_child(root, s_battery_track_layer);
 
   s_battery_bolt_layer = layer_create(surface->battery.bolt);
   if (s_battery_bolt_layer) {
@@ -171,9 +171,9 @@ void battery_module_destroy(void) {
     s_battery_bolt_layer = NULL;
   }
 
-  if (s_battery_rule_layer) {
-    layer_destroy(s_battery_rule_layer);
-    s_battery_rule_layer = NULL;
+  if (s_battery_track_layer) {
+    layer_destroy(s_battery_track_layer);
+    s_battery_track_layer = NULL;
   }
 
   s_palette = NULL;
@@ -187,5 +187,5 @@ void battery_module_refresh(void) {
 
   s_palette = s_surface->style.palette;
   s_battery_state = battery_state_service_peek();
-  update_battery_rule();
+  update_battery_track();
 }
