@@ -100,8 +100,12 @@ TODO:
 
 - Clear/sun glyph should not be filled; the filled sun reads poorly on Chalk
   and Flint.
+- Yellow sun should still be clear/outlined rather than a filled yellow disk.
+- Cloud color needs a higher-contrast blue in dark mode.
 - Weather condition `45` is visually broken on smaller watchfaces. The wind/fog
   line scaling appears wrong, likely due to frame/subframe compaction.
+- Windy/fog icon lines need more spacing; compact targets also need different
+  stroke widths.
 - Revisit the sun geometry. Recent radius and ray-length changes made the sun
   worse; recover an earlier, better-balanced visual contract.
 - Weather condition `80` has the same compacted-line issue. Subframed line
@@ -110,6 +114,23 @@ TODO:
 - Partly-clear/cloud composition needs legibility work. The cloud should be
   filled with the background color, and the sun behind it should remain clear so
   the icon reads on light backgrounds.
+- Partly-cloudy cannot be discerned in black-and-white dark or light modes.
+- Drizzle stroke width is too heavy on compact targets.
+- Light sleet fails glanceability on all platforms and modes; redraw or replace
+  the glyph.
+- Snowflake needs to be redrawn for compact targets.
+- Light showers on compact targets are too compressed.
+- Light snow showers are poor on all platforms.
+
+Observed good states:
+
+- Light heavy showers, cloudy, and unavailable weather glyphs are good on all
+  platforms.
+
+Open design question:
+
+- Consider separate compact and non-compact weather icon contracts instead of
+  scaling one glyph set across all display classes.
 
 Next action: use `tools/glyph-lab` or an equivalent screenshot-led glyph pass
 to tune these weather glyphs before porting changes back to the watchface.

@@ -31,8 +31,7 @@ def build(ctx):
         ])
         ctx.pbl_build(source=app_sources,
                       target=app_elf,
-                      bin_type='app',
-                      defines=['ATAGLANCE_DEBUG=1'])
+                      bin_type='app')
 
         if build_worker:
             worker_elf = '{}/pebble-worker.elf'.format(

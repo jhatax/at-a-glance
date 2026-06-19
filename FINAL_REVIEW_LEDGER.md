@@ -313,3 +313,73 @@ Run after P1/P2 decisions above:
 5. Run visual QA across dark/light, color/BW, health available/unavailable,
    weather unavailable, long date, `99999` steps, `100%` battery, and round
    platforms if they remain targeted.
+
+---
+
+## Remaining Review TODOs From Runtime-Boundary Pass
+
+These items remained after the runtime-boundary review and must be resolved in
+separate, explicitly scoped slices.
+
+### FR-300: Temporary debug build define must stay disabled for release
+
+- Status: Closed.
+- Severity: P1 for release builds; accepted temporarily for local validation.
+- Evidence:
+  - `wscript` no longer passes `defines=['ATAGLANCE_DEBUG=1']`.
+- Risk:
+  - Debug rendering and debug AppMessage paths are compiled into every build.
+- Gate:
+  - Keep the forced define out of normal commits. If debug validation is needed,
+    enable it only temporarily and remove it before commit.
+
+### FR-301: Remove dead runtime update mask if it remains unused
+
+- Status: Open.
+- Severity: P3.
+- Evidence:
+  - `WatchfaceRuntimeUpdateMask runtime_updates` is accumulated in
+    `watchface_runtime_boundary.c`, then suppressed with `(void)runtime_updates`.
+- Risk:
+  - Extra state obscures the event-to-refresh flow without enforcing behavior.
+- Gate:
+  - Remove it unless a concrete runtime decision consumes it.
+
+### FR-302: Finish `ataglance.h` retirement cleanup
+
+- Status: Open.
+- Severity: P3.
+- Evidence:
+  - `src/c/ataglance.h` was emptied during the header cleanup path.
+- Risk:
+  - An empty tracked header is misleading and invites future reuse as another
+    mixed-purpose bucket.
+- Gate:
+  - Delete the file only after verifying no include references remain.
+
+### FR-303: Re-audit runtime-boundary public API after stabilization
+
+- Status: Open.
+- Severity: P3.
+- Evidence:
+  - `WatchfaceEventData` is now the single ingress type for AppMessage and
+    Pebble service events.
+- Risk:
+  - The boundary is intentionally broader now, so naming and field shape should
+    be re-audited after test validation to ensure `ataglance.c` remains only a
+    transport/service adapter.
+- Gate:
+  - Confirm `ataglance.c` does not interpret domain meaning, mutate module
+    state, or compute refresh/repaint behavior.
+
+### FR-304: Keep screenshots and scratch artifacts out of source commits
+
+- Status: Open.
+- Severity: P3.
+- Evidence:
+  - Multiple `pebble_screenshot_*.png` files and local review artifacts remain
+    untracked.
+- Risk:
+  - Accidental staging increases repository noise and muddies release commits.
+- Gate:
+  - Stage screenshots only when explicitly selected for docs or release assets.
