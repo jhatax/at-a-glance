@@ -1,5 +1,10 @@
 # Watchface Runtime Boundary Migration Handoff
 
+Archived planning artifact. This document captured the scaffolding for the
+runtime-boundary migration, but it is no longer the active authority. Use
+`ARCHITECTURE_LEDGER.md`, `RAID_LOG.md`, module headers, and live source for
+current architecture decisions and invariants.
+
 ## Summary
 
 This is an architecture boundary migration, not a narrow FR-104 weather patch.
@@ -224,15 +229,15 @@ Weather handling:
     in `received`.
   - `weather_parsed_complete`: all three are in `parsed`.
 - If no weather fields received: no climate source change.
-- If any weather field received but not all three parsed: call
-  `climate_module_set_weather_unavailable()` and set
-  `refresh |= WATCHFACE_UPDATE_CLIMATE`.
+- If any weather field received but not all three parsed: send an incomplete
+  `ClimateUpdate` packet and set `refresh |= WATCHFACE_UPDATE_CLIMATE`.
 - If all three parsed:
-  - call `climate_module_set_weather(temperature, condition, is_day != 0)`;
-  - climate owns domain validation and fallback;
+  - call `climate_module_set_weather(&update)` with `is_complete = true`;
+  - climate owns domain validation, applying valid weather, and clearing stale
+    weather for incomplete or invalid packets;
   - set `refresh |= WATCHFACE_UPDATE_CLIMATE`.
-- Runtime may validate `is_day` as a domain value before passing to climate. If
-  `is_day` is not `0` or `1`, treat weather as unavailable and refresh climate.
+- Runtime does not validate `is_day` as a climate-domain value. Climate owns
+  `is_day` validity and fallback.
 
 Debug health:
 
@@ -253,18 +258,23 @@ Visual application:
 Replace scalar weather setters with atomic climate APIs:
 
 ```c
-void climate_module_set_weather(
-    int celsius_tenths,
-    int weather_condition,
-    bool is_day);
+typedef struct {
+  bool is_complete;
+  int celsius_tenths;
+  int weather_condition;
+  int is_day;
+} ClimateUpdate;
 
-void climate_module_set_weather_unavailable(void);
+void climate_module_set_weather(ClimateUpdate* update);
 ```
 
 `climate.c` responsibilities:
 
 - owns weather source-state fields;
+- receives atomic climate update packets from the runtime boundary;
+- treats incomplete packets as unavailable weather;
 - validates temperature range and condition range;
+- validates `is_day`;
 - owns sentinel/fallback values;
 - sets unavailable state atomically;
 - preserves existing rendering behavior: unavailable temperature text and
