@@ -18,6 +18,7 @@ typedef enum {
 } WatchfaceColorRole;
 
 typedef struct {
+  bool is_light_mode;
   GColor background;
   GColor primary_text;
   GColor unavailable_text;
@@ -57,7 +58,6 @@ typedef struct {
 
 typedef struct {
   const ColorPalette* palette;
-  bool is_light_mode;
   bool is_compact;
   // These two MUST ALWAYS BE THE SAME SIZE
   GFont system_fonts[WATCHFACE_FONT_ROLE_COUNT];
