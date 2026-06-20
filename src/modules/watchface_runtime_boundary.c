@@ -6,6 +6,11 @@
 #include "steps.h"
 #endif
 
+static const WatchfaceDataMask c_weather_mask =
+      WATCHFACE_DATA_TEMPERATURE |
+      WATCHFACE_DATA_WEATHER_CONDITION |
+      WATCHFACE_DATA_IS_DAY;
+
 static void apply_setting_data(
     const WatchfaceEventData* data,
     WatchfaceSettings* settings,
@@ -84,30 +89,28 @@ static void apply_weather_data(
     return;
   }
 
-  WatchfaceDataMask weather_mask =
-      WATCHFACE_DATA_TEMPERATURE |
-      WATCHFACE_DATA_WEATHER_CONDITION |
-      WATCHFACE_DATA_IS_DAY;
   WatchfaceDataMask weather_received =
-      (WatchfaceDataMask)(data->received & weather_mask);
-  WatchfaceDataMask weather_parsed =
-      (WatchfaceDataMask)(data->parsed & weather_mask);
-
+      (WatchfaceDataMask)(data->received & c_weather_mask);
   if (weather_received == WATCHFACE_DATA_NONE) {
     return;
   }
 
+  // Data was received; should be refreshed
+  // If data couldn't be parsed, refresh will display "Unavailable state"
   *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
 
-  if (weather_parsed != weather_mask) {
-    climate_module_set_weather_unavailable();
-    return;
+  WatchfaceDataMask weather_parsed =
+      (WatchfaceDataMask)(data->parsed & c_weather_mask);
+
+  ClimateUpdate climate = {0};
+  if (weather_parsed == c_weather_mask) {
+      climate.is_complete = true;
+      climate.celsius_tenths = data->temperature_celsius_tenths;
+      climate.weather_condition = data->weather_condition;
+      climate.is_day = data->is_day;
   }
 
-  climate_module_set_weather(
-      data->temperature_celsius_tenths,
-      data->weather_condition,
-      data->is_day);
+  climate_module_set_weather(&climate);
 }
 
 static void apply_service_event_data(

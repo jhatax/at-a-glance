@@ -84,8 +84,34 @@ boundaries. Example: stylist functions currently receive
 `WatchfaceSurfaceStyle*`, while some operations may only need palette/font
 fields or specific style members.
 
-Next action: audit runtime-management helpers and narrow signatures where the
-callee does not need to understand the full watchface surface/style type.
+Surface-retention migration target:
+
+| Module | Create needs | Refresh needs | Callback-retained context | Remove retained `WatchfaceSurface*` by |
+| --- | --- | --- | --- | --- |
+| `date` | `WatchfaceTextSubstratum*`, resolved `GFont` | current `ColorPalette*` | none | retaining only the stable `text->color_role` needed to resolve the current palette color |
+| `time` | `WatchfaceTextSubstratum*`, resolved `GFont` | current `ColorPalette*`, `time_format` | none | retaining only the stable `text->color_role` needed to resolve the current palette color |
+| `battery` | `WatchfaceBatteryStratum*` frames | current `ColorPalette*` | current palette pointer plus track/fill/bolt frames for Pebble update procs | copying the small `track`, `fill`, and `bolt` frame values into module-owned callback context |
+| `climate` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*`, `temp_unit` | current palette pointer for the climate icon update proc | retaining text layer, icon layer state, weather source state, and current palette pointer only |
+| `bpm` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer for the BPM icon update proc | retaining text color role, BPM source/debug state, and current palette pointer only |
+| `steps` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer, bitmap, and bitmap foreground color | retaining text color role, steps source/debug state, bitmap state, and current palette pointer only |
+
+Future design notes:
+
+- Create a font equivalent to `ColorPalette` so font-role resolution does not
+  hang directly off `WatchfaceSurfaceStyle`.
+- Audit `is_compact` usage and decide whether it belongs on
+  `WatchfaceSurfaceStyle` or in a narrower layout/style/font contract.
+
+Validation target: after the migration, `watchface.c` may still own and inspect
+the whole `WatchfaceSurface`, but feature modules should no longer retain
+`static const WatchfaceSurface* s_surface`.
+
+Implementation note: date, time, battery, climate, BPM, and steps now receive
+narrow create inputs and current palettes on refresh. The remaining helper audit
+is broader than surface retention and covers style/font helper boundaries.
+
+Next action: audit font/style helper ownership and verify with
+`rg "static const WatchfaceSurface\\* s_surface" src/modules`.
 
 ### Weather glyph visual defects need a focused pass
 
@@ -96,15 +122,32 @@ The screenshot grid `weather-condition-watchface-grid.png` exposed several
 weather glyph defects across compact and full targets. These are product/visual
 issues, not part of the runtime-boundary migration.
 
+The larger concern is architectural, not only cosmetic: production weather
+glyphs still use a separate frame-aware scaling vocabulary in
+`climate_glyphs.c`, including local line, fill, rectangle, circle, and
+`weather_subframe()` helpers. That vocabulary now sits beside renderer-owned
+stroke and scaling helpers. Before production edits, audit whether each glyph
+should keep a local contract, move toward shared renderer vocabulary, or define
+separate compact and non-compact contracts.
+
+Process:
+
+1. Prototype and validate non-trivial weather glyph changes in `tools/glyph-lab`
+   or an equivalent screenshot-led harness first.
+2. Port validated glyphs into the main watchface tree one glyph at a time.
+3. For each glyph, capture before/after behavior, document the geometry intent
+   in code where it clarifies maintenance, request approval, then commit.
+
 TODO:
 
 - Clear/sun glyph should not be filled; the filled sun reads poorly on Chalk
   and Flint.
 - Yellow sun should still be clear/outlined rather than a filled yellow disk.
-- Cloud color needs a higher-contrast blue in dark mode.
-- Weather condition `45` is visually broken on smaller watchfaces. The wind/fog
-  line scaling appears wrong, likely due to frame/subframe compaction.
-- Windy/fog icon lines need more spacing; compact targets also need different
+- Weather blue needs higher contrast across light and dark modes. Cobalt Blue
+  remains too low-contrast and needs a focused color decision.
+- Weather condition `45` is visually broken on smaller watchfaces. The fog line
+  scaling appears wrong, likely due to frame compaction.
+- Fog icon lines need more spacing; compact targets may also need different
   stroke widths.
 - Revisit the sun geometry. Recent radius and ray-length changes made the sun
   worse; recover an earlier, better-balanced visual contract.
@@ -131,9 +174,107 @@ Open design question:
 
 - Consider separate compact and non-compact weather icon contracts instead of
   scaling one glyph set across all display classes.
+- Decide whether `weather_subframe()` remains part of the production glyph
+  contract or whether subframed glyphs need explicit compact/full geometry.
+
+Completed code slices:
+
+- Fog bar spacing was widened in `tools/glyph-lab/src/c/glyph_lab_glyphs.c` and
+  `src/modules/climate_glyphs.c` from y positions `10/15/20` to `6/14/22`.
+  Visual screenshot acceptance is still pending.
 
 Next action: use `tools/glyph-lab` or an equivalent screenshot-led glyph pass
 to tune these weather glyphs before porting changes back to the watchface.
+
+### Background stratum cleanup
+
+Type: Issue
+Status: Closed
+
+The stale background stratum was removed after the background layer went away.
+This included deleting `WatchfaceBackgroundStratum`, removing
+`WatchfaceSurface.background`, removing unused background palette fields, and
+removing `WATCHFACE_UPDATE_BACKGROUND`.
+
+Decision: background color remains window/style state unless a real background
+module is restored.
+
+### Runtime update mask cleanup
+
+Type: Issue
+Status: Closed
+
+The unused private `WatchfaceRuntimeUpdateMask` was removed from
+`watchface_runtime_boundary.c`. Runtime-boundary handling no longer accumulates
+a mask that is discarded.
+
+Decision: `ataglance.c` does not receive a runtime-update result. It parses
+transport data, calls the watchface runtime boundary, then observes pre/post
+settings only for persistence and HR sample-period application.
+
+### Battery rule vocabulary cleanup
+
+Type: Issue
+Status: Closed
+
+Battery internals now use `track` vocabulary for the horizontal battery track
+instead of stale `rule` names.
+
+Decision: this was naming cleanup only; behavior and drawing policy did not
+change.
+
+### Layout architect comment cleanup
+
+Type: Issue
+Status: Closed
+
+Stale commented-out calculations were removed from `layout_architect.c`, local
+indentation was normalized, and the round design margin was raised to prevent
+Chalk icon clipping.
+
+Decision: keep layout comments focused on current geometry contracts rather
+than preserving old calculation experiments inline.
+
+### Runtime review findings resolved
+
+Type: Issue
+Status: Closed
+
+The current runtime-boundary review found and resolved several defects before
+commit:
+
+- Incomplete or malformed weather packets no longer become valid zeroed
+  weather. Runtime now sends an atomic `ClimateUpdate` packet and sets
+  `is_complete` only when all weather tuples parse; climate owns applying valid
+  weather or clearing stale weather.
+- The weather packet contract was renamed from parser-centric `data_parsed` to
+  runtime-owned `is_complete`, and the boundary is documented in `climate.h` and
+  `ARCHITECTURE_LEDGER.md`.
+- The private `climate_is_day_is_valid()` predicate was restored to `static`
+  linkage.
+- Battery track fill again uses the computed battery color, preserving
+  low/medium/charging color policy and removing the dead `fill_color`
+  calculation.
+- Steps bitmap recoloring now combines real-device glanceability with cheap
+  repaint behavior: desired foreground is `gcolor_legible_over()` the active
+  palette background, while mutation tracks the bitmap's current foreground
+  color and only replaces when it changes.
+- Steps availability now treats `0` as unavailable in both production and debug
+  paths. Product decision: zero steps should render as the cockpit-style `---`
+  panel rather than as a useful metric value.
+- BPM waveform stroke width is intentionally fixed at 2px after real Flint
+  hardware testing showed the scaled procedural glyph was not sufficiently
+  visible. This visual change is accepted as product legibility work within the
+  current staged slice.
+- BPM icon direction remains open: prefer a real BPM icon asset over the current
+  rendered procedural glyph when a suitable asset is found.
+- The stale `watchface-runtime-boundary.md` handoff plan was archived under
+  `archive/` so the live authority remains `ARCHITECTURE_LEDGER.md`, this RAID
+  log, module headers, and source.
+
+Decision: runtime supplies atomic update packets and transport completeness;
+feature modules own domain validity, source-state fallback, and render-specific
+legibility choices.
 
 ## Accepted Decisions
 
@@ -153,8 +294,10 @@ Status: Accepted
 
 `watchface` owns `WatchfaceSurface` storage. The architect prepares that
 surface from scratch and stores final geometry plus compact/full state.
-Feature modules create layers from the prepared surface and retain it for
-their lifetime.
+`watchface.c` passes only the narrow substrata, frames, fonts, palette, and
+runtime scalar values each feature module needs. Feature modules must not retain
+`WatchfaceSurface*`; Pebble update procs may retain only minimal callback
+context such as the active palette pointer and copied frame values.
 
 ### Shared visual DNA across display families
 

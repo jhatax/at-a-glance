@@ -6,6 +6,7 @@
 
 bool date_module_create(
     Layer* root,
-    const WatchfaceSurface* surface);
+    const WatchfaceTextSubstratum* text,
+    GFont font);
 void date_module_destroy(void);
-void date_module_refresh(void);
+void date_module_refresh(const ColorPalette* palette);

@@ -5,7 +5,7 @@
 #define MAX_STR_LEN 8
 static char s_time_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_time_layer = NULL;
-static const WatchfaceSurface* s_surface = NULL;
+static WatchfaceColorRole s_time_color_role = WATCHFACE_COLOR_ROLE_TIME;
 
 static void format_time(
     char* buf,
@@ -35,24 +35,23 @@ static void format_time(
 
 bool time_module_create(
     Layer* root,
-    const WatchfaceSurface* surface) {
-  if (!root || !surface || !surface->style.palette) {
+    const WatchfaceTextSubstratum* text,
+    GFont font) {
+  if (!root || !text || !font) {
     return false;
   }
-
-  const WatchfaceTextSubstratum* text = &surface->time.text;
 
   s_time_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.system_fonts[text->font_role]);
+      font);
   if (!s_time_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Failed to create time text layer");
     return false;
   }
 
-  s_surface = surface;
+  s_time_color_role = text->color_role;
   return true;
 }
 
@@ -63,11 +62,13 @@ void time_module_destroy(void) {
   }
 
   s_time_buffer[0] = '\0';
-  s_surface = NULL;
+  s_time_color_role = WATCHFACE_COLOR_ROLE_TIME;
 }
 
-void time_module_refresh(uint8_t time_format) {
-  if (!s_time_layer || !s_surface || !s_surface->style.palette) {
+void time_module_refresh(
+    const ColorPalette* palette,
+    uint8_t time_format) {
+  if (!s_time_layer || !palette) {
     return;
   }
 
@@ -82,6 +83,6 @@ void time_module_refresh(uint8_t time_format) {
       s_time_layer,
       s_time_buffer,
       substratum_renderer_color_for_role(
-          s_surface->style.palette,
-          s_surface->time.text.color_role));
+          palette,
+          s_time_color_role));
 }

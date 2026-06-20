@@ -15,13 +15,12 @@ static char s_temperature_buffer[MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
 static bool s_is_day = false;
-static const WatchfaceSurface* s_surface = NULL;
-static bool s_weather_condition_known = false;
+static const ColorPalette* s_palette = NULL;
+static bool s_climate_is_available = false;
 
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit);
 static bool climate_temperature_is_valid(int celsius_tenths);
 static bool climate_condition_is_valid(int weather_condition);
-static bool climate_is_day_is_valid(int is_day);
 static void climate_module_update_display(uint8_t temp_unit);
 static void climate_module_set_temperature(int celsius_tenths);
 static void climate_module_set_condition(int weather_condition);
@@ -69,22 +68,23 @@ static bool climate_condition_is_valid(int weather_condition) {
 }
 
 static bool climate_is_day_is_valid(int is_day) {
-  return is_day == 0 || is_day == 1;
+  return (is_day == 0 || is_day == 1);
 }
 
 static void climate_module_update_display(uint8_t temp_unit) {
-  if (!s_temperature_layer || !s_surface || !s_surface->style.palette) {
+  if (!s_temperature_layer || !s_palette) {
     return;
   }
 
-  const ColorPalette* palette = s_surface->style.palette;
   bool is_temperature_available = format_temperature(
       s_temperature_buffer,
       MAX_STR_LEN,
       temp_unit);
+
+  // Use formatting output to determine the color of text displayed
   GColor text_color = is_temperature_available ?
-      palette->primary_text :
-      palette->unavailable_text;
+      s_palette->primary_text :
+      s_palette->unavailable_text;
 
   substratum_renderer_update_text_layer(
       s_temperature_layer,
@@ -92,7 +92,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
       text_color);
 
   // Weather is available if there is a temperature and condition is known
-  s_weather_condition_known =
+  s_climate_is_available =
       is_temperature_available &&
       (s_weather_condition != WEATHER_CONDITION_UNKNOWN);
 
@@ -102,47 +102,44 @@ static void climate_module_update_display(uint8_t temp_unit) {
 }
 
 static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
+  if (!layer || !ctx || !s_palette) {
     return;
   }
 
-  const ColorPalette* palette = s_surface->style.palette;
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_fill_color(ctx, palette->background);
+  graphics_context_set_fill_color(ctx, s_palette->background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   int16_t condition = s_weather_condition;
 
-  if (!s_weather_condition_known) {
+  if (!s_climate_is_available) {
     condition = WEATHER_CONDITION_UNKNOWN;
   }
 
-  draw_climate_icon(ctx, &bounds, condition, s_is_day, palette);
+  draw_climate_icon(ctx, &bounds, condition, s_is_day, s_palette);
 }
 
 // APIs called by other components of the watchface
 bool climate_module_create(
     Layer* root,
-    const WatchfaceSurface* surface,
-    uint8_t temp_unit) {
-  if (!root || !surface || !surface->style.palette) {
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font) {
+  if (!root || !text || !font) {
     return false;
   }
 
-  const WatchfaceTextSubstratum* text = &surface->climate.text;
-  const WatchfaceIconSubstratum* icon = &surface->climate.icon;
   s_temperature_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.system_fonts[text->font_role]);
+      font);
   if (!s_temperature_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create climate temperature layer");
     return false;
   }
 
-  s_surface = surface;
-  if (icon->is_enabled) {
+  if (icon && icon->is_enabled) {
     s_climate_icon_layer = substratum_renderer_create_icon_layer(
         root,
         icon,
@@ -153,8 +150,6 @@ bool climate_module_create(
     }
   }
 
-  // Update display now that this module has been created
-  climate_module_update_display(temp_unit);
   return true;
 }
 
@@ -169,18 +164,30 @@ void climate_module_destroy(void) {
   }
 
   s_temperature_buffer[0] = '\0';
-  s_surface = NULL;
+  s_palette = NULL;
 }
 
-void climate_module_refresh(uint8_t temp_unit) {
+void climate_module_refresh(
+    const ColorPalette* palette,
+    uint8_t temp_unit) {
+  if (!palette) {
+    return;
+  }
+
+  s_palette = palette;
   climate_module_update_display(temp_unit);
 }
 
-void climate_module_set_weather(
-    int celsius_tenths,
-    int weather_condition,
-    int is_day) {
-  if (!climate_temperature_is_valid(celsius_tenths) ||
+void climate_module_set_weather(ClimateUpdate* update) {
+  if (update == NULL) {
+    return;
+  }
+
+  int celsius_tenths = update->celsius_tenths;
+  int weather_condition = update->weather_condition;
+  int is_day = update->is_day;
+  if (!update->is_complete ||
+      !climate_temperature_is_valid(celsius_tenths) ||
       !climate_condition_is_valid(weather_condition) ||
       !climate_is_day_is_valid(is_day)) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
@@ -189,12 +196,12 @@ void climate_module_set_weather(
             weather_condition,
             is_day);
     climate_module_set_weather_unavailable();
-    return;
+  } else {
+    climate_module_set_temperature(celsius_tenths);
+    climate_module_set_condition(weather_condition);
+    // Is it really the day or is it night?
+    climate_module_set_is_day((is_day == 1));
   }
-
-  climate_module_set_temperature(celsius_tenths);
-  climate_module_set_condition(weather_condition);
-  climate_module_set_is_day(is_day == 1);
 }
 
 void climate_module_set_weather_unavailable(void) {

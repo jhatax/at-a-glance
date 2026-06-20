@@ -119,13 +119,19 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
   // Load & Apply Fonts (one-time activity for every launch)
   watchface_load_and_apply_fonts();
 
-  s_strata_created_mask |= date_module_create(root, &s_surface) ?
+  s_strata_created_mask |= date_module_create(
+      root,
+      &s_surface.date.text,
+      s_surface.style.system_fonts[s_surface.date.text.font_role]) ?
       DATE_STRATUM_MASK : 0;
 
-  s_strata_created_mask |= time_module_create(root, &s_surface) ?
+  s_strata_created_mask |= time_module_create(
+      root,
+      &s_surface.time.text,
+      s_surface.style.system_fonts[s_surface.time.text.font_role]) ?
       TIME_STRATUM_MASK : 0;
 
-  s_strata_created_mask |= battery_module_create(root, &s_surface) ?
+  s_strata_created_mask |= battery_module_create(root, &s_surface.battery) ?
       BATTERY_STRATUM_MASK : 0;
 
   if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
@@ -134,13 +140,27 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
     return false;
   }
 
-  s_strata_created_mask |=
-    climate_module_create(root, &s_surface, s_wf_settings->temp_unit) ? CLIMATE_STRATUM_MASK : 0;
+  s_strata_created_mask |= climate_module_create(
+      root,
+      &s_surface.climate.text,
+      &s_surface.climate.icon,
+      s_surface.style.system_fonts[s_surface.climate.text.font_role]) ?
+      CLIMATE_STRATUM_MASK : 0;
 
   #ifdef PBL_HEALTH
-  s_strata_created_mask |= bpm_module_create(root, &s_surface) ? BPM_STRATUM_MASK : 0;
+  s_strata_created_mask |= bpm_module_create(
+      root,
+      &s_surface.bpm.text,
+      &s_surface.bpm.icon,
+      s_surface.style.system_fonts[s_surface.bpm.text.font_role]) ?
+      BPM_STRATUM_MASK : 0;
 
-  s_strata_created_mask |= steps_module_create(root, &s_surface) ? STEPS_STRATUM_MASK : 0;
+  s_strata_created_mask |= steps_module_create(
+      root,
+      &s_surface.steps.text,
+      &s_surface.steps.icon,
+      s_surface.style.system_fonts[s_surface.steps.text.font_role]) ?
+      STEPS_STRATUM_MASK : 0;
   #endif
 
   s_watchface_initialized = true;
@@ -232,30 +252,34 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
   // this code won't need to be in sync / will avoid drift.
   if ((updates & WATCHFACE_UPDATE_DATE) &&
       (s_strata_created_mask & DATE_STRATUM_MASK)) {
-    date_module_refresh();
+    date_module_refresh(s_surface.style.palette);
   }
   if ((updates & WATCHFACE_UPDATE_TIME) &&
       (s_strata_created_mask & TIME_STRATUM_MASK)) {
-    time_module_refresh(s_wf_settings->time_format);
+    time_module_refresh(
+        s_surface.style.palette,
+        s_wf_settings->time_format);
   }
   if ((updates & WATCHFACE_UPDATE_BATTERY) &&
       (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
-    battery_module_refresh();
+    battery_module_refresh(s_surface.style.palette);
   }
   if ((updates & WATCHFACE_UPDATE_CLIMATE) &&
       (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
-    climate_module_refresh(s_wf_settings->temp_unit);
+    climate_module_refresh(
+        s_surface.style.palette,
+        s_wf_settings->temp_unit);
   }
 
   #ifdef PBL_HEALTH
   if ((updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & BPM_STRATUM_MASK)) {
-    bpm_module_refresh();
+    bpm_module_refresh(s_surface.style.palette);
   }
 
   if ((updates & WATCHFACE_UPDATE_HEALTH) &&
       (s_strata_created_mask & STEPS_STRATUM_MASK)) {
-    steps_module_refresh();
+    steps_module_refresh(s_surface.style.palette);
   }
   #endif
 }

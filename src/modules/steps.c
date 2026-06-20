@@ -6,14 +6,15 @@
 
 #define MAX_STR_LEN 12
 #define STEPS_INVALID -1
+#define STEPS_MIN 1
 
 static char s_steps_buffer[MAX_STR_LEN] = {0};
 static GBitmap* s_steps_bitmap = NULL;
 static Layer* s_steps_icon_layer = NULL;
 static TextLayer* s_steps_layer = NULL;
 static bool s_steps_is_available = false;
-static const WatchfaceSurface* s_surface = NULL;
-static GColor s_steps_icon_color = {0};
+static const ColorPalette* s_palette = NULL;
+static GColor s_steps_icon_color = GColorBlack;
 #if ATAGLANCE_DEBUG
 static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
@@ -63,18 +64,17 @@ static void draw_steps_bitmap_in_frame(
 }
 
 static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_surface || !s_surface->style.palette) {
+  if (!layer || !ctx || !s_palette) {
     return;
   }
 
-  const ColorPalette* palette = s_surface->style.palette;
+  const GColor bg_color = s_palette->background;
   GRect bounds = layer_get_bounds(layer);
-  graphics_context_set_fill_color(ctx, palette->background);
+  graphics_context_set_fill_color(ctx, bg_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-  GColor icon_color = palette->primary_text;
+  GColor icon_color = gcolor_legible_over(bg_color);
 
-  if (s_steps_bitmap &&
-      !helper_color_equal(s_steps_icon_color, icon_color)) {
+  if (s_steps_bitmap && !helper_color_equal(s_steps_icon_color, icon_color)) {
     if (helper_replace_color_in_bitmap(
             s_steps_bitmap,
             s_steps_icon_color,
@@ -89,28 +89,23 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
     substratum_renderer_draw_unavailable_slash(
         ctx,
         &bounds.size,
-        palette->primary_text);
+        s_palette->unavailable_text);
   }
 }
 
 static void apply_steps_value(int steps, bool is_available) {
-  if (!s_steps_layer || !s_surface || !s_surface->style.palette) {
+  if (!s_steps_layer || !s_palette) {
     return;
   }
 
-  const ColorPalette* palette = s_surface->style.palette;
-  s_steps_is_available = is_available && steps >= 0;
-  GColor text_color = s_steps_is_available ?
-      palette->primary_text : palette->unavailable_text;
+  s_steps_is_available = is_available;
+  GColor text_color = is_available ?
+      s_palette->primary_text : s_palette->unavailable_text;
 
-  if (s_steps_is_available) {
+  if (is_available) {
     snprintf(s_steps_buffer, MAX_STR_LEN, "%d", steps);
   } else {
-    snprintf(
-        s_steps_buffer,
-        MAX_STR_LEN,
-        "%s",
-        WATCHFACE_UNAVAILABLE_TEXT);
+    snprintf(s_steps_buffer, MAX_STR_LEN, "%s", WATCHFACE_UNAVAILABLE_TEXT);
   }
 
   substratum_renderer_update_text_layer(
@@ -126,7 +121,7 @@ static void apply_steps_value(int steps, bool is_available) {
 static void update_steps(void) {
 #if ATAGLANCE_DEBUG
   if (s_debug_steps_is_set) {
-    apply_steps_value(s_debug_steps, s_debug_steps >= 0);
+    apply_steps_value(s_debug_steps, s_debug_steps >= STEPS_MIN);
     s_debug_steps_is_set = false;
     s_debug_steps = STEPS_INVALID;
     return;
@@ -145,8 +140,8 @@ static void update_steps(void) {
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue health_steps = health_service_sum_today(
         HealthMetricStepCount);
-    if (health_steps >= 0) {
-      steps = (int)health_steps;
+    if (health_steps >= STEPS_MIN) {
+      steps = (int) health_steps;
       is_available = true;
     }
   }
@@ -156,18 +151,17 @@ static void update_steps(void) {
 
 bool steps_module_create(
     Layer* root,
-    const WatchfaceSurface* surface) {
-  if (!root || !surface || !surface->style.palette) {
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font) {
+  if (!root || !text || !font) {
     return false;
   }
-
-  const WatchfaceTextSubstratum* text = &surface->steps.text;
-  const WatchfaceIconSubstratum* icon = &surface->steps.icon;
 
   s_steps_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.system_fonts[text->font_role]);
+      font);
 
   if (!s_steps_layer) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -185,8 +179,7 @@ bool steps_module_create(
   // pass knows which color to replace.
   s_steps_icon_color = GColorBlack;
 
-  s_surface = surface;
-  if (icon->is_enabled) {
+  if (icon && icon->is_enabled) {
     uint32_t resource_id = 0;
   #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
     resource_id = RESOURCE_ID_WALK_FULL;
@@ -195,8 +188,11 @@ bool steps_module_create(
   #endif
     s_steps_bitmap = gbitmap_create_with_resource(resource_id);
 
-    if(s_steps_bitmap) {
-      s_steps_icon_layer = substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
+    if (s_steps_bitmap) {
+      s_steps_icon_layer = substratum_renderer_create_icon_layer(
+          root,
+          icon,
+          steps_icon_update_proc);
       if (!s_steps_icon_layer) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
         gbitmap_destroy(s_steps_bitmap);
@@ -226,7 +222,7 @@ void steps_module_destroy(void) {
 
   s_steps_buffer[0] = '\0';
   s_steps_is_available = false;
-  s_surface = NULL;
+  s_palette = NULL;
   s_steps_icon_color = GColorBlack;
   #if ATAGLANCE_DEBUG
   s_debug_steps_is_set = false;
@@ -234,7 +230,12 @@ void steps_module_destroy(void) {
   #endif
 }
 
-void steps_module_refresh(void) {
+void steps_module_refresh(const ColorPalette* palette) {
+  if (!palette) {
+    return;
+  }
+
+  s_palette = palette;
   update_steps();
 }
 

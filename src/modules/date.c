@@ -4,7 +4,7 @@
 #define MAX_STR_LEN 16
 static char s_date_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_date_layer = NULL;
-static const WatchfaceSurface* s_surface = NULL;
+static WatchfaceColorRole s_date_color_role = WATCHFACE_COLOR_ROLE_DATE;
 
 static void uppercase_date(char* buf);
 
@@ -23,23 +23,23 @@ static void uppercase_date(char* buf) {
 
 bool date_module_create(
     Layer* root,
-    const WatchfaceSurface* surface) {
-  if (!root || !surface || !surface->style.palette) {
+    const WatchfaceTextSubstratum* text,
+    GFont font) {
+  if (!root || !text || !font) {
     return false;
   }
 
-  const WatchfaceTextSubstratum* text = &surface->date.text;
   s_date_layer = substratum_renderer_create_text_layer(
       root,
       text,
-      surface->style.system_fonts[text->font_role]);
+      font);
   if (!s_date_layer) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-            "Failed to create date text layer");
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create date text layer");
     return false;
   }
 
-  s_surface = surface;
+  // Don't need to save the font because it isn't changed post creation
+  s_date_color_role = text->color_role;
   return true;
 }
 
@@ -50,11 +50,11 @@ void date_module_destroy(void) {
   }
 
   s_date_buffer[0] = '\0';
-  s_surface = NULL;
+  s_date_color_role = WATCHFACE_COLOR_ROLE_DATE;
 }
 
-void date_module_refresh(void) {
-  if (!s_date_layer || !s_surface || !s_surface->style.palette) {
+void date_module_refresh(const ColorPalette* palette) {
+  if (!s_date_layer || !palette) {
     return;
   }
 
@@ -70,6 +70,6 @@ void date_module_refresh(void) {
       s_date_layer,
       s_date_buffer,
       substratum_renderer_color_for_role(
-          s_surface->style.palette,
-          s_surface->date.text.color_role));
+          palette,
+          s_date_color_role));
 }

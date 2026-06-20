@@ -30,6 +30,28 @@ Durable engineering values:
 
 ---
 
+## Non-negotiables
+
+1. Treat every change as small firmware work: reason about lifecycle, memory, platform capability, message contracts, layout, and visible behavior before coding.
+2. Do not commit files that were not touched for the current explicit slice, and do not turn a narrow instruction into a broader cleanup.
+
+---
+
+## Constraints
+
+1. Use integer layout and drawing math. Do not introduce floating-point math in watchface layout or render paths.
+2. Avoid heap allocation unless the Pebble API requires it; every acquired resource needs a matching destroy path, including create-failure paths.
+3. Use fixed-size buffers and snprintf; never introduce sprintf, strcpy, or unbounded string handling.
+4. Keep render/update callbacks lightweight: no allocation, network, JSON, heavy formatting, or layout calculation inside layer update procs.
+5. Treat color, health, sensors, screen shape, resources, and phone data as optional unless verified for the target platform.
+6. Prefer capability and shape guards such as PBL_COLOR, PBL_BW, PBL_HEALTH, PBL_RECT, PBL_ROUND, and PBL_API_EXISTS().
+7. Do not guess lifecycle, AppMessage, generated resource, or SDK behavior; verify it.
+8. Preserve user work and keep one coherent slice at a time.
+9. Prefer direct, auditable code over clever abstractions or tiny helper wrappers.
+10. Optimize for glanceability, legibility, stable layout, and maintainable embedded C.
+
+---
+
 ## Working Cycle
 
 1. Audit live source, docs, generated files, dirty tree, and relevant memory.
@@ -76,24 +98,24 @@ ataglance.c updates settings
 ## Core Invariants
 
 - `watchface` owns live `WatchfaceSurface` storage and lifetime.
-- Layout initialization clears and prepares the caller-owned surface from
-  scratch.
-- There is one public layout initialization contract. Rectangular and round
-  implementations provide it behind platform guards.
+- Layout initialization clears and prepares the caller-owned surface from scratch.
+- There is one public layout initialization contract, implemented by layout_architect.
 - The architect owns geometry and compact/full classification.
-- Compact/full is resolved once by the architect and stored on
-  `WatchfaceSurfaceStyle.is_compact`; the stylist consumes it.
+- Compact/full is resolved once by the architect and stored on `WatchfaceSurfaceStyle.is_compact`;
+the stylist consumes it.
 - Blueprints are immutable constants/product choices. Calculated layout is the
   resolved geometry used to lay strata on the surface.
 - Layout-private metrics do not leak into `WatchfaceSurface`.
 - Feature modules own Pebble layer lifecycle and source state.
-- `create(root, surface)` may retain the calculated surface once.
+- Feature module `create()` APIs receive only the substrata, frames, and fonts
+  they need from the prepared surface.
+- Feature module `refresh()` APIs receive the current palette and narrow runtime
+  payloads where needed.
+- Feature modules do not retain `WatchfaceSurface*`; they retain only module
+  source state and minimal callback context required by Pebble update procs.
 - Required layer/resource creation gates module success and retained state.
-  Optional resources may be attempted after retaining `surface` only when their
-  failure is explicitly non-fatal and their partial resources are cleaned up
-  before returning success.
-- `refresh()` APIs do not accept `WatchfaceSurface`; they accept only narrow
-  runtime payloads where needed.
+  Optional resources may be attempted only when their failure is explicitly
+  non-fatal and their partial resources are cleaned up before returning success.
 - `ataglance.c` is the Pebble container and transport/service adapter. It may
   construct `WatchfaceEventData` for AppMessage tuples and Pebble service
   events, but it must not interpret domain meaning, mutate module state, or
@@ -102,7 +124,43 @@ ataglance.c updates settings
   updates.
 - Dynamic colors remain module-owned when they depend on live source state,
   such as BPM or battery.
+- Steps icon foreground is selected with `gcolor_legible_over()` against the
+  active palette background. This reflects real-device glanceability testing on
+  lower-brightness e-paper displays, where maximum foreground/background
+  contrast matters more than matching the primary text color.
+- Steps display treats zero steps as unavailable and renders the shared `---`
+  token. Product intent: `0` is the analog of a blank cockpit display panel,
+  not a useful glanceable metric.
+- BPM keeps a fixed 2px waveform stroke after real Flint hardware testing showed
+  the scaled procedural glyph could become effectively invisible. This is an
+  accepted product legibility decision, not a boundary-migration accident.
+- The current BPM icon remains a procedural glyph. Product direction is to
+  replace it with a real BPM icon if a more legible asset is found.
 - Public headers expose only concepts callers need.
+
+## Runtime Boundary RACI
+
+| Runtime concern | Responsible | Accountable | Consulted | Informed |
+| --- | --- | --- | --- | --- |
+| Pebble app lifecycle, window ownership, service subscriptions, and AppMessage inbox setup | `ataglance.c` | `ataglance.c` | `watchface.c` for create/destroy contract | Feature modules through `watchface.c` lifecycle calls |
+| AppMessage tuple lookup and transport parsing | `ataglance.c` | `ataglance.c` | `watchface.h` for `WatchfaceEventData` shape and mask values | `watchface_runtime_boundary.c` through populated event data |
+| Pebble service callbacks converted to watchface events | `ataglance.c` | `ataglance.c` | Pebble SDK service contracts | `watchface_runtime_boundary.c` through `WatchfaceEventData` service bits |
+| Domain validation of settings values | `watchface_runtime_boundary.c` | `watchface_runtime_boundary.c` | `settings.h` validators | `ataglance.c` only through changed `WatchfaceSettings` |
+| Settings mutation from received watchface events | `watchface_runtime_boundary.c` | `watchface_runtime_boundary.c` | `settings.h` persisted field definitions | `ataglance.c` by pre/post settings comparison |
+| Settings persistence | `ataglance.c` | `ataglance.c` | `settings.c` save contract | `watchface_runtime_boundary.c` does not receive the persistence result |
+| HR sample period application | `ataglance.c` | `ataglance.c` | `settings.h` HR period mapping and Pebble health service contract | `watchface_runtime_boundary.c` only mutates the setting when valid |
+| Weather transport completeness from received/parsed masks | `watchface_runtime_boundary.c` | `watchface_runtime_boundary.c` | `WatchfaceEventData.received` and `.parsed` semantics | `climate.c` receives an atomic `ClimateUpdate` packet with `is_complete` set by runtime |
+| Weather domain validity and source-state fallback | `climate.c` | `climate.c` | Open-Meteo code mapping and climate glyph contract | `watchface_runtime_boundary.c` supplies raw complete/incomplete weather packets; climate applies valid weather or clears stale state |
+| Debug health data application | `watchface_runtime_boundary.c` under `PBL_HEALTH && ATAGLANCE_DEBUG` | `watchface_runtime_boundary.c` | `bpm.c` and `steps.c` debug module APIs | `ataglance.c` only parses debug transport keys |
+| Repaint versus refresh decision for watchface events | `watchface_runtime_boundary.c` | `watchface_runtime_boundary.c` | `watchface.c` public repaint/refresh API | `ataglance.c` does not receive or inspect this decision |
+| Module refresh dispatch and surface lifecycle | `watchface.c` | `watchface.c` | Feature module create/refresh/destroy contracts | `ataglance.c` calls only public watchface entry points |
+
+The runtime boundary does not return a runtime-update mask to `ataglance.c`.
+That earlier option was removed in favor of the RACI split: `ataglance.c`
+parses and owns container responsibilities, while the watchface runtime owns
+event interpretation and visual update decisions. `ataglance.c` may persist
+settings or apply HR service changes only by comparing `WatchfaceSettings`
+before and after `watchface_apply_received_data()`.
 
 ---
 
@@ -196,9 +254,12 @@ Observed in the live tree during the June 17, 2026 audit and resolved:
 - `layout_architect.c` includes `layout.h` directly because it implements the
   public layout initialization contract. `layout_design.h` includes only the
   component types it directly needs.
-- `HELPER_CLAMP_MIN` is unused and not fully parenthesized.
+- `HELPER_CLAMP_MIN` is currently unused but intentionally retained as a small
+  helper utility for future clamp-at-minimum calculations.
 - `HELPER_SCALE_ROUND` is used, but not fully parenthesized.
-- `helper_swap_colors_in_bitmap()` is declared and implemented but unused.
+- `helper_swap_colors_in_bitmap()` is currently unused but intentionally
+  retained as a utility for swapping two colors in a PNG/bitmap if that path is
+  needed again.
 - `ColorPalette.background_layer_background` and
   `ColorPalette.background_layer_rule` are unused live struct members.
 - `WatchfaceBackgroundStratum.rule_enabled` and `.rule` are written as
@@ -252,9 +313,10 @@ Observed in the live tree during the June 17, 2026 audit and resolved:
 
 ### Phase 3: Dead Code And Struct Cleanup
 
-1. Remove or use `HELPER_CLAMP_MIN`.
+1. Retain `HELPER_CLAMP_MIN` as an accepted helper utility.
 2. Fully parenthesize helper macros that remain.
-3. Remove `helper_swap_colors_in_bitmap()` if no planned caller remains.
+3. Retain `helper_swap_colors_in_bitmap()` as an accepted PNG/bitmap color-swap
+   utility.
 4. Remove unused `ColorPalette` background-layer fields.
 5. Remove or reconnect unused `WatchfaceBackgroundStratum` fields. If there is
    still no background module, consider removing the background stratum from

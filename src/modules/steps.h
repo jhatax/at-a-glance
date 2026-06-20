@@ -7,9 +7,11 @@
 #ifdef PBL_HEALTH
 bool steps_module_create(
     Layer* root,
-    const WatchfaceSurface* surface);
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font);
 void steps_module_destroy(void);
-void steps_module_refresh(void);
+void steps_module_refresh(const ColorPalette* palette);
 
 #if ATAGLANCE_DEBUG
 void steps_module_debug_set_steps(int steps);

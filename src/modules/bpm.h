@@ -7,9 +7,11 @@
 #ifdef PBL_HEALTH
 bool bpm_module_create(
     Layer* root,
-    const WatchfaceSurface* surface);
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font);
 void bpm_module_destroy(void);
-void bpm_module_refresh(void);
+void bpm_module_refresh(const ColorPalette* palette);
 
 #if ATAGLANCE_DEBUG
 void bpm_module_debug_set_bpm(int bpm);
