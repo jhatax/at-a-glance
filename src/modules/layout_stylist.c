@@ -20,7 +20,7 @@ static uint32_t layout_custom_font_resource_id_for_role(WatchfaceFontRole role, 
   switch (role) {
     case WATCHFACE_FONT_ROLE_TIME:
       return is_compact ?
-          RESOURCE_ID_FONT_CABIN_TIME_36_SEMIBOLD : RESOURCE_ID_FONT_CABIN_TIME_48_SEMIBOLD;
+          RESOURCE_ID_FONT_CABIN_TIME_36_SEMIBOLD : RESOURCE_ID_FONT_CABIN_TIME_60_SEMIBOLD;
     case WATCHFACE_FONT_ROLE_TEXT:
       return is_compact ?
           RESOURCE_ID_FONT_CABIN_TEXT_14_MEDIUM : RESOURCE_ID_FONT_CABIN_TEXT_18_MEDIUM;
@@ -138,35 +138,30 @@ void layout_watchface_unload_custom_fonts(GFont* custom_fonts) {
 
 // Stylist: Color Palette
 static const ColorPalette c_dark_palette = {
+  .is_light_mode = false,
   .background = GColorBlack,
-  .primary_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
+  .primary_text = GColorWhite,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .date = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
+  .date = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorWhite),
 };
 
 static const ColorPalette c_light_palette = {
+  .is_light_mode = true,
   .background = GColorWhite,
-  .primary_text = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
+  .primary_text = GColorBlack,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
   .date = GColorBlack,
   .time = PBL_IF_COLOR_ELSE(GColorSunsetOrange, GColorBlack),
 };
 
-static const ColorPalette* layout_palette_for_display_mode(uint8_t display_mode) {
-  if (display_mode == DISPLAY_MODE_DARK) {
-    return &c_dark_palette;
-  }
-
-  // Default is Light_Mode
-  return &c_light_palette;
-}
-
+// API Contract: If style is a valid value, the palette will always be non-NULL
+// Invariant satisfied because the value assigned to palette is a pointer to
+// one of two static-constant structs with module-scope.
 void layout_watchface_update_palette(WatchfaceSurfaceStyle* style, uint8_t display_mode) {
   if (!style) {
     return;
   }
 
-  style->palette = layout_palette_for_display_mode(display_mode);
-  style->is_light_mode = (display_mode == DISPLAY_MODE_LIGHT);
+  style->palette = (display_mode == DISPLAY_MODE_DARK) ? &c_dark_palette : &c_light_palette;
 }

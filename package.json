@@ -75,6 +75,12 @@
           "type": "font"
         },
         {
+          "characterRegex": "[0-9:]",
+          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "name": "FONT_CABIN_TIME_60_SEMIBOLD",
+          "type": "font"
+        },
+        {
           "file": "images/walk_16.png",
           "name": "WALK_COMPACT",
           "type": "bitmap",
