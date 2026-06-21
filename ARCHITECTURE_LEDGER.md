@@ -124,6 +124,10 @@ the stylist consumes it.
   updates.
 - Dynamic colors remain module-owned when they depend on live source state,
   such as BPM or battery.
+- Module-specific palette policy belongs to the owning feature module, not to
+  renderer helpers. Climate owns its light/dark `ClimatePalette` templates and
+  retains the current copied climate palette for Pebble update procs;
+  `climate_glyphs.c` only renders from a fully-resolved `ClimatePalette*`.
 - Steps icon foreground is selected with `gcolor_legible_over()` against the
   active palette background. This reflects real-device glanceability testing on
   lower-brightness e-paper displays, where maximum foreground/background

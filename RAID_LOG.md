@@ -91,7 +91,7 @@ Surface-retention migration target:
 | `date` | `WatchfaceTextSubstratum*`, resolved `GFont` | current `ColorPalette*` | none | retaining only the stable `text->color_role` needed to resolve the current palette color |
 | `time` | `WatchfaceTextSubstratum*`, resolved `GFont` | current `ColorPalette*`, `time_format` | none | retaining only the stable `text->color_role` needed to resolve the current palette color |
 | `battery` | `WatchfaceBatteryStratum*` frames | current `ColorPalette*` | current palette pointer plus track/fill/bolt frames for Pebble update procs | copying the small `track`, `fill`, and `bolt` frame values into module-owned callback context |
-| `climate` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*`, `temp_unit` | current palette pointer for the climate icon update proc | retaining text layer, icon layer state, weather source state, and current palette pointer only |
+| `climate` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*`, `temp_unit` | current copied `ClimatePalette` for the climate icon update proc | retaining text layer, icon layer state, weather source state, and current module palette copy only |
 | `bpm` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer for the BPM icon update proc | retaining text color role, BPM source/debug state, and current palette pointer only |
 | `steps` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer, bitmap, and bitmap foreground color | retaining text color role, steps source/debug state, bitmap state, and current palette pointer only |
 
@@ -101,6 +101,97 @@ Future design notes:
   hang directly off `WatchfaceSurfaceStyle`.
 - Audit `is_compact` usage and decide whether it belongs on
   `WatchfaceSurfaceStyle` or in a narrower layout/style/font contract.
+- Add a narrow text-palette boundary so modules that only need base text colors
+  and mode do not receive the whole `ColorPalette`.
+
+  Proposed shared shape:
+
+  ```c
+  typedef struct {
+    bool is_light_mode;
+    GColor primary_text;
+    GColor unavailable_text;
+  } WatchfaceTextPalette;
+  ```
+
+  Proposed flow:
+
+  1. `layout_stylist.c` keeps owning the full base `ColorPalette` values:
+     `is_light_mode`, `background`, `primary_text`, `unavailable_text`,
+     `date_text`, and `time_text`.
+  2. `watchface.c` derives a stack-local or copied `WatchfaceTextPalette` from
+     the active base palette before calling module create/refresh functions.
+  3. Feature modules that only need text colors and mode receive
+     `const WatchfaceTextPalette*` instead of `const ColorPalette*`.
+  4. Feature modules with module-specific color semantics define private module
+     palettes, selected from `text_palette->is_light_mode`.
+  5. `watchface_runtime_boundary.c` continues to compute update categories only;
+     it should not construct palettes or pass colors. `watchface.c` remains the
+     owner of visual dispatch and supplies the current text palette during
+     `watchface_refresh()`.
+
+  Future signatures should move toward:
+
+  ```c
+  void date_module_refresh(const WatchfaceTextPalette* text_palette);
+  void time_module_refresh(
+      const WatchfaceTextPalette* text_palette,
+      uint8_t time_format);
+  void climate_module_refresh(
+      const WatchfaceTextPalette* text_palette,
+      uint8_t temp_unit);
+  void battery_module_refresh(const WatchfaceTextPalette* text_palette);
+  void bpm_module_refresh(const WatchfaceTextPalette* text_palette);
+  void steps_module_refresh(const WatchfaceTextPalette* text_palette);
+  ```
+
+  Create functions should be audited separately. Modules that need only mode and
+  text colors should receive `WatchfaceTextPalette`; modules whose Pebble update
+  procs need `background` or role-specific colors may still require either a
+  copied background value or a different narrow palette struct.
+- Drive naming consistency before or during this migration: base palette fields
+  should use explicit role names such as `date_text` and `time_text`, not
+  ambiguous `date` and `time`, because these are text colors rather than module
+  palettes or full feature styles.
+- Module-specific palette migration template:
+
+  1. Keep the full base `ColorPalette` flowing through current module APIs until
+     a separate API-narrowing slice introduces `WatchfaceTextPalette`.
+  2. Define a module-owned palette type for module-specific semantic colors.
+  3. Define `c_dark_*_palette` and `c_light_*_palette` as `static const` values,
+     following the `layout_stylist.c` palette-definition pattern.
+  4. Select the module palette from the incoming base palette's `is_light_mode`.
+     Do not store `is_light_mode` inside the module palette.
+  5. Keep source-state interpretation inside the module. Palette selection should
+     choose colors only; it must not decide whether a battery is low, BPM is high,
+     or weather is available.
+  6. Do not duplicate base palette colors in static module palettes. If lower
+     drawing code needs base colors, copy them from the active base palette
+     during refresh into the module's current palette instance.
+  7. Use one vocabulary consistently within the module; climate uses `unknown`
+     because the glyph state represents unknown weather data. In climate, the
+     current palette's `unknown` and `default_color` are copied from
+     `palette->unavailable_text` and `palette->primary_text`, respectively.
+  8. Store only the selected/current module palette needed by Pebble update procs.
+  9. Keep B/W fallback decisions for module-owned colors in the static module
+     palette constants with
+     `PBL_IF_COLOR_ELSE`.
+  10. After each module migrates, run `git diff --check`, `pebble build`, and stage
+     only that module's reviewed files plus this RAID log if the process changes.
+
+Accepted climate boundary:
+
+- `climate.c` owns climate styling policy. It defines the light/dark
+  `ClimatePalette` templates, selects the template from the active base
+  `ColorPalette.is_light_mode`, and copies active base colors into the current
+  module palette during refresh.
+- `climate.c` retains the active copied `ClimatePalette` because Pebble layer
+  update procs need callback-visible colors after refresh returns.
+- `climate_glyphs.c` is a rendering helper only. It receives a fully-resolved
+  `ClimatePalette*` and must not select light/dark mode, inspect
+  `ColorPalette`, or derive module styling policy.
+- The module updates the active climate palette only when the selected template
+  or injected base colors differ from the currently retained copy.
 
 Validation target: after the migration, `watchface.c` may still own and inspect
 the whole `WatchfaceSurface`, but feature modules should no longer retain
@@ -130,6 +221,32 @@ stroke and scaling helpers. Before production edits, audit whether each glyph
 should keep a local contract, move toward shared renderer vocabulary, or define
 separate compact and non-compact contracts.
 
+Meta-entry:
+
+1. Review `weather_subframe()` usage before tuning individual glyphs.
+2. Review each weather glyph against compact and reference/full display classes.
+3. Decision: follow the `layout_architect` pattern and split compact glyphs from
+   reference glyphs into distinct paths. The goal is to simplify glyph code by
+   avoiding excessive `substratum_scale_*` compensation inside one shared path.
+
+Unavailable glyph decision:
+
+- Device visual testing changed the unavailable weather slash contract. Contrast
+  now comes from the longer segmented slash geometry, so the slash does not need
+  to use `primary_text`. The weather unavailable slash should use
+  `unavailable_text` to keep the unavailable icon semantically consistent while
+  preserving legibility.
+
+Weather blue decision:
+
+- Device visual testing rejected `GColorCobaltBlue` as too low-contrast for
+  weather glyphs and rejected `GColorElectricBlue` as too luminescent on white
+  backgrounds. Cloud, fog, drizzle, rain, and shower glyphs now use module-owned
+  climate palette colors: Electric Blue in dark mode and Blue in light mode,
+  with normal monochrome fallbacks. Snow, snow showers, and sleet stay on
+  `GColorPictonBlue` because that family already reads as distinct cold-weather
+  vocabulary.
+
 Process:
 
 1. Prototype and validate non-trivial weather glyph changes in `tools/glyph-lab`
@@ -143,8 +260,6 @@ TODO:
 - Clear/sun glyph should not be filled; the filled sun reads poorly on Chalk
   and Flint.
 - Yellow sun should still be clear/outlined rather than a filled yellow disk.
-- Weather blue needs higher contrast across light and dark modes. Cobalt Blue
-  remains too low-contrast and needs a focused color decision.
 - Weather condition `45` is visually broken on smaller watchfaces. The fog line
   scaling appears wrong, likely due to frame compaction.
 - Fog icon lines need more spacing; compact targets may also need different
@@ -182,9 +297,70 @@ Completed code slices:
 - Fog bar spacing was widened in `tools/glyph-lab/src/c/glyph_lab_glyphs.c` and
   `src/modules/climate_glyphs.c` from y positions `10/15/20` to `6/14/22`.
   Visual screenshot acceptance is still pending.
+- Weather blue was moved into the module-owned climate palette after device
+  testing. Cloud/fog/rain glyph families use Electric Blue in dark mode and Blue
+  in light mode. Snow/sleet remains Picton Blue.
+- Climate glyph rendering now receives only `ClimatePalette`. The current
+  climate palette copies `background`, `default_color`, and `unknown` from the
+  active base palette so glyph drawing no longer depends on the broader base
+  `ColorPalette` and base text colors do not drift.
+- Glyph-lab will be updated at the end of the next glyph pass. The next coding
+  round will proceed glyph by glyph rather than syncing the whole lab upfront.
 
 Next action: use `tools/glyph-lab` or an equivalent screenshot-led glyph pass
 to tune these weather glyphs before porting changes back to the watchface.
+
+### Documentation source-of-truth drift
+
+Type: Issue
+Status: Open
+
+Some older planning and review documents still contain stale open items or
+pre-migration architecture language. `RAID_LOG.md` and `ARCHITECTURE_LEDGER.md`
+are the current authorities; older ledgers and handoff files should not reopen
+already-closed work unless a fresh source audit proves the issue still exists.
+
+Drifted sources to reconcile:
+
+- `FINAL_REVIEW_LEDGER.md` still lists FR-301 runtime update mask cleanup and
+  FR-302 `ataglance.h` retirement as open. Both are closed in live code and in
+  this RAID log.
+- `FINAL_REVIEW_LEDGER.md` still carries FR-104 pre-migration weather language.
+  The live contract is now atomic `ClimateUpdate`: runtime owns transport
+  completeness, climate owns domain validity and stale-state clearing.
+- `ARCHITECTURE_LEDGER.md` still has stale cleanup backlog lines for removed
+  background stratum/update artifacts, `DESIGN_COMPACT_RIGHT_TEXT_X`, and
+  `HELPER_SCALE_ROUND` not being fully parenthesized.
+- `AGENTS.md` still describes the older AppMessage flow where `ataglance.c`
+  builds a local `WatchfaceUpdateMask`, calls narrow setters, and coalesces
+  `watchface_refresh()`. The current runtime-boundary contract is that
+  `ataglance.c` parses transport tuples, calls the watchface runtime boundary,
+  and does not decide repaint/refresh for AppMessage handling.
+- `layout-architect-role-flow.md` contains an old helper-macro TODO and API
+  examples that should be reconciled against the current layout API before being
+  treated as guidance.
+- Dirty-tree document deletions and archived planning files need one final docs
+  closeout pass so the repository has one clear live documentation set before
+  publication.
+
+Consolidated current status:
+
+- `HELPER_CLAMP_MIN` is intentionally retained as a small helper utility.
+- `HELPER_SCALE_ROUND` is fully parenthesized in live source.
+- `helper_swap_colors_in_bitmap()` is intentionally retained as a bitmap/PNG
+  utility.
+- Background stratum fields, background palette fields, and
+  `WATCHFACE_UPDATE_BACKGROUND` have been removed.
+- `WatchfaceRuntimeUpdateMask` has been removed.
+- `src/c/ataglance.h` has been removed.
+- `src/scratch.txt` has been removed.
+- `design-preview.html` is deleted in the current dirty tree but not yet
+  committed; publication cleanup should verify whether to keep the deletion.
+- Weather glyph issues remain active and should be handled through the glyph-lab
+  validation gate, not through stale final-review entries.
+
+Next action: update or archive the drifted documents in one docs-only closeout
+slice after current code/resource edits settle.
 
 ### Background stratum cleanup
 

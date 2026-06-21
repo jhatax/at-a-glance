@@ -1,6 +1,7 @@
 #include "climate.h"
 #include "climate_glyphs.h"
 #include "settings.h"
+#include "helper.h"
 #include "substratum_renderer.h"
 
 #define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
@@ -8,6 +9,7 @@
 #define WEATHER_CONDITION_MIN 0
 #define WEATHER_CONDITION_MAX 99
 #define MAX_STR_LEN 16
+
 // Initialize static variables to known starting state values
 static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
@@ -15,7 +17,8 @@ static char s_temperature_buffer[MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
 static bool s_is_day = false;
-static const ColorPalette* s_palette = NULL;
+static ClimatePalette s_climate_palette = {0};
+static bool s_climate_palette_is_loaded = false;
 static bool s_climate_is_available = false;
 
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit);
@@ -26,14 +29,55 @@ static void climate_module_set_temperature(int celsius_tenths);
 static void climate_module_set_condition(int weather_condition);
 static void climate_module_set_is_day(bool is_day);
 
+static const ClimatePalette c_dark_climate_palette = {
+  .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
+  .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorWhite),
+  .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
+  .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
+  .clear_fill = GColorWhite,
+};
+
+static const ClimatePalette c_light_climate_palette = {
+  .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
+  .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorBlack),
+  .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
+  .clear_ring = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
+  .clear_fill = GColorBlack,
+};
+
+static const ClimatePalette* climate_palette_template_for_mode(bool is_light_mode) {
+  return is_light_mode ? &c_light_climate_palette : &c_dark_climate_palette;
+}
+
+static void climate_module_update_palette(const ColorPalette* palette) {
+  const ClimatePalette* template = climate_palette_template_for_mode(palette->is_light_mode);
+
+  if (s_climate_palette_is_loaded &&
+      helper_color_equal(s_climate_palette.background, palette->background) &&
+      helper_color_equal(s_climate_palette.default_color, palette->primary_text) &&
+      helper_color_equal(s_climate_palette.unknown, palette->unavailable_text) &&
+      helper_color_equal(s_climate_palette.sun, template->sun) &&
+      helper_color_equal(s_climate_palette.cold, template->cold) &&
+      helper_color_equal(s_climate_palette.cloud, template->cloud) &&
+      helper_color_equal(s_climate_palette.clear_ring, template->clear_ring) &&
+      helper_color_equal(s_climate_palette.clear_fill, template->clear_fill)) {
+    return;
+  }
+
+  s_climate_palette = *template;
+  s_climate_palette.background = palette->background;
+  s_climate_palette.default_color = palette->primary_text;
+  s_climate_palette.unknown = palette->unavailable_text;
+  s_climate_palette_is_loaded = true;
+}
+
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit) {
   if (!buf || buflen == 0) {
     return false;
   }
 
   if (s_temp_celsius_tenths == WEATHER_TEMP_INVALID) {
-    const char* unit_text =
-        temp_unit == TEMP_UNIT_C ? "°C" : "°F";
+    const char* unit_text = temp_unit == TEMP_UNIT_C ? "°C" : "°F";
     snprintf(buf, buflen, "%s%s", WATCHFACE_UNAVAILABLE_TEXT, unit_text);
     return false;
   }
@@ -72,7 +116,7 @@ static bool climate_is_day_is_valid(int is_day) {
 }
 
 static void climate_module_update_display(uint8_t temp_unit) {
-  if (!s_temperature_layer || !s_palette) {
+  if (!s_temperature_layer || !s_climate_palette_is_loaded) {
     return;
   }
 
@@ -83,8 +127,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
 
   // Use formatting output to determine the color of text displayed
   GColor text_color = is_temperature_available ?
-      s_palette->primary_text :
-      s_palette->unavailable_text;
+      s_climate_palette.default_color : s_climate_palette.unknown;
 
   substratum_renderer_update_text_layer(
       s_temperature_layer,
@@ -102,13 +145,13 @@ static void climate_module_update_display(uint8_t temp_unit) {
 }
 
 static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_palette) {
+  if (!layer || !ctx || !s_climate_palette_is_loaded) {
     return;
   }
 
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_context_set_fill_color(ctx, s_climate_palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   int16_t condition = s_weather_condition;
@@ -117,7 +160,7 @@ static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
     condition = WEATHER_CONDITION_UNKNOWN;
   }
 
-  draw_climate_icon(ctx, &bounds, condition, s_is_day, s_palette);
+  draw_climate_icon(ctx, &bounds, condition, s_is_day, &s_climate_palette);
 }
 
 // APIs called by other components of the watchface
@@ -164,7 +207,8 @@ void climate_module_destroy(void) {
   }
 
   s_temperature_buffer[0] = '\0';
-  s_palette = NULL;
+  s_climate_palette = (ClimatePalette) {0};
+  s_climate_palette_is_loaded = false;
 }
 
 void climate_module_refresh(
@@ -174,7 +218,7 @@ void climate_module_refresh(
     return;
   }
 
-  s_palette = palette;
+  climate_module_update_palette(palette);
   climate_module_update_display(temp_unit);
 }
 

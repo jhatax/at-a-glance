@@ -4,9 +4,21 @@
 
 #include "watchface_components.h"
 
+// Fully-resolved climate colors consumed by the glyph renderer.
+typedef struct {
+  GColor background;
+  GColor default_color;
+  GColor unknown;
+  GColor sun;
+  GColor cold;
+  GColor cloud;
+  GColor clear_ring;
+  GColor clear_fill;
+} ClimatePalette;
+
 void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
     bool is_day,
-    const ColorPalette* palette);
+    const ClimatePalette* climate_palette);
