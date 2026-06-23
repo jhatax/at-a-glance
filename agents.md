@@ -115,6 +115,9 @@ PebbleKit JS uses phone geolocation when available and falls back to OAK at
   module headers.
 - `watchface_components.h` is type-focused shared display contract; it must not
   gain behavior.
+- `helper.h` is shared utility vocabulary. Modules and components may include
+  it directly when they use helper macros or helper APIs; this is not header
+  leakage by itself.
 - Dynamic text/icon colors are module-owned when they depend on live source
   state, such as BPM or battery.
 

@@ -65,10 +65,10 @@ typedef struct {
 } WatchfaceEventData;
 
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-typedef enum {
+enum {
   WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020,
   WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021
-} WatchfaceDebugMessageKey;
+};
 #endif
 
 // Create/destroy contract:

@@ -150,6 +150,66 @@ the stylist consumes it.
 - The current BPM icon remains a procedural glyph. Product direction is to
   replace it with a real BPM icon if a more legible asset is found.
 - Public headers expose only concepts callers need.
+- Final header split: `watchface.h` owns runtime/app ingress and refresh
+  contracts; `watchface_components.h` owns only reusable display primitives used
+  by feature modules and renderer helpers; `layout.h` owns the public layout
+  facade plus assembled `WatchfaceSurface`/style output contract; and
+  `layout_design.h` owns private layout design inputs and calculated metrics.
+- Feature module headers must not include `layout.h`; they consume prepared
+  substrata, fonts, and palettes through `watchface_components.h`.
+
+---
+
+## Header Boundaries
+
+This is the final accepted header split for the current architecture. Do not add
+more layout headers, split these headers again, or move concepts between them
+without first proving that the existing split cannot express the boundary.
+
+| Header | Owns | Direct Consumers | Must Not Own |
+| --- | --- | --- | --- |
+| `watchface.h` | Runtime/app ingress, update masks, event masks, `WatchfaceEventData`, weather transport sentinels, public watchface lifecycle/refresh/apply APIs | `ataglance.c`, `watchface.c`, `watchface_runtime_boundary.c`, narrow implementation consumers of watchface transport values | Layout surface structs, feature-module substrata, renderer helpers, glyph details, design constants |
+| `watchface_components.h` | Reusable display primitives: shared unavailable text token, uninitialized text color, font/color roles, `ColorPalette`, icon grid constants, text/icon/battery substrata | Feature module headers, `substratum_renderer.h`, `layout.h`, `layout_design.h` when it needs component-shaped calculated output | `WatchfaceSurface`, `WatchfaceSurfaceStyle`, runtime masks, AppMessage parsing/data packets, layout blueprints, private calculated metrics |
+| `layout.h` | Public layout facade plus assembled layout output contract: `WatchfaceTextStratum`, `WatchfaceTextWithIconStratum`, `WatchfaceSurfaceStyle`, `WatchfaceSurface`, layout initialization, palette update, font lifecycle APIs | `watchface.c`, `layout_architect.c`, `layout_stylist.c` | Feature module APIs, runtime event masks, AppMessage keys, module source state, glyph drawing policy |
+| `layout_design.h` | Private layout design vocabulary: geometry constants, font design constants, blueprints, and calculated layout structs used to prepare a `WatchfaceSurface` | `layout_architect.c`, `layout_stylist.c` only when it needs design/font constants | Public runtime contracts, feature-module APIs, Pebble service/AppMessage contracts, module source state |
+| `watchface_debug.h` | Debug build gate normalization and debug ingress declarations only | Modules or runtime files that compile debug-only branches | Helper APIs, product flags, layout policy, runtime behavior implementation |
+| `helper.h` | Shared utility macros/functions with no module ownership | Any module/component that directly uses a helper macro/API | Product policy, hidden runtime dispatch, feature-specific source state |
+
+Header inclusion directives:
+
+1. `ataglance.c` includes `watchface.h` and must not include layout, component,
+   or feature-module headers.
+2. Feature module headers include `watchface_components.h`, not `layout.h`.
+   They receive prepared substrata, fonts, palettes, and narrow runtime payloads.
+3. `watchface.c` is the joining point that may include `watchface.h`, `layout.h`,
+   and feature module headers because it owns surface lifetime and dispatch.
+4. `layout_architect.c` and `layout_stylist.c` may include `layout.h`; they are
+   the only implementation files that should need the assembled surface/style
+   contract outside `watchface.c`.
+5. `layout_design.h` remains implementation-private. If another file appears to
+   need it, audit whether the needed value belongs in a public component
+   primitive before adding the include.
+6. `watchface_components.h` may expose reusable display primitives, but it must
+   not become a home for assembled layout output or runtime packets.
+7. `layout.h` may be heavier than a pure facade because `WatchfaceSurface` is
+   the layout output contract. This is accepted header debt; do not use it as
+   precedent to add unrelated layout-private design constants to `layout.h`.
+8. Anonymous enums are acceptable for constant groups whose type name is not
+   used. Keep named enum typedefs only when the type itself is part of an API,
+   a cast target, or useful persisted-domain documentation.
+
+Future direction:
+
+- Pay down header debt by narrowing consumers, not by creating more headers.
+- If a feature module needs a new display primitive, add the smallest reusable
+  shape to `watchface_components.h`; do not expose `WatchfaceSurface`.
+- If a layout implementation needs a new private design input, add it to
+  `layout_design.h`; do not leak it through `layout.h`.
+- If runtime transport grows, keep packet and mask shapes in `watchface.h`; do
+  not push runtime ingress into feature module headers.
+- Any future header movement must include an include-graph audit and answer:
+  who needs the symbol, who should not see it, and whether the current final
+  split already has the correct home.
 
 ## Runtime Boundary RACI
 
@@ -183,9 +243,12 @@ before and after `watchface_apply_received_data()`.
   parsing, and dispatch to `watchface`.
 - `src/modules/watchface.c/.h`: runtime clearing house, surface owner, module
   create/destroy order, refresh dispatch, and source-state setter boundary.
-- `src/modules/watchface_components.h`: shared display component types and
-  design input dimensions.
-- `src/modules/layout.h`: public layout initialization/style API.
+- `src/modules/watchface_components.h`: shared display primitives for feature
+  modules and renderer helpers: color/font roles, palettes, icon grid constants,
+  and text/icon/battery substrata.
+- `src/modules/layout.h`: public layout facade plus assembled surface/style
+  output contract used by `watchface.c`, `layout_architect.c`, and
+  `layout_stylist.c`.
 - `src/modules/layout_architect.c`: current geometry provider and surface
   preparation implementation.
 - `src/modules/layout_design.h`: private design constants, blueprints, and

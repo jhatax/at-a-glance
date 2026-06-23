@@ -3,26 +3,26 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum {
+enum {
   TEMP_UNIT_F = 0,
   TEMP_UNIT_C,
   TEMP_UNIT_COUNT,
   TEMP_UNIT_DEFAULT = TEMP_UNIT_F,
-} TempUnit;
+};
 
-typedef enum {
+enum {
   TIME_FMT_24 = 0,
   TIME_FMT_12,
   TIME_FMT_COUNT,
   TIME_FMT_DEFAULT = TIME_FMT_24,
-} TimeFormat;
+};
 
-typedef enum {
+enum {
   DISPLAY_MODE_DARK = 0,
   DISPLAY_MODE_LIGHT,
   DISPLAY_MODE_COUNT,
   DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT,
-} DisplayMode;
+};
 
 typedef enum {
   HR_SAMPLE_MINUTES_10 = 0,

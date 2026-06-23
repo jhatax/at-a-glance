@@ -24,12 +24,12 @@ typedef enum {
   WEATHER_ICON_UNKNOWN,
 } WeatherIconKind;
 
-typedef enum {
+enum {
   WEATHER_ICON_GRID_W = SUBSTRATUM_RENDERER_ICON_GRID_W,
   WEATHER_ICON_GRID_H = SUBSTRATUM_RENDERER_ICON_GRID_H,
   WEATHER_ICON_CENTER_X = WEATHER_ICON_GRID_W / 2,
   WEATHER_ICON_CENTER_Y = WEATHER_ICON_GRID_H / 2,
-} WeatherIconGeometry;
+};
 
 static void weather_subframe(
     const GRect* frame,

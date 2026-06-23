@@ -31,7 +31,7 @@ static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
 #endif
     ;
 
-typedef enum {
+enum {
   NO_STRATA_MASK = 0,
   DATE_STRATUM_MASK = 1,
   TIME_STRATUM_MASK = 2,
@@ -42,7 +42,7 @@ typedef enum {
   BPM_STRATUM_MASK = 16,
   STEPS_STRATUM_MASK = 32
 #endif
-} StratumMask;
+};
 static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
@@ -79,7 +79,9 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
     return true;
   }
 
-  // Leave false until required watchface modules are fully initialized.
+  // At this point, we can confirm that s_watchface_initialized is false.
+  // This in-function boolean is going to track whether all modules are initialized.
+  // Wait until the end to set s_watchface_initialized to the final value of this bool.
   bool success = true;
   if (success && !(window && settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
@@ -167,15 +169,11 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
             : 0;
 #endif
 
-    s_watchface_initialized = true;
-
     success = true;
     watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
   }
 
-  if (!success) {
-    s_watchface_initialized = false;
-  }
+  s_watchface_initialized = success;
   return success;
 }
 

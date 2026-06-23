@@ -5,10 +5,10 @@
 #include "watchface_components.h"
 #include "helper.h"
 
-typedef enum {
+enum {
   SUBSTRATUM_RENDERER_ICON_GRID_W = WATCHFACE_ICON_GRID_WIDTH,
   SUBSTRATUM_RENDERER_ICON_GRID_H = WATCHFACE_ICON_GRID_HEIGHT,
-} SubstratumRendererIconGrid;
+};
 
 #define SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(frame_min, stroke_w) \
   HELPER_CLAMP_MIN((((frame_min) < 20) ? ((stroke_w)-1) : (stroke_w)), 1)
