@@ -168,58 +168,6 @@ static GRect offset_rect(GRect rect, GPoint offset) {
   return rect;
 }
 
-static void draw_scaled_polygon(
-    GContext* ctx,
-    const GRect* frame,
-    const GPoint* design_points,
-    uint32_t point_count,
-    GColor stroke_color,
-    GColor halo_color,
-    int16_t stroke_width,
-    bool draw_halo) {
-  GPoint scaled_points[8];
-  GPathInfo path_info;
-  GPath* path;
-
-  if (!ctx || !frame || !design_points || point_count < 3 ||
-      point_count > 8) {
-    return;
-  }
-
-  for (uint32_t i = 0; i < point_count; ++i) {
-    scaled_points[i] = GPoint(
-        frame->origin.x + HELPER_SCALE_ROUND(
-            design_points[i].x,
-            frame->size.w,
-            DESIGN_ICON_WIDTH),
-        frame->origin.y + HELPER_SCALE_ROUND(
-            design_points[i].y,
-            frame->size.h,
-            DESIGN_ICON_HEIGHT));
-  }
-
-  path_info = (GPathInfo) {
-    .num_points = point_count,
-    .points = scaled_points,
-  };
-  path = gpath_create(&path_info);
-  if (!path) {
-    return;
-  }
-
-  if (draw_halo) {
-    graphics_context_set_stroke_color(ctx, halo_color);
-    graphics_context_set_stroke_width(ctx, stroke_width + 2);
-    gpath_draw_outline(ctx, path);
-  }
-
-  graphics_context_set_stroke_color(ctx, stroke_color);
-  graphics_context_set_stroke_width(ctx, stroke_width);
-  gpath_draw_outline(ctx, path);
-
-  gpath_destroy(path);
-}
-
 static void draw_scaled_filled_polygon(
     GContext* ctx,
     const GRect* frame,

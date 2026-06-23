@@ -5,7 +5,7 @@
 #include "substratum_renderer.h"
 
 #define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
-#define WEATHER_TEMP_MAX_CELSIUS_TENTHS 1000
+#define WEATHER_TEMP_MAX_CELSIUS_TENTHS 1600
 #define WEATHER_CONDITION_MIN 0
 #define WEATHER_CONDITION_MAX 99
 #define MAX_STR_LEN 16
@@ -17,62 +17,58 @@ static char s_temperature_buffer[MAX_STR_LEN] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
 static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
 static bool s_is_day = false;
-static ClimatePalette s_climate_palette = {0};
-static bool s_climate_palette_is_loaded = false;
-static bool s_climate_is_available = false;
 
+static ClimatePalette s_climate_palette = {0};
+
+// In a real palette, the background and normal cannot be the same
+#define CLIMATE_PALETTE_LOADED(pal) \
+ (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
+
+static bool s_climate_is_available = false;
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit);
 static bool climate_temperature_is_valid(int celsius_tenths);
 static bool climate_condition_is_valid(int weather_condition);
 static void climate_module_update_display(uint8_t temp_unit);
 static void climate_module_set_temperature(int celsius_tenths);
 static void climate_module_set_condition(int weather_condition);
-static void climate_module_set_is_day(bool is_day);
 
 static const ClimatePalette c_dark_climate_palette = {
   .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
   .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorWhite),
   .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
   .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .clear_fill = GColorWhite,
+  .clear_fill = GColorLightGray,
 };
 
 static const ClimatePalette c_light_climate_palette = {
   .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
   .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorBlack),
   .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
-  .clear_ring = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
-  .clear_fill = GColorBlack,
+  .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
+  .clear_fill = GColorLightGray,
 };
 
-static const ClimatePalette* climate_palette_template_for_mode(bool is_light_mode) {
-  return is_light_mode ? &c_light_climate_palette : &c_dark_climate_palette;
-}
-
 static void climate_module_update_palette(const ColorPalette* palette) {
-  const ClimatePalette* template = climate_palette_template_for_mode(palette->is_light_mode);
+  const ClimatePalette* template = palette->is_light_mode ?
+    &c_light_climate_palette : &c_dark_climate_palette;
 
-  if (s_climate_palette_is_loaded &&
-      helper_color_equal(s_climate_palette.background, palette->background) &&
-      helper_color_equal(s_climate_palette.default_color, palette->primary_text) &&
-      helper_color_equal(s_climate_palette.unknown, palette->unavailable_text) &&
-      helper_color_equal(s_climate_palette.sun, template->sun) &&
-      helper_color_equal(s_climate_palette.cold, template->cold) &&
-      helper_color_equal(s_climate_palette.cloud, template->cloud) &&
-      helper_color_equal(s_climate_palette.clear_ring, template->clear_ring) &&
-      helper_color_equal(s_climate_palette.clear_fill, template->clear_fill)) {
-    return;
+  if (CLIMATE_PALETTE_LOADED(s_climate_palette)) {
+    if (HELPER_COLOR_EQUAL(s_climate_palette.background, palette->background)) {
+      // The palette doesn't need to be updated
+      return;
+    }
   }
-
+  // Two possibilities:
+  // 1. First time the palette is being initialized
+  // 2. The palette has changed
   s_climate_palette = *template;
   s_climate_palette.background = palette->background;
-  s_climate_palette.default_color = palette->primary_text;
+  s_climate_palette.normal = palette->primary_text;
   s_climate_palette.unknown = palette->unavailable_text;
-  s_climate_palette_is_loaded = true;
 }
 
 static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit) {
-  if (!buf || buflen == 0) {
+  if (!buf || buflen == 0 || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
     return false;
   }
 
@@ -116,7 +112,7 @@ static bool climate_is_day_is_valid(int is_day) {
 }
 
 static void climate_module_update_display(uint8_t temp_unit) {
-  if (!s_temperature_layer || !s_climate_palette_is_loaded) {
+  if (!s_temperature_layer || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
     return;
   }
 
@@ -127,7 +123,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
 
   // Use formatting output to determine the color of text displayed
   GColor text_color = is_temperature_available ?
-      s_climate_palette.default_color : s_climate_palette.unknown;
+      s_climate_palette.normal : s_climate_palette.unknown;
 
   substratum_renderer_update_text_layer(
       s_temperature_layer,
@@ -145,7 +141,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
 }
 
 static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_climate_palette_is_loaded) {
+  if (!layer || !ctx || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
     return;
   }
 
@@ -161,6 +157,28 @@ static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
   }
 
   draw_climate_icon(ctx, &bounds, condition, s_is_day, &s_climate_palette);
+}
+
+static void climate_module_set_temperature(int celsius_tenths) {
+  if (!climate_temperature_is_valid(celsius_tenths)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Weather temperature invalid: value=%d",
+            celsius_tenths);
+    celsius_tenths = WEATHER_TEMP_INVALID;
+  }
+
+  s_temp_celsius_tenths = celsius_tenths;
+}
+
+static void climate_module_set_condition(int weather_condition) {
+  if (!climate_condition_is_valid(weather_condition)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+            "Weather condition invalid: value=%d",
+            weather_condition);
+    weather_condition = WEATHER_CONDITION_UNKNOWN;
+  }
+
+  s_weather_condition = weather_condition;
 }
 
 // APIs called by other components of the watchface
@@ -208,7 +226,6 @@ void climate_module_destroy(void) {
 
   s_temperature_buffer[0] = '\0';
   s_climate_palette = (ClimatePalette) {0};
-  s_climate_palette_is_loaded = false;
 }
 
 void climate_module_refresh(
@@ -239,43 +256,14 @@ void climate_module_set_weather(ClimateUpdate* update) {
             celsius_tenths,
             weather_condition,
             is_day);
-    climate_module_set_weather_unavailable();
+    // Invalidate previous weather data
+    s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
+    s_weather_condition = WEATHER_CONDITION_UNKNOWN;
+    s_is_day = false;
   } else {
     climate_module_set_temperature(celsius_tenths);
     climate_module_set_condition(weather_condition);
     // Is it really the day or is it night?
-    climate_module_set_is_day((is_day == 1));
+    s_is_day = (is_day == 1);
   }
-}
-
-void climate_module_set_weather_unavailable(void) {
-  s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
-  s_weather_condition = WEATHER_CONDITION_UNKNOWN;
-  s_is_day = false;
-}
-
-static void climate_module_set_temperature(int celsius_tenths) {
-  if (!climate_temperature_is_valid(celsius_tenths)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Weather temperature invalid: value=%d",
-            celsius_tenths);
-    celsius_tenths = WEATHER_TEMP_INVALID;
-  }
-
-  s_temp_celsius_tenths = celsius_tenths;
-}
-
-static void climate_module_set_condition(int weather_condition) {
-  if (!climate_condition_is_valid(weather_condition)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Weather condition invalid: value=%d",
-            weather_condition);
-    weather_condition = WEATHER_CONDITION_UNKNOWN;
-  }
-
-  s_weather_condition = weather_condition;
-}
-
-static void climate_module_set_is_day(bool is_day) {
-  s_is_day = is_day;
 }

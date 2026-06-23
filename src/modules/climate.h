@@ -28,4 +28,3 @@ void climate_module_refresh(
     const ColorPalette* palette,
     uint8_t temp_unit);
 void climate_module_set_weather(ClimateUpdate* update);
-void climate_module_set_weather_unavailable(void);

@@ -4,8 +4,13 @@
 
 #include "watchface_components.h"
 
-#define SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(frame_min) \
-  (((frame_min) < 20) ? 1 : 2)
+typedef enum {
+  SUBSTRATUM_RENDERER_ICON_GRID_W = WATCHFACE_ICON_GRID_WIDTH,
+  SUBSTRATUM_RENDERER_ICON_GRID_H = WATCHFACE_ICON_GRID_HEIGHT,
+} SubstratumRendererIconGrid;
+
+#define SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(frame_min, stroke_w) \
+  HELPER_CLAMP_MIN((((frame_min) < 20) ? ((stroke_w)-1) : (stroke_w)), 1)
 
 TextLayer* substratum_renderer_create_text_layer(
     Layer* parent,
@@ -42,16 +47,6 @@ GPoint substratum_renderer_scale_icon_point(
     const GSize* size,
     int16_t x,
     int16_t y);
-
-void substratum_renderer_draw_scaled_polygon_outline(
-    GContext* ctx,
-    const GSize* size,
-    const GPoint* design_points,
-    uint32_t point_count,
-    GColor stroke_color,
-    GColor halo_color,
-    int16_t stroke_width,
-    bool draw_halo);
 
 void substratum_renderer_draw_scaled_line(
     GContext* ctx,
@@ -100,3 +95,26 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     GContext* ctx,
     const GRect* frame,
     GColor fill_color);
+
+void scale_icon_point_in_frame(const GRect* frame, GPoint* input);
+
+GPoint substratum_renderer_icon_x_y_in_frame(
+    const GRect* frame,
+    int16_t x,
+    int16_t y);
+
+int16_t substratum_renderer_scale_icon_x_in_frame(
+    const GRect* frame,
+    int16_t x);
+
+int16_t substratum_renderer_scale_icon_y_in_frame(
+    const GRect* frame,
+    int16_t y);
+
+void substratum_renderer_scale_icon_point_in_frame(
+    const GRect* frame,
+    GPoint* input);
+
+bool is_valid_design_x_coord(int16_t x, int16_t design_width);
+
+bool is_valid_design_y_coord(int16_t y, int16_t design_height);
