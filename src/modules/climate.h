@@ -4,10 +4,6 @@
 
 #include "watchface_components.h"
 
-// JS sends these same sentinel values when weather is unavailable.
-#define WEATHER_TEMP_INVALID INT16_MIN
-#define WEATHER_CONDITION_UNKNOWN -1
-
 // Runtime supplies an atomic climate update packet. `is_complete` reflects
 // runtime-owned transport completeness; climate owns applying valid weather or
 // clearing stale weather when the packet is incomplete or domain-invalid.

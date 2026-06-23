@@ -3,6 +3,7 @@
 #include "settings.h"
 #include "helper.h"
 #include "substratum_renderer.h"
+#include "watchface.h"
 
 #define WEATHER_TEMP_MIN_CELSIUS_TENTHS -1600
 #define WEATHER_TEMP_MAX_CELSIUS_TENTHS 1600
@@ -14,8 +15,8 @@
 static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
 static char s_temperature_buffer[MAX_STR_LEN] = {0};
-static int16_t s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
-static int16_t s_weather_condition = WEATHER_CONDITION_UNKNOWN;
+static int16_t s_temp_celsius_tenths = WATCHFACE_WEATHER_TEMP_UNAVAILABLE;
+static int16_t s_weather_condition = WATCHFACE_WEATHER_CONDITION_UNKNOWN;
 static bool s_is_day = false;
 
 static ClimatePalette s_climate_palette = {0};
@@ -72,7 +73,7 @@ static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit) {
     return false;
   }
 
-  if (s_temp_celsius_tenths == WEATHER_TEMP_INVALID) {
+  if (s_temp_celsius_tenths == WATCHFACE_WEATHER_TEMP_UNAVAILABLE) {
     const char* unit_text = temp_unit == TEMP_UNIT_C ? "°C" : "°F";
     snprintf(buf, buflen, "%s%s", WATCHFACE_UNAVAILABLE_TEXT, unit_text);
     return false;
@@ -92,7 +93,7 @@ static bool format_temperature(char* buf, size_t buflen, uint8_t temp_unit) {
 }
 
 static bool climate_temperature_is_valid(int celsius_tenths) {
-  return celsius_tenths == WEATHER_TEMP_INVALID ||
+  return celsius_tenths == WATCHFACE_WEATHER_TEMP_UNAVAILABLE ||
       (
           celsius_tenths >= WEATHER_TEMP_MIN_CELSIUS_TENTHS &&
           celsius_tenths <= WEATHER_TEMP_MAX_CELSIUS_TENTHS
@@ -100,7 +101,7 @@ static bool climate_temperature_is_valid(int celsius_tenths) {
 }
 
 static bool climate_condition_is_valid(int weather_condition) {
-  return weather_condition == WEATHER_CONDITION_UNKNOWN ||
+  return weather_condition == WATCHFACE_WEATHER_CONDITION_UNKNOWN ||
       (
           weather_condition >= WEATHER_CONDITION_MIN &&
           weather_condition <= WEATHER_CONDITION_MAX
@@ -133,7 +134,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
   // Weather is available if there is a temperature and condition is known
   s_climate_is_available =
       is_temperature_available &&
-      (s_weather_condition != WEATHER_CONDITION_UNKNOWN);
+      (s_weather_condition != WATCHFACE_WEATHER_CONDITION_UNKNOWN);
 
   if (s_climate_icon_layer) {
     layer_mark_dirty(s_climate_icon_layer);
@@ -153,7 +154,7 @@ static void climate_icon_update_proc(Layer* layer, GContext* ctx) {
   int16_t condition = s_weather_condition;
 
   if (!s_climate_is_available) {
-    condition = WEATHER_CONDITION_UNKNOWN;
+    condition = WATCHFACE_WEATHER_CONDITION_UNKNOWN;
   }
 
   draw_climate_icon(ctx, &bounds, condition, s_is_day, &s_climate_palette);
@@ -164,7 +165,7 @@ static void climate_module_set_temperature(int celsius_tenths) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather temperature invalid: value=%d",
             celsius_tenths);
-    celsius_tenths = WEATHER_TEMP_INVALID;
+    celsius_tenths = WATCHFACE_WEATHER_TEMP_UNAVAILABLE;
   }
 
   s_temp_celsius_tenths = celsius_tenths;
@@ -175,7 +176,7 @@ static void climate_module_set_condition(int weather_condition) {
     APP_LOG(APP_LOG_LEVEL_WARNING,
             "Weather condition invalid: value=%d",
             weather_condition);
-    weather_condition = WEATHER_CONDITION_UNKNOWN;
+    weather_condition = WATCHFACE_WEATHER_CONDITION_UNKNOWN;
   }
 
   s_weather_condition = weather_condition;
@@ -257,8 +258,8 @@ void climate_module_set_weather(ClimateUpdate* update) {
             weather_condition,
             is_day);
     // Invalidate previous weather data
-    s_temp_celsius_tenths = WEATHER_TEMP_INVALID;
-    s_weather_condition = WEATHER_CONDITION_UNKNOWN;
+    s_temp_celsius_tenths = WATCHFACE_WEATHER_TEMP_UNAVAILABLE;
+    s_weather_condition = WATCHFACE_WEATHER_CONDITION_UNKNOWN;
     s_is_day = false;
   } else {
     climate_module_set_temperature(celsius_tenths);

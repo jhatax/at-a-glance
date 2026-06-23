@@ -4,6 +4,12 @@
 #include "settings.h"
 #include "watchface_debug.h"
 
+// Weather AppMessage wire sentinels. PebbleKit JS mirrors these values when
+// weather is unavailable; do not change them without updating both sides of
+// the transport contract.
+#define WATCHFACE_WEATHER_TEMP_UNAVAILABLE INT16_MIN
+#define WATCHFACE_WEATHER_CONDITION_UNKNOWN -1
+
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
   WATCHFACE_UPDATE_TIME = 1 << 0,
