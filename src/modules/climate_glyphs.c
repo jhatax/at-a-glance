@@ -2,6 +2,7 @@
 #include "helper.h"
 #include "pebble.h"
 #include "substratum_renderer.h"
+#include "watchface_debug.h"
 #include <stdint.h>
 
 typedef enum {
