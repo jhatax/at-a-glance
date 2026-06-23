@@ -1,39 +1,80 @@
 #include "battery.h"
 
+#include "gcolor_definitions.h"
 #include "helper.h"
 #include "substratum_renderer.h"
 
 static BatteryChargeState s_battery_state = {0};
-static const ColorPalette* s_palette = NULL;
 static GRect s_battery_track = {0};
 static GRect s_battery_fill = {0};
 static GRect s_battery_bolt = {0};
 static Layer* s_battery_track_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
 
+typedef struct {
+  GColor background;
+  GColor normal;
+  GColor medium;
+  GColor low;
+  GColor charging;
+} BatteryPalette;
+
+static BatteryPalette s_battery_palette = {0};
+
+#define BATTERY_PALETTE_LOADED(pal) \
+  (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
+
+static const BatteryPalette c_dark_battery_palette = {
+  .medium = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
+  .low = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
+  .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+};
+
+static const BatteryPalette c_light_battery_palette = {
+  .medium = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
+  .low = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
+  .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+};
+
+static void battery_update_palette(const ColorPalette* palette);
 static GColor calculate_battery_color(int16_t percent);
 
+static void battery_update_palette(const ColorPalette* palette) {
+  const BatteryPalette* template = palette->is_light_mode ?
+    &c_light_battery_palette : &c_dark_battery_palette;
+
+  if (BATTERY_PALETTE_LOADED(s_battery_palette)) {
+    // We know that light-mode and dark-mode have different backgrounds
+    if (HELPER_COLOR_EQUAL(s_battery_palette.background, palette->background)) {
+      // The palette doesn't need to be updated
+      return;
+    }
+  }
+  // Two possibilities:
+  // 1. First time the palette is being initialized
+  // 2. The palette has changed
+  s_battery_palette = *template;
+  s_battery_palette.background = palette->background;
+  s_battery_palette.normal = palette->primary_text;
+}
+
 static GColor calculate_battery_color(int16_t percent) {
-  if (!s_palette) {
+  if (!BATTERY_PALETTE_LOADED(s_battery_palette)) {
     return GColorWhite;
   }
 
   if (s_battery_state.is_charging) {
-    return PBL_IF_COLOR_ELSE(GColorIslamicGreen, s_palette->primary_text);
+    return s_battery_palette.charging;
   }
 
   if (percent > 50) {
-    return s_palette->primary_text;
+    return s_battery_palette.normal;
   }
   if (percent > 20) {
-    return PBL_IF_COLOR_ELSE(
-        s_palette->is_light_mode ? GColorWindsorTan : GColorRajah,
-        s_palette->primary_text);
+    return s_battery_palette.medium;
   }
 
-  return PBL_IF_COLOR_ELSE(
-      s_palette->is_light_mode ? GColorBulgarianRose : GColorRed,
-      s_palette->primary_text);
+  return s_battery_palette.low;
 }
 
 static void battery_track_update_proc(Layer* layer, GContext* ctx);
@@ -41,7 +82,7 @@ static void battery_bolt_update_proc(Layer* layer, GContext* ctx);
 static void update_battery_state(void);
 
 static void battery_track_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_palette) {
+  if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
 
@@ -52,11 +93,11 @@ static void battery_track_update_proc(Layer* layer, GContext* ctx) {
   GColor fill_color = calculate_battery_color(charge_percent);
 
   // Draw this bounding rectangle in the background color to create richer contrast.
-  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_context_set_fill_color(ctx, s_battery_palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
   // Now draw the outline of the battery's track.
-  graphics_context_set_stroke_color(ctx, s_palette->primary_text);
+  graphics_context_set_stroke_color(ctx, fill_color);
   graphics_draw_rect(ctx, bounds);
 
   // Now fill the inside of the track up to the charge width.
@@ -72,7 +113,7 @@ static void battery_track_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void battery_bolt_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_palette) {
+  if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
 
@@ -84,7 +125,7 @@ static void battery_bolt_update_proc(Layer* layer, GContext* ctx) {
 }
 
 static void update_battery_state(void) {
-  if (!s_palette || !s_battery_track_layer) {
+  if (!BATTERY_PALETTE_LOADED(s_battery_palette) || !s_battery_track_layer) {
     return;
   }
 
@@ -138,7 +179,7 @@ void battery_module_destroy(void) {
     s_battery_track_layer = NULL;
   }
 
-  s_palette = NULL;
+  s_battery_palette = (BatteryPalette) {0};
   s_battery_track = GRect(0, 0, 0, 0);
   s_battery_fill = GRect(0, 0, 0, 0);
   s_battery_bolt = GRect(0, 0, 0, 0);
@@ -149,7 +190,7 @@ void battery_module_refresh(const ColorPalette* palette) {
     return;
   }
 
-  s_palette = palette;
+  battery_update_palette(palette);
   s_battery_state = battery_state_service_peek();
   update_battery_state();
 }
