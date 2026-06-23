@@ -1,6 +1,7 @@
 #pragma once
 
-#include <pebble.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
   TEMP_UNIT_F = 0,

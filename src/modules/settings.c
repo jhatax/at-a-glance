@@ -1,4 +1,5 @@
 #include "settings.h"
+#include <pebble.h>
 
 // The ID / key that specifies where settings are persisted in storage
 static const uint32_t c_key_persisted_settings = 2;
