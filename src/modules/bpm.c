@@ -9,103 +9,155 @@
 #define BPM_MIN 1
 #define BPM_EXTREME 120
 #define BPM_HIGH 100
-#define BPM_UNINITIALIZED_COLOR GColorLightGray
-
 #define IS_BPM_VALID(bpm) ((bpm) >= BPM_MIN)
 
-// Decision to set the waveform_stroke_width to 2px
-#define BPM_STROKE_WIDTH 2
+#define BPM_UNINITIALIZED_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
 
 static char s_bpm_buffer[MAX_STR_LEN] = {0};
+static GBitmap* s_bpm_bitmap = NULL;
 static Layer* s_bpm_icon_layer = NULL;
 static TextLayer* s_bpm_layer = NULL;
 static bool s_bpm_is_valid = false;
+
+// This needs to be the main color of the BPM icon
+static GColor s_bpm_icon_color = GColorBlack;
+// This needs to be any color other than the main color of the bpm icon
 static GColor s_bpm_color = BPM_UNINITIALIZED_COLOR;
-static const ColorPalette* s_palette = NULL;
+
+typedef struct {
+  GColor background;
+  GColor normal;
+  GColor warning;
+  GColor critical;
+  GColor unknown;
+} BpmPalette;
+
+static BpmPalette s_bpm_palette = {0};
+
+// In a real palette, the background and normal cannot be the same
+#define BPM_PALETTE_LOADED(pal) \
+ (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
 
 #if ATAGLANCE_DEBUG
 static bool s_debug_bpm_is_set = false;
 static int s_debug_bpm = BPM_INVALID;
 #endif
 
+static const BpmPalette c_dark_bpm_palette = {
+  .warning = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
+  .critical = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
+};
+
+static const BpmPalette c_light_bpm_palette = {
+  .warning = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+  .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
+};
+
+static void bpm_update_palette(const ColorPalette* palette);
 static GColor calculate_bpm_color(int bpm);
-static void draw_bpm_icon_with_color(
+static void draw_bpm_bitmap_in_frame(
     GContext* ctx,
-    GColor color,
-    const GSize* bounds_size);
+    const GRect* frame);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_bpm(void);
 
+static void bpm_update_palette(const ColorPalette* palette) {
+  const BpmPalette* template = palette->is_light_mode ?
+    &c_light_bpm_palette : &c_dark_bpm_palette;
+
+  if (BPM_PALETTE_LOADED(s_bpm_palette)) {
+    // We know that light-mode and dark-mode have different backgrounds
+    if (HELPER_COLOR_EQUAL(s_bpm_palette.background, palette->background)) {
+      // The palette doesn't need to be updated
+      return;
+    }
+  }
+  // Two possibilities:
+  // 1. First time the palette is being initialized
+  // 2. The palette has changed
+  s_bpm_palette = *template;
+  s_bpm_palette.background = palette->background;
+  s_bpm_palette.normal = palette->primary_text;
+  s_bpm_palette.unknown = palette->unavailable_text;
+}
+
 static GColor calculate_bpm_color(int bpm) {
-  if (!s_palette) {
-    return GColorWhite;
+  if (!BPM_PALETTE_LOADED(s_bpm_palette)) {
+    return BPM_UNINITIALIZED_COLOR;
   }
 
   if (bpm < BPM_MIN) {
-    return s_palette->unavailable_text;
+    return s_bpm_palette.unknown;
   }
   if (bpm >= BPM_EXTREME) {
-    return PBL_IF_COLOR_ELSE(
-        s_palette->is_light_mode ?
-            GColorBulgarianRose : GColorOrange,
-        s_palette->primary_text);
+    return s_bpm_palette.critical;
   }
   if (bpm >= BPM_HIGH) {
-    return PBL_IF_COLOR_ELSE(
-        s_palette->is_light_mode ?
-            GColorWindsorTan : GColorChromeYellow,
-        s_palette->primary_text);
+    return s_bpm_palette.warning;
   }
-  return s_palette->primary_text;
+  return s_bpm_palette.normal;
 }
 
-static void draw_bpm_icon_with_color(
+static void draw_bpm_bitmap_in_frame(
     GContext* ctx,
-    GColor color,
-    const GSize* bounds_size) {
-  if (!ctx || !bounds_size) {
+    const GRect* frame) {
+  if (!ctx || !frame || !s_bpm_bitmap) {
     return;
   }
 
-  graphics_context_set_stroke_color(ctx, color);
-  // BPM icon contract: a 1px reference box anchors the waveform visually on
-  // compact displays so the pulse does not collapse into a floating blob.
-  graphics_context_set_stroke_width(ctx, 1);
-  graphics_draw_rect(
-      ctx,
-      GRect(substratum_renderer_scale_icon_x(bounds_size, 3),
-            substratum_renderer_scale_icon_y(bounds_size, 4),
-            substratum_renderer_scale_icon_x(bounds_size, 25) -
-                substratum_renderer_scale_icon_x(bounds_size, 3),
-            substratum_renderer_scale_icon_y(bounds_size, 23) -
-                substratum_renderer_scale_icon_y(bounds_size, 4)));
+  GRect bitmap_bounds = gbitmap_get_bounds(s_bpm_bitmap);
+  GRect draw_frame;
 
-  graphics_context_set_stroke_width(ctx, BPM_STROKE_WIDTH);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 2, 16, 7, 16);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 7, 16, 10, 9);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 10, 9, 14, 23);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 14, 23, 18, 10);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 18, 10, 21, 16);
-  substratum_renderer_draw_scaled_line(ctx, bounds_size, 21, 16, 26, 16);
+  if (bitmap_bounds.size.w > 0 && bitmap_bounds.size.h > 0) {
+    int16_t draw_w = frame->size.w;
+    int16_t draw_h = (bitmap_bounds.size.h * draw_w) /
+        bitmap_bounds.size.w;
+
+    if (draw_h > frame->size.h) {
+      draw_h = frame->size.h;
+      draw_w = (bitmap_bounds.size.w * draw_h) /
+          bitmap_bounds.size.h;
+    }
+
+    draw_frame = GRect(
+        frame->origin.x + ((frame->size.w - draw_w) / 2),
+        frame->origin.y + ((frame->size.h - draw_h) / 2),
+        draw_w,
+        draw_h);
+  } else {
+    draw_frame = *frame;
+  }
+
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, draw_frame);
 }
 
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx) {
-  if (!layer || !ctx || !s_palette) {
+  if (!layer || !ctx || !BPM_PALETTE_LOADED(s_bpm_palette)) {
     return;
   }
 
   GRect bounds = layer_get_bounds(layer);
 
-  graphics_context_set_fill_color(ctx, s_palette->background);
+  graphics_context_set_fill_color(ctx, s_bpm_palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  draw_bpm_icon_with_color(ctx, s_bpm_color, &bounds.size);
+  if (s_bpm_bitmap && !HELPER_COLOR_EQUAL(s_bpm_icon_color, s_bpm_color)) {
+    if (helper_replace_color_in_bitmap(
+            s_bpm_bitmap,
+            s_bpm_icon_color,
+            s_bpm_color)) {
+      s_bpm_icon_color = s_bpm_color;
+    }
+  }
+
+  draw_bpm_bitmap_in_frame(ctx, &bounds);
 
   if (!s_bpm_is_valid) {
     substratum_renderer_draw_unavailable_slash(
       ctx,
       &bounds.size,
-      s_palette->unavailable_text);
+      s_bpm_palette.unknown);
   }
 }
 
@@ -175,18 +227,33 @@ bool bpm_module_create(
   }
 
   s_bpm_is_valid = false;
+  s_bpm_icon_color = GColorBlack;
 #if ATAGLANCE_DEBUG
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
 #endif
 
   if (icon && icon->is_enabled) {
-    s_bpm_icon_layer = substratum_renderer_create_icon_layer(
-        root,
-        icon,
-        bpm_icon_update_proc);
-    if (!s_bpm_icon_layer) {
-      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create BPM icon");
+    uint32_t resource_id = 0;
+  #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+    resource_id = RESOURCE_ID_ECG_FULL;
+  #else
+    resource_id = RESOURCE_ID_ECG_COMPACT;
+  #endif
+    s_bpm_bitmap = gbitmap_create_with_resource(resource_id);
+
+    if (s_bpm_bitmap) {
+      s_bpm_icon_layer = substratum_renderer_create_icon_layer(
+          root,
+          icon,
+          bpm_icon_update_proc);
+      if (!s_bpm_icon_layer) {
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create BPM icon layer");
+        gbitmap_destroy(s_bpm_bitmap);
+        s_bpm_bitmap = NULL;
+      }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create BPM icon bitmap");
     }
   }
   return true;
@@ -201,11 +268,16 @@ void bpm_module_destroy(void) {
     text_layer_destroy(s_bpm_layer);
     s_bpm_layer = NULL;
   }
+  if (s_bpm_bitmap) {
+    gbitmap_destroy(s_bpm_bitmap);
+    s_bpm_bitmap = NULL;
+  }
 
   s_bpm_color = BPM_UNINITIALIZED_COLOR;
+  s_bpm_icon_color = GColorBlack;
   s_bpm_buffer[0] = '\0';
   s_bpm_is_valid = false;
-  s_palette = NULL;
+  s_bpm_palette = (BpmPalette) {0};
 #if ATAGLANCE_DEBUG
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
@@ -217,7 +289,7 @@ void bpm_module_refresh(const ColorPalette* palette) {
     return;
   }
 
-  s_palette = palette;
+  bpm_update_palette(palette);
   update_bpm();
 }
 
