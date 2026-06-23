@@ -26,6 +26,11 @@ typedef struct {
   GColor time;
 } ColorPalette;
 
+typedef enum {
+  WATCHFACE_ICON_GRID_WIDTH = 28,
+  WATCHFACE_ICON_GRID_HEIGHT = 28,
+} WatchfaceIconGrid;
+
 typedef struct {
   GRect frame;
   GTextAlignment alignment;
