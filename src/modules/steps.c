@@ -81,7 +81,7 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_fill_color(ctx, bg_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  if (s_steps_bitmap && s_steps_icon_color.argb != s_steps_color.argb) {
+  if (s_steps_bitmap && !HELPER_COLOR_EQUAL(s_steps_icon_color, s_steps_color)) {
     if (helper_replace_color_in_bitmap(
             s_steps_bitmap,
             s_steps_icon_color,
