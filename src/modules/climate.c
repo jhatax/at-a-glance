@@ -1,5 +1,6 @@
 #include "climate.h"
 #include "climate_glyphs.h"
+#include "gcolor_definitions.h"
 #include "settings.h"
 #include "helper.h"
 #include "substratum_renderer.h"
@@ -35,17 +36,17 @@ static void climate_module_set_condition(int weather_condition);
 
 static const ClimatePalette c_dark_climate_palette = {
   .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
-  .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorWhite),
+  .cold = PBL_IF_COLOR_ELSE(GColorMintGreen, GColorWhite),
   .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
   .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
   .clear_fill = GColorLightGray,
 };
 
 static const ClimatePalette c_light_climate_palette = {
-  .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorBlack),
-  .cold = PBL_IF_COLOR_ELSE(GColorPictonBlue, GColorBlack),
-  .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
-  .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorBlack),
+  .sun = PBL_IF_COLOR_ELSE(GColorRajah, GColorBlack),
+  .cold = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
+  .cloud = PBL_IF_COLOR_ELSE(GColorLiberty, GColorBlack),
+  .clear_ring = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
   .clear_fill = GColorLightGray,
 };
 

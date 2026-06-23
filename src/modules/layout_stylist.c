@@ -141,19 +141,19 @@ void layout_watchface_unload_custom_fonts(GFont* custom_fonts) {
 static const ColorPalette c_dark_palette = {
   .is_light_mode = false,
   .background = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
+  .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
+  .date = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
   .primary_text = GColorWhite,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-  .date = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
-  .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
 };
 
 static const ColorPalette c_light_palette = {
   .is_light_mode = true,
   .background = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
+  .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
+  .date = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
   .primary_text = GColorBlack,
   .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
-  .date = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
-  .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
 };
 
 // API Contract: If style is a valid value, the palette will always be non-NULL

@@ -17,6 +17,7 @@ typedef struct {
   GColor medium;
   GColor low;
   GColor charging;
+  GColor full;
 } BatteryPalette;
 
 static BatteryPalette s_battery_palette = {0};
@@ -28,12 +29,14 @@ static const BatteryPalette c_dark_battery_palette = {
   .medium = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
   .low = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
   .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+  .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
 static const BatteryPalette c_light_battery_palette = {
   .medium = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
   .low = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
   .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+  .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
 };
 
 static void battery_update_palette(const ColorPalette* palette);
@@ -65,6 +68,10 @@ static GColor calculate_battery_color(int16_t percent) {
 
   if (s_battery_state.is_charging) {
     return s_battery_palette.charging;
+  }
+
+  if (percent == 100) {
+    return s_battery_palette.full;
   }
 
   if (percent > 50) {

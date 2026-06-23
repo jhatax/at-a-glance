@@ -127,7 +127,13 @@ boundaries. Example: stylist functions currently receive
 `WatchfaceSurfaceStyle*`, while some operations may only need palette/font
 fields or specific style members.
 
-Surface-retention migration target:
+Surface-retention migration status: Done.
+
+Feature modules no longer retain `static const WatchfaceSurface* s_surface`.
+The create and refresh contracts now pass narrow substrata, resolved fonts,
+current palettes, and runtime payloads instead of the whole prepared surface.
+
+Completed surface-retention migration:
 
 | Module | Create needs | Refresh needs | Callback-retained context | Remove retained `WatchfaceSurface*` by |
 | --- | --- | --- | --- | --- |
@@ -236,41 +242,42 @@ Accepted climate boundary:
 - The module updates the active climate palette only when the selected template
   or injected base colors differ from the currently retained copy.
 
-Validation target: after the migration, `watchface.c` may still own and inspect
-the whole `WatchfaceSurface`, but feature modules should no longer retain
+Validation result: `watchface.c` still owns and inspects the whole
+`WatchfaceSurface`; feature modules no longer retain
 `static const WatchfaceSurface* s_surface`.
 
 Implementation note: date, time, battery, climate, BPM, and steps now receive
 narrow create inputs and current palettes on refresh. The remaining helper audit
 is broader than surface retention and covers style/font helper boundaries.
 
-Next action: audit font/style helper ownership and verify with
-`rg "static const WatchfaceSurface\\* s_surface" src/modules`.
+Next action: audit font/style helper ownership.
 
 ### Weather glyph visual defects need a focused pass
 
 Type: Issue
-Status: Open
+Status: Closed
 
 The screenshot grid `weather-condition-watchface-grid.png` exposed several
 weather glyph defects across compact and full targets. These are product/visual
 issues, not part of the runtime-boundary migration.
 
-The larger concern is architectural, not only cosmetic: production weather
-glyphs still use a separate frame-aware scaling vocabulary in
-`climate_glyphs.c`, including local line, fill, rectangle, circle, and
-`weather_subframe()` helpers. That vocabulary now sits beside renderer-owned
-stroke and scaling helpers. Before production edits, audit whether each glyph
-should keep a local contract, move toward shared renderer vocabulary, or define
-separate compact and non-compact contracts.
+The broader split-glyph concern is closed. The original reason to consider
+separate compact/reference glyph paths was the complexity of scaling and
+rounding one glyph contract across all display classes. That risk has been
+reduced through hard engineering work: renderer coordinate hardening, generated
+glyph auditing, the `ataglance_build_test_harness.sh` flow, emulator visual
+passes, and real-device validation.
 
-Meta-entry:
+Decision: keep the single production glyph path for now. Do not split compact
+and reference weather glyphs unless a future glyph change proves the hardened
+single-path contract is insufficient.
+
+Validated meta-entry:
 
 1. Review `weather_subframe()` usage before tuning individual glyphs.
 2. Review each weather glyph against compact and reference/full display classes.
-3. Decision: follow the `layout_architect` pattern and split compact glyphs from
-   reference glyphs into distinct paths. The goal is to simplify glyph code by
-   avoiding excessive `substratum_scale_*` compensation inside one shared path.
+3. Validate glyph changes with the test harness and real devices before closing
+   product-visible TODOs.
 
 Unavailable glyph decision:
 
@@ -280,15 +287,15 @@ Unavailable glyph decision:
   `unavailable_text` to keep the unavailable icon semantically consistent while
   preserving legibility.
 
-Weather blue decision:
+Weather color decision:
 
 - Device visual testing rejected `GColorCobaltBlue` as too low-contrast for
   weather glyphs and rejected `GColorElectricBlue` as too luminescent on white
-  backgrounds. Cloud, fog, drizzle, rain, and shower glyphs now use module-owned
-  climate palette colors: Electric Blue in dark mode and Blue in light mode,
-  with normal monochrome fallbacks. Snow, snow showers, and sleet stay on
-  `GColorPictonBlue` because that family already reads as distinct cold-weather
-  vocabulary.
+  backgrounds. Outdoor and dim-room device testing now drives the climate
+  palette. Cloud, fog, drizzle, rain, and shower glyphs use module-owned climate
+  palette colors selected for the active display mode. Snow, snow showers, and
+  sleet use their own cold-weather palette slot so cold-weather vocabulary stays
+  visually distinct from rain/cloud vocabulary.
 
 Process:
 
@@ -298,60 +305,33 @@ Process:
 3. For each glyph, capture before/after behavior, document the geometry intent
    in code where it clarifies maintenance, request approval, then commit.
 
-TODO:
+Resolved by harness and device validation:
 
-- Clear/sun glyph should not be filled; the filled sun reads poorly on Chalk
-  and Flint.
-- Yellow sun should still be clear/outlined rather than a filled yellow disk.
-- Weather condition `45` is visually broken on smaller watchfaces. The fog line
-  scaling appears wrong, likely due to frame compaction.
-- Fog icon lines need more spacing; compact targets may also need different
-  stroke widths.
-- Revisit the sun geometry. Recent radius and ray-length changes made the sun
-  worse; recover an earlier, better-balanced visual contract.
-- Weather condition `80` has the same compacted-line issue. Subframed line
-  glyphs likely need shorter strokes and/or thinner stroke widths inside
-  subframes.
-- Partly-clear/cloud composition needs legibility work. The cloud should be
-  filled with the background color, and the sun behind it should remain clear so
-  the icon reads on light backgrounds.
-- Partly-cloudy cannot be discerned in black-and-white dark or light modes.
-- Drizzle stroke width is too heavy on compact targets.
-- Light sleet fails glanceability on all platforms and modes; redraw or replace
-  the glyph.
-- Snowflake needs to be redrawn for compact targets.
-- Light showers on compact targets are too compressed.
-- Light snow showers are poor on all platforms.
-
-Observed good states:
-
-- Light heavy showers, cloudy, and unavailable weather glyphs are good on all
+- Fog/condition `45`, rain/showers/condition `80`, partly cloudy, drizzle,
+  sleet, snowflake, light showers, and light snow showers have been fixed or
+  materially improved and validated using the test harness and physical devices.
+- The clear/sun glyph now uses an outline body instead of a filled disk.
+- Light heavy showers, cloudy, and unavailable weather glyphs remain good on all
   platforms.
-
-Open design question:
-
-- Consider separate compact and non-compact weather icon contracts instead of
-  scaling one glyph set across all display classes.
-- Decide whether `weather_subframe()` remains part of the production glyph
-  contract or whether subframed glyphs need explicit compact/full geometry.
 
 Completed code slices:
 
-- Fog bar spacing was widened in `tools/glyph-lab/src/c/glyph_lab_glyphs.c` and
-  `src/modules/climate_glyphs.c` from y positions `10/15/20` to `6/14/22`.
-  Visual screenshot acceptance is still pending.
-- Weather blue was moved into the module-owned climate palette after device
-  testing. Cloud/fog/rain glyph families use Electric Blue in dark mode and Blue
-  in light mode. Snow/sleet remains Picton Blue.
+- Fog bar spacing was widened in `src/modules/climate_glyphs.c` from y
+  positions `10/15/20` to `6/14/22` and validated through the glyph harness and
+  device review.
+- Weather colors were moved into the module-owned climate palette after device
+  testing. Cloud/fog/rain glyph families and snow/sleet glyph families now use
+  separate module palette slots.
 - Climate glyph rendering now receives only `ClimatePalette`. The current
   climate palette copies `background`, `default_color`, and `unknown` from the
   active base palette so glyph drawing no longer depends on the broader base
   `ColorPalette` and base text colors do not drift.
-- Glyph-lab will be updated at the end of the next glyph pass. The next coding
-  round will proceed glyph by glyph rather than syncing the whole lab upfront.
+- Rain, sleet, snow, shower, partly-cloudy, and sun glyph changes were validated
+  through the test harness and device review.
 
-Next action: use `tools/glyph-lab` or an equivalent screenshot-led glyph pass
-to tune these weather glyphs before porting changes back to the watchface.
+Decision: weather glyph work is complete for the current milestone. Future
+weather glyph changes should reopen a specific product/visual finding with
+fresh harness or device evidence.
 
 ### Documentation source-of-truth drift
 

@@ -114,7 +114,7 @@ static void draw_weather_outline_sun(
   graphics_context_set_stroke_width(
     ctx,
     SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 3));
-  substratum_renderer_fill_scaled_circle_in_frame(
+  substratum_renderer_draw_scaled_circle_in_frame(
       ctx,
       frame,
       WEATHER_ICON_CENTER_X,
@@ -355,7 +355,7 @@ static void draw_weather_partly_cloudy_icon(
   }
   GRect sub_frame = {0};
 
-  weather_subframe(frame, &sub_frame, 7, 7, 20, 20);
+  weather_subframe(frame, &sub_frame, 10, 0, 18, 18);
   draw_weather_clear_icon(ctx, &sub_frame, climate_palette, is_day, false);
 
   weather_subframe(frame, &sub_frame, 0, 3, 24, 24);
@@ -424,10 +424,10 @@ static void draw_weather_rain_marks(
     substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 1, 15, 27);
     substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 26, 1, 23, 27);
   } else {
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 4, 12, 1, 24);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 11, 12, 8, 24);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 12, 15, 24);
-    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 26, 12, 23, 24);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 4, 4, 1, 16);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 11, 4, 8, 16);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 18, 4, 15, 16);
+    substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 26, 4, 23, 16);
   }
 }
 
@@ -556,14 +556,14 @@ static void draw_weather_sleet_icon(
   GRect sub_frame = {0};
 
   // Draw the cloud first
-  weather_subframe(frame, &sub_frame, 0, 0, 20, 16);
+  weather_subframe(frame, &sub_frame, 6, 0, 16, 16);
   draw_weather_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_CLOUD);
 
   GColor color = weather_color_for_kind(
     HELPER_IF_ELSE(heavy, WEATHER_ICON_SLEET_HEAVY, WEATHER_ICON_SLEET_DRIZZLE), climate_palette);
 
   // Set the right sub-frame
-  weather_subframe(frame, &sub_frame, 13, 13, 14, 14);
+  weather_subframe(frame, &sub_frame, 14, 14, 13, 13);
   if (heavy) {
     // Draw a snow-flake in this sub-frame
     graphics_context_set_stroke_color(ctx, color);

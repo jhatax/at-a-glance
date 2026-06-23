@@ -189,6 +189,25 @@ pebble emu-app-config
 pebble install --phone YOUR_PHONE_IP
 ```
 
+`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile
+app. A `169.254.x.x` address is link-local; reconnect Wi-Fi, confirm Local
+Network permission, and restart Developer Connection until the app reports a LAN
+address such as `192.168.x.x` or `10.x.x.x`.
+
+## Build/Test Harness
+
+`ataglance_build_test_harness.sh` wraps the local Pebble SDK flow:
+
+```sh
+./ataglance_build_test_harness.sh --build
+./ataglance_build_test_harness.sh --install --emulators emery,chalk
+./ataglance_build_test_harness.sh --phone YOUR_PHONE_IP
+./ataglance_build_test_harness.sh --test weather,battery --emulators emery
+```
+
+The harness automation is emulator-focused. The phone path only installs through
+the Pebble mobile app Developer Connection server.
+
 ## Project Structure
 
 ```text
