@@ -36,10 +36,6 @@ bool helper_tuple_to_int(Tuple* tuple, int* value) {
   }
 }
 
-bool helper_color_equal(GColor first, GColor second) {
-  return first.argb == second.argb;
-}
-
 static int helper_get_colors_in_bmp(GBitmap* bmp) {
   if (!bmp) {
     return 0;
@@ -79,7 +75,7 @@ bool helper_replace_color_in_bitmap(GBitmap* bmp, GColor originalColor, GColor n
 
   // 2. Loop through the calculated palette allocation block
   for (int i = 0; i < num_colors; ++i) {
-    if (helper_color_equal(palette[i], originalColor)) {
+    if (HELPER_COLOR_EQUAL(palette[i], originalColor)) {
       palette[i] = newColor;
       replaced = true;
       break;
@@ -95,7 +91,7 @@ bool helper_swap_colors_in_bitmap(GBitmap* bmp, GColor color1, GColor color2) {
     return swapped;
   }
 
-  if (helper_color_equal(color1, color2)) {
+  if (HELPER_COLOR_EQUAL(color1, color2)) {
     // Same color, so sure, they were swapped with each other
     return true;
   }
@@ -117,9 +113,9 @@ bool helper_swap_colors_in_bitmap(GBitmap* bmp, GColor color1, GColor color2) {
   // 2. Loop through the calculated palette allocation block
   while ((i<num_colors) && ((pos_1 < 0) || (pos_2 <0))) {
     current = palette[i];
-    if (helper_color_equal(current, color1)) {
+    if (HELPER_COLOR_EQUAL(current, color1)) {
       pos_1 = i;
-    } else if (helper_color_equal(current, color2)) {
+    } else if (HELPER_COLOR_EQUAL(current, color2)) {
       pos_2 = i;
     }
     ++i;
