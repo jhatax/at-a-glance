@@ -2,12 +2,12 @@
 #include "helper.h"
 #include "watchface_debug.h"
 
-bool is_valid_design_x_coord(int16_t x, int16_t design_width) {
+static bool is_valid_design_x_coord(int16_t x, int16_t design_width) {
   // coords go from 0..width-1
   return (x >= 0 && x < design_width);
 }
 
-bool is_valid_design_y_coord(int16_t y, int16_t design_height) {
+static bool is_valid_design_y_coord(int16_t y, int16_t design_height) {
   // coords go from 0..height-1
   return (y >= 0 && y < design_height);
 }

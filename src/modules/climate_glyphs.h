@@ -1,8 +1,6 @@
 #pragma once
 
 #include <pebble.h>
-#include "watchface_components.h"
-#include "watchface_debug.h"
 
 // Fully-resolved climate colors consumed by the glyph renderer.
 typedef struct {

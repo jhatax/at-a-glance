@@ -3,6 +3,7 @@
 #include <pebble.h>
 
 #include "watchface_components.h"
+#include "helper.h"
 
 typedef enum {
   SUBSTRATUM_RENDERER_ICON_GRID_W = WATCHFACE_ICON_GRID_WIDTH,
@@ -96,13 +97,6 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     const GRect* frame,
     GColor fill_color);
 
-void scale_icon_point_in_frame(const GRect* frame, GPoint* input);
-
-GPoint substratum_renderer_icon_x_y_in_frame(
-    const GRect* frame,
-    int16_t x,
-    int16_t y);
-
 int16_t substratum_renderer_scale_icon_x_in_frame(
     const GRect* frame,
     int16_t x);
@@ -114,7 +108,3 @@ int16_t substratum_renderer_scale_icon_y_in_frame(
 void substratum_renderer_scale_icon_point_in_frame(
     const GRect* frame,
     GPoint* input);
-
-bool is_valid_design_x_coord(int16_t x, int16_t design_width);
-
-bool is_valid_design_y_coord(int16_t y, int16_t design_height);
