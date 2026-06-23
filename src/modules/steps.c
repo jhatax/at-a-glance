@@ -1,3 +1,4 @@
+#include "pebble.h"
 #ifdef PBL_HEALTH
 #include "steps.h"
 
@@ -7,6 +8,13 @@
 #define MAX_STR_LEN 12
 #define STEPS_INVALID -1
 #define STEPS_MIN 1
+#define STEPS_UNINITIALIZED_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
+
+// This needs to be the main color of the steps icon
+static GColor s_steps_icon_color = GColorBlack;
+
+// This needs to be any color other than the main color of the steps icon
+static GColor s_steps_color = STEPS_UNINITIALIZED_COLOR;
 
 static char s_steps_buffer[MAX_STR_LEN] = {0};
 static GBitmap* s_steps_bitmap = NULL;
@@ -14,7 +22,7 @@ static Layer* s_steps_icon_layer = NULL;
 static TextLayer* s_steps_layer = NULL;
 static bool s_steps_is_available = false;
 static const ColorPalette* s_palette = NULL;
-static GColor s_steps_icon_color = GColorBlack;
+
 #if ATAGLANCE_DEBUG
 static bool s_debug_steps_is_set = false;
 static int s_debug_steps = STEPS_INVALID;
@@ -72,14 +80,13 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx) {
   GRect bounds = layer_get_bounds(layer);
   graphics_context_set_fill_color(ctx, bg_color);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
-  GColor icon_color = gcolor_legible_over(bg_color);
 
-  if (s_steps_bitmap && !helper_color_equal(s_steps_icon_color, icon_color)) {
+  if (s_steps_bitmap && s_steps_icon_color.argb != s_steps_color.argb) {
     if (helper_replace_color_in_bitmap(
             s_steps_bitmap,
             s_steps_icon_color,
-            icon_color)) {
-      s_steps_icon_color = icon_color;
+            s_steps_color)) {
+      s_steps_icon_color = s_steps_color;
     }
   }
 
@@ -99,7 +106,7 @@ static void apply_steps_value(int steps, bool is_available) {
   }
 
   s_steps_is_available = is_available;
-  GColor text_color = is_available ?
+  s_steps_color = is_available ?
       s_palette->primary_text : s_palette->unavailable_text;
 
   if (is_available) {
@@ -111,7 +118,7 @@ static void apply_steps_value(int steps, bool is_available) {
   substratum_renderer_update_text_layer(
       s_steps_layer,
       s_steps_buffer,
-      text_color);
+      s_steps_color);
 
   if (s_steps_icon_layer) {
     layer_mark_dirty(s_steps_icon_layer);
@@ -224,6 +231,7 @@ void steps_module_destroy(void) {
   s_steps_is_available = false;
   s_palette = NULL;
   s_steps_icon_color = GColorBlack;
+  s_steps_color = STEPS_UNINITIALIZED_COLOR;
   #if ATAGLANCE_DEBUG
   s_debug_steps_is_set = false;
   s_debug_steps = STEPS_INVALID;
