@@ -11,8 +11,6 @@
 #define BPM_HIGH 100
 #define IS_BPM_VALID(bpm) ((bpm) >= BPM_MIN)
 
-#define BPM_UNINITIALIZED_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
-
 static char s_bpm_buffer[MAX_STR_LEN] = {0};
 static GBitmap* s_bpm_bitmap = NULL;
 static Layer* s_bpm_icon_layer = NULL;
@@ -22,7 +20,7 @@ static bool s_bpm_is_valid = false;
 // This needs to be the main color of the BPM icon
 static GColor s_bpm_icon_color = GColorBlack;
 // This needs to be any color other than the main color of the bpm icon
-static GColor s_bpm_color = BPM_UNINITIALIZED_COLOR;
+static GColor s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
 
 typedef struct {
   GColor background;
@@ -83,7 +81,7 @@ static void bpm_update_palette(const ColorPalette* palette) {
 
 static GColor calculate_bpm_color(int bpm) {
   if (!BPM_PALETTE_LOADED(s_bpm_palette)) {
-    return BPM_UNINITIALIZED_COLOR;
+    return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
   if (bpm < BPM_MIN) {
@@ -273,7 +271,7 @@ void bpm_module_destroy(void) {
     s_bpm_bitmap = NULL;
   }
 
-  s_bpm_color = BPM_UNINITIALIZED_COLOR;
+  s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   s_bpm_icon_color = GColorBlack;
   s_bpm_buffer[0] = '\0';
   s_bpm_is_valid = false;

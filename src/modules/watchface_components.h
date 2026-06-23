@@ -3,6 +3,7 @@
 #include <pebble.h>
 
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
+#define WATCHFACE_UNINITIALIZED_TEXT_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
 
 typedef enum {
   WATCHFACE_FONT_ROLE_TIME = 0,
