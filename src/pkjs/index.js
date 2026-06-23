@@ -2,14 +2,14 @@ var Clay = require("@rebble/clay");
 var clayConfig = require("./config.json");
 var clay = new Clay(clayConfig);
 
-const WEATHER_INTERVAL_MS = 30 * 60 * 1000;
+var WEATHER_INTERVAL_MS = 30 * 60 * 1000;
 // Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.h.
-const WEATHER_TEMP_INVALID = -32768;
+var WEATHER_TEMP_INVALID = -32768;
 // Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.h.
-const WEATHER_CONDITION_UNKNOWN = -1;
+var WEATHER_CONDITION_UNKNOWN = -1;
 // OAK is the product fallback location for this watchface.
-const OAK_WEATHER_LATITUDE = 37.85626;
-const OAK_WEATHER_LONGITUDE = -122.21383;
+var OAK_WEATHER_LATITUDE = 37.85626;
+var OAK_WEATHER_LONGITUDE = -122.21383;
 
 var s_weatherRequestId = 0;
 
