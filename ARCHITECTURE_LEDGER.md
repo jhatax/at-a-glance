@@ -124,10 +124,19 @@ the stylist consumes it.
   updates.
 - Dynamic colors remain module-owned when they depend on live source state,
   such as BPM or battery.
+- `helper.h` is shared utility vocabulary. Any module or component may include
+  it directly when it uses helper macros or helper APIs; direct `helper.h`
+  inclusion is not header leakage by itself.
+- Bitmap palette mutation helpers require palettized PNG resources; callers
+  should treat non-palettized bitmaps as unsupported for in-place recoloring.
 - Module-specific palette policy belongs to the owning feature module, not to
   renderer helpers. Climate owns its light/dark `ClimatePalette` templates and
   retains the current copied climate palette for Pebble update procs;
   `climate_glyphs.c` only renders from a fully-resolved `ClimatePalette*`.
+- Module-owned palettes use `normal` for the injected `ColorPalette.primary_text`
+  color. `normal` must not equal the active background: the base palette defines
+  primary text as legible over that background, and the module palette loaded
+  macros use `normal != background` as the initialized-palette sentinel.
 - Steps icon foreground is selected with `gcolor_legible_over()` against the
   active palette background. This reflects real-device glanceability testing on
   lower-brightness e-paper displays, where maximum foreground/background
@@ -258,8 +267,8 @@ Observed in the live tree during the June 17, 2026 audit and resolved:
 - `layout_architect.c` includes `layout.h` directly because it implements the
   public layout initialization contract. `layout_design.h` includes only the
   component types it directly needs.
-- `HELPER_CLAMP_MIN` is currently unused but intentionally retained as a small
-  helper utility for future clamp-at-minimum calculations.
+- `HELPER_CLAMP_MIN` is intentionally retained and may be used by any module or
+  component that needs clamp-at-minimum utility behavior.
 - `HELPER_SCALE_ROUND` is used, but not fully parenthesized.
 - `helper_swap_colors_in_bitmap()` is currently unused but intentionally
   retained as a utility for swapping two colors in a PNG/bitmap if that path is
@@ -341,7 +350,9 @@ Required layer/resource creation gates module success and retained state.
 Optional resources are explicitly non-fatal when the text-bearing stratum
 remains usable, and partial optional resources are cleaned up before returning
 success. The shared renderer no longer heap-allocates bounded polygon point
-storage in draw paths.
+storage in draw paths. Shared icon coordinate scaling clamps against the
+resolved frame dimension so enlarged icon frames are not capped by the design
+grid size.
 
 ### Phase 5: Round And Visual Validation
 
@@ -360,7 +371,9 @@ PebbleKit JS weather handling uses request ids to ignore stale callbacks.
 Geolocation denial or unavailability falls back to the fixed OAK weather
 location. Open-Meteo network errors, timeouts, non-200 responses, parse
 failures, and malformed current-weather payloads send unavailable weather
-sentinels. OAK remains the fixed documented fallback location.
+sentinels. The C-side weather sentinel authority lives in `watchface.h` with the
+AppMessage/runtime ingress contract; PebbleKit JS mirrors those values manually.
+OAK remains the fixed documented fallback location.
 
 ---
 

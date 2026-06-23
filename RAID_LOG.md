@@ -37,6 +37,22 @@ drawing path.
 Decision: accept the small bounded stack reservation because Pebble heap
 fragmentation is a larger draw-path risk than an explicit eight-point array.
 
+### Outside-in helper hardening findings
+
+Type: Issue
+Status: Closed
+
+The outside-in source review produced two accepted helper-level fixes:
+
+- `substratum_renderer_scale_icon_coord()` now clamps scaled coordinates against
+  the resolved icon frame dimension, not the original design-grid dimension.
+- Bitmap palette mutation is explicitly documented at the helper boundary as
+  requiring palettized PNG resources.
+
+Decision: keep these as narrow helper hardening fixes. Do not move bitmap
+recolor policy into callers unless a future non-palettized resource requires a
+different rendering strategy.
+
 ### Weather responses can arrive out of order
 
 Type: Risk
@@ -49,7 +65,9 @@ parse failures, and malformed current-weather payloads send unavailable weather
 sentinels.
 
 Decision: code-path robustness is the test for this issue. OAK remains the
-fixed documented weather fallback.
+fixed documented weather fallback. `watchface.h` owns the C-side weather
+sentinel values as part of the AppMessage/runtime ingress contract, and
+PebbleKit JS mirrors those values manually for unavailable-weather packets.
 
 ### Round visual validation is not final
 
@@ -64,14 +82,39 @@ Decision: no active round visual validation blocker remains for this milestone.
 ### Header cleanup is deferred
 
 Type: Issue
-Status: Open
+Status: Closed
 
 Some public module headers still expose or import symbols more broadly than the
 steady-state architecture should require. `layout_design.h` is now accepted as
 private design vocabulary for the architect/stylist boundary, but public header
 exposure still needs a focused audit.
 
-Next action: execute the header cleanup plan in `ARCHITECTURE_LEDGER.md`.
+Audit result:
+
+- `layout_design.h` remains private design vocabulary for the
+  architect/stylist boundary. Its live includes are limited to
+  `layout_architect.c` and `layout_stylist.c`.
+- `ataglance.c` has the intended app-container include boundary: Pebble,
+  `helper.h`, and `watchface.h`.
+- Feature module headers that expose `Layer*`, `GFont`, `ColorPalette`, or
+  substrata types intentionally include Pebble and `watchface_components.h`.
+  Those are API contract dependencies, not leakage.
+- `climate_glyphs.h` no longer imports `watchface_components.h` or
+  `watchface_debug.h`; the glyph helper contract now exposes only Pebble
+  drawing/color types and `ClimatePalette`.
+- `substratum_renderer.h` no longer exposes stale declarations for
+  unimplemented frame helpers or private coordinate validators.
+- `is_valid_design_x_coord()` and `is_valid_design_y_coord()` now have private
+  `static` linkage in `substratum_renderer.c`.
+- `substratum_renderer.h` explicitly includes `helper.h` because its public
+  stroke-width macro intentionally uses `HELPER_CLAMP_MIN`.
+- `helper.h` is accepted shared utility vocabulary. Modules and components may
+  include it directly when they use helper macros or helper APIs; that include
+  is not header leakage by itself.
+
+Decision: the header cleanup finding is closed. Remaining header/API work
+should be opened as a new, specific finding if future audits identify a fresh
+boundary leak.
 
 ### Runtime helper boundaries need audit
 

@@ -41,6 +41,7 @@ static int helper_get_colors_in_bmp(GBitmap* bmp) {
     return 0;
   }
 
+  // Bitmap palette mutation only works for palettized PNG resources.
   switch (gbitmap_get_format(bmp)) {
     case GBitmapFormat1BitPalette:
       return 2;

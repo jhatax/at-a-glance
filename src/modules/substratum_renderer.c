@@ -54,7 +54,7 @@ int16_t substratum_renderer_scale_icon_coord(
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(
     HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension),
-    (design_dimension - 1));
+    (chosen_dimension - 1));
 }
 
 GPoint substratum_renderer_scale_icon_point(
