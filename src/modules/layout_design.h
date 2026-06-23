@@ -10,7 +10,7 @@
 #define DESIGN_FONT_PRIMARY_TEXT FONT_KEY_GOTHIC_18
 
 // Blueprints
-typedef enum {
+enum {
   #if defined(PBL_RECT)
   DESIGN_MARGIN = 4,
 #elif defined(PBL_ROUND)
@@ -26,12 +26,12 @@ typedef enum {
   DESIGN_BATTERY_FILL_HEIGHT = 4,
   DESIGN_BATTERY_BOLT_WIDTH = 18,
   DESIGN_BATTERY_BOLT_HEIGHT = 18,
-} DesignCommon;
+};
 
-typedef enum {
+enum {
   DESIGN_FULL_FACE_WIDTH = 200,
   DESIGN_FULL_FACE_HEIGHT = 228,
-  DESIGN_FULL_MARGIN = 6,
+  DESIGN_FULL_MARGIN = DESIGN_MARGIN,
   DESIGN_FULL_ICON_WIDTH = WATCHFACE_ICON_GRID_WIDTH,
   DESIGN_FULL_ICON_HEIGHT = WATCHFACE_ICON_GRID_HEIGHT,
   DESIGN_FULL_DATE_TEXT_HEIGHT = 20,
@@ -42,9 +42,9 @@ typedef enum {
   DESIGN_FULL_STEPS_TEXT_WIDTH = 46,
   DESIGN_FULL_BPM_TEXT_WIDTH = 40,
 #endif
-} DesignFull;
+};
 
-typedef enum {
+enum {
   DESIGN_COMPACT_MARGIN = 2,
   DESIGN_COMPACT_TIME_Y_PERCENT = 25,
   DESIGN_COMPACT_ICON_WIDTH = 18,
@@ -57,7 +57,7 @@ typedef enum {
   DESIGN_COMPACT_STEPS_TEXT_WIDTH = 39,
   DESIGN_COMPACT_BPM_TEXT_WIDTH = 39,
 #endif
-} DesignCompact;
+};
 
 // Blueprint support structures
 typedef struct {
