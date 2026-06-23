@@ -318,6 +318,7 @@ static void main_window_load(Window* window) {
 
   if (!watchface_create(window, &s_settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface creation failed");
+    window_stack_remove(window, true);
     return;
   }
 }

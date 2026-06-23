@@ -71,6 +71,12 @@ typedef enum {
 } WatchfaceDebugMessageKey;
 #endif
 
+// Create/destroy contract:
+// `watchface` is a runtime module. Callers that invoke `watchface_create()` must
+// also drive `watchface_destroy()` through normal window teardown, even when
+// create returns false, because a failed create may leave partial module state
+// that must be unwound. Calling create after a successful create is idempotent
+// and returns true without rebuilding the active surface.
 bool watchface_create(
     Window* window,
     const WatchfaceSettings* settings);

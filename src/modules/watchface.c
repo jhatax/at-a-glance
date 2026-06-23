@@ -49,11 +49,6 @@ static uint8_t s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 static void watchface_debug_clear_health(void);
 #endif
 
-static void watchface_exit_path() {
-  watchface_destroy();
-  window_stack_pop_all(false);
-}
-
 void watchface_load_and_apply_palette() {
   // Update the palette
   layout_watchface_update_palette(&(s_surface.style), s_wf_settings->display_mode);
@@ -84,92 +79,108 @@ bool watchface_create(Window* window, const WatchfaceSettings* settings) {
     return true;
   }
 
-  if (!window || !settings) {
+  // Leave false until required watchface modules are fully initialized.
+  bool success = true;
+  if (success && !(window && settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
             "Cannot create watchface without watchface inputs");
-    if (window) {
-      watchface_exit_path();
-    }
-    return false;
+    success = false;
   }
 
-  s_wf_window = window;
-  s_wf_settings = settings;
+  Layer* root = NULL;
+  if (success) {
+    s_wf_window = window;
+    s_wf_settings = settings;
 
-  Layer* root = window_get_root_layer(window);
+    root = window_get_root_layer(window);
+  }
 
-  if (!root) {
+  if (success && !root) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window root layer is NULL");
-    watchface_exit_path();
-    return false;
+    success = false;
   }
 
-  s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
+  if (success) {
+    s_strata_created_mask = (uint8_t) NO_STRATA_MASK;
 
-  GRect bounds = layer_get_bounds(root);
-  if (!layout_watchface_initialize(bounds.size.w, bounds.size.h, &s_surface)) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
-    watchface_exit_path();
-    return false;
+    GRect bounds = layer_get_bounds(root);
+    if (!layout_watchface_initialize(bounds.size.w, bounds.size.h,
+                                     &s_surface)) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
+      success = false;
+    }
   }
 
-  // Load & Apply Style
-  watchface_load_and_apply_palette();
+  if (success) {
+    // Load & Apply Style
+    watchface_load_and_apply_palette();
 
-  // Load & Apply Fonts (one-time activity for every launch)
-  watchface_load_and_apply_fonts();
+    // Load & Apply Fonts (one-time activity for every launch)
+    watchface_load_and_apply_fonts();
 
-  s_strata_created_mask |= date_module_create(
-      root,
-      &s_surface.date.text,
-      s_surface.style.system_fonts[s_surface.date.text.font_role]) ?
-      DATE_STRATUM_MASK : 0;
+    s_strata_created_mask |=
+        date_module_create(
+            root, &s_surface.date.text,
+            s_surface.style.system_fonts[s_surface.date.text.font_role])
+            ? DATE_STRATUM_MASK
+            : 0;
 
-  s_strata_created_mask |= time_module_create(
-      root,
-      &s_surface.time.text,
-      s_surface.style.system_fonts[s_surface.time.text.font_role]) ?
-      TIME_STRATUM_MASK : 0;
+    s_strata_created_mask |=
+        time_module_create(
+            root, &s_surface.time.text,
+            s_surface.style.system_fonts[s_surface.time.text.font_role])
+            ? TIME_STRATUM_MASK
+            : 0;
 
-  s_strata_created_mask |= battery_module_create(root, &s_surface.battery) ?
-      BATTERY_STRATUM_MASK : 0;
+    s_strata_created_mask |= battery_module_create(root, &s_surface.battery)
+                                 ? BATTERY_STRATUM_MASK
+                                 : 0;
 
-  if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
-    watchface_exit_path();
-    return false;
+    if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) !=
+        MUST_HAVE_STRATA_MASK) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
+      success = false;
+    }
   }
 
-  s_strata_created_mask |= climate_module_create(
-      root,
-      &s_surface.climate.text,
-      &s_surface.climate.icon,
-      s_surface.style.system_fonts[s_surface.climate.text.font_role]) ?
-      CLIMATE_STRATUM_MASK : 0;
+  if (success) {
+    s_strata_created_mask |=
+        climate_module_create(
+            root, &s_surface.climate.text, &s_surface.climate.icon,
+            s_surface.style.system_fonts[s_surface.climate.text.font_role])
+            ? CLIMATE_STRATUM_MASK
+            : 0;
 
-  #ifdef PBL_HEALTH
-  s_strata_created_mask |= bpm_module_create(
-      root,
-      &s_surface.bpm.text,
-      &s_surface.bpm.icon,
-      s_surface.style.system_fonts[s_surface.bpm.text.font_role]) ?
-      BPM_STRATUM_MASK : 0;
+#ifdef PBL_HEALTH
+    s_strata_created_mask |=
+        bpm_module_create(
+            root, &s_surface.bpm.text, &s_surface.bpm.icon,
+            s_surface.style.system_fonts[s_surface.bpm.text.font_role])
+            ? BPM_STRATUM_MASK
+            : 0;
 
-  s_strata_created_mask |= steps_module_create(
-      root,
-      &s_surface.steps.text,
-      &s_surface.steps.icon,
-      s_surface.style.system_fonts[s_surface.steps.text.font_role]) ?
-      STEPS_STRATUM_MASK : 0;
-  #endif
+    s_strata_created_mask |=
+        steps_module_create(
+            root, &s_surface.steps.text, &s_surface.steps.icon,
+            s_surface.style.system_fonts[s_surface.steps.text.font_role])
+            ? STEPS_STRATUM_MASK
+            : 0;
+#endif
 
-  s_watchface_initialized = true;
+    s_watchface_initialized = true;
 
-  watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
-  return true;
+    success = true;
+    watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
+  }
+
+  if (!success) {
+    s_watchface_initialized = false;
+  }
+  return success;
 }
 
 void watchface_destroy() {
+  // Failed create can leave partial module state before initialization completes.
   if (s_strata_created_mask) {
     if (s_strata_created_mask & DATE_STRATUM_MASK) {
       date_module_destroy();
@@ -226,7 +237,6 @@ void watchface_destroy() {
   // Technically, custom fonts should hang off the surface as well
   memset(s_custom_fonts, 0, sizeof(s_custom_fonts));
   memset(&s_surface, 0, sizeof(s_surface));
-
 }
 
 
