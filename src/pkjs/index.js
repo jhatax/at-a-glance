@@ -1,18 +1,60 @@
+// Clay stuff
 var Clay = require("@rebble/clay");
 var clayConfig = require("./config.json");
-var clay = new Clay(clayConfig);
 
+function customClayLogic() {
+  var clayConfigInstance = this;
+
+  clayConfigInstance.on(clayConfigInstance.EVENTS.AFTER_BUILD, function() {
+    var watchInfo = window.Pebble && window.Pebble.getActiveWatchInfo ? window.Pebble.getActiveWatchInfo() : null;
+    var platform = watchInfo ? watchInfo.platform : 'basalt';
+
+    // Define platform groupings
+    // Color screens: Basalt, Chalk, Emery, Gabbro (Flint, Aplite, Diorite are Black & White)
+    var isColor = (platform == 'basalt' || platform == 'chalk' ||
+      platform == 'emery' || platform == 'gabbro');
+    // Pebble Health screens: Basalt, Chalk, Diorite, Emery (Aplite/Classic lacks step capabilities)
+    var supportsHealth = (platform !== 'aplite');
+
+    // Hide color mode configurations on B&W watches
+    if (isColor) {
+      var selectMenu = clayConfigInstance.getItemById('displayModeSection');
+      if (selectMenu) {
+        // Dynamically inject the color choices for color watches
+        selectMenu.setOptions([
+          { "value": "0", "label": "Monochrome Light Mode" },
+          { "value": "1", "label": "Monochrome Dark Mode" },
+          { "value": "2", "label": "Color Light Mode" },
+          { "value": "3", "label": "Color Dark Mode" }
+        ]);
+      }
+    }
+
+    // Hide the whole Health section on older, stepless hardware
+    if (!supportsHealth) {
+      var healthSection = clayConfigInstance.getItemById('healthSettingsSection');
+      if (healthSection) {
+        healthSection.hide();
+      }
+    }
+  });
+}
+
+// Pass the array and function straight to your Clay initialization wrapper
+var clay = new Clay(clayConfig, customClayLogic);
+
+// Weather stuff
 var WEATHER_INTERVAL_MS = 30 * 60 * 1000;
-// Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.h.
+// Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.c.
 var WEATHER_TEMP_INVALID = -32768;
-// Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.h.
+// Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.c.
 var WEATHER_CONDITION_UNKNOWN = -1;
 // OAK is the product fallback location for this watchface.
 var OAK_WEATHER_LATITUDE = 37.85626;
 var OAK_WEATHER_LONGITUDE = -122.21383;
 
 var s_weatherRequestId = 0;
-
+// Define custom function that manipulates the DOM elements inside index.js
 function sendWeather(celsius, weatherCode, isDay) {
   Pebble.sendAppMessage(
     {

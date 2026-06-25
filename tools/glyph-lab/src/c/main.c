@@ -22,136 +22,147 @@ typedef enum {
 } GlyphKind;
 
 typedef struct {
-  const char* label;
+  const char *label;
   GlyphKind kind;
   int value;
   bool flag;
 } GlyphCell;
 
 typedef struct {
-  const char* title;
+  const char *title;
   GlyphCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
 } GlyphPageTemplate;
 
 typedef struct {
-  const char* title;
+  const char *title;
   int16_t icon_size;
 } GlyphSizeMode;
 
-static Window* s_window;
-static Layer* s_canvas_layer;
+static Window *s_window;
+static Layer *s_canvas_layer;
 static GFont s_status_font;
 static GFont s_label_font;
 static bool s_is_light_mode = false;
 static int s_page_index = 0;
 
 static const GlyphPageTemplate GLYPH_PAGE_TEMPLATES[] = {
-  {
-    .title = "OVERVIEW",
-    .cells = {
-      {"BAT 74", GLYPH_KIND_BATTERY, 74, false},
-      {"W 02", GLYPH_KIND_WEATHER, 2, false},
-      {"STEPS", GLYPH_KIND_STEPS, 1, true},
-      {"BPM 72", GLYPH_KIND_BPM, 72, true},
+    {
+        .title = "OVERVIEW",
+        .cells =
+            {
+                {"BAT 74", GLYPH_KIND_BATTERY, 74, false},
+                {"W 02", GLYPH_KIND_WEATHER, 2, false},
+                {"STEPS", GLYPH_KIND_STEPS, 1, true},
+                {"BPM 72", GLYPH_KIND_BPM, 72, true},
+            },
     },
-  },
-  {
-    .title = "BATTERY",
-    .cells = {
-      {"100", GLYPH_KIND_BATTERY, 100, false},
-      {"45", GLYPH_KIND_BATTERY, 45, false},
-      {"18", GLYPH_KIND_BATTERY, 18, false},
-      {"CHG", GLYPH_KIND_BATTERY, 43, true},
+    {
+        .title = "BATTERY",
+        .cells =
+            {
+                {"100", GLYPH_KIND_BATTERY, 100, false},
+                {"45", GLYPH_KIND_BATTERY, 45, false},
+                {"18", GLYPH_KIND_BATTERY, 18, false},
+                {"CHG", GLYPH_KIND_BATTERY, 43, true},
+            },
     },
-  },
-  {
-    .title = "STEP BMPS",
-    .cells = {
-      {"W16", GLYPH_KIND_STEPS_BITMAP, 0, false},
-      {"W24", GLYPH_KIND_STEPS_BITMAP, 1, false},
-      {"BLUE", GLYPH_KIND_STEPS_BITMAP, 2, false},
-      {"GREEN", GLYPH_KIND_STEPS_BITMAP, 3, false},
+    {
+        .title = "STEP BMPS",
+        .cells =
+            {
+                {"W16", GLYPH_KIND_STEPS_BITMAP, 0, false},
+                {"W24", GLYPH_KIND_STEPS_BITMAP, 1, false},
+                {"BLUE", GLYPH_KIND_STEPS_BITMAP, 2, false},
+                {"GREEN", GLYPH_KIND_STEPS_BITMAP, 3, false},
+            },
     },
-  },
-  {
-    .title = "BOLT",
-    .cells = {
-      {"BOLT", GLYPH_KIND_BOLT, 0, false},
-      {"BOLT", GLYPH_KIND_BOLT, 0, false},
-      {"BOLT", GLYPH_KIND_BOLT, 0, false},
-      {"BOLT", GLYPH_KIND_BOLT, 0, false},
+    {
+        .title = "BOLT",
+        .cells =
+            {
+                {"BOLT", GLYPH_KIND_BOLT, 0, false},
+                {"BOLT", GLYPH_KIND_BOLT, 0, false},
+                {"BOLT", GLYPH_KIND_BOLT, 0, false},
+                {"BOLT", GLYPH_KIND_BOLT, 0, false},
+            },
     },
-  },
-  {
-    .title = "CHARGE",
-    .cells = {
-      {"PROC", GLYPH_KIND_CHARGE, 0, false},
-      {"BMP", GLYPH_KIND_CHARGE, 1, false},
-      {"PROC", GLYPH_KIND_CHARGE, 0, false},
-      {"BMP", GLYPH_KIND_CHARGE, 1, false},
+    {
+        .title = "CHARGE",
+        .cells =
+            {
+                {"PROC", GLYPH_KIND_CHARGE, 0, false},
+                {"BMP", GLYPH_KIND_CHARGE, 1, false},
+                {"PROC", GLYPH_KIND_CHARGE, 0, false},
+                {"BMP", GLYPH_KIND_CHARGE, 1, false},
+            },
     },
-  },
-  {
-    .title = "WEATHER 1",
-    .cells = {
-      {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
-      {"SUN", GLYPH_KIND_WEATHER, 1, false},
-      {"PART", GLYPH_KIND_WEATHER, 2, false},
-      {"CLOUD", GLYPH_KIND_WEATHER, 3, false},
+    {
+        .title = "WEATHER 1",
+        .cells =
+            {
+                {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
+                {"SUN", GLYPH_KIND_WEATHER, 1, false},
+                {"PART", GLYPH_KIND_WEATHER, 2, false},
+                {"CLOUD", GLYPH_KIND_WEATHER, 3, false},
+            },
     },
-  },
-  {
-    .title = "WEATHER 2",
-    .cells = {
-      {"FOG", GLYPH_KIND_WEATHER, 45, false},
-      {"DRIZ", GLYPH_KIND_WEATHER, 51, false},
-      {"RAIN", GLYPH_KIND_WEATHER, 61, false},
-      {"H RAIN", GLYPH_KIND_WEATHER, 65, false},
+    {
+        .title = "WEATHER 2",
+        .cells =
+            {
+                {"FOG", GLYPH_KIND_WEATHER, 45, false},
+                {"DRIZ", GLYPH_KIND_WEATHER, 51, false},
+                {"RAIN", GLYPH_KIND_WEATHER, 61, false},
+                {"H RAIN", GLYPH_KIND_WEATHER, 65, false},
+            },
     },
-  },
-  {
-    .title = "WEATHER 3",
-    .cells = {
-      {"SLEET", GLYPH_KIND_WEATHER, 56, false},
-      {"SNOW", GLYPH_KIND_WEATHER, 71, false},
-      {"SHOW", GLYPH_KIND_WEATHER, 80, false},
-      {"H SHOW", GLYPH_KIND_WEATHER, 82, false},
+    {
+        .title = "WEATHER 3",
+        .cells =
+            {
+                {"SLEET", GLYPH_KIND_WEATHER, 56, false},
+                {"SNOW", GLYPH_KIND_WEATHER, 71, false},
+                {"SHOW", GLYPH_KIND_WEATHER, 80, false},
+                {"H SHOW", GLYPH_KIND_WEATHER, 82, false},
+            },
     },
-  },
-  {
-    .title = "WEATHER 4",
-    .cells = {
-      {"S SHOW", GLYPH_KIND_WEATHER, 85, false},
-      {"STORM", GLYPH_KIND_WEATHER, 95, false},
-      {"UNAV", GLYPH_KIND_WEATHER, -1, false},
-      {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
+    {
+        .title = "WEATHER 4",
+        .cells =
+            {
+                {"S SHOW", GLYPH_KIND_WEATHER, 85, false},
+                {"STORM", GLYPH_KIND_WEATHER, 95, false},
+                {"UNAV", GLYPH_KIND_WEATHER, -1, false},
+                {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
+            },
     },
-  },
-  {
-    .title = "HEALTH",
-    .cells = {
-      {"STEPS", GLYPH_KIND_STEPS, 1, true},
-      {"NO STEP", GLYPH_KIND_STEPS, 0, false},
-      {"BPM 72", GLYPH_KIND_BPM, 72, true},
-      {"BPM HI", GLYPH_KIND_BPM, 128, true},
+    {
+        .title = "HEALTH",
+        .cells =
+            {
+                {"STEPS", GLYPH_KIND_STEPS, 1, true},
+                {"NO STEP", GLYPH_KIND_STEPS, 0, false},
+                {"BPM 72", GLYPH_KIND_BPM, 72, true},
+                {"BPM HI", GLYPH_KIND_BPM, 128, true},
+            },
     },
-  },
-  {
-    .title = "UNAVAIL",
-    .cells = {
-      {"LOW", GLYPH_KIND_BATTERY, 9, false},
-      {"UNAV", GLYPH_KIND_WEATHER, -1, false},
-      {"NO STEP", GLYPH_KIND_STEPS, 0, false},
-      {"NO BPM", GLYPH_KIND_BPM, 0, false},
+    {
+        .title = "UNAVAIL",
+        .cells =
+            {
+                {"LOW", GLYPH_KIND_BATTERY, 9, false},
+                {"UNAV", GLYPH_KIND_WEATHER, -1, false},
+                {"NO STEP", GLYPH_KIND_STEPS, 0, false},
+                {"NO BPM", GLYPH_KIND_BPM, 0, false},
+            },
     },
-  },
 };
 
 static const GlyphSizeMode GLYPH_SIZE_MODES[] = {
-  {.title = "28", .icon_size = 28},
-  {.title = "20", .icon_size = 20},
-  {.title = "16", .icon_size = 16},
-  {.title = "10", .icon_size = 10},
+    {.title = "28", .icon_size = 28},
+    {.title = "20", .icon_size = 20},
+    {.title = "16", .icon_size = 16},
+    {.title = "10", .icon_size = 10},
 };
 
 static const int GLYPH_PAGE_TEMPLATE_COUNT =
@@ -167,196 +178,108 @@ static void mark_canvas_dirty(void) {
   }
 }
 
-static void draw_status(
-    GContext* ctx,
-    const GRect* bounds,
-    const ColorPalette* palette) {
+static void draw_status(GContext *ctx, const GRect *bounds, const ColorPalette *palette) {
   char status[32];
   int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
   int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
-  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
-  const GlyphPageTemplate* page_template =
-      &GLYPH_PAGE_TEMPLATES[template_index];
+  const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
+  const GlyphPageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
 
-  snprintf(
-      status,
-      sizeof(status),
-      "%d/%d %s %s %s",
-      s_page_index + 1,
-      GLYPH_PAGE_COUNT,
-      size_mode->title,
-      page_template->title,
-      s_is_light_mode ? "LIGHT" : "DARK");
+  snprintf(status, sizeof(status), "%d/%d %s %s %s", s_page_index + 1, GLYPH_PAGE_COUNT,
+           size_mode->title, page_template->title, s_is_light_mode ? "LIGHT" : "DARK");
 
   graphics_context_set_text_color(ctx, palette->primary_text);
-  graphics_draw_text(
-      ctx,
-      status,
-      s_status_font,
-      GRect(bounds->origin.x,
-            bounds->origin.y,
-            bounds->size.w,
-            STATUS_HEIGHT),
-      GTextOverflowModeTrailingEllipsis,
-      GTextAlignmentCenter,
-      NULL);
+  graphics_draw_text(ctx, status, s_status_font,
+                     GRect(bounds->origin.x, bounds->origin.y, bounds->size.w, STATUS_HEIGHT),
+                     GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
-static void draw_cell_label(
-    GContext* ctx,
-    const GRect* frame,
-    const ColorPalette* palette,
-    const char* label) {
+static void draw_cell_label(GContext *ctx, const GRect *frame, const ColorPalette *palette,
+                            const char *label) {
   graphics_context_set_text_color(ctx, palette->unavailable_text);
-  graphics_draw_text(
-      ctx,
-      label,
-      s_label_font,
-      *frame,
-      GTextOverflowModeTrailingEllipsis,
-      GTextAlignmentCenter,
-      NULL);
+  graphics_draw_text(ctx, label, s_label_font, *frame, GTextOverflowModeTrailingEllipsis,
+                     GTextAlignmentCenter, NULL);
 }
 
-static void draw_glyph_cell(
-    GContext* ctx,
-    const GRect* cell_frame,
-    const GlyphCell* cell,
-    const ColorPalette* palette,
-    int16_t icon_size_override) {
-  GRect icon_area = GRect(
-      cell_frame->origin.x + CELL_PADDING,
-      cell_frame->origin.y + CELL_PADDING,
-      cell_frame->size.w - (CELL_PADDING * 2),
-      cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
+static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const GlyphCell *cell,
+                            const ColorPalette *palette, int16_t icon_size_override) {
+  GRect icon_area = GRect(cell_frame->origin.x + CELL_PADDING, cell_frame->origin.y + CELL_PADDING,
+                          cell_frame->size.w - (CELL_PADDING * 2),
+                          cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
   int16_t icon_size = HELPER_MIN(icon_area.size.w, icon_area.size.h);
 
   if (icon_size_override > 0 && icon_size_override < icon_size) {
     icon_size = icon_size_override;
   }
 
-  GRect icon_frame = GRect(
-      icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
-      icon_area.origin.y + ((icon_area.size.h - icon_size) / 2),
-      icon_size,
-      icon_size);
-  GRect label_frame = GRect(
-      cell_frame->origin.x + 2,
-      cell_frame->origin.y + cell_frame->size.h - LABEL_HEIGHT,
-      cell_frame->size.w - 4,
-      LABEL_HEIGHT);
+  GRect icon_frame =
+      GRect(icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
+            icon_area.origin.y + ((icon_area.size.h - icon_size) / 2), icon_size, icon_size);
+  GRect label_frame =
+      GRect(cell_frame->origin.x + 2, cell_frame->origin.y + cell_frame->size.h - LABEL_HEIGHT,
+            cell_frame->size.w - 4, LABEL_HEIGHT);
 
   switch (cell->kind) {
-    case GLYPH_KIND_BATTERY:
-      glyph_lab_draw_battery_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          s_is_light_mode,
-          cell->value,
-          cell->flag);
-      break;
-    case GLYPH_KIND_BOLT:
-      glyph_lab_draw_bolt_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          palette->primary_text);
-      break;
-    case GLYPH_KIND_CHARGE:
-      glyph_lab_draw_charge_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          cell->value);
-      break;
-    case GLYPH_KIND_WEATHER:
-      glyph_lab_draw_climate_icon(
-          ctx,
-          &icon_frame,
-          cell->value,
-          palette);
-      break;
-    case GLYPH_KIND_STEPS:
-      glyph_lab_draw_steps_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          cell->flag);
-      break;
-    case GLYPH_KIND_STEPS_BITMAP:
-      glyph_lab_draw_steps_bitmap_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          cell->value);
-      break;
-    case GLYPH_KIND_BPM:
-      glyph_lab_draw_bpm_icon(
-          ctx,
-          &icon_frame,
-          palette,
-          s_is_light_mode,
-          cell->value,
-          cell->flag);
-      break;
+  case GLYPH_KIND_BATTERY:
+    glyph_lab_draw_battery_icon(ctx, &icon_frame, palette, s_is_light_mode, cell->value,
+                                cell->flag);
+    break;
+  case GLYPH_KIND_BOLT:
+    glyph_lab_draw_bolt_icon(ctx, &icon_frame, palette, palette->primary_text);
+    break;
+  case GLYPH_KIND_CHARGE:
+    glyph_lab_draw_charge_icon(ctx, &icon_frame, palette, cell->value);
+    break;
+  case GLYPH_KIND_WEATHER:
+    glyph_lab_draw_climate_icon(ctx, &icon_frame, cell->value, palette);
+    break;
+  case GLYPH_KIND_STEPS:
+    glyph_lab_draw_steps_icon(ctx, &icon_frame, palette, cell->flag);
+    break;
+  case GLYPH_KIND_STEPS_BITMAP:
+    glyph_lab_draw_steps_bitmap_icon(ctx, &icon_frame, palette, cell->value);
+    break;
+  case GLYPH_KIND_BPM:
+    glyph_lab_draw_bpm_icon(ctx, &icon_frame, palette, s_is_light_mode, cell->value, cell->flag);
+    break;
   }
 
   draw_cell_label(ctx, &label_frame, palette, cell->label);
 }
 
-static void canvas_update_proc(Layer* layer, GContext* ctx) {
+static void canvas_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
   ColorPalette palette;
   int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
   int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
-  int16_t outer_padding = PBL_IF_ROUND_ELSE(
-      OUTER_PADDING_ROUND,
-      OUTER_PADDING_RECT);
-  GRect content_bounds = grect_inset(
-      bounds,
-      GEdgeInsets(outer_padding,
-                  outer_padding,
-                  outer_padding,
-                  outer_padding));
-  GRect grid_bounds = GRect(
-      content_bounds.origin.x,
-      content_bounds.origin.y + STATUS_HEIGHT,
-      content_bounds.size.w,
-      content_bounds.size.h - STATUS_HEIGHT);
+  int16_t outer_padding = PBL_IF_ROUND_ELSE(OUTER_PADDING_ROUND, OUTER_PADDING_RECT);
+  GRect content_bounds =
+      grect_inset(bounds, GEdgeInsets(outer_padding, outer_padding, outer_padding, outer_padding));
+  GRect grid_bounds = GRect(content_bounds.origin.x, content_bounds.origin.y + STATUS_HEIGHT,
+                            content_bounds.size.w, content_bounds.size.h - STATUS_HEIGHT);
   int16_t cell_w = grid_bounds.size.w / GLYPH_COL_COUNT;
   int16_t cell_h = grid_bounds.size.h / GLYPH_ROW_COUNT;
-  const GlyphPageTemplate* page_template =
-      &GLYPH_PAGE_TEMPLATES[template_index];
-  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
+  const GlyphPageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
+  const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
 
   glyph_lab_select_palette(&palette, s_is_light_mode);
   graphics_context_set_fill_color(ctx, palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
   draw_status(ctx, &content_bounds, &palette);
 
-  for (int row = 0; row < GLYPH_ROW_COUNT; ++row) {
-    for (int col = 0; col < GLYPH_COL_COUNT; ++col) {
+  for (uint8_t row = 0; row < GLYPH_ROW_COUNT; ++row) {
+    for (uint8_t col = 0; col < GLYPH_COL_COUNT; ++col) {
       int index = (row * GLYPH_COL_COUNT) + col;
-      GRect cell_frame = GRect(
-          grid_bounds.origin.x + (col * cell_w),
-          grid_bounds.origin.y + (row * cell_h),
-          cell_w,
-          cell_h);
+      GRect cell_frame = GRect(grid_bounds.origin.x + (col * cell_w),
+                               grid_bounds.origin.y + (row * cell_h), cell_w, cell_h);
 
-      draw_glyph_cell(
-          ctx,
-          &cell_frame,
-          &page_template->cells[index],
-          &palette,
-          size_mode->icon_size);
+      draw_glyph_cell(ctx, &cell_frame, &page_template->cells[index], &palette,
+                      size_mode->icon_size);
     }
   }
 }
 
-static void select_click_handler(
-    ClickRecognizerRef recognizer,
-    void* ctx) {
+static void select_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -364,9 +287,7 @@ static void select_click_handler(
   mark_canvas_dirty();
 }
 
-static void up_click_handler(
-    ClickRecognizerRef recognizer,
-    void* ctx) {
+static void up_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -374,9 +295,7 @@ static void up_click_handler(
   mark_canvas_dirty();
 }
 
-static void down_click_handler(
-    ClickRecognizerRef recognizer,
-    void* ctx) {
+static void down_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -384,7 +303,7 @@ static void down_click_handler(
   mark_canvas_dirty();
 }
 
-static void click_config_provider(void* ctx) {
+static void click_config_provider(void *ctx) {
   (void)ctx;
 
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
@@ -392,8 +311,8 @@ static void click_config_provider(void* ctx) {
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
-static void main_window_load(Window* window) {
-  Layer* root = window_get_root_layer(window);
+static void main_window_load(Window *window) {
+  Layer *root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
   s_canvas_layer = layer_create(bounds);
@@ -405,7 +324,7 @@ static void main_window_load(Window* window) {
   layer_add_child(root, s_canvas_layer);
 }
 
-static void main_window_unload(Window* window) {
+static void main_window_unload(Window *window) {
   (void)window;
 
   if (s_canvas_layer) {
@@ -424,10 +343,10 @@ static void init(void) {
   }
 
   window_set_click_config_provider(s_window, click_config_provider);
-  window_set_window_handlers(s_window, (WindowHandlers) {
-    .load = main_window_load,
-    .unload = main_window_unload,
-  });
+  window_set_window_handlers(s_window, (WindowHandlers){
+                                           .load = main_window_load,
+                                           .unload = main_window_unload,
+                                       });
   window_stack_push(s_window, true);
 }
 

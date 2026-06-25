@@ -10,3 +10,10 @@ compile_flags.txt
 resources/images/backup-images/
 src/c/scratch.txt
 .vscode/
+.clang-format
+.prompts
+archive/DINPro-CondensedMedium.ttf
+archive/RoundWatchfacePlan.md
+archive/dinpro_condensedmedium.otf
+previous_icons/
+resources/fonts/DINPro*

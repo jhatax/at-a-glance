@@ -1,14 +1,8 @@
 #pragma once
 
-#include <pebble.h>
 #include "settings.h"
 #include "watchface_debug.h"
-
-// Weather AppMessage wire sentinels. PebbleKit JS mirrors these values when
-// weather is unavailable; do not change them without updating both sides of
-// the transport contract.
-#define WATCHFACE_WEATHER_TEMP_UNAVAILABLE INT16_MIN
-#define WATCHFACE_WEATHER_CONDITION_UNKNOWN -1
+#include <pebble.h>
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
@@ -65,10 +59,7 @@ typedef struct {
 } WatchfaceEventData;
 
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-enum {
-  WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020,
-  WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021
-};
+enum { WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020, WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021 };
 #endif
 
 // Create/destroy contract:
@@ -77,12 +68,8 @@ enum {
 // create returns false, because a failed create may leave partial module state
 // that must be unwound. Calling create after a successful create is idempotent
 // and returns true without rebuilding the active surface.
-bool watchface_create(
-    Window* window,
-    const WatchfaceSettings* settings);
+bool watchface_create(Window *window, const WatchfaceSettings *settings);
 void watchface_destroy();
 void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
-void watchface_apply_received_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings);
+void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSettings *settings);

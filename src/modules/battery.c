@@ -1,15 +1,7 @@
 #include "battery.h"
-
-#include "gcolor_definitions.h"
 #include "helper.h"
+#include "pebble.h"
 #include "substratum_renderer.h"
-
-static BatteryChargeState s_battery_state = {0};
-static GRect s_battery_track = {0};
-static GRect s_battery_fill = {0};
-static GRect s_battery_bolt = {0};
-static Layer* s_battery_track_layer = NULL;
-static Layer* s_battery_bolt_layer = NULL;
 
 typedef struct {
   GColor background;
@@ -22,29 +14,35 @@ typedef struct {
 
 static BatteryPalette s_battery_palette = {0};
 
-#define BATTERY_PALETTE_LOADED(pal) \
-  (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
+static GRect s_battery_track = {0};
+static GRect s_battery_fill = {0};
+static GRect s_battery_bolt = {0};
+static Layer *s_battery_track_layer = NULL;
+static Layer *s_battery_bolt_layer = NULL;
+
+static BatteryChargeState s_battery_state = {0};
+#define BATTERY_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
 
 static const BatteryPalette c_dark_battery_palette = {
-  .medium = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
-  .low = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
-  .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
-  .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+    .medium = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
+    .low = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
+    .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+    .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
 static const BatteryPalette c_light_battery_palette = {
-  .medium = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-  .low = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
-  .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
-  .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+    .medium = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+    .low = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
+    .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+    .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
 };
 
-static void battery_update_palette(const ColorPalette* palette);
+static void battery_update_palette(const ColorPalette *palette);
 static GColor calculate_battery_color(int16_t percent);
 
-static void battery_update_palette(const ColorPalette* palette) {
-  const BatteryPalette* template = palette->is_light_mode ?
-    &c_light_battery_palette : &c_dark_battery_palette;
+static void battery_update_palette(const ColorPalette *palette) {
+  const BatteryPalette *template =
+      palette->is_light_mode ? &c_light_battery_palette : &c_dark_battery_palette;
 
   if (BATTERY_PALETTE_LOADED(s_battery_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
@@ -84,17 +82,17 @@ static GColor calculate_battery_color(int16_t percent) {
   return s_battery_palette.low;
 }
 
-static void battery_track_update_proc(Layer* layer, GContext* ctx);
-static void battery_bolt_update_proc(Layer* layer, GContext* ctx);
+static void battery_track_update_proc(Layer *layer, GContext *ctx);
+static void battery_bolt_update_proc(Layer *layer, GContext *ctx);
 static void update_battery_state(void);
 
-static void battery_track_update_proc(Layer* layer, GContext* ctx) {
+static void battery_track_update_proc(Layer *layer, GContext *ctx) {
   if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
 
-  const GRect* track = &s_battery_track;
-  const GRect* fill = &s_battery_fill;
+  const GRect *track = &s_battery_track;
+  const GRect *fill = &s_battery_fill;
   GRect bounds = layer_get_bounds(layer);
   int16_t charge_percent = s_battery_state.charge_percent;
   GColor fill_color = calculate_battery_color(charge_percent);
@@ -109,26 +107,20 @@ static void battery_track_update_proc(Layer* layer, GContext* ctx) {
 
   // Now fill the inside of the track up to the charge width.
   graphics_context_set_fill_color(ctx, fill_color);
-  graphics_fill_rect(
-      ctx,
-      GRect(fill->origin.x - track->origin.x,
-            fill->origin.y - track->origin.y,
-            HELPER_CLAMP_MIN((charge_percent * fill->size.w) / 100, 1),
-            fill->size.h),
-      0,
-      GCornerNone);
+  graphics_fill_rect(ctx,
+                     GRect(fill->origin.x - track->origin.x, fill->origin.y - track->origin.y,
+                           HELPER_CLAMP_MIN((charge_percent * fill->size.w) / 100, 1),
+                           fill->size.h),
+                     0, GCornerNone);
 }
 
-static void battery_bolt_update_proc(Layer* layer, GContext* ctx) {
+static void battery_bolt_update_proc(Layer *layer, GContext *ctx) {
   if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
-
   GRect bounds = layer_get_bounds(layer);
   substratum_renderer_draw_filled_bolt_in_frame(
-      ctx,
-      &bounds,
-      calculate_battery_color(s_battery_state.charge_percent));
+      ctx, &bounds, calculate_battery_color(s_battery_state.charge_percent));
 }
 
 static void update_battery_state(void) {
@@ -138,16 +130,12 @@ static void update_battery_state(void) {
 
   layer_mark_dirty(s_battery_track_layer);
   if (s_battery_bolt_layer) {
-    layer_set_hidden(
-        s_battery_bolt_layer,
-        !s_battery_state.is_charging);
+    layer_set_hidden(s_battery_bolt_layer, !s_battery_state.is_charging);
     layer_mark_dirty(s_battery_bolt_layer);
   }
 }
 
-bool battery_module_create(
-    Layer* root,
-    const WatchfaceBatteryStratum* battery) {
+bool battery_module_create(Layer *root, const WatchfaceBatteryStratum *battery) {
   if (!root || !battery) {
     return false;
   }
@@ -186,13 +174,14 @@ void battery_module_destroy(void) {
     s_battery_track_layer = NULL;
   }
 
-  s_battery_palette = (BatteryPalette) {0};
+  s_battery_state = (BatteryChargeState){0};
+  s_battery_palette = (BatteryPalette){0};
   s_battery_track = GRect(0, 0, 0, 0);
   s_battery_fill = GRect(0, 0, 0, 0);
   s_battery_bolt = GRect(0, 0, 0, 0);
 }
 
-void battery_module_refresh(const ColorPalette* palette) {
+void battery_module_refresh(const ColorPalette *palette) {
   if (!palette) {
     return;
   }

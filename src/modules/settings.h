@@ -1,7 +1,6 @@
 #pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <pebble.h>
 
 enum {
   TEMP_UNIT_F = 0,
@@ -18,10 +17,14 @@ enum {
 };
 
 enum {
-  DISPLAY_MODE_DARK = 0,
-  DISPLAY_MODE_LIGHT,
+  DISPLAY_MODE_LIGHT_MONOCHROME = 0,
+  DISPLAY_MODE_DARK_MONOCHROME = 1,
+#ifdef PBL_COLOR
+  DISPLAY_MODE_LIGHT_COLOR = 2,
+  DISPLAY_MODE_DARK_COLOR = 3,
+#endif
   DISPLAY_MODE_COUNT,
-  DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT,
+  DISPLAY_MODE_DEFAULT = DISPLAY_MODE_DARK_MONOCHROME,
 };
 
 typedef enum {
@@ -34,14 +37,10 @@ typedef enum {
   HR_SAMPLE_MINUTES_DEFAULT = HR_SAMPLE_MINUTES_10,
 } HrSampleMinutes;
 
-#define TEMP_UNIT_VALID(value) \
-  ((value) >= 0 && (value) < TEMP_UNIT_COUNT)
-#define TIME_FORMAT_VALID(value) \
-  ((value) >= 0 && (value) < TIME_FMT_COUNT)
-#define DISPLAY_MODE_VALID(value) \
-  ((value) >= 0 && (value) < DISPLAY_MODE_COUNT)
-#define HR_SAMPLE_MINUTES_VALID(value) \
-  ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
+#define TEMP_UNIT_VALID(value) ((value) >= 0 && (value) < TEMP_UNIT_COUNT)
+#define TIME_FORMAT_VALID(value) ((value) >= 0 && (value) < TIME_FMT_COUNT)
+#define DISPLAY_MODE_VALID(value) ((value) >= 0 && (value) < DISPLAY_MODE_COUNT)
+#define HR_SAMPLE_MINUTES_VALID(value) ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
 
 typedef struct {
   // Add persisted fields at the bottom
@@ -51,7 +50,7 @@ typedef struct {
   uint8_t display_mode;
 } WatchfaceSettings;
 
-void settings_load(WatchfaceSettings* settings);
-bool settings_save(const WatchfaceSettings* settings);
+void settings_load(WatchfaceSettings *settings);
+bool settings_save(const WatchfaceSettings *settings);
 uint8_t settings_get_hr_sample_minutes(uint8_t hr_sample_minutes);
-void settings_apply_defaults(WatchfaceSettings* settings);
+void settings_apply_defaults(WatchfaceSettings *settings);

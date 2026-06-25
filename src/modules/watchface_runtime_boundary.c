@@ -1,5 +1,5 @@
-#include "watchface.h"
 #include "climate.h"
+#include "watchface.h"
 
 #ifdef PBL_HEALTH
 #include "bpm.h"
@@ -7,37 +7,21 @@
 #endif
 
 static const WatchfaceDataMask c_weather_mask =
-      WATCHFACE_DATA_TEMPERATURE |
-      WATCHFACE_DATA_WEATHER_CONDITION |
-      WATCHFACE_DATA_IS_DAY;
+    WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
-static void apply_setting_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    WatchfaceUpdateMask* refresh,
-    bool* repaint);
-static void apply_weather_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh);
-static void apply_service_event_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh);
+static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings,
+                               WatchfaceUpdateMask *refresh, bool *repaint);
+static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
+static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
 #ifdef PBL_HEALTH
-static void apply_health_setting_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings);
+static void apply_health_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings);
 #if ATAGLANCE_DEBUG
-static void apply_debug_health_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh);
+static void apply_debug_health_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
 #endif
 #endif
 
-static void apply_setting_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    WatchfaceUpdateMask* refresh,
-    bool* repaint) {
+static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings,
+                               WatchfaceUpdateMask *refresh, bool *repaint) {
   if (!data || !settings || !refresh || !repaint) {
     return;
   }
@@ -49,8 +33,7 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Runtime received invalid TIME_FORMAT: value=%d",
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TIME_FORMAT: value=%d",
               data->time_format);
     }
   }
@@ -62,8 +45,7 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Runtime received invalid TEMP_UNIT: value=%d",
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TEMP_UNIT: value=%d",
               data->temp_unit);
     }
   }
@@ -75,22 +57,18 @@ static void apply_setting_data(
         *repaint = true;
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Runtime received invalid DISPLAY_MODE: value=%d",
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d",
               data->display_mode);
     }
   }
 }
 
-static void apply_weather_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh) {
+static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
   if (!data || !refresh) {
     return;
   }
 
-  WatchfaceDataMask weather_received =
-      (WatchfaceDataMask)(data->received & c_weather_mask);
+  WatchfaceDataMask weather_received = (WatchfaceDataMask)(data->received & c_weather_mask);
   if (weather_received == WATCHFACE_DATA_NONE) {
     return;
   }
@@ -99,23 +77,20 @@ static void apply_weather_data(
   // If data couldn't be parsed, refresh will display "Unavailable state"
   *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
 
-  WatchfaceDataMask weather_parsed =
-      (WatchfaceDataMask)(data->parsed & c_weather_mask);
+  WatchfaceDataMask weather_parsed = (WatchfaceDataMask)(data->parsed & c_weather_mask);
 
   ClimateUpdate climate = {0};
   if (weather_parsed == c_weather_mask) {
-      climate.is_complete = true;
-      climate.celsius_tenths = data->temperature_celsius_tenths;
-      climate.weather_condition = data->weather_condition;
-      climate.is_day = data->is_day;
+    climate.is_complete = true;
+    climate.celsius_tenths = data->temperature_celsius_tenths;
+    climate.weather_condition = data->weather_condition;
+    climate.is_day = data->is_day;
   }
 
   climate_module_set_weather(&climate);
 }
 
-static void apply_service_event_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh) {
+static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
   if (!data || !refresh) {
     return;
   }
@@ -138,9 +113,7 @@ static void apply_service_event_data(
 }
 
 #ifdef PBL_HEALTH
-static void apply_health_setting_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings) {
+static void apply_health_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings) {
   if (!data || !settings) {
     return;
   }
@@ -151,17 +124,14 @@ static void apply_health_setting_data(
         settings->hr_sample_minutes = (uint8_t)data->hr_sample_minutes;
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-              "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
               data->hr_sample_minutes);
     }
   }
 }
 
 #if ATAGLANCE_DEBUG
-static void apply_debug_health_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh) {
+static void apply_debug_health_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
   if (!data || !refresh) {
     return;
   }
@@ -179,9 +149,7 @@ static void apply_debug_health_data(
 #endif
 #endif
 
-void watchface_apply_received_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings) {
+void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSettings *settings) {
   if (!data || !settings) {
     return;
   }

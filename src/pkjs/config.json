@@ -5,7 +5,7 @@
   },
   {
     "type": "text",
-    "defaultValue": "Select units and update frequencies. Health update settings apply only on Pebble models with health capabilities."
+    "defaultValue": "Select units and update frequencies."
   },
   {
     "type": "section",
@@ -44,17 +44,18 @@
       },
       {
         "type": "select",
+        "id": "displayModeSection",
         "messageKey": "DISPLAY_MODE",
         "label": "Display mode",
-        "defaultValue": "1",
+        "defaultValue": "0",
         "options": [
           {
             "value": "0",
-            "label": "Dark mode"
+            "label": "Monochrome Light Mode"
           },
           {
             "value": "1",
-            "label": "Light mode"
+            "label": "Monochrome Dark Mode"
           }
         ]
       },

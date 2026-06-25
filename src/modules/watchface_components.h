@@ -1,36 +1,11 @@
 #pragma once
 
+#include "layout_style.h"
+#include "layout_surface.h"
 #include <pebble.h>
 
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
-
-typedef enum {
-  WATCHFACE_FONT_ROLE_TIME = 0,
-  WATCHFACE_FONT_ROLE_TEXT,
-  WATCHFACE_FONT_ROLE_COUNT
-} WatchfaceFontRole;
-
-typedef enum {
-  WATCHFACE_COLOR_ROLE_PRIMARY_TEXT = 0,
-  WATCHFACE_COLOR_ROLE_UNAVAILABLE_TEXT,
-  WATCHFACE_COLOR_ROLE_DATE,
-  WATCHFACE_COLOR_ROLE_TIME
-} WatchfaceColorRole;
-
-typedef struct {
-  bool is_light_mode;
-  GColor background;
-  GColor primary_text;
-  GColor unavailable_text;
-  GColor date;
-  GColor time;
-} ColorPalette;
-
-enum {
-  WATCHFACE_ICON_GRID_WIDTH = 28,
-  WATCHFACE_ICON_GRID_HEIGHT = 28,
-};
 
 typedef struct {
   GRect frame;
@@ -40,12 +15,31 @@ typedef struct {
 } WatchfaceTextSubstratum;
 
 typedef struct {
-  GRect frame;
-  bool is_enabled;
-} WatchfaceIconSubstratum;
+  WatchfaceTextSubstratum text;
+} WatchfaceTextStratum;
 
 typedef struct {
-  GRect track;
-  GRect fill;
-  GRect bolt;
-} WatchfaceBatteryStratum;
+  WatchfaceIconSubstratum icon;
+  WatchfaceTextSubstratum text;
+} WatchfaceTextWithIconStratum;
+
+typedef struct {
+  const ColorPalette *palette;
+  bool is_compact;
+  // These two MUST ALWAYS BE THE SAME SIZE
+  FontBook fontbook;
+} WatchfaceSurfaceStyle;
+
+typedef struct {
+  int16_t face_width;
+  int16_t face_height;
+  WatchfaceSurfaceStyle style;
+  WatchfaceTextStratum date;
+  WatchfaceTextStratum time;
+#ifdef PBL_HEALTH
+  WatchfaceTextWithIconStratum bpm;
+  WatchfaceTextWithIconStratum steps;
+#endif
+  WatchfaceBatteryStratum battery;
+  WatchfaceTextWithIconStratum climate;
+} WatchfaceSurface;

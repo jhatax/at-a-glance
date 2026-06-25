@@ -1,17 +1,14 @@
 #pragma once
-
 #include <pebble.h>
-#include "watchface_debug.h"
-#include "watchface_components.h"
 
 #ifdef PBL_HEALTH
-bool steps_module_create(
-    Layer* root,
-    const WatchfaceTextSubstratum* text,
-    const WatchfaceIconSubstratum* icon,
-    GFont font);
+#include "watchface_components.h"
+#include "watchface_debug.h"
+
+bool steps_module_create(Layer *root, const WatchfaceTextSubstratum *text,
+                         const WatchfaceIconSubstratum *icon, GFont font);
 void steps_module_destroy(void);
-void steps_module_refresh(const ColorPalette* palette);
+void steps_module_refresh(const ColorPalette *palette);
 
 #if ATAGLANCE_DEBUG
 void steps_module_debug_set_steps(int steps);

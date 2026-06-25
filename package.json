@@ -51,34 +51,55 @@
           "menuIcon": true
         },
         {
-          "characterRegex": "[0-9: A-Z°-]",
-          "file": "fonts/cabin-medium-500-text-subset.ttf",
-          "name": "FONT_CABIN_TEXT_14_MEDIUM",
-          "type": "font"
+          "characterRegex": "[-0-9CF]",
+          "file": "fonts/Antonio-Medium.ttf",
+          "name": "FONT_COMPACT_TEXT_MEDIUM_18",
+          "type": "font",
+          "compatibility": "2.7"
         },
         {
-          "characterRegex": "[0-9: A-Z°-]",
-          "file": "fonts/cabin-medium-500-text-subset.ttf",
-          "name": "FONT_CABIN_TEXT_18_MEDIUM",
-          "type": "font"
+          "characterRegex": "[-0-9CF]",
+          "file": "fonts/Antonio-Medium.ttf",
+          "name": "FONT_FULL_TEXT_MEDIUM_24",
+          "type": "font",
+          "compatibility": "2.7"
+        },
+        {
+          "characterRegex": "[-0-9.A-Z]",
+          "file": "fonts/Antonio-SemiBold.ttf",
+          "name": "FONT_COMPACT_DATE_SEMIBOLD_18",
+          "type": "font",
+          "compatibility": "2.7"
+        },
+        {
+          "characterRegex": "[-0-9.A-Z]",
+          "file": "fonts/Antonio-SemiBold.ttf",
+          "name": "FONT_FULL_DATE_SEMIBOLD_24",
+          "type": "font",
+          "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "name": "FONT_CABIN_TIME_36_SEMIBOLD",
-          "type": "font"
+          "name": "FONT_COMPACT_TIME_SEMIBOLD_40",
+          "type": "font",
+          "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "name": "FONT_CABIN_TIME_48_SEMIBOLD",
-          "type": "font"
+          "targetPlatforms": ["emery"],
+          "name": "FONT_FULL_TIME_SEMIBOLD_60",
+          "type": "font",
+          "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "name": "FONT_CABIN_TIME_60_SEMIBOLD",
-          "type": "font"
+          "targetPlatforms": ["gabbro"],
+          "name": "FONT_FULL_TIME_SEMIBOLD_72",
+          "type": "font",
+          "compatibility": "2.7"
         },
         {
           "file": "images/walk_18.png",
@@ -124,10 +145,5 @@
         }
       ]
     }
-  },
-  "devDependencies": {
-    "pixelmatch": "^7.2.0",
-    "pngjs": "^7.0.0",
-    "sharp": "^0.35.2"
   }
 }

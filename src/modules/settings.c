@@ -5,7 +5,7 @@
 static const uint32_t c_key_persisted_settings = 2;
 static const int c_settings_data_size = sizeof(WatchfaceSettings);
 
-void settings_apply_defaults(WatchfaceSettings* settings) {
+void settings_apply_defaults(WatchfaceSettings *settings) {
   if (!settings) {
     return;
   }
@@ -16,7 +16,7 @@ void settings_apply_defaults(WatchfaceSettings* settings) {
   settings->display_mode = DISPLAY_MODE_DEFAULT;
 }
 
-static void settings_sanitize(WatchfaceSettings* settings) {
+static void settings_sanitize(WatchfaceSettings *settings) {
   if (!settings) {
     return;
   }
@@ -34,7 +34,7 @@ static void settings_sanitize(WatchfaceSettings* settings) {
   }
 }
 
-static void settings_read_stored(WatchfaceSettings* settings) {
+static void settings_read_stored(WatchfaceSettings *settings) {
   if (!settings) {
     return;
   }
@@ -52,27 +52,18 @@ static void settings_read_stored(WatchfaceSettings* settings) {
 
   int read_size = stored_size;
   if (read_size > c_settings_data_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Persisted settings truncated: size=%d max=%d",
-            stored_size,
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Persisted settings truncated: size=%d max=%d", stored_size,
             c_settings_data_size);
     read_size = c_settings_data_size;
   } else if (read_size < c_settings_data_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Persisted settings partial: size=%d expected=%d",
-            stored_size,
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Persisted settings partial: size=%d expected=%d", stored_size,
             c_settings_data_size);
   }
 
-  int bytes_read = persist_read_data(
-      c_key_persisted_settings,
-      &stored,
-      read_size);
+  int bytes_read = persist_read_data(c_key_persisted_settings, &stored, read_size);
   if (bytes_read != read_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Persisted settings read failed: result=%d expected=%d",
-            bytes_read,
-            read_size);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Persisted settings read failed: result=%d expected=%d",
+            bytes_read, read_size);
     return;
   }
 
@@ -82,22 +73,22 @@ static void settings_read_stored(WatchfaceSettings* settings) {
 // This "API" block is called by other modules or main
 uint8_t settings_get_hr_sample_minutes(uint8_t hr_sample_minutes) {
   switch ((HrSampleMinutes)hr_sample_minutes) {
-    case HR_SAMPLE_MINUTES_10:
-      return 10;
-    case HR_SAMPLE_MINUTES_15:
-      return 15;
-    case HR_SAMPLE_MINUTES_30:
-      return 30;
-    case HR_SAMPLE_MINUTES_60:
-      return 60;
-    case HR_SAMPLE_MINUTES_120:
-      return 120;
-    default:
-      return 10;
+  case HR_SAMPLE_MINUTES_10:
+    return 10;
+  case HR_SAMPLE_MINUTES_15:
+    return 15;
+  case HR_SAMPLE_MINUTES_30:
+    return 30;
+  case HR_SAMPLE_MINUTES_60:
+    return 60;
+  case HR_SAMPLE_MINUTES_120:
+    return 120;
+  default:
+    return 10;
   }
 }
 
-void settings_load(WatchfaceSettings* settings) {
+void settings_load(WatchfaceSettings *settings) {
   if (!settings) {
     return;
   }
@@ -107,20 +98,15 @@ void settings_load(WatchfaceSettings* settings) {
   settings_sanitize(settings);
 }
 
-bool settings_save(const WatchfaceSettings* settings) {
+bool settings_save(const WatchfaceSettings *settings) {
   if (!settings) {
     return false;
   }
 
-  int bytes_written = persist_write_data(
-      c_key_persisted_settings,
-      settings,
-      c_settings_data_size);
+  int bytes_written = persist_write_data(c_key_persisted_settings, settings, c_settings_data_size);
   if (bytes_written != (int)sizeof(*settings)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-            "Persisted settings write failed: result=%d expected=%d",
-            bytes_written,
-            c_settings_data_size);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Persisted settings write failed: result=%d expected=%d",
+            bytes_written, c_settings_data_size);
     return false;
   }
 

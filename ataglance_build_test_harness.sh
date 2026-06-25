@@ -16,9 +16,9 @@
 set -e
 
 local emulators=(gabbro emery chalk flint)
-local codes=(0 1 2 3 45 51 55 57 67 86 61 65 67 71 80 82 85 95 -1)
-# local codes=(0 1 2 3)
-local modes=(0 1)
+# local codes=(0 1 2 3 45 51 55 57 67 86 61 65 67 71 80 82 85 95 -1)
+local codes=(0 1 2 3)
+local modes=(0 1 2 3)
 local isday=(0 1)
 local tests=(weather battery)
 
@@ -138,6 +138,7 @@ if [[ "$INSTALL" == true ]]; then
     echo "Launching selected emulators with the built binary...\n"
     # Launch emulators
     for emu in $emulators; do
+	sleep 4
         pebble install --emulator "$emu"
     done
 fi
@@ -196,23 +197,28 @@ if [[ "$RUN_AUTOMATION" == true ]]; then
         battery)
             echo "Starting battery tests: 1 10 20 25 35 49 50 55 60 70 75 80 90 95 100 with and without charging bolt"
             local levels=(1 10 20 25 35 49 50 55 60 70 75 80 90 95 100)
-            local charging=(0 1)
+            local charging=(1 0)
 
             for emu in $emulators; do # Each emulator
-		pebble install --emulator "$emu"
+                pebble install --emulator "$emu"
                 echo "Testing on emulator $emu"
-                for c in $charging; do # Not-charging, Charging
-                    local suffix="${(M)c:#1:+--charging}"
-                    for l in $levels; do # Each level
-                        echo "Setting battery level to $l on emulator $emu. Is charging: $c $suffix"
-                        pebble emu-battery \
-                            --emulator "$emu" \
-                            --percent "$l" ${suffix:+"$suffix"}
-                        sleep 5
+                for m in $modes; do # each display-mode
+                    pebble send-app-message --emulator "$emu" --int 10006="$m" 2>/dev/null
+                    sleep 3
+                    for c in $charging; do # Not-charging, Charging
+                        local suffix="${${c:#0}:+--charging}"
+                        echo "Suffix is ${suffix:+"$suffix"}"
+                        for l in $levels; do # Each level
+                            echo "Setting battery level to $l on emulator $emu. Is charging: $c $suffix"
+                            pebble emu-battery \
+                                --emulator "$emu" \
+                                --percent "$l" ${suffix:+"$suffix"}
+                            sleep 3
+                        done
+                        echo "Switching to the next charging mode"
                     done
-                    echo "Switching to the next charging mode"
+                    sleep 3
                 done
-                sleep 3
             done
             ;;
         esac
