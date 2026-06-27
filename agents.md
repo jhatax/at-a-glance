@@ -6,57 +6,66 @@ Inherits from:
 - [Pebble platform guidelines](../agent-templates/AGENTS-PEBBLE.md)
   (`~/Code/agent-templates/AGENTS-PEBBLE.md`)
 
-Read the inherited files first. This file contains only Life at a Glance facts,
-durable product decisions, project-specific guardrails, and validation checks.
-`ARCHITECTURE_LEDGER.md` is the current architecture source of truth; start
-there for non-trivial code work and update it when a decision changes.
+Read inherited files first.
+
+Use this file for:
+
+- repo facts
+- durable product decisions
+- project-specific guardrails
+- repo-specific validation
+
+Primary architecture source of truth:
+
+- `ARCHITECTURE_LEDGER.md`
+
+For non-trivial work:
+
+1. Read the inherited files.
+2. Read `ARCHITECTURE_LEDGER.md`.
+3. Audit live code and the dirty tree.
+4. Keep the patch narrow.
 
 ---
 
-## Context Summary
+## Context
 
-You are working on a mature Pebble watchface in native C with PebbleKit JS and
-Clay. Treat it as embedded firmware: design first, make narrow changes, preserve
-memory/lifecycle safety, and validate with the Pebble build/emulator path.
+- Mature Pebble watchface in native C with PebbleKit JS and Clay
+- Treat as embedded firmware
+- Design first
+- Validate before staging or committing
 
 Core product values:
 
-1. One-second glance: time first, then supporting facts without searching.
-2. Text is primary; icons are secondary recognition aids.
-3. Preserve the Swiss-Rail influence: strong alignment, restrained color,
-   deliberate spacing, and no decorative clutter.
-4. Layout constants are product decisions. Do not change text widths, icon
-   sizes, fonts, palette, geometry, platforms, or AppMessage keys in unrelated
-   cleanup.
-5. Reuse architecture across display shapes, not rectangular coordinates.
-   Round layout is round-native and must account for circular clipping.
-6. Prefer direct, auditable code. Do not add tiny helper wrappers unless they
-   clarify a real boundary or remove meaningful complexity.
+1. One-second glance
+2. Time first
+3. Text primary, icons secondary
+4. Swiss-Rail influence: alignment, restraint, spacing, no clutter
+5. Layout constants are product decisions
+6. Reuse architecture across shapes, not rectangular coordinates
+7. Prefer direct, auditable code
 
 Engineering constraints:
 
-1. Audit live source, dirty tree, and the ledger before editing.
-2. Keep one coherent slice. Do not mix cleanup, redesign, AppMessage changes,
-   platform enablement, and glyph tuning without approval.
-3. Preserve user work; never revert unrelated changes.
-4. Do not pass or return large watchface/layout structs by value.
-5. Keep source lines at or below 100 characters where practical.
-6. Fixed-size buffers and `snprintf` only for C string formatting.
-7. Every acquired Pebble resource must have a matching destroy path, including
-   create-failure paths.
-8. Use integer layout/drawing math. Do not introduce floating-point math.
-9. For API, lifecycle, layout, or platform changes, discuss the flow and
-   invariants before coding and commit only after explicit approval.
+1. Audit source, docs, generated files, and dirty tree before editing
+2. Keep one coherent slice
+3. Do not mix cleanup, redesign, AppMessage changes, platform work, and glyph tuning
+4. Preserve existing user work
+5. Do not pass or return large watchface/layout structs by value
+6. Keep source lines at or below 100 chars where practical
+7. Use fixed-size buffers and `snprintf`
+8. Match every Pebble resource acquisition with a destroy path
+9. Use integer layout/drawing math only
+10. Review API, lifecycle, layout, and platform changes before coding
 
 ---
 
-## Project Facts
+## Repo Facts
 
 - Native C entrypoint: `src/c`
 - Watchface modules: `src/modules`
-- PebbleKit JS and Clay config: `src/pkjs`
-- Manifest, platforms, capabilities, resources, and message keys:
-  `package.json`
+- PebbleKit JS / Clay: `src/pkjs`
+- Manifest, resources, platforms, message keys: `package.json`
 - Build entry: `wscript`
 - Design reference: `DESIGN.md`
 - Architecture contract: `ARCHITECTURE_LEDGER.md`
@@ -64,9 +73,9 @@ Engineering constraints:
 
 Required capabilities:
 
-- `configurable` for Clay
-- `location` for weather geolocation
-- `health` for BPM and steps
+- `configurable`
+- `location`
+- `health`
 
 Required AppMessage keys:
 
@@ -77,6 +86,7 @@ Required AppMessage keys:
 - `IS_DAY`
 - `HR_SAMPLE_MINUTES`
 - `DISPLAY_MODE`
+- `STEPS_GOAL`
 
 Persisted defaults:
 
@@ -84,164 +94,171 @@ Persisted defaults:
 - temperature unit: `°F`
 - HR sampling: `10` minutes
 - display mode: light
+- steps goal: `10000`
 
-PebbleKit JS uses phone geolocation when available and falls back to OAK at
-`37.85626, -122.21383`.
+PebbleKit JS weather fallback:
+
+- OAK: `37.85626, -122.21383`
 
 ---
 
 ## Architecture Guardrails
 
-- `watchface` owns the live `WatchfaceSurface` storage and lifetime.
-- `layout_watchface_initialize(width, height, &surface)` is the single public
-  layout initialization contract. The active shape implementation clears and
-  prepares the caller-owned surface.
-- `layout_watchface_update_palette(&surface.style, display_mode)` applies color
-  style without recalculating geometry.
-- The active architect owns geometry and compact/full classification.
-- Compact/full is resolved once by the architect and stored on
-  `WatchfaceSurfaceStyle.is_compact`; the stylist consumes it and does not
-  rederive it from dimensions.
-- Architects use private immutable blueprints and private calculated metrics.
-  Layout-private metrics must not leak through `WatchfaceSurface`.
-- Feature modules own Pebble layer lifecycle. Shared render helpers may create
-  or update layers from calculated substrata, but feature modules remain the
-  owners.
-- Module `create(root, surface)` may retain the calculated surface once.
-  Module `refresh()` APIs must not accept `WatchfaceSurface`; pass only narrow
-  runtime payloads such as time format or temperature unit.
-- `ataglance.c` owns Pebble lifecycle, service subscriptions, settings,
-  AppMessage parsing, and dispatch. It includes `watchface.h`, not feature
-  module headers.
-- `watchface_components.h` is type-focused shared display contract; it must not
-  gain behavior.
-- `helper.h` is shared utility vocabulary. Modules and components may include
-  it directly when they use helper macros or helper APIs; this is not header
-  leakage by itself.
-- Dynamic text/icon colors are module-owned when they depend on live source
-  state, such as BPM or battery.
+- `watchface` owns live `WatchfaceSurface` storage and lifetime
+- `layout_watchface_initialize(width, height, &surface)` is the only public layout init contract
+- Layout init clears and prepares caller-owned surface
+- `layout_watchface_update_palette(&surface.style, display_mode)` restyles without recalculating geometry
+- The active architect owns geometry and compact/full classification
+- `WatchfaceSurfaceStyle.is_compact` is resolved once by the architect
+- The stylist consumes `is_compact`; it does not rederive it
+- Blueprints are private and immutable
+- Layout-private metrics must not leak through `WatchfaceSurface`
+- Feature modules own their Pebble layers and lifecycle
+- Shared render helpers may help create/update layers, but do not own them
+- `create(root, surface)` may retain prepared surface data once
+- `refresh()` APIs must not accept `WatchfaceSurface`
+- Pass narrow runtime inputs to `refresh()`, e.g. time format or temp unit
+- `ataglance.c` owns Pebble lifecycle, subscriptions, settings, AppMessage parsing, and dispatch
+- `ataglance.c` includes `watchface.h`, not feature-module headers
+- `watchface_components.h` is shared type vocabulary only
+- `helper.h` is shared utility vocabulary
+- Dynamic text/icon colors remain module-owned when tied to live source state
 
 ---
 
 ## Module Map
 
-- `src/c/ataglance.c`: window lifecycle, services, settings, AppMessage,
-  watchface dispatch.
-- `src/modules/watchface.c`: runtime clearing house, surface owner, module
-  create/destroy order, refresh coordination, event routing.
-- `src/modules/watchface_components.h`: palette, font/color roles, surface,
-  strata, and substrata types.
-- `src/modules/layout.h`: public layout initialization and style API.
-- `src/modules/layout_architect.c`: active geometry provider.
-- `src/modules/layout_design.h`: private design constants, blueprints, and calculated
-  layout structs; cleanup candidate.
-- `src/modules/layout_stylist.c`: palette, font-role, custom-font, compact/full
-  style consumption.
-- `src/modules/substratum_renderer.c/.h`: shared TextLayer/Icon setup, color
-  role lookup, icon coordinate scaling, and shared glyph primitives.
-- `src/modules/settings.c/.h`: defaults, persistence, validation, HR interval
-  mapping.
-- `src/modules/date.c/.h`: date text lifecycle and formatting.
-- `src/modules/time.c/.h`: time text lifecycle, formatting, custom font.
-- `src/modules/climate.c/.h`: weather source state, temperature text, weather
-  availability, climate icon lifecycle.
-- `src/modules/climate_glyphs.c/.h`: Open-Meteo code mapping and procedural
-  weather glyphs.
-- `src/modules/battery.c/.h`: battery source state, track/bolt layers, battery
-  colors, refresh.
-- `src/modules/bpm.c/.h`: BPM source state, text/icon layers, health reads,
-  BPM colors.
-- `src/modules/steps.c/.h`: steps source state, text/icon layers, health reads,
-  steps refresh.
+- `src/c/ataglance.c`: lifecycle, services, settings, AppMessage, watchface dispatch
+- `src/modules/watchface.c`: runtime clearing house, surface owner, create/destroy order, refresh routing
+- `src/modules/watchface_components.h`: shared palettes, roles, strata, substrata, surface types
+- `src/modules/layout.h`: public layout API
+- `src/modules/layout_architect.c`: geometry provider
+- `src/modules/layout_design.h`: private design constants, blueprints, calculated layout
+- `src/modules/layout_stylist.c`: palette, font-role, custom-font, compact/full style consumption
+- `src/modules/substratum_renderer.c/.h`: shared text/icon setup, color lookup, coordinate scaling, glyph primitives
+- `src/modules/settings.c/.h`: defaults, persistence, validation, HR interval mapping
+- `src/modules/date.c/.h`: date text lifecycle and formatting
+- `src/modules/time.c/.h`: time text lifecycle, formatting, custom font
+- `src/modules/climate.c/.h`: climate source state, temperature text, availability, icon lifecycle
+- `src/modules/climate_glyphs.c/.h`: Open-Meteo mapping and procedural weather glyphs
+- `src/modules/battery.c/.h`: battery source state, track/bolt layers, colors, refresh
+- `src/modules/bpm.c/.h`: BPM source state, text/icon layers, health reads, colors
+- `src/modules/steps.c/.h`: steps source state, text/icon layers, health reads, refresh
 
 ---
 
 ## State And Rendering
 
-- Store source state, not redundant derived render state, unless the derived
-  value is expensive or impossible to recompute.
-- Setters mutate source state only. Rendering happens through
-  `watchface_refresh()`.
-- `watchface_refresh(WatchfaceUpdateMask updates)` is the public render
-  dispatcher. `ataglance.c` knows update categories, not feature internals.
-- AppMessage handling in `ataglance.c` accumulates a local update mask and
-  makes one coalesced `watchface_refresh()` call.
-- Parse raw AppMessage tuples in `ataglance.c`, convert them to typed runtime
-  facts, then call narrow watchface setters.
-- Do not introduce shared runtime-update packages unless traffic volume or
-  atomic multi-field updates justify it.
+- Store source state, not redundant derived render state
+- Exception: retain derived state only when recomputation is expensive or impractical
+- Setters mutate source state only
+- Rendering goes through `watchface_refresh()`
+- `watchface_refresh(WatchfaceUpdateMask updates)` is the public render dispatcher
+- `ataglance.c` knows update categories, not feature internals
+- Parse raw AppMessage tuples in `ataglance.c`
+- Convert tuples to typed runtime facts
+- Call narrow watchface setters / ingress APIs
+- Do not introduce shared runtime-update packets without clear need
 
 ---
 
 ## Text-First Semantics
 
-- Required text-layer creation determines text-bearing module success.
-- If a metric text layer cannot be created, do not create or depend on that
-  metric icon.
-- If an icon layer cannot be created, keep updating the corresponding text.
-- Optional icon creation does not gate module success unless the module defines
-  that icon as required.
-- Assign a module's retained `s_surface` only after required layer creation
-  succeeds.
-- Failure paths must not leave stale surface pointers, custom fonts, layers,
-  bitmaps, or partially-owned state behind.
+- Required text-layer creation determines module success
+- If metric text cannot be created, do not depend on its icon
+- If icon creation fails, continue updating text when product semantics allow it
+- Optional icon creation must not gate module success unless the module explicitly requires it
+- Assign retained module state only after required layer creation succeeds
+- Failure paths must not leave stale pointers, partial ownership, layers, fonts, or bitmaps behind
 
 ---
 
 ## Product And Visual Semantics
 
-- Full rectangular displays use canonical rectangular blueprint values.
-- Compact rectangular displays may use compact rectangular blueprint values.
-- Round geometry must account for row-specific safe width, shape-specific
-  margins, font extremes, icon legibility near curves, and Chalk/Gabbro
-  screenshots.
+- Full rectangular displays use canonical full rectangular blueprint values
+- Compact rectangular displays may use compact rectangular blueprint values
+- Round geometry must account for safe width, margins, font extremes, clipping, and Chalk/Gabbro validation
 - Unavailable text token: `---`
-- Dark mode: black background, white rule, Celeste primary text, Light Gray
-  unavailable text, Electric Blue date, Sunset Orange time, primary-text metric
-  icons.
-- Light mode: white background, Oxford Blue rule, Cobalt Blue primary text,
-  Dark Gray unavailable text, black date, Sunset Orange time, primary-text
-  metric icons.
-- Black-and-white displays fall back to legible choices via `PBL_IF_COLOR_ELSE`
-  and `gcolor_legible_over()`.
-- BPM colors: `<=0` or unavailable uses unavailable text; `1-99` uses primary
-  text; `100-120` uses Chrome Yellow on dark and Windsor Tan on light; `>120`
-  uses Orange on dark and Bulgarian Rose on light.
-- Battery colors: charging uses Islamic Green on color and primary text on
-  monochrome; not charging `>50` uses primary text; `21-50` uses Rajah on dark
-  and Windsor Tan on light; `<=20` uses Red on dark and Bulgarian Rose on
-  light.
-- Weather/date share one row. Weather owns icon plus temperature; date aligns
-  in the remaining space.
+
+Dark mode:
+
+- background: black
+- rule: white
+- primary text: Celeste
+- unavailable text: Light Gray
+- date: Electric Blue
+- time: Sunset Orange
+- metric icons: primary text
+
+Light mode:
+
+- background: white
+- rule: Oxford Blue
+- primary text: Cobalt Blue
+- unavailable text: Dark Gray
+- date: black
+- time: Sunset Orange
+- metric icons: primary text
+
+Other visual rules:
+
+- B/W displays use `PBL_IF_COLOR_ELSE` and `gcolor_legible_over()`
+- BPM colors:
+  - unavailable or `<=0`: unavailable text
+  - `1-99`: primary text
+  - `100-120`: Chrome Yellow on dark, Windsor Tan on light
+  - `>120`: Orange on dark, Bulgarian Rose on light
+- Battery colors:
+  - charging: Islamic Green on color, primary text on monochrome
+  - `>50`: primary text
+  - `21-50`: Rajah on dark, Windsor Tan on light
+  - `<=20`: Red on dark, Bulgarian Rose on light
+- Weather/date share one row
+- Weather owns icon + temperature
+- Date aligns in the remaining row space
 
 ---
 
-## Validation Checklist
+## Validation
 
-Use the parent Pebble checklist plus these repo checks:
-
-- Target platform set in `package.json` is intentional.
-- AppMessage keys match across `package.json`, Clay, PebbleKit JS, C, docs, and
-  manual test commands.
-- Manual AppMessage numeric keys were checked after key removal or reordering.
-- Defaults match across C, Clay, README, docs, and persisted settings.
-- Resource filenames and generated IDs match.
-- `PBL_HEALTH` guards protect `bpm.h`, `steps.h`, and every `Health*` symbol.
-- No feature-module `*_refresh()` declaration accepts `WatchfaceSurface`.
-- Text does not clip at likely extremes: `WED 30 SEP`, `12:59`, `100`,
-  `99999`, `---F`, and `100%`.
-- Visual QA considers dark/light, color/BW, available/unavailable health,
-  weather unavailable, long date, `99999` steps, and `100%` battery.
-- `git diff --check` passes.
-- `pebble build` runs for code changes, or the validation gap is reported.
-- Emulator screenshots are used for visual/layout changes when practical.
-- Temporary screenshots and buffers are deleted unless the user keeps them.
+- Confirm target platforms in `package.json` are intentional
+- Confirm AppMessage keys match across `package.json`, Clay, JS, C, docs, and manual test commands
+- Recheck manual numeric AppMessage keys after any key add/remove/reorder
+- Confirm defaults match across C, Clay, README, docs, and persisted settings
+- Confirm resource filenames and generated IDs match
+- Guard all `Health*` symbols and health headers with `PBL_HEALTH`
+- No feature-module `*_refresh()` API may accept `WatchfaceSurface`
+- Check text clipping at:
+  - `WED 30 SEP`
+  - `12:59`
+  - `100`
+  - `99999`
+  - `---F`
+  - `100%`
+- Visual QA must cover:
+  - dark/light
+  - color/BW
+  - available/unavailable health
+  - weather unavailable
+  - long date
+  - `99999` steps
+  - `100%` battery
+- Run `git diff --check`
+- Run `pebble build` for code changes, or explicitly report the gap
+- Use emulator screenshots for visual/layout changes when practical
+- Delete temporary screenshots/buffers unless intentionally kept
 
 ---
 
-## Publishing Notes
+## Publishing
 
-This folder is not yet on GitHub. Before publishing, run a build, audit
-secrets, verify `.gitignore`, SDK/platform metadata, README, screenshots if
-approved, and the initial commit contents. Do not publish generated build
-artifacts unless intentionally releasing them with user approval.
+- Repo is not yet public
+- Before publishing:
+  - run a build
+  - audit secrets
+  - verify `.gitignore`
+  - verify SDK/platform metadata
+  - verify README
+  - verify screenshots if included
+  - verify initial commit contents
+- Do not publish generated build artifacts unless explicitly approved
