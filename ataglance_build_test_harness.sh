@@ -16,8 +16,7 @@
 set -e
 
 local emulators=(gabbro emery chalk flint)
-# local codes=(0 1 2 3 45 51 55 57 67 86 61 65 67 71 80 82 85 95 -1)
-local codes=(0 1 2 3)
+local codes=(0 1 2 3 45 51 55 57 67 86 61 65 67 71 80 82 85 95 -1)
 local modes=(0 1 2 3)
 local isday=(0 1)
 local tests=(weather battery)
