@@ -9,7 +9,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@rebble/clay": "^1.0.4"
+    "@rebble/clay": "^1.0.10"
   },
   "pebble": {
     "displayName": "At A Glance",
@@ -40,7 +40,10 @@
       "WEATHER_CONDITION",
       "IS_DAY",
       "HR_SAMPLE_MINUTES",
-      "DISPLAY_MODE"
+      "DISPLAY_MODE",
+      "STEPS_GOAL",
+      "STEPS_GOAL_PRESET",
+      "STEPS_GOAL_CUSTOM"
     ],
     "resources": {
       "media": [
@@ -88,7 +91,9 @@
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": ["emery"],
+          "targetPlatforms": [
+            "emery"
+          ],
           "name": "FONT_FULL_TIME_SEMIBOLD_60",
           "type": "font",
           "compatibility": "2.7"
@@ -96,7 +101,9 @@
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": ["gabbro"],
+          "targetPlatforms": [
+            "gabbro"
+          ],
           "name": "FONT_FULL_TIME_SEMIBOLD_72",
           "type": "font",
           "compatibility": "2.7"

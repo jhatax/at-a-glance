@@ -1,5 +1,7 @@
 #include "climate.h"
+#include "settings.h"
 #include "watchface.h"
+#include <stdint.h>
 
 #ifdef PBL_HEALTH
 #include "bpm.h"
@@ -33,8 +35,7 @@ static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TIME_FORMAT: value=%d",
-              data->time_format);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TIME_FORMAT: value=%d", data->time_format);
     }
   }
 
@@ -57,10 +58,26 @@ static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings
         *repaint = true;
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d",
-              data->display_mode);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d", data->display_mode);
     }
   }
+
+#ifdef PBL_HEALTH
+  if (data->parsed & WATCHFACE_DATA_STEPS_GOAL) {
+    uint16_t d_s_g = (uint16_t) data->steps_goal;
+    if (!STEPS_GOAL_VALID(d_s_g)) {
+      // Set steps goal back to the default setting
+      d_s_g = STEPS_GOAL_DEFAULT;
+    }
+    if (settings->steps_goal != d_s_g) {
+        settings->steps_goal = d_s_g;
+        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
+      }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+        "Runtime received invalid STEPS_GOAL: value=%d", data->steps_goal);
+    }
+#endif
 }
 
 static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {

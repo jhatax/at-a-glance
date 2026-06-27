@@ -134,9 +134,11 @@ static void parse_health_settings_data(DictionaryIterator *iter, WatchfaceEventD
   if (!iter || !data) {
     return;
   }
-
   parse_int_tuple(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES, data, WATCHFACE_DATA_HR_SAMPLE_MINUTES,
                   &data->hr_sample_minutes);
+  parse_int_tuple(iter, MESSAGE_KEY_STEPS_GOAL, data, WATCHFACE_DATA_STEPS_GOAL,
+                  &data->steps_goal);
+
 }
 
 #if ATAGLANCE_DEBUG
@@ -179,7 +181,8 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
   if (previous_settings.time_format != s_settings.time_format ||
       previous_settings.temp_unit != s_settings.temp_unit ||
       previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
-      previous_settings.display_mode != s_settings.display_mode) {
+      previous_settings.display_mode != s_settings.display_mode ||
+      previous_settings.steps_goal != s_settings.steps_goal) {
     settings_save(&s_settings);
   }
 
@@ -210,14 +213,15 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 static uint32_t app_message_inbox_size(void) {
   // the only debug messages we can receive for state are for health
 #if defined(PBL_HEALTH) && (ATAGLANCE_DEBUG)
-  return dict_calc_buffer_size(9, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
+  return dict_calc_buffer_size(10, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
                                sizeof(int32_t), sizeof(int32_t), sizeof(int32_t),
                                APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
-                               sizeof(int32_t), sizeof(int32_t));
+                               sizeof(int32_t), sizeof(int32_t), sizeof(int32_t));
 #else
-  return dict_calc_buffer_size(7, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
+  return dict_calc_buffer_size(8, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
                                sizeof(int32_t), sizeof(int32_t), sizeof(int32_t),
-                               APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE);
+                               APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
+                               sizeof(int32_t));
 #endif
 }
 

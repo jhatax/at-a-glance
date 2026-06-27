@@ -164,8 +164,11 @@ bool watchface_create(Window *window, const WatchfaceSettings *settings) {
             : 0;
 
     s_strata_created_mask |=
-        steps_module_create(root, &s_surface.steps.text, &s_surface.steps.icon,
-                            s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role])
+        steps_module_create(root,
+          &s_surface.steps.text,
+          &s_surface.steps.icon,
+          &s_surface.steps.progress,
+          s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role])
             ? STEPS_STRATUM_MASK
             : 0;
 #endif
@@ -273,7 +276,7 @@ void watchface_refresh(WatchfaceUpdateMask updates) {
   }
 
   if ((updates & WATCHFACE_UPDATE_HEALTH) && (s_strata_created_mask & STEPS_STRATUM_MASK)) {
-    steps_module_refresh(s_surface.style.palette);
+    steps_module_refresh(s_surface.style.palette, s_wf_settings->steps_goal);
   }
 #endif
 }

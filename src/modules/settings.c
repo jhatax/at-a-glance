@@ -14,6 +14,7 @@ void settings_apply_defaults(WatchfaceSettings *settings) {
   settings->time_format = TIME_FMT_DEFAULT;
   settings->hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   settings->display_mode = DISPLAY_MODE_DEFAULT;
+  settings->steps_goal = STEPS_GOAL_DEFAULT;
 }
 
 static void settings_sanitize(WatchfaceSettings *settings) {
@@ -31,6 +32,9 @@ static void settings_sanitize(WatchfaceSettings *settings) {
   }
   if (!DISPLAY_MODE_VALID(settings->display_mode)) {
     settings->display_mode = DISPLAY_MODE_DEFAULT;
+  }
+  if (!STEPS_GOAL_VALID(settings->steps_goal)) {
+    settings->steps_goal = STEPS_GOAL_DEFAULT;
   }
 }
 
