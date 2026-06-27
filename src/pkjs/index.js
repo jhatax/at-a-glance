@@ -1,47 +1,63 @@
 // Clay stuff
 var Clay = require("@rebble/clay");
 var clayConfig = require("./config.json");
+var messageKeys = require("message_keys");
 
-function customClayLogic() {
-  var clayConfigInstance = this;
+var STEPS_GOAL_MIN = 4000;
+var STEPS_GOAL_DEFAULT = 10000;
+var STEPS_GOAL_MAX = 32000;
 
-  clayConfigInstance.on(clayConfigInstance.EVENTS.AFTER_BUILD, function() {
-    var watchInfo = window.Pebble && window.Pebble.getActiveWatchInfo ? window.Pebble.getActiveWatchInfo() : null;
-    var platform = watchInfo ? watchInfo.platform : 'basalt';
-
-    // Define platform groupings
-    // Color screens: Basalt, Chalk, Emery, Gabbro (Flint, Aplite, Diorite are Black & White)
-    var isColor = (platform == 'basalt' || platform == 'chalk' ||
-      platform == 'emery' || platform == 'gabbro');
-    // Pebble Health screens: Basalt, Chalk, Diorite, Emery (Aplite/Classic lacks step capabilities)
-    var supportsHealth = (platform !== 'aplite');
-
-    // Hide color mode configurations on B&W watches
-    if (isColor) {
-      var selectMenu = clayConfigInstance.getItemById('displayModeSection');
-      if (selectMenu) {
-        // Dynamically inject the color choices for color watches
-        selectMenu.setOptions([
-          { "value": "0", "label": "Monochrome Light Mode" },
-          { "value": "1", "label": "Monochrome Dark Mode" },
-          { "value": "2", "label": "Color Light Mode" },
-          { "value": "3", "label": "Color Dark Mode" }
-        ]);
-      }
-    }
-
-    // Hide the whole Health section on older, stepless hardware
-    if (!supportsHealth) {
-      var healthSection = clayConfigInstance.getItemById('healthSettingsSection');
-      if (healthSection) {
-        healthSection.hide();
-      }
-    }
-  });
+function clampStepsGoal(goal) {
+  if (goal < STEPS_GOAL_MIN) {
+    return STEPS_GOAL_MIN;
+  }
+  if (goal > STEPS_GOAL_MAX) {
+    return STEPS_GOAL_MAX;
+  }
+  return goal;
 }
 
-// Pass the array and function straight to your Clay initialization wrapper
-var clay = new Clay(clayConfig, customClayLogic);
+function parseStepsGoal(rawSettings) {
+  var goal = STEPS_GOAL_DEFAULT;
+  if (rawSettings) {
+    var presetGoal = parseInt(rawSettings.STEPS_GOAL_PRESET, 10);
+    var customGoalText = rawSettings.STEPS_GOAL_CUSTOM;
+    var customGoal = parseInt(customGoalText, 10);
+
+    if (!isNaN(customGoal) || !isNaN(presetGoal)) {
+      goal = clampStepsGoal(customGoal);
+    }
+  }
+
+  return goal;
+}
+
+var clay = new Clay(clayConfig);
+
+Pebble.addEventListener("showConfiguration", function() {
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener("webviewclosed", function(e) {
+  if (!e || !e.response) {
+    return;
+  }
+
+  var dict = clay.getSettings(e.response);
+  var rawSettings = clay.getSettings(e.response, false);
+  var stepsGoal = parseStepsGoal(rawSettings);
+
+  delete dict[messageKeys.STEPS_GOAL_PRESET];
+  delete dict[messageKeys.STEPS_GOAL_CUSTOM];
+  dict[messageKeys.STEPS_GOAL] = stepsGoal;
+
+  Pebble.sendAppMessage(dict, function() {
+    console.log("Sent config data to Pebble");
+  }, function(err) {
+    console.log("Failed to send config data!");
+    console.log(JSON.stringify(err));
+  });
+});
 
 // Weather stuff
 var WEATHER_INTERVAL_MS = 30 * 60 * 1000;

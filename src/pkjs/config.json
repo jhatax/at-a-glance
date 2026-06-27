@@ -1,11 +1,11 @@
 [
   {
     "type": "heading",
-    "defaultValue": "At A Glance: Configuration"
+    "defaultValue": "At A Glance"
   },
   {
     "type": "text",
-    "defaultValue": "Select units and update frequencies."
+    "defaultValue": "Make this your watch face."
   },
   {
     "type": "section",
@@ -13,23 +13,17 @@
       {
         "type": "select",
         "messageKey": "TIME_FORMAT",
-        "label": "Time format",
+        "label": "Time Format",
         "defaultValue": "0",
         "options": [
-          {
-            "value": "0",
-            "label": "24-hour"
-          },
-          {
-            "value": "1",
-            "label": "12-hour"
-          }
+          {"value": "0", "label": "24-hour"},
+          {"value": "1", "label": "12-hour"}
         ]
       },
       {
         "type": "select",
         "messageKey": "TEMP_UNIT",
-        "label": "Temperature unit",
+        "label": "Temperature Unit",
         "defaultValue": "0",
         "options": [
           {
@@ -41,51 +35,129 @@
             "label": "Celsius (°C)"
           }
         ]
-      },
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "id": "displayModeBnWSection",
+    "capabilities": ["BW"],
+    "items": [
       {
         "type": "select",
-        "id": "displayModeSection",
         "messageKey": "DISPLAY_MODE",
-        "label": "Display mode",
+        "label": "Display Mode",
         "defaultValue": "0",
         "options": [
-          {
-            "value": "0",
-            "label": "Monochrome Light Mode"
-          },
-          {
-            "value": "1",
-            "label": "Monochrome Dark Mode"
-          }
+          { "value": "0", "label": "Black on White" },
+          { "value": "1", "label": "White on Black" }
         ]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "id": "displayModeColorSection",
+    "capabilities": ["COLOR"],
+    "items": [
+      {
+        "type": "select",
+        "messageKey": "DISPLAY_MODE",
+        "label": "Display Mode",
+        "defaultValue": "0",
+        "options": [
+          { "value": "0", "label": "Black on White" },
+          { "value": "1", "label": "White on Black" },
+          { "value": "2", "label": "Clear as Celeste" },
+          { "value": "3", "label": "Duke Blue Hue" }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "id": "healthSettingsSection",
+    "capabilities": ["HEALTH"],
+    "items": [
+      {"type": "heading", "defaultValue": "Health & Activity"},
+      {
+        "type": "text",
+        "defaultValue": "Configure heart-rate sampling and your daily steps goal."
       },
       {
         "type": "select",
         "messageKey": "HR_SAMPLE_MINUTES",
-        "label": "HR Sampling Frequency",
+        "label": "Heart Rate Updates",
         "defaultValue": "0",
         "options": [
           {
             "value": "0",
-            "label": "Every 10-minutes"
+            "label": "Every 10 minutes"
           },
           {
             "value": "1",
-            "label": "Every 15-minutes"
+            "label": "Every 15 minutes"
           },
           {
             "value": "2",
-            "label": "Every 30-minutes"
+            "label": "Every 30 minutes"
           },
           {
             "value": "3",
-            "label": "Every 60-minutes"
+            "label": "Every hour"
           },
           {
             "value": "4",
-            "label": "Every 120-minutes"
+            "label": "Every 2 hours"
           }
         ]
+      },
+      {
+        "type": "select",
+        "messageKey": "STEPS_GOAL_PRESET",
+        "label": "Steps Goal",
+        "defaultValue": "10000",
+        "options": [
+          {
+            "value": "4000",
+            "label": "4,000"
+          },
+          {
+            "value": "6000",
+            "label": "6,000"
+          },
+          {
+            "value": "8000",
+            "label": "8,000"
+          },
+          {
+            "value": "10000",
+            "label": "10,000"
+          },
+          {
+            "value": "12000",
+            "label": "12,000"
+          },
+          {
+            "value": "15000",
+            "label": "15,000"
+          },
+          {
+            "value": "20000",
+            "label": "20,000"
+          }
+        ]
+      },
+      {
+        "type": "input",
+        "messageKey": "STEPS_GOAL_CUSTOM",
+        "label": "Custom Steps Goal",
+        "defaultValue": "",
+        "description": "Enter a value between 4,000 and 32,000 to override the preset goal.",
+        "attributes": {
+          "type": "number",
+          "placeholder": "Enter 4000-32000"
+        }
       }
     ]
   },
