@@ -1,5 +1,6 @@
 #include "substratum_renderer.h"
 #include "helper.h"
+#include "pebble.h"
 #include "watchface_debug.h"
 
 // Scale icon's X relative to the current frame vs. the reference design
@@ -45,8 +46,7 @@ int16_t substratum_renderer_scale_icon_coord(const GSize *size, int16_t coord) {
       (chosen_dimension - 1));
 }
 
-GPoint substratum_renderer_scale_icon_point(const GSize *size, int16_t x,
-                                            int16_t y) {
+GPoint substratum_renderer_scale_icon_point(const GSize *size, int16_t x, int16_t y) {
   if (!(HELPER_VALID_DESIGN_X(x) && HELPER_VALID_DESIGN_Y(y))) {
     // Return the origin of the frame; at least something will get drawn
     return GPoint(0, 0);
@@ -60,8 +60,7 @@ GPoint substratum_renderer_scale_icon_point(const GSize *size, int16_t x,
   return GPoint(x, y);
 }
 
-int16_t substratum_renderer_scale_icon_x_in_frame(const GRect *frame,
-                                                  int16_t coord) {
+int16_t substratum_renderer_scale_icon_x_in_frame(const GRect *frame, int16_t coord) {
   if (!frame) {
     return 0;
   }
@@ -72,8 +71,7 @@ int16_t substratum_renderer_scale_icon_x_in_frame(const GRect *frame,
       (frame->origin.x + frame->size.w - 1));
 }
 
-int16_t substratum_renderer_scale_icon_y_in_frame(const GRect *frame,
-                                                  int16_t coord) {
+int16_t substratum_renderer_scale_icon_y_in_frame(const GRect *frame, int16_t coord) {
   if (!frame) {
     return 0;
   }
@@ -84,8 +82,7 @@ int16_t substratum_renderer_scale_icon_y_in_frame(const GRect *frame,
       (frame->origin.y + frame->size.h - 1));
 }
 
-void substratum_renderer_scale_icon_point_in_frame(const GRect *frame,
-                                                   GPoint *input) {
+void substratum_renderer_scale_icon_point_in_frame(const GRect *frame, GPoint *input) {
   input->x = substratum_renderer_scale_icon_x_in_frame(frame, input->x);
   input->y = substratum_renderer_scale_icon_y_in_frame(frame, input->y);
 }
@@ -172,13 +169,13 @@ void substratum_renderer_draw_filled_bolt_in_frame(GContext *ctx,
 
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
-      substratum_renderer_scale_icon_x_y_in_frame(frame, 8, 0),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, 8, 1),
       substratum_renderer_scale_icon_x_y_in_frame(frame, 4, 14),
       substratum_renderer_scale_icon_x_y_in_frame(frame, 8, 14),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, 6, 27),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, 24, 6),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, 16, 6),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, 20, 0),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, 6, 24),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, 24, 8),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, 16, 8),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, 20, 1),
   };
 
   GPathInfo path_info = (GPathInfo){
@@ -191,9 +188,10 @@ void substratum_renderer_draw_filled_bolt_in_frame(GContext *ctx,
     graphics_context_set_fill_color(ctx, fill_color);
     gpath_draw_filled(ctx, path);
     graphics_context_set_stroke_color(ctx, fill_color);
-    graphics_context_set_stroke_width(
-        ctx, SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(
-                 HELPER_MIN(frame->size.w, frame->size.h), 2));
+    uint8_t stroke_width = SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 2);
+    graphics_context_set_stroke_width(ctx,stroke_width);
+    // Add a 2-pt offset to draw a halo outside the currently filled path
+    gpath_move_to(path, GPoint(-stroke_width,stroke_width));
     gpath_draw_outline(ctx, path);
     gpath_destroy(path);
   }
