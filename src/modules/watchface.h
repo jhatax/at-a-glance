@@ -29,10 +29,11 @@ typedef enum {
   WATCHFACE_DATA_BATTERY_EVENT = 1 << 9,
 #ifdef PBL_HEALTH
   WATCHFACE_DATA_HEALTH_EVENT = 1 << 10,
+  WATCHFACE_DATA_STEPS_GOAL = 1 << 11,
 #endif
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-  WATCHFACE_DATA_DEBUG_BPM = 1 << 11,
-  WATCHFACE_DATA_DEBUG_STEPS = 1 << 12,
+  WATCHFACE_DATA_DEBUG_BPM = 1 << 12,
+  WATCHFACE_DATA_DEBUG_STEPS = 1 << 13,
 #endif
 } WatchfaceDataMask;
 
@@ -47,6 +48,7 @@ typedef struct {
   int is_day;
   int hr_sample_minutes;
   int display_mode;
+  int steps_goal;
   int time_units_changed;
 #ifdef PBL_HEALTH
   int health_event;
