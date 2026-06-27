@@ -5,10 +5,14 @@
 #include "watchface_components.h"
 #include "watchface_debug.h"
 
-bool steps_module_create(Layer *root, const WatchfaceTextSubstratum *text,
-                         const WatchfaceIconSubstratum *icon, GFont font);
+bool steps_module_create(
+    Layer *root,
+    const WatchfaceTextSubstratum *text,
+    const WatchfaceIconSubstratum *icon,
+    const GRect* progress,
+    GFont font);
 void steps_module_destroy(void);
-void steps_module_refresh(const ColorPalette *palette);
+void steps_module_refresh(const ColorPalette *palette, uint16_t steps_goal);
 
 #if ATAGLANCE_DEBUG
 void steps_module_debug_set_steps(int steps);

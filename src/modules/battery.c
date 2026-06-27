@@ -21,7 +21,6 @@ static Layer *s_battery_track_layer = NULL;
 static Layer *s_battery_bolt_layer = NULL;
 
 static BatteryChargeState s_battery_state = {0};
-#define BATTERY_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
 
 static const BatteryPalette c_dark_battery_palette = {
     .medium = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
@@ -44,7 +43,7 @@ static void battery_update_palette(const ColorPalette *palette) {
   const BatteryPalette *template =
       palette->is_light_mode ? &c_light_battery_palette : &c_dark_battery_palette;
 
-  if (BATTERY_PALETTE_LOADED(s_battery_palette)) {
+  if (MODULE_PALETTE_LOADED(s_battery_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
     if (HELPER_COLOR_EQUAL(s_battery_palette.background, palette->background)) {
       // The palette doesn't need to be updated
@@ -60,7 +59,7 @@ static void battery_update_palette(const ColorPalette *palette) {
 }
 
 static GColor calculate_battery_color(int16_t percent) {
-  if (!BATTERY_PALETTE_LOADED(s_battery_palette)) {
+  if (!MODULE_PALETTE_LOADED(s_battery_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
@@ -87,7 +86,7 @@ static void battery_bolt_update_proc(Layer *layer, GContext *ctx);
 static void update_battery_state(void);
 
 static void battery_track_update_proc(Layer *layer, GContext *ctx) {
-  if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
+  if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
 
@@ -115,7 +114,7 @@ static void battery_track_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void battery_bolt_update_proc(Layer *layer, GContext *ctx) {
-  if (!layer || !ctx || !BATTERY_PALETTE_LOADED(s_battery_palette)) {
+  if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_battery_palette)) {
     return;
   }
   GRect bounds = layer_get_bounds(layer);
@@ -124,7 +123,7 @@ static void battery_bolt_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void update_battery_state(void) {
-  if (!BATTERY_PALETTE_LOADED(s_battery_palette) || !s_battery_track_layer) {
+  if (!MODULE_PALETTE_LOADED(s_battery_palette) || !s_battery_track_layer) {
     return;
   }
 
@@ -176,9 +175,9 @@ void battery_module_destroy(void) {
 
   s_battery_state = (BatteryChargeState){0};
   s_battery_palette = (BatteryPalette){0};
-  s_battery_track = GRect(0, 0, 0, 0);
-  s_battery_fill = GRect(0, 0, 0, 0);
-  s_battery_bolt = GRect(0, 0, 0, 0);
+  s_battery_track = GRectZero;
+  s_battery_fill = GRectZero;
+  s_battery_bolt = GRectZero;
 }
 
 void battery_module_refresh(const ColorPalette *palette) {

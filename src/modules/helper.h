@@ -22,6 +22,8 @@
 
 #define HELPER_COLOR_EQUAL(c1, c2) ((((GColor)c1).argb) == (((GColor)c2).argb))
 
+#define MODULE_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
+
 bool helper_tuple_to_int(Tuple *tuple, int *value);
 
 bool helper_replace_color_in_bitmap(GBitmap *bmp, GColor color1, GColor color2);

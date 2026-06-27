@@ -1,5 +1,6 @@
 #include "climate.h"
 #include "climate_glyphs.h"
+#include "gcolor_definitions.h"
 #include "helper.h"
 #include "settings.h"
 #include "substratum_renderer.h"
@@ -23,9 +24,6 @@ static bool s_is_day = false;
 
 static ClimatePalette s_climate_palette = {0};
 
-// In a real palette, the background and normal cannot be the same
-#define CLIMATE_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
-
 static bool s_climate_is_available = false;
 static bool format_temperature(char *buf, size_t buflen, uint8_t temp_unit);
 static bool climate_temperature_is_valid(int celsius_tenths);
@@ -45,8 +43,8 @@ static const ClimatePalette c_dark_climate_palette = {
 static const ClimatePalette c_light_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
     .cold = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
-    .cloud = PBL_IF_COLOR_ELSE(GColorLiberty, GColorBlack),
-    .clear_ring = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
+    .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
+    .clear_ring = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
     .clear_fill = GColorLightGray,
 };
 
@@ -54,7 +52,7 @@ static void climate_module_update_palette(const ColorPalette *palette) {
   const ClimatePalette *template =
       palette->is_light_mode ? &c_light_climate_palette : &c_dark_climate_palette;
 
-  if (CLIMATE_PALETTE_LOADED(s_climate_palette)) {
+  if (MODULE_PALETTE_LOADED(s_climate_palette)) {
     if (HELPER_COLOR_EQUAL(s_climate_palette.background, palette->background)) {
       // The palette doesn't need to be updated
       return;
@@ -70,7 +68,7 @@ static void climate_module_update_palette(const ColorPalette *palette) {
 }
 
 static bool format_temperature(char *buf, size_t buflen, uint8_t temp_unit) {
-  if (!buf || buflen == 0 || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
+  if (!buf || buflen == 0 || !MODULE_PALETTE_LOADED(s_climate_palette)) {
     return false;
   }
 
@@ -106,7 +104,7 @@ static bool climate_condition_is_valid(int weather_condition) {
 static bool climate_is_day_is_valid(int is_day) { return (is_day == 0 || is_day == 1); }
 
 static void climate_module_update_display(uint8_t temp_unit) {
-  if (!s_temperature_layer || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
+  if (!s_temperature_layer || !MODULE_PALETTE_LOADED(s_climate_palette)) {
     return;
   }
 
@@ -128,7 +126,7 @@ static void climate_module_update_display(uint8_t temp_unit) {
 }
 
 static void climate_icon_update_proc(Layer *layer, GContext *ctx) {
-  if (!layer || !ctx || !CLIMATE_PALETTE_LOADED(s_climate_palette)) {
+  if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_climate_palette)) {
     return;
   }
 

@@ -32,9 +32,6 @@ static GColor s_bpm_icon_color = GColorBlack;
 // This needs to be any color other than the main color of the bpm icon
 static GColor s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
 
-// In a real palette, the background and normal cannot be the same
-#define BPM_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
-
 #if ATAGLANCE_DEBUG
 static bool s_debug_bpm_is_set = false;
 static int s_debug_bpm = BPM_INVALID;
@@ -52,14 +49,13 @@ static const BpmPalette c_light_bpm_palette = {
 
 static void bpm_update_palette(const ColorPalette *palette);
 static GColor calculate_bpm_color(int bpm);
-static void draw_bpm_bitmap_in_frame(GContext *ctx, const GRect *frame);
 static void bpm_icon_update_proc(Layer *layer, GContext *ctx);
 static void update_bpm(void);
 
 static void bpm_update_palette(const ColorPalette *palette) {
   const BpmPalette *template = palette->is_light_mode ? &c_light_bpm_palette : &c_dark_bpm_palette;
 
-  if (BPM_PALETTE_LOADED(s_bpm_palette)) {
+  if (MODULE_PALETTE_LOADED(s_bpm_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
     if (HELPER_COLOR_EQUAL(s_bpm_palette.background, palette->background)) {
       // The palette doesn't need to be updated
@@ -76,7 +72,7 @@ static void bpm_update_palette(const ColorPalette *palette) {
 }
 
 static GColor calculate_bpm_color(int bpm) {
-  if (!BPM_PALETTE_LOADED(s_bpm_palette)) {
+  if (!MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
@@ -92,35 +88,8 @@ static GColor calculate_bpm_color(int bpm) {
   return s_bpm_palette.normal;
 }
 
-static void draw_bpm_bitmap_in_frame(GContext *ctx, const GRect *frame) {
-  if (!ctx || !frame || !s_bpm_bitmap) {
-    return;
-  }
-
-  GRect bitmap_bounds = gbitmap_get_bounds(s_bpm_bitmap);
-  GRect draw_frame;
-
-  if (bitmap_bounds.size.w > 0 && bitmap_bounds.size.h > 0) {
-    int16_t draw_w = frame->size.w;
-    int16_t draw_h = (bitmap_bounds.size.h * draw_w) / bitmap_bounds.size.w;
-
-    if (draw_h > frame->size.h) {
-      draw_h = frame->size.h;
-      draw_w = (bitmap_bounds.size.w * draw_h) / bitmap_bounds.size.h;
-    }
-
-    draw_frame = GRect(frame->origin.x + ((frame->size.w - draw_w) / 2),
-                       frame->origin.y + ((frame->size.h - draw_h) / 2), draw_w, draw_h);
-  } else {
-    draw_frame = *frame;
-  }
-
-  graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, draw_frame);
-}
-
 static void bpm_icon_update_proc(Layer *layer, GContext *ctx) {
-  if (!layer || !ctx || !BPM_PALETTE_LOADED(s_bpm_palette)) {
+  if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return;
   }
 
@@ -135,7 +104,8 @@ static void bpm_icon_update_proc(Layer *layer, GContext *ctx) {
     }
   }
 
-  draw_bpm_bitmap_in_frame(ctx, &bounds);
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
 
   if (!s_bpm_is_valid) {
     substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_bpm_palette.unknown);
