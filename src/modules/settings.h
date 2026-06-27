@@ -24,7 +24,7 @@ enum {
   DISPLAY_MODE_DARK_COLOR = 3,
 #endif
   DISPLAY_MODE_COUNT,
-  DISPLAY_MODE_DEFAULT = DISPLAY_MODE_DARK_MONOCHROME,
+  DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT_MONOCHROME,
 };
 
 typedef enum {
@@ -37,10 +37,17 @@ typedef enum {
   HR_SAMPLE_MINUTES_DEFAULT = HR_SAMPLE_MINUTES_10,
 } HrSampleMinutes;
 
+enum {
+  STEPS_GOAL_MIN = 4000,
+  STEPS_GOAL_DEFAULT = 10000,
+  STEPS_GOAL_MAX = 32000,
+};
+
 #define TEMP_UNIT_VALID(value) ((value) >= 0 && (value) < TEMP_UNIT_COUNT)
 #define TIME_FORMAT_VALID(value) ((value) >= 0 && (value) < TIME_FMT_COUNT)
 #define DISPLAY_MODE_VALID(value) ((value) >= 0 && (value) < DISPLAY_MODE_COUNT)
 #define HR_SAMPLE_MINUTES_VALID(value) ((value) >= 0 && (value) < HR_SAMPLE_MINUTES_COUNT)
+#define STEPS_GOAL_VALID(value) ((value) >= STEPS_GOAL_MIN && (value) <= STEPS_GOAL_MAX)
 
 typedef struct {
   // Add persisted fields at the bottom
@@ -48,6 +55,7 @@ typedef struct {
   uint8_t time_format;
   uint8_t hr_sample_minutes;
   uint8_t display_mode;
+  uint16_t steps_goal;
 } WatchfaceSettings;
 
 void settings_load(WatchfaceSettings *settings);
