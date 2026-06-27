@@ -14,10 +14,11 @@ enum {
   DESIGN_TIME_Y_PERCENT = 27,
   DESIGN_BATTERY_BAND_WIDTH_PERCENT = 75,
   DESIGN_BATTERY_BAND_HEIGHT = 18,
-  DESIGN_BATTERY_TRACK_HEIGHT = 6,
-  DESIGN_BATTERY_FILL_HEIGHT = 4,
+  DESIGN_BATTERY_TRACK_HEIGHT = 8,
+  DESIGN_BATTERY_FILL_HEIGHT = 6,
   DESIGN_BATTERY_BOLT_WIDTH = 18,
   DESIGN_BATTERY_BOLT_HEIGHT = 18,
+  DESIGN_STEPS_PROGRESS_HEIGHT = 4,
 };
 
 enum {
@@ -37,7 +38,7 @@ enum {
 };
 
 enum {
-  DESIGN_COMPACT_MARGIN = PBL_IF_ROUND_ELSE(DESIGN_MARGIN, DESIGN_MARGIN >> 1),
+  DESIGN_COMPACT_MARGIN = DESIGN_MARGIN,
   DESIGN_COMPACT_TIME_Y_PERCENT = 24,
   DESIGN_COMPACT_ICON_WIDTH = 18,
   DESIGN_COMPACT_ICON_HEIGHT = 18,
@@ -65,15 +66,20 @@ typedef struct {
 typedef struct {
   GRect icon;
   GRect text;
-} CalculatedMetricPair;
+} WatchfaceMetricWithIcon;
+
+typedef struct {
+  WatchfaceMetricWithIcon steps;
+  GRect progress;
+} MetricPairWithProgress;
 
 typedef struct {
   GRect time;
   GRect date;
   WatchfaceBatteryStratum battery;
-  CalculatedMetricPair climate;
+  WatchfaceMetricWithIcon climate;
 #ifdef PBL_HEALTH
-  CalculatedMetricPair steps;
-  CalculatedMetricPair bpm;
+  MetricPairWithProgress steps_layer;
+  WatchfaceMetricWithIcon bpm;
 #endif
 } CalculatedLayout;

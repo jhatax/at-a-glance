@@ -24,6 +24,12 @@ typedef struct {
 } WatchfaceTextWithIconStratum;
 
 typedef struct {
+  WatchfaceIconSubstratum icon;
+  WatchfaceTextSubstratum text;
+  GRect progress;
+} WatchfaceTextWithIconAndProgressStratum;
+
+typedef struct {
   const ColorPalette *palette;
   bool is_compact;
   // These two MUST ALWAYS BE THE SAME SIZE
@@ -38,7 +44,7 @@ typedef struct {
   WatchfaceTextStratum time;
 #ifdef PBL_HEALTH
   WatchfaceTextWithIconStratum bpm;
-  WatchfaceTextWithIconStratum steps;
+  WatchfaceTextWithIconAndProgressStratum steps;
 #endif
   WatchfaceBatteryStratum battery;
   WatchfaceTextWithIconStratum climate;

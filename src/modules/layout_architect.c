@@ -1,10 +1,8 @@
+#include <stdint.h>
 #include "layout.h"
 #include "layout_style.h"
 #include "layout_surface.h"
-#include <stdint.h>
-#ifdef PBL_HEALTH
 #include "helper.h"
-#endif
 
 // Blueprint support structures
 typedef struct {
@@ -62,8 +60,9 @@ static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint
   // Wipe the layout's state clean
   memset(computed, 0, sizeof(*computed));
 
-  const int16_t x_start = blueprint->margin;
-  const int16_t x_end = face_width - blueprint->margin;
+  const int16_t margin = blueprint->margin;
+  const int16_t x_start = margin;
+  const int16_t x_end = face_width - margin;
   const int16_t content_width = x_end - x_start;
 
   // Use these transient values to establish x and y for each module
@@ -75,7 +74,7 @@ static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint
   // W: content_width
   // H: blueprint->time_text_height
   // Anchor current row-y using blueprint->time_y_percent
-  int16_t current_row_y = (face_height * blueprint->time_y_percent) / 100;
+  int16_t current_row_y = HELPER_ROUND_UP((face_height * blueprint->time_y_percent), 100);
 
   // Current module's X
   int16_t module_x = x_start;
@@ -166,11 +165,8 @@ static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint
   // X_module: computed using face_width
   // X_icon: X_module
   // X_text: X_icon + icon_module_width
-  // Y: blueprint->margin
-  current_row_y = blueprint->margin;
-  // Start with the entire module's width to determine starting X
-  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->bpm_text_width;
-
+  // Y: margin
+  current_row_y = margin;
   // Center horizontally
   module_x = face_center - icon_w - DESIGN_ICON_TEXT_GAP;
 
@@ -196,26 +192,33 @@ static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint
   // X_icon: X_module
   // X_text: X_icon + icon_module_width
   // Y: computed using face_height, row-top-offset, row_height
-  current_row_y = face_height - blueprint->margin - icon_text_row_height;
-
-  // Start with the entire module's width to determine starting X
-  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->steps_text_width;
+  // Progress Bar is at the bottom and starts at the icon's X and extends
+  // until the end of the text-box.
 
   // Center horizontally
   module_x = face_center - icon_w - DESIGN_ICON_TEXT_GAP;
 
+  // Set the progress bar at the bottom first
+  current_row_y = face_height - margin;
+  // The width of icon + gap + text = progress_width
+  // height is the margin >> 1 (half)
+  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->steps_text_width;
+  module_y = current_row_y + 1;
+  computed->steps_layer.progress = GRect(module_x,module_y,module_w,DESIGN_STEPS_PROGRESS_HEIGHT);
+
+  current_row_y -= icon_text_row_height;
   // The icon is the next module, set its width
   module_w = icon_w;
 
   // Icon
   module_y = current_row_y + icon_offset_y;
-  computed->steps.icon = GRect(module_x, module_y, module_w, icon_h);
+  computed->steps_layer.steps.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Text: X_text = X_icon + icon module's width
   module_x = face_center + DESIGN_ICON_TEXT_GAP;
   module_y = current_row_y + text_offset_y;
   module_w = blueprint->steps_text_width;
-  computed->steps.text = GRect(module_x, module_y, module_w, data_text_height);
+  computed->steps_layer.steps.text = GRect(module_x, module_y, module_w, data_text_height);
 #endif
 }
 
@@ -272,15 +275,17 @@ bool layout_watchface_initialize(int16_t face_width, int16_t face_height,
 #ifdef PBL_HEALTH
   // Steps
   surface->steps.icon = (WatchfaceIconSubstratum){
-      .frame = computed.steps.icon,
+      .frame = computed.steps_layer.steps.icon,
       .is_enabled = true,
   };
 
   surface->steps.text = (WatchfaceTextSubstratum){
-      .frame = computed.steps.text,
+      .frame = computed.steps_layer.steps.text,
       .alignment = GTextAlignmentLeft,
       .font_role = WATCHFACE_FONT_ROLE_TEXT,
   };
+
+  surface->steps.progress = computed.steps_layer.progress;
 
   // BPM
   surface->bpm.icon = (WatchfaceIconSubstratum){
