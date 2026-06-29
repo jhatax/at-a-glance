@@ -290,11 +290,11 @@ before and after `watchface_apply_received_data()`.
 - Shared visual stack:
 
   ```text
-  top metric context
+  top heart-rate context
   dominant centered time
   centered battery track and charging bolt
   weather/date context
-  bottom metric context
+  bottom steps context
   ```
 
 - The shared stack is visual DNA, not shared coordinates.
@@ -307,139 +307,51 @@ before and after `watchface_apply_received_data()`.
 - Battery uses a primary-color outline track and module-owned state-color fill.
 - Weather/date share one row; weather owns icon plus temperature and date is
   aligned in the remaining space.
-- Health metrics use centerline vocabulary rather than far-corner placement.
+- Health metrics use centerline vocabulary rather than far-corner placement;
+  BPM owns the top context row and steps own the bottom context row on health
+  platforms.
 - Unavailable data uses the shared slash vocabulary.
 - Round targets need screenshot-led validation on Chalk and Gabbro before
   publication confidence.
 
 ---
 
-## Header And Code Audit Findings
+## Current Closeout State
 
-Observed in the live tree during the June 17, 2026 audit and resolved:
+Resolved and now part of the steady-state contract:
 
-- `src/c/ataglance.h` was deleted after its constants were removed or moved.
-- `ATAGLANCE_USE_AND_PERSIST_SETTINGS` was removed; settings are loaded during
-  init and saved during deinit.
-- `ATAGLANCE_MAX_STR_LEN` was replaced with module-local buffer constants in
-  date, time, climate, BPM, and steps.
-- `DEBUG_ATAGLANCE` was replaced by the build-defined `ATAGLANCE_DEBUG` gate,
-  with defensive default guards in modules that compile debug branches.
-- Public module headers no longer include the app entrypoint header for debug
-  gates.
-- Dead `ataglance.h` includes were removed from implementation files.
-- `src/modules/layout_design.h` is included only by `layout_architect.c`; its structs
-  and constants are implementation details.
-- `layout_architect.c` includes `layout.h` directly because it implements the
-  public layout initialization contract. `layout_design.h` includes only the
-  component types it directly needs.
-- `HELPER_CLAMP_MIN` is intentionally retained and may be used by any module or
-  component that needs clamp-at-minimum utility behavior.
-- `HELPER_SCALE_ROUND` is used, but not fully parenthesized.
-- `helper_swap_colors_in_bitmap()` is currently unused but intentionally
-  retained as a utility for swapping two colors in a PNG/bitmap if that path is
-  needed again.
-- `ColorPalette.background_layer_background` and
-  `ColorPalette.background_layer_rule` are unused live struct members.
-- `WatchfaceBackgroundStratum.rule_enabled` and `.rule` are written as
-  disabled/zero and not consumed.
-- `WatchfaceSurface.background.frame` is assigned but there is no live
-  background module consuming the background stratum.
-- `WATCHFACE_UPDATE_BACKGROUND` exists in the public update mask but has no
-  live refresh path.
-- `LayoutBlueprint.icon_text_pair_height` is initialized but not consumed.
-- `DESIGN_COMPACT_RIGHT_TEXT_X` is unused.
-- `src/modules/battery.c` still uses `rule` naming for the battery track layer.
-- `substratum_renderer_draw_filled_bolt_in_frame()` reaches
-  `draw_filled_polygon_in_frame()`, which heap-allocates a bounded point array
-  during a layer update proc. This is not dead code, but it is a renderer
-  hardening target.
-- Ignored local scratch/artifact files should stay out of the source tree.
-- Tracked prototype artifacts such as `src/scratch.txt` should be reviewed
-  before GitHub publication.
-- `design-preview.html` is tracked and should be reviewed before publication.
+- `src/c/ataglance.h` is gone. Runtime ingress lives in `watchface.h`.
+- Settings always load through `settings_load()` and persist through the app
+  lifecycle; `ATAGLANCE_USE_AND_PERSIST_SETTINGS` is gone.
+- Module-local fixed buffers own formatted text storage in date, time, climate,
+  BPM, and steps.
+- `ATAGLANCE_DEBUG` is the only accepted debug build gate.
+- The background stratum and `WATCHFACE_UPDATE_BACKGROUND` are gone; background
+  color is window/style state.
+- Runtime update-mask plumbing no longer leaks back into `ataglance.c`.
+- Weather transport is atomic at the runtime boundary: completeness is checked
+  before climate state is applied, and incomplete payloads clear stale weather.
+- Round validation is complete for the current shipped hierarchy. Future round
+  edits still need screenshot review.
+- The shared renderer hardening pass is complete: bounded polygon drawing no
+  longer heap-allocates in draw paths, and icon-coordinate scaling clamps
+  against the resolved target frame.
+- The live documentation set is now `README.md`, `ARCHITECTURE_LEDGER.md`,
+  `RAID_LOG.md`, `VisualVocabulary.md`, `DESIGN.md`, and `User Interface.md`.
+  Historical planning material under `archive/` is reference context only.
 
 ---
 
-## Backlog
+## Remaining Active Technical Debt
 
-### Phase 1: Documentation And Publication Prep
+Only keep items here if they remain true in live code:
 
-1. Finalize README screenshots for representative color, monochrome, and round
-   targets.
-2. Use `appstore-submission.md` to prepare PBW, screenshots, metadata,
-   capabilities disclosure, and release notes.
-3. Confirm generated PBW filename after any project/package rename.
-4. Review `project-rename-plan.md` before renaming the repo folder to
-   `at-a-glance`.
-
-### Phase 2: Header Cleanup
-
-1. Remove `ATAGLANCE_USE_AND_PERSIST_SETTINGS`; always load settings during
-   init and save during deinit.
-2. Replace `ATAGLANCE_MAX_STR_LEN` with module-local buffer constants sized to
-   actual formatted values. Current target modules are `date.c`, `time.c`,
-   `climate.c`, `bpm.c`, and `steps.c`.
-3. Keep `WATCHFACE_UNAVAILABLE_TEXT` in `watchface_components.h`; it is shared
-   display vocabulary, not buffer storage.
-4. Move debug gating to the build-defined `ATAGLANCE_DEBUG` value. Public
-   module headers should not include the app entrypoint header for debug gates.
-5. Remove `ataglance.h` from public module headers.
-6. Remove dead `ataglance.h` includes from implementation files.
-7. Delete `src/c/ataglance.h` when no symbols remain.
-8. Keep private design constants and calculated layout structs in
-   `layout_design.h` unless that header stops clarifying `layout_architect.c`.
-
-### Phase 3: Dead Code And Struct Cleanup
-
-1. Retain `HELPER_CLAMP_MIN` as an accepted helper utility.
-2. Fully parenthesize helper macros that remain.
-3. Retain `helper_swap_colors_in_bitmap()` as an accepted PNG/bitmap color-swap
-   utility.
-4. Remove unused `ColorPalette` background-layer fields.
-5. Remove or reconnect unused `WatchfaceBackgroundStratum` fields. If there is
-   still no background module, consider removing the background stratum from
-   `WatchfaceSurface` entirely and keep background color as window style.
-6. Remove `WATCHFACE_UPDATE_BACKGROUND` unless a real background refresh path is
-   restored.
-7. Remove `LayoutBlueprint.icon_text_pair_height` if it remains unused.
-8. Remove `DESIGN_COMPACT_RIGHT_TEXT_X`.
-9. Rename battery `rule` layer names to `track` vocabulary if approved.
-10. Delete tracked scratch/prototype artifacts if they are not intentional
-   source artifacts.
-
-### Phase 4: Lifecycle And Renderer Hardening
-
-Status: Closed.
-
-Required layer/resource creation gates module success and retained state.
-Optional resources are explicitly non-fatal when the text-bearing stratum
-remains usable, and partial optional resources are cleaned up before returning
-success. The shared renderer no longer heap-allocates bounded polygon point
-storage in draw paths. Shared icon coordinate scaling clamps against the
-resolved frame dimension so enlarged icon frames are not capped by the design
-grid size.
-
-### Phase 5: Round And Visual Validation
-
-Status: Closed for the current milestone.
-
-Round screenshot-led validation on Chalk and Gabbro has been confirmed
-complete. Future round changes still require screenshot review, but there is no
-active round visual validation blocker for the current rectangular-completion
-milestone.
-
-### Phase 6: PebbleKit JS And Data Robustness
-
-Status: Closed.
-
-PebbleKit JS weather handling uses request ids to ignore stale callbacks.
-Geolocation denial or unavailability falls back to the fixed OAK weather
-location. Open-Meteo network errors, timeouts, non-200 responses, parse
-failures, and malformed current-weather payloads send unavailable weather
-sentinels. The C-side weather sentinel authority lives in `watchface.h` with the
-AppMessage/runtime ingress contract; PebbleKit JS mirrors those values manually.
-OAK remains the fixed documented fallback location.
+1. Font-role and style-helper ownership should be narrowed only if a concrete
+   boundary can be expressed more clearly than the current `WatchfaceSurfaceStyle`
+   contract.
+2. Publication work remains operational, not architectural: PBW build, store
+   metadata, and release screenshots live outside this ledger unless they force
+   a code or contract change.
 
 ---
 

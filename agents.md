@@ -1,4 +1,4 @@
-# Agent Guidelines: Life at a Glance Watchface
+# Agent Guidelines: At a Glance Watchface
 
 Inherits from:
 

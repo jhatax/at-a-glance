@@ -1,20 +1,25 @@
 # Visual Vocabulary
 
-This document defines the visual direction for Life at a Glance. It covers
+This document defines the visual direction for At A Glance. It covers
 the shared watchface composition, color vocabulary, and procedural glyph
 direction.
 
 The goal is not decorative detail. The goal is glanceable, compact, confident
-glyphs that work on both color and black-and-white Pebble displays.
+glyphs that work across monochrome and color modes, including the current
+Black on White, White on Black, Clear as Celeste, and Duke Blue Moon
+display modes.
 
 ## Principles
 
 - Design for one-second recognition.
-- Keep the product hierarchy stable across display families: top metric
+- Keep the product hierarchy stable across display families: top heart-rate
   context, dominant time, battery track, weather/date context, and bottom
-  metric context.
+  steps context.
 - Treat text as the primary glance surface. Icons support recognition,
   but they do not carry the product alone.
+- Give each visual channel one job:
+  text provides exact values, icons identify the metric, lines show progress,
+  and color indicates state.
 - Prefer solid filled silhouettes over hollow outlines.
 - Use line art only when the line itself is the message.
 - When using lines, use heavy strokes that survive watch scale.
@@ -51,16 +56,16 @@ Rules:
 The current selected watchface composition is:
 
 ```text
-top metric context
+top heart-rate context
 dominant centered time
 centered battery track and charging bolt
 weather/date context
-bottom metric context
+bottom steps context
 ```
 
-This shared stack is the visual DNA between rectangular and round displays.
-The implementation may calculate different geometry by shape, but the user
-should recognize the same product immediately.
+This shared stack and the dominant orange time text are the visual DNA between
+rectangular and round displays. The implementation may calculate different
+geometry by shape, but the user should recognize the same product immediately.
 
 Rules:
 
@@ -69,6 +74,8 @@ Rules:
   with a state-colored fill.
 - Weather/date share one context row. Weather owns the temperature and icon
   group; date is aligned in the remaining space.
+- BPM owns the top context row and steps own the bottom context row on health
+  platforms.
 - Health metrics are centered relative to the display centerline, not pushed
   into the far corners.
 - The layout should preserve negative space instead of filling every pixel.
@@ -103,11 +110,26 @@ Layer creation follows the same hierarchy:
 - If an icon layer fails or is intentionally omitted for a smaller
   platform, continue updating the text.
 
-## Palette Fallback
+## Display Modes And Palette Fallback
 
-The normal visual palette is selected by display mode and color
-capability. If palette resolution ever fails, the watchface degrades to
-a simple black-and-white palette instead of blocking data display.
+Display mode is a product decision, not a post-process tint. The current live
+families are:
+
+- `Black on White`
+- `White on Black`
+- `Clear as Celeste`
+- `Duke Blue Moon`
+
+On color-capable watches, all four modes are available. The first two are
+monochrome-style presentations rendered on color hardware; the latter two are
+the color-background palettes.
+
+Base text, date, time, and unavailable colors come from the selected display
+mode. Module-owned colors then layer on top for battery, BPM, steps, and
+climate state.
+
+If palette resolution ever fails, the watchface degrades to a simple
+black-and-white palette instead of blocking data display.
 
 Fallback rules:
 
@@ -124,25 +146,25 @@ more important than preserving the richer accent palette.
 
 ## Unavailable Data
 
-Unavailable data is currently testing an absence slash:
+Unavailable data uses the accepted absence slash:
 
 ```text
 \
 ```
 
-This replaces the earlier pause mark because pause implies data existed and
-was stopped. The slash reads as absent or unavailable.
+This replaces the earlier pause mark because pause implies data existed and was
+stopped. The slash reads as absent or unavailable.
 
 Rules:
 
 - Use a bold `\` slash.
 - Start slightly above the cancelled glyph.
 - End slightly below the cancelled glyph.
-- Use high-contrast foreground color.
+- Use the unavailable-state foreground color unless a higher-contrast fallback
+  is required on the target display.
 - Do not use question marks.
 - Do not use exclamation points for unavailable data.
-- Keep pause bars as a rejected/parked option unless later review restores
-  them.
+- Keep pause bars as rejected history, not as an active alternative.
 
 Meaning:
 
@@ -156,7 +178,8 @@ visible without feeling alarming.
 
 ## Steps
 
-Use a station-style footprint, not paws, detailed sandals, or shoes.
+Use a station-style footprint that reads as familiar and obvious at watch
+scale, not paws, detailed sandals, or shoes.
 
 Direction:
 
@@ -183,6 +206,8 @@ Weather uses a hybrid vocabulary:
 - Color: fills and accents may be added when they improve recognition.
 - Same condition should keep the same metaphor across both capabilities.
 - BnW readability is the constraint that decides the geometry.
+- The goal is familiar and obvious weather identification, not decorative sky
+  illustration.
 
 For weather, outline does not mean delicate. It means heavy sign strokes.
 
@@ -295,19 +320,6 @@ Preferred direction:
 - Keep the bars heavy enough to survive black-and-white display.
 - Add the cloud only if it does not reduce fog readability.
 
-### Wind
-
-Wind is not available from the current Open-Meteo `weather_code` payload in
-the production app.
-
-Direction:
-
-- Use three swept horizontal strokes.
-- Keep it distinct from fog by using lateral motion and uneven line lengths.
-- Use weather blue in color mode and primary foreground in black-and-white.
-- Production support requires adding a wind-speed field or provider-derived
-  windy bucket before the glyph can be mapped.
-
 ### No Weather
 
 No usable weather data uses the weather primitive plus a weather-specific
@@ -321,28 +333,24 @@ Rules:
 - In black-and-white, use the foreground color.
 - On color displays, muted glyph plus high-contrast slash is acceptable.
 - Do not use `?`.
-- Use the same slash treatment as other unavailable glyphs during the current
-  slash test.
+- Use the same unavailable slash treatment as other metrics.
 
 ## BPM
 
-BPM uses a waveform. Do not use a heart.
+BPM uses a heart-rate monitor / ECG-style waveform icon, not a heart.
 
 Rules:
 
-- Use one compact 3px waveform stroke.
+- Use a familiar and obvious heart-rate monitor glyph.
 - Preserve BPM state color on color displays.
-- Use `gcolor_legible_over()` as the black-and-white state-color
-  fallback.
 - Avoid overly emotional unavailable treatment.
 - Unavailable BPM uses muted waveform plus the shared slash.
 - Available BPM color may reflect BPM state:
-  - normal: green
+  - normal: primary text
   - elevated: warning color
   - high: danger color
 
-Unavailable treatment must use the shared absence mark selected for the
-current test.
+Unavailable treatment uses the shared absence mark.
 
 ## Battery
 
@@ -406,16 +414,19 @@ glyph vocabulary changes.
 
 ## Current Decisions
 
-- Unavailable data is currently testing a high-contrast `\` slash.
+- Unavailable data uses the shared `\` slash vocabulary.
 - Text layers are the must-initialize visual controls; icons are
   subordinate and optional.
+- Visual channels have fixed jobs: text for exact values, icons for metric
+  identity, lines for progress, and color for state.
 - Palette resolution has a black-and-white fallback: black background
   with white foreground in dark mode, white background with black
   foreground in light mode.
 - Steps use the station-style footprint primitive.
 - Weather uses bold line/outline first in black-and-white.
 - Color weather glyphs may add fills or accents.
-- Cloud, drizzle, rain, snow, and wind use blue-family colors in color mode.
+- Cloud, drizzle, rain, snow, and sleet use module-owned climate palette colors
+  in color mode.
 - Primary weather strokes use 3px unless a specific glyph needs an exception.
 - Clear sky uses a filled disk with radius 9px and a 1px outer ring at
   radius 11px. Color mode uses the same ring/disk pattern as
@@ -426,3 +437,5 @@ glyph vocabulary changes.
 - Weather variants use a 70% cloud only when the cloud helps recognition.
 - Cloudy currently uses one cloud.
 - Partly cloudy uses a subordinate sun behind a dominant reduced cloud.
+- The top context row is BPM and the bottom context row is steps on health
+  platforms.

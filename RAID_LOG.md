@@ -119,13 +119,20 @@ boundary leak.
 ### Runtime helper boundaries need audit
 
 Type: Issue
-Status: Open
+Status: Closed
 
-Some functions that help `watchface` manage runtime state still accept broad
-watchface-owned types where narrower inputs would better preserve helper
-boundaries. Example: stylist functions currently receive
-`WatchfaceSurfaceStyle*`, while some operations may only need palette/font
-fields or specific style members.
+The accepted runtime boundary is now:
+
+- `watchface` owns the prepared `WatchfaceSurface`.
+- Feature modules do not retain `WatchfaceSurface*`.
+- Create paths receive only prepared substrata, frames, and resolved fonts.
+- Refresh paths receive the shared base `ColorPalette*` plus any narrow runtime
+  scalar they actually need, such as time format, temperature unit, or steps
+  goal.
+
+Decision: the shared base palette is accepted visual vocabulary, not a boundary
+leak. Do not split it into smaller color packets unless live code proves a real
+ownership problem that the current contract cannot express cleanly.
 
 Surface-retention migration status: Done.
 
@@ -144,68 +151,18 @@ Completed surface-retention migration:
 | `bpm` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer for the BPM icon update proc | retaining text color role, BPM source/debug state, and current palette pointer only |
 | `steps` | `WatchfaceTextSubstratum*`, `WatchfaceIconSubstratum*`, resolved `GFont` | current `ColorPalette*` | current palette pointer, bitmap, and bitmap foreground color | retaining text color role, steps source/debug state, bitmap state, and current palette pointer only |
 
-Future design notes:
+Accepted boundary notes:
 
-- Create a font equivalent to `ColorPalette` so font-role resolution does not
-  hang directly off `WatchfaceSurfaceStyle`.
-- Audit `is_compact` usage and decide whether it belongs on
-  `WatchfaceSurfaceStyle` or in a narrower layout/style/font contract.
-- Add a narrow text-palette boundary so modules that only need base text colors
-  and mode do not receive the whole `ColorPalette`.
-
-  Proposed shared shape:
-
-  ```c
-  typedef struct {
-    bool is_light_mode;
-    GColor primary_text;
-    GColor unavailable_text;
-  } WatchfaceTextPalette;
-  ```
-
-  Proposed flow:
-
-  1. `layout_stylist.c` keeps owning the full base `ColorPalette` values:
-     `is_light_mode`, `background`, `primary_text`, `unavailable_text`,
-     `date_text`, and `time_text`.
-  2. `watchface.c` derives a stack-local or copied `WatchfaceTextPalette` from
-     the active base palette before calling module create/refresh functions.
-  3. Feature modules that only need text colors and mode receive
-     `const WatchfaceTextPalette*` instead of `const ColorPalette*`.
-  4. Feature modules with module-specific color semantics define private module
-     palettes, selected from `text_palette->is_light_mode`.
-  5. `watchface_runtime_boundary.c` continues to compute update categories only;
-     it should not construct palettes or pass colors. `watchface.c` remains the
-     owner of visual dispatch and supplies the current text palette during
-     `watchface_refresh()`.
-
-  Future signatures should move toward:
-
-  ```c
-  void date_module_refresh(const WatchfaceTextPalette* text_palette);
-  void time_module_refresh(
-      const WatchfaceTextPalette* text_palette,
-      uint8_t time_format);
-  void climate_module_refresh(
-      const WatchfaceTextPalette* text_palette,
-      uint8_t temp_unit);
-  void battery_module_refresh(const WatchfaceTextPalette* text_palette);
-  void bpm_module_refresh(const WatchfaceTextPalette* text_palette);
-  void steps_module_refresh(const WatchfaceTextPalette* text_palette);
-  ```
-
-  Create functions should be audited separately. Modules that need only mode and
-  text colors should receive `WatchfaceTextPalette`; modules whose Pebble update
-  procs need `background` or role-specific colors may still require either a
-  copied background value or a different narrow palette struct.
-- Drive naming consistency before or during this migration: base palette fields
-  should use explicit role names such as `date_text` and `time_text`, not
-  ambiguous `date` and `time`, because these are text colors rather than module
-  palettes or full feature styles.
+- Date and time consume the base palette to resolve role-owned text colors.
+- Battery, climate, BPM, and steps derive module-owned palettes from the shared
+  base palette and retain only the module-local state their Pebble update procs
+  need.
+- `watchface_runtime_boundary.c` still owns runtime event interpretation only;
+  it does not construct palettes or own render policy.
 - Module-specific palette migration template:
 
-  1. Keep the full base `ColorPalette` flowing through current module APIs until
-     a separate API-narrowing slice introduces `WatchfaceTextPalette`.
+  1. Keep the full base `ColorPalette` flowing through current module refresh
+     APIs as the accepted shared visual contract.
   2. Define a module-owned palette type for module-specific semantic colors.
   3. Define `c_dark_*_palette` and `c_light_*_palette` as `static const` values,
      following the `layout_stylist.c` palette-definition pattern.
@@ -336,54 +293,16 @@ fresh harness or device evidence.
 ### Documentation source-of-truth drift
 
 Type: Issue
-Status: Open
+Status: Closed
 
-Some older planning and review documents still contain stale open items or
-pre-migration architecture language. `RAID_LOG.md` and `ARCHITECTURE_LEDGER.md`
-are the current authorities; older ledgers and handoff files should not reopen
-already-closed work unless a fresh source audit proves the issue still exists.
+The main live documentation set has been reconciled to the current runtime,
+layout, palette, and product contracts. `README.md`,
+`ARCHITECTURE_LEDGER.md`, `RAID_LOG.md`, and `VisualVocabulary.md` now speak in
+current-state language rather than pre-migration backlog prose.
 
-Drifted sources to reconcile:
-
-- `FINAL_REVIEW_LEDGER.md` still lists FR-301 runtime update mask cleanup and
-  FR-302 `ataglance.h` retirement as open. Both are closed in live code and in
-  this RAID log.
-- `FINAL_REVIEW_LEDGER.md` still carries FR-104 pre-migration weather language.
-  The live contract is now atomic `ClimateUpdate`: runtime owns transport
-  completeness, climate owns domain validity and stale-state clearing.
-- `ARCHITECTURE_LEDGER.md` still has stale cleanup backlog lines for removed
-  background stratum/update artifacts, `DESIGN_COMPACT_RIGHT_TEXT_X`, and
-  `HELPER_SCALE_ROUND` not being fully parenthesized.
-- `AGENTS.md` still describes the older AppMessage flow where `ataglance.c`
-  builds a local `WatchfaceUpdateMask`, calls narrow setters, and coalesces
-  `watchface_refresh()`. The current runtime-boundary contract is that
-  `ataglance.c` parses transport tuples, calls the watchface runtime boundary,
-  and does not decide repaint/refresh for AppMessage handling.
-- `layout-architect-role-flow.md` contains an old helper-macro TODO and API
-  examples that should be reconciled against the current layout API before being
-  treated as guidance.
-- Dirty-tree document deletions and archived planning files need one final docs
-  closeout pass so the repository has one clear live documentation set before
-  publication.
-
-Consolidated current status:
-
-- `HELPER_CLAMP_MIN` is intentionally retained as a small helper utility.
-- `HELPER_SCALE_ROUND` is fully parenthesized in live source.
-- `helper_swap_colors_in_bitmap()` is intentionally retained as a bitmap/PNG
-  utility.
-- Background stratum fields, background palette fields, and
-  `WATCHFACE_UPDATE_BACKGROUND` have been removed.
-- `WatchfaceRuntimeUpdateMask` has been removed.
-- `src/c/ataglance.h` has been removed.
-- `src/scratch.txt` has been removed.
-- `design-preview.html` is deleted in the current dirty tree but not yet
-  committed; publication cleanup should verify whether to keep the deletion.
-- Weather glyph issues remain active and should be handled through the glyph-lab
-  validation gate, not through stale final-review entries.
-
-Next action: update or archive the drifted documents in one docs-only closeout
-slice after current code/resource edits settle.
+Decision: treat `archive/`, older review ledgers, and planning notes as
+historical context only. They do not reopen closed work unless a fresh source
+audit proves the code still has the issue.
 
 ### Background stratum cleanup
 
@@ -503,9 +422,9 @@ context such as the active palette pointer and copied frame values.
 Type: Decision
 Status: Accepted
 
-Rectangular and round targets should feel like the same product: top metric
-context, dominant centered time, centered battery track, weather/date context,
-and bottom metric context. Geometry can differ by shape.
+Rectangular and round targets should feel like the same product: top
+heart-rate context, dominant centered time, centered battery track,
+weather/date context, and bottom steps context. Geometry can differ by shape.
 
 ### Glyph lab is the validation gate for glyph work
 
