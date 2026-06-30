@@ -28,11 +28,7 @@
     "watchapp": {
       "watchface": true
     },
-    "capabilities": [
-      "configurable",
-      "location",
-      "health"
-    ],
+    "capabilities": ["configurable", "location", "health"],
     "messageKeys": [
       "TIME_FORMAT",
       "TEMP_UNIT",
@@ -54,101 +50,81 @@
           "menuIcon": true
         },
         {
-          "characterRegex": "[-0-9CF]",
-          "file": "fonts/Antonio-Medium.ttf",
-          "name": "FONT_COMPACT_TEXT_MEDIUM_18",
+          "characterRegex": "[-0-9CF ]",
+          "file": "fonts/Antonio-Regular.ttf",
+          "name": "FONT_ANTONIO_REGULAR_16",
           "type": "font",
           "compatibility": "2.7"
         },
         {
-          "characterRegex": "[-0-9CF]",
-          "file": "fonts/Antonio-Medium.ttf",
-          "name": "FONT_FULL_TEXT_MEDIUM_24",
+          "characterRegex": "[-0-9CF ]",
+          "file": "fonts/Antonio-Regular.ttf",
+          "name": "FONT_ANTONIO_REGULAR_22",
           "type": "font",
           "compatibility": "2.7"
         },
         {
-          "characterRegex": "[-0-9.A-Z]",
+          "characterRegex": "[-0-9.A-Z a-z]",
           "file": "fonts/Antonio-SemiBold.ttf",
-          "name": "FONT_COMPACT_DATE_SEMIBOLD_18",
+          "name": "FONT_ANTONIO_SEMIBOLD_16",
           "type": "font",
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
           "compatibility": "2.7"
         },
         {
-          "characterRegex": "[-0-9.A-Z]",
+          "characterRegex": "[-0-9.A-Z a-z]",
           "file": "fonts/Antonio-SemiBold.ttf",
-          "name": "FONT_FULL_DATE_SEMIBOLD_24",
+          "name": "FONT_ANTONIO_SEMIBOLD_22",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "name": "FONT_COMPACT_TIME_SEMIBOLD_40",
+          "name": "FONT_CABIN_SEMIBOLD_40",
+          "type": "font",
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
+          "compatibility": "2.7"
+        },
+        {
+          "characterRegex": "[0-9:]",
+          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "targetPlatforms": ["emery"],
+          "name": "FONT_CABIN_SEMIBOLD_60",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": [
-            "emery"
-          ],
-          "name": "FONT_FULL_TIME_SEMIBOLD_60",
-          "type": "font",
-          "compatibility": "2.7"
-        },
-        {
-          "characterRegex": "[0-9:]",
-          "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": [
-            "gabbro"
-          ],
-          "name": "FONT_FULL_TIME_SEMIBOLD_72",
+          "targetPlatforms": ["gabbro"],
+          "name": "FONT_CABIN_SEMIBOLD_72",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "file": "images/walk_18.png",
-          "name": "WALK_COMPACT",
+          "name": "WALK",
           "type": "bitmap",
-          "targetPlatforms": [
-            "aplite",
-            "chalk",
-            "flint",
-            "basalt",
-            "diorite"
-          ]
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"]
         },
         {
           "file": "images/walk_28.png",
-          "name": "WALK_FULL",
+          "name": "WALK",
           "type": "bitmap",
-          "targetPlatforms": [
-            "emery",
-            "gabbro"
-          ]
+          "targetPlatforms": ["emery", "gabbro"]
         },
         {
           "file": "images/ecg_18.png",
-          "name": "ECG_COMPACT",
+          "name": "ECG",
           "type": "bitmap",
-          "targetPlatforms": [
-            "aplite",
-            "chalk",
-            "flint",
-            "basalt",
-            "diorite"
-          ]
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"]
         },
         {
           "file": "images/ecg_28.png",
-          "name": "ECG_FULL",
+          "name": "ECG",
           "type": "bitmap",
-          "targetPlatforms": [
-            "emery",
-            "gabbro"
-          ]
+          "targetPlatforms": ["emery","gabbro"]
         }
       ]
     }

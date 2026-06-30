@@ -1,25 +1,12 @@
 #include "date.h"
+#include "pebble.h"
 #include "substratum_renderer.h"
+#include <stdint.h>
 
 #define MAX_STR_LEN 16
 static char s_date_buffer[MAX_STR_LEN] = {0};
 static TextLayer *s_date_layer = NULL;
 static WatchfaceColorRole s_date_color_role = WATCHFACE_COLOR_ROLE_DATE;
-
-static void uppercase_date(char *buf);
-
-static void uppercase_date(char *buf) {
-  if (!buf || strlen(buf) == 0) {
-    return;
-  }
-
-  int distance = 'a' - 'A';
-  for (char *p = buf; *p; ++p) {
-    if (*p >= 'a' && *p <= 'z') {
-      *p = (char)(*p - distance);
-    }
-  }
-}
 
 bool date_module_create(Layer *root, const WatchfaceTextSubstratum *text, GFont font) {
   if (!root || !text || !font) {
@@ -48,18 +35,27 @@ void date_module_destroy(void) {
 }
 
 void date_module_refresh(const ColorPalette *palette) {
+  // Every weekday is a constant char*
+  // The array of these weekdays is also a static constant
+  // Only this function needs to have visibility into this array
+  static const char* const c_weekdays[] = {
+    "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
+
   if (!s_date_layer || !palette) {
     return;
   }
-
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
   if (!t) {
     return;
   }
 
-  strftime(s_date_buffer, MAX_STR_LEN, "%d%b", t);
-  uppercase_date(s_date_buffer);
+  const char* day = c_weekdays[t->tm_wday];
+  snprintf(s_date_buffer, MAX_STR_LEN, "%s ", day);
+  uint8_t len = (uint8_t) strlen(s_date_buffer);
+  strftime(s_date_buffer + len, (ARRAY_LENGTH(s_date_buffer) - len), "%d %b", t);
+
+  // uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(
       s_date_layer, s_date_buffer, substratum_renderer_color_for_role(palette, s_date_color_role));
 }

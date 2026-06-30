@@ -7,6 +7,17 @@
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite)
 
+#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+#define WATCHFACE_HAS_LARGE_DISPLAY 1
+#else
+#define WATCHFACE_HAS_LARGE_DISPLAY 0
+#endif
+
+typedef struct {
+  GRect frame;
+} WatchfaceIconSubstratum;
+
+
 typedef struct {
   GRect frame;
   GTextAlignment alignment;
@@ -35,6 +46,12 @@ typedef struct {
   // These two MUST ALWAYS BE THE SAME SIZE
   FontBook fontbook;
 } WatchfaceSurfaceStyle;
+
+typedef struct {
+  GRect track;
+  GRect fill;
+  GRect bolt;
+} WatchfaceBatteryStratum;
 
 typedef struct {
   int16_t face_width;

@@ -1,11 +1,41 @@
 [
+  {"type": "heading", "defaultValue": "Display Customization"},
+  {"type": "text", "defaultValue": "Personalize what you see At A Glance."},
   {
-    "type": "heading",
-    "defaultValue": "At A Glance"
+    "type": "section",
+    "id": "displayModeBnWSection",
+    "capabilities": ["BW"],
+    "items": [
+      {
+        "type": "select",
+        "messageKey": "DISPLAY_MODE",
+        "label": "Display Mode",
+        "defaultValue": "0",
+        "options": [
+          { "value": "0", "label": "Black on White" },
+          { "value": "1", "label": "White on Black" }
+        ]
+      }
+    ]
   },
   {
-    "type": "text",
-    "defaultValue": "Make this your watch face."
+    "type": "section",
+    "id": "displayModeColorSection",
+    "capabilities": ["COLOR"],
+    "items": [
+      {
+        "type": "select",
+        "messageKey": "DISPLAY_MODE",
+        "label": "Display Mode",
+        "defaultValue": "0",
+        "options": [
+          { "value": "0", "label": "Black on White" },
+          { "value": "1", "label": "White on Black" },
+          { "value": "2", "label": "Clear as Celeste" },
+          { "value": "3", "label": "Night in Oxford" }
+        ]
+      }
+    ]
   },
   {
     "type": "section",
@@ -38,42 +68,7 @@
       }
     ]
   },
-  {
-    "type": "section",
-    "id": "displayModeBnWSection",
-    "capabilities": ["BW"],
-    "items": [
-      {
-        "type": "select",
-        "messageKey": "DISPLAY_MODE",
-        "label": "Display Mode",
-        "defaultValue": "0",
-        "options": [
-          { "value": "0", "label": "Black on White" },
-          { "value": "1", "label": "White on Black" }
-        ]
-      }
-    ]
-  },
-  {
-    "type": "section",
-    "id": "displayModeColorSection",
-    "capabilities": ["COLOR"],
-    "items": [
-      {
-        "type": "select",
-        "messageKey": "DISPLAY_MODE",
-        "label": "Display Mode",
-        "defaultValue": "0",
-        "options": [
-          { "value": "0", "label": "Black on White" },
-          { "value": "1", "label": "White on Black" },
-          { "value": "2", "label": "Clear as Celeste" },
-          { "value": "3", "label": "Duke Blue Hue" }
-        ]
-      }
-    ]
-  },
+
   {
     "type": "section",
     "id": "healthSettingsSection",
@@ -82,7 +77,7 @@
       {"type": "heading", "defaultValue": "Health & Activity"},
       {
         "type": "text",
-        "defaultValue": "Configure heart-rate sampling and your daily steps goal."
+        "defaultValue": "Choose a steps goal & when to refresh your heart-rate."
       },
       {
         "type": "select",

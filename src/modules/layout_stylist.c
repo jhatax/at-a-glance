@@ -1,41 +1,59 @@
-#include "helper.h"
+#include "gcolor_definitions.h"
 #include "layout.h"
+#include "helper.h"
 #include "layout_style.h"
 #include "settings.h"
-#include <stdint.h>
+#include "watchface_components.h"
+
+#ifdef PBL_PLATFORM_GABBRO
+#define IS_GABBRO 1
+#else
+#define IS_GABBRO 0
+#endif
 
 // Stylist: Font lifecycle management
 #define STYLIST_INVALID_FONT_RESOURCE_ID 0
+#if WATCHFACE_HAS_LARGE_DISPLAY
+#if IS_GABBRO
+  #define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_72
+#else
+  #define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_60
+#endif
+  #define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_ANTONIO_SEMIBOLD_22
+  #define CUSTOM_FONT_TEXT_RESOURCE RESOURCE_ID_FONT_ANTONIO_REGULAR_22
+  #define DESIGN_TIME_FONT_KEY DESIGN_FONT_TIME_TEXT
+  #define DESIGN_DATE_FONT_KEY DESIGN_FONT_DATE_TEXT
+  #define DESIGN_TEXT_FONT_KEY DESIGN_FONT_PRIMARY_TEXT
+#else
+    #define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_40
+    #define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_ANTONIO_SEMIBOLD_16
+    #define CUSTOM_FONT_TEXT_RESOURCE RESOURCE_ID_FONT_ANTONIO_REGULAR_16
+    #define DESIGN_TIME_FONT_KEY DESIGN_FONT_COMPACT_TIME_TEXT
+    #define DESIGN_DATE_FONT_KEY DESIGN_FONT_COMPACT_DATE_TEXT
+    #define DESIGN_TEXT_FONT_KEY DESIGN_FONT_COMPACT_PRIMARY_TEXT
+#endif
 
-static const char *layout_font_key_for_role(WatchfaceFontRole role, bool is_compact) {
+static const char *layout_font_key_for_role(WatchfaceFontRole role) {
   switch (role) {
   case WATCHFACE_FONT_ROLE_TIME:
-    return HELPER_IF_ELSE(is_compact, DESIGN_FONT_COMPACT_TIME_TEXT, DESIGN_FONT_TIME_TEXT);
+    return DESIGN_TIME_FONT_KEY;
   case WATCHFACE_FONT_ROLE_DATE:
-    return HELPER_IF_ELSE(is_compact, DESIGN_FONT_COMPACT_DATE_TEXT, DESIGN_FONT_DATE_TEXT);
+    return DESIGN_DATE_FONT_KEY;
   case WATCHFACE_FONT_ROLE_TEXT:
   case WATCHFACE_FONT_ROLE_COUNT:
   default:
-    return HELPER_IF_ELSE(is_compact, DESIGN_FONT_COMPACT_PRIMARY_TEXT, DESIGN_FONT_PRIMARY_TEXT);
+    return DESIGN_TEXT_FONT_KEY;
   }
 }
 
-static uint32_t layout_custom_font_resource_id_for_role(WatchfaceFontRole role, bool is_compact) {
+static uint32_t layout_custom_font_resource_id_for_role(WatchfaceFontRole role) {
   switch (role) {
   case WATCHFACE_FONT_ROLE_TIME:
-#if defined(PBL_PLATFORM_EMERY)
-    return RESOURCE_ID_FONT_FULL_TIME_SEMIBOLD_60;
-#elif defined(PBL_PLATFORM_GABBRO)
-    return RESOURCE_ID_FONT_FULL_TIME_SEMIBOLD_72;
-#else
-    return RESOURCE_ID_FONT_COMPACT_TIME_SEMIBOLD_40;
-#endif
+    return CUSTOM_FONT_TIME_RESOURCE;
   case WATCHFACE_FONT_ROLE_DATE:
-    return HELPER_IF_ELSE(is_compact, RESOURCE_ID_FONT_COMPACT_DATE_SEMIBOLD_18,
-                          RESOURCE_ID_FONT_FULL_DATE_SEMIBOLD_24);
+    return CUSTOM_FONT_DATE_RESOURCE;
   case WATCHFACE_FONT_ROLE_TEXT:
-    return HELPER_IF_ELSE(is_compact, RESOURCE_ID_FONT_COMPACT_TEXT_MEDIUM_18,
-                          RESOURCE_ID_FONT_FULL_TEXT_MEDIUM_24);
+    return CUSTOM_FONT_TEXT_RESOURCE;
   case WATCHFACE_FONT_ROLE_COUNT:
   default:
     return STYLIST_INVALID_FONT_RESOURCE_ID;
@@ -89,10 +107,10 @@ bool layout_watchface_initialize_fonts(FontBook *fontbook, bool is_compact) {
   for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
     // Start by selecting system fonts; custom fonts will replace these fonts
     fontbook->chosen_fonts[i] =
-        fonts_get_system_font(layout_font_key_for_role((WatchfaceFontRole)i, is_compact));
+        fonts_get_system_font(layout_font_key_for_role((WatchfaceFontRole)i));
 
     fontbook->custom_font_resource_ids[i] =
-        layout_custom_font_resource_id_for_role((WatchfaceFontRole)i, is_compact);
+        layout_custom_font_resource_id_for_role((WatchfaceFontRole)i);
   }
 
   return true;
@@ -106,7 +124,7 @@ bool layout_watchface_load_custom_fonts(FontBook *fontbook) {
   // We need to trim fontbook->custom_fonts at the end to prevent null-ptr dereference or
   // double-free in watchface_destroy(). unique_customs helps with that after system_fonts
   // and custom_fonts have been consolidated into one list
-  GFont unique_customs[WATCHFACE_FONT_ROLE_COUNT] = {NULL};
+  GFont unique_customs[WATCHFACE_FONT_ROLE_COUNT] = {0};
   bool outcome = false;
   uint8_t j = 0;
   uint32_t *custom_font_resource_ids = fontbook->custom_font_resource_ids;
@@ -179,38 +197,38 @@ void layout_watchface_unload_custom_fonts(FontBook *fontbook) {
 
 // Stylist: Color Palettes
 #ifdef PBL_COLOR
-static const ColorPalette c_dark_palette = {
+static const ColorPalette color_dark_palette = {
     .is_light_mode = false,
-    .background = PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack),
-    .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
-    .date_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
+    .background = GColorOxfordBlue,
+    .time_text = GColorOrange,
+    .date_text = GColorCeleste,
     .primary_text = GColorWhite,
-    .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
+    .unavailable_text = GColorLightGray,
 };
 
-static const ColorPalette c_light_palette = {
+static const ColorPalette color_light_palette = {
     .is_light_mode = true,
-    .background = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
-    .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
-    .date_text = PBL_IF_COLOR_ELSE(GColorDukeBlue, GColorBlack),
+    .background = GColorCeleste,
+    .time_text = GColorOrange,
+    .date_text = GColorOxfordBlue,
     .primary_text = GColorBlack,
-    .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
+    .unavailable_text = GColorDarkGray,
 };
 #endif
 
-static const ColorPalette bnw_dark_palette = {
+static const ColorPalette mono_dark_palette = {
     .is_light_mode = false,
     .background = GColorBlack,
-    .time_text = GColorWhite,
+    .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
     .date_text = GColorWhite,
     .primary_text = GColorWhite,
     .unavailable_text = GColorWhite,
 };
 
-static const ColorPalette bnw_light_palette = {
+static const ColorPalette mono_light_palette = {
     .is_light_mode = true,
     .background = GColorWhite,
-    .time_text = GColorBlack,
+    .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
     .date_text = GColorBlack,
     .primary_text = GColorBlack,
     .unavailable_text = GColorBlack,
@@ -227,18 +245,18 @@ void layout_watchface_update_palette(WatchfaceSurfaceStyle *style, uint8_t displ
   switch (display_mode) {
 #ifdef PBL_COLOR
   case DISPLAY_MODE_LIGHT_COLOR:
-    pal = &c_light_palette;
+    pal = &color_light_palette;
     break;
   case DISPLAY_MODE_DARK_COLOR:
-    pal = &c_dark_palette;
+    pal = &color_dark_palette;
     break;
 #endif
   case DISPLAY_MODE_DARK_MONOCHROME:
-    pal = &bnw_dark_palette;
+    pal = &mono_dark_palette;
     break;
   case DISPLAY_MODE_LIGHT_MONOCHROME:
   default:
-    pal = &bnw_light_palette;
+    pal = &mono_light_palette;
     break;
   }
   style->palette = pal;

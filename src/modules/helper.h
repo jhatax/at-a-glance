@@ -28,4 +28,6 @@ bool helper_tuple_to_int(Tuple *tuple, int *value);
 
 bool helper_replace_color_in_bitmap(GBitmap *bmp, GColor color1, GColor color2);
 
+void helper_replace_all_except_bg_in_bitmap(GBitmap *bmp, GColor solo, GColor bg);
+
 bool helper_swap_colors_in_bitmap(GBitmap *bmp, GColor color1, GColor color2);

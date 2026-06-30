@@ -85,6 +85,32 @@ bool helper_replace_color_in_bitmap(GBitmap *bmp, GColor originalColor, GColor n
   return replaced;
 }
 
+void helper_replace_all_except_bg_in_bitmap(GBitmap *bmp, GColor solo, GColor bg) {
+  if (!bmp) {
+    return;
+  }
+
+  int num_colors = helper_get_colors_in_bmp(bmp);
+  if (num_colors == 0) {
+    return;
+  }
+  GColor *palette = gbitmap_get_palette(bmp);
+  if (!palette) {
+    return;
+  }
+
+  uint8_t argb = solo.argb;
+  GColor current;
+  // 2. Loop through the calculated palette allocation block
+  for (uint8_t i = 0; i < num_colors; ++i) {
+    current = palette[i];
+    if (HELPER_COLOR_EQUAL(current, solo) || HELPER_COLOR_EQUAL(current, bg)) {
+      continue;
+    }
+    palette[i].argb = argb;
+  }
+}
+
 bool helper_swap_colors_in_bitmap(GBitmap *bmp, GColor color1, GColor color2) {
   bool swapped = false;
   if (!bmp) {

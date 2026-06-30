@@ -1,12 +1,9 @@
 #include "steps.h"
 #ifdef PBL_HEALTH
 
-#include "gcolor_definitions.h"
 #include "helper.h"
-#include "pebble.h"
 #include "settings.h"
 #include "substratum_renderer.h"
-#include <stdint.h>
 
 #define MAX_STR_LEN 12
 
@@ -14,8 +11,10 @@ enum {
   STEPS_INVALID = -1,
   STEPS_MIN = 1,
   STEPS_APPROACHING_GOAL_PERCENT = 70,
-  STEPS_PROGRESS_TRACK_HEIGHT = 4,
+  STEPS_MAX=100000,
 };
+
+#define ARE_STEPS_VALID(s) ((s) >= STEPS_MIN && (s) < STEPS_MAX)
 
 // This needs to be the main color of the steps icon
 static GColor s_steps_icon_color = GColorBlack;
@@ -179,13 +178,17 @@ static void apply_steps_value(int steps, bool is_available) {
     calculate_steps_color(steps),
     s_steps_palette.unknown);
 
+  // Do not render the text in the same color as the icon
+  // except when the text is available vs. unavailable
+  GColor text_color = s_steps_palette.normal;
   if (is_available) {
     snprintf(s_steps_buffer, MAX_STR_LEN, "%d", steps);
   } else {
     snprintf(s_steps_buffer, MAX_STR_LEN, "%s", WATCHFACE_UNAVAILABLE_TEXT);
+    text_color = s_steps_palette.unknown;
   }
 
-  substratum_renderer_update_text_layer(s_steps_layer, s_steps_buffer, s_steps_color);
+  substratum_renderer_update_text_layer(s_steps_layer, s_steps_buffer, text_color);
 
   // Update visual elements (icon & progress)
   if (s_steps_icon_layer) {
@@ -207,9 +210,9 @@ static void update_steps(void) {
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue health_steps = health_service_sum_today(HealthMetricStepCount);
-    if (health_steps >= STEPS_MIN) {
+    is_available = ARE_STEPS_VALID((int)health_steps);
+    if (is_available) {
       steps = (int)health_steps;
-      is_available = true;
     }
   }
 
@@ -217,7 +220,7 @@ static void update_steps(void) {
 #if ATAGLANCE_DEBUG
   if (s_debug_steps_is_set) {
     steps = s_debug_steps;
-    is_available = (s_debug_steps >= STEPS_MIN);
+    is_available = ARE_STEPS_VALID(s_debug_steps);
     s_debug_steps_is_set = false;
     s_debug_steps = STEPS_INVALID;
   }
@@ -255,13 +258,9 @@ bool steps_module_create(
   // pass knows which color to replace.
   s_steps_icon_color = GColorBlack;
 
-  if (icon && icon->is_enabled) {
+  if (icon) {
     uint32_t resource_id = 0;
-#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
-    resource_id = RESOURCE_ID_WALK_FULL;
-#else
-    resource_id = RESOURCE_ID_WALK_COMPACT;
-#endif
+    resource_id = RESOURCE_ID_WALK;
     s_steps_bitmap = gbitmap_create_with_resource(resource_id);
 
     if (s_steps_bitmap) {
@@ -282,7 +281,7 @@ bool steps_module_create(
 
   // The width of the progress bar is either the width of icon plus text
   // or just the text. Change the width only if the icon is not visible
-  if (!(icon && icon->is_enabled)) {
+  if (!(icon)) {
     // The progress bar's width needs to be text_width, so shift the origin of the bar
     int text_w = text->frame.size.w;
     frame.origin.x += (progress->size.w - text_w);
@@ -310,6 +309,16 @@ void steps_module_destroy(void) {
   if (s_steps_bitmap) {
     gbitmap_destroy(s_steps_bitmap);
     s_steps_bitmap = NULL;
+  }
+
+  if (s_steps_icon_layer) {
+    layer_destroy(s_steps_icon_layer);
+    s_steps_icon_layer = NULL;
+  }
+
+  if (s_steps_progress_layer) {
+    layer_destroy(s_steps_progress_layer);
+    s_steps_progress_layer = NULL;
   }
 
   s_steps_buffer[0] = '\0';

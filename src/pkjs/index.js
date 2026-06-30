@@ -24,8 +24,10 @@ function parseStepsGoal(rawSettings) {
     var customGoalText = rawSettings.STEPS_GOAL_CUSTOM;
     var customGoal = parseInt(customGoalText, 10);
 
-    if (!isNaN(customGoal) || !isNaN(presetGoal)) {
+    if (!isNaN(customGoal)) {
       goal = clampStepsGoal(customGoal);
+    } else if (!isNaN(presetGoal)) {
+      goal = clampStepsGoal(presetGoal);
     }
   }
 

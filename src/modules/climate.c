@@ -175,7 +175,7 @@ bool climate_module_create(Layer *root, const WatchfaceTextSubstratum *text,
     return false;
   }
 
-  if (icon && icon->is_enabled) {
+  if (icon) {
     s_climate_icon_layer =
         substratum_renderer_create_icon_layer(root, icon, climate_icon_update_proc);
 

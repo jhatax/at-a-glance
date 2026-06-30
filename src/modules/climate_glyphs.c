@@ -211,8 +211,8 @@ static void draw_weather_clear_icon(GContext *ctx, const GRect *frame,
   }
   // Inner-ring filled, outer ring dithered
   // vs. Inner-ring dithered, outer-ring filled
-  int16_t filled_radius = HELPER_IF_ELSE((is_filled), 9, 11);
-  int16_t dithered_radius = HELPER_IF_ELSE((is_filled), 11, 9);
+  int16_t filled_radius = HELPER_IF_ELSE((is_filled), 10, 13);
+  int16_t dithered_radius = HELPER_IF_ELSE((is_filled), 13, 10);
 
   // Draw the filled circle first
   graphics_context_set_fill_color(ctx, weather_clear_fill_color(climate_palette, is_day));
@@ -524,9 +524,9 @@ void draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weather_condit
   WeatherIconKind icon_kind = get_weather_icon_kind(weather_condition);
 
 #if ATAGLANCE_DEBUG
-  // draw a rectangle around the icon's bounds
+  // Draw a rectangle around the icon's bounds
   graphics_context_set_stroke_color(ctx, climate_palette->normal);
-  graphics_draw_rect(ctx, *frame);
+  raphics_draw_rect(ctx, *frame);
 #endif
 
   switch (icon_kind) {

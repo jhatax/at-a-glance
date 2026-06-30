@@ -1,5 +1,5 @@
-#ifdef PBL_HEALTH
 #include "bpm.h"
+#ifdef PBL_HEALTH
 #include "helper.h"
 #include "substratum_renderer.h"
 
@@ -9,7 +9,8 @@
 #define BPM_MIN 1
 #define BPM_EXTREME 120
 #define BPM_HIGH 100
-#define IS_BPM_VALID(bpm) ((bpm) >= BPM_MIN)
+#define BPM_MAX 220
+#define IS_BPM_VALID(bpm) ((bpm) >= BPM_MIN && (bpm) < BPM_MAX)
 
 typedef struct {
   GColor background;
@@ -144,13 +145,18 @@ static void update_bpm(void) {
   // Save this state unconditionally
   s_bpm_is_valid = IS_BPM_VALID(bpm_to_render);
   s_bpm_color = calculate_bpm_color(bpm_to_render);
+
+  // Do not render the text in the same color as the icon
+  // except when the text is available vs. unavailable
+  GColor text_color = s_bpm_palette.normal;
   if (s_bpm_is_valid) {
     snprintf(s_bpm_buffer, MAX_STR_LEN, "%d", bpm_to_render);
   } else {
     snprintf(s_bpm_buffer, MAX_STR_LEN, "%s", WATCHFACE_UNAVAILABLE_TEXT);
+    text_color = s_bpm_palette.unknown;
   }
 
-  substratum_renderer_update_text_layer(s_bpm_layer, s_bpm_buffer, s_bpm_color);
+  substratum_renderer_update_text_layer(s_bpm_layer, s_bpm_buffer, text_color);
 
   if (s_bpm_icon_layer) {
     layer_mark_dirty(s_bpm_icon_layer);
@@ -177,13 +183,9 @@ bool bpm_module_create(Layer *root, const WatchfaceTextSubstratum *text,
   s_debug_bpm = BPM_INVALID;
 #endif
 
-  if (icon && icon->is_enabled) {
+  if (icon) {
     uint32_t resource_id = 0;
-#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
-    resource_id = RESOURCE_ID_ECG_FULL;
-#else
-    resource_id = RESOURCE_ID_ECG_COMPACT;
-#endif
+    resource_id = RESOURCE_ID_ECG;
     s_bpm_bitmap = gbitmap_create_with_resource(resource_id);
 
     if (s_bpm_bitmap) {

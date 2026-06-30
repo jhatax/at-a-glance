@@ -238,7 +238,7 @@ Layer *
 substratum_renderer_create_icon_layer(Layer *parent,
                                       const WatchfaceIconSubstratum *icon,
                                       LayerUpdateProc update_proc) {
-  if (!parent || !icon || !icon->is_enabled) {
+  if (!parent || !icon) {
     return NULL;
   }
 

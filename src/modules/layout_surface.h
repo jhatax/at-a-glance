@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pebble.h>
+#include "helper.h"
 
 enum {
   WATCHFACE_ICON_GRID_WIDTH = 28,
@@ -9,10 +10,13 @@ enum {
 
 // Blueprints
 enum {
-  DESIGN_MARGIN = 8,
-  DESIGN_ICON_TEXT_GAP = 2,
+  DESIGN_FACE_WIDTH = 200,
+  DESIGN_FACE_HEIGHT = 228,
+  DESIGN_X_MARGIN = 4,
+  DESIGN_Y_MARGIN = 10,
+  DESIGN_ICON_TEXT_GAP = 3,
   DESIGN_TIME_Y_PERCENT = 27,
-  DESIGN_BATTERY_BAND_WIDTH_PERCENT = 75,
+  DESIGN_PROGRESS_BAR_WIDTH_PERCENT = 75,
   DESIGN_BATTERY_BAND_HEIGHT = 18,
   DESIGN_BATTERY_TRACK_HEIGHT = 8,
   DESIGN_BATTERY_FILL_HEIGHT = 6,
@@ -22,64 +26,62 @@ enum {
 };
 
 enum {
-  DESIGN_FULL_FACE_WIDTH = 200,
-  DESIGN_FULL_FACE_HEIGHT = 228,
-  DESIGN_FULL_MARGIN = DESIGN_MARGIN, // Same for both emery & gabbro
+  DESIGN_FULL_X_MARGIN = DESIGN_X_MARGIN,
+  DESIGN_FULL_Y_MARGIN = DESIGN_Y_MARGIN,
   DESIGN_FULL_ICON_WIDTH = WATCHFACE_ICON_GRID_WIDTH,
   DESIGN_FULL_ICON_HEIGHT = WATCHFACE_ICON_GRID_HEIGHT,
   DESIGN_FULL_DATE_TEXT_HEIGHT = 28,
-  DESIGN_FULL_TIME_TEXT_HEIGHT = 60,
+  DESIGN_FULL_TIME_TEXT_HEIGHT = HELPER_IF_ELSE(
+    (PBL_PLATFORM_TYPE_CURRENT == PlatformTypeGabbro), 72, 60),
   DESIGN_FULL_DATA_TEXT_HEIGHT = 28,
-  DESIGN_FULL_CLIMATE_TEXT_WIDTH = 65,
+  DESIGN_FULL_CLIMATE_TEXT_WIDTH = 60,
 #ifdef PBL_HEALTH
-  DESIGN_FULL_STEPS_TEXT_WIDTH = 65,
-  DESIGN_FULL_BPM_TEXT_WIDTH = 45,
+  DESIGN_FULL_STEPS_TEXT_WIDTH = 56,
+  DESIGN_FULL_BPM_TEXT_WIDTH = 36,
 #endif
 };
 
 enum {
-  DESIGN_COMPACT_MARGIN = DESIGN_MARGIN,
+  DESIGN_COMPACT_X_MARGIN = DESIGN_X_MARGIN >> 1,
+  DESIGN_COMPACT_Y_MARGIN = PBL_IF_ROUND_ELSE(
+    DESIGN_Y_MARGIN,
+    HELPER_CLAMP_MIN((DESIGN_Y_MARGIN >> 1), DESIGN_STEPS_PROGRESS_HEIGHT + 2)),
   DESIGN_COMPACT_TIME_Y_PERCENT = 24,
   DESIGN_COMPACT_ICON_WIDTH = 18,
   DESIGN_COMPACT_ICON_HEIGHT = 18,
   DESIGN_COMPACT_DATE_TEXT_HEIGHT = 18,
   DESIGN_COMPACT_TIME_TEXT_HEIGHT = 40,
   DESIGN_COMPACT_DATA_TEXT_HEIGHT = 18,
-  DESIGN_COMPACT_CLIMATE_TEXT_WIDTH = 50,
+  DESIGN_COMPACT_CLIMATE_TEXT_WIDTH = 44,
 #ifdef PBL_HEALTH
-  DESIGN_COMPACT_STEPS_TEXT_WIDTH = 50,
-  DESIGN_COMPACT_BPM_TEXT_WIDTH = 40,
+  DESIGN_COMPACT_STEPS_TEXT_WIDTH = 40,
+  DESIGN_COMPACT_BPM_TEXT_WIDTH = 30,
 #endif
 };
-
-typedef struct {
-  GRect frame;
-  bool is_enabled;
-} WatchfaceIconSubstratum;
 
 typedef struct {
   GRect track;
   GRect fill;
   GRect bolt;
-} WatchfaceBatteryStratum;
+} LayoutBatteryStratum;
 
 typedef struct {
   GRect icon;
   GRect text;
-} WatchfaceMetricWithIcon;
+} LayoutMetricWithIcon;
 
 typedef struct {
-  WatchfaceMetricWithIcon steps;
+  LayoutMetricWithIcon steps;
   GRect progress;
-} MetricPairWithProgress;
+} LayoutMetricPairWithProgress;
 
 typedef struct {
   GRect time;
   GRect date;
-  WatchfaceBatteryStratum battery;
-  WatchfaceMetricWithIcon climate;
+  LayoutBatteryStratum battery;
+  LayoutMetricWithIcon climate;
 #ifdef PBL_HEALTH
-  MetricPairWithProgress steps_layer;
-  WatchfaceMetricWithIcon bpm;
+  LayoutMetricPairWithProgress steps_layer;
+  LayoutMetricWithIcon bpm;
 #endif
 } CalculatedLayout;
