@@ -1,175 +1,14 @@
 # At A Glance
 
-Inspired by cockpit instrumentation, At A Glance presents information with minimal interpretation. Time is always dominant. Icons identify. Numbers provide values. Lines show progress. Color communicates state.
+## What It Is
 
-Share your feedback. I hope you find the display to be *Precise, Neutral, Obvious, and Available At a Glance.*
+At A Glance is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers provide values. Lines show progress. Color communicates state.
 
-The current source targets `aplite`, `basalt`, `diorite`, `emery`, `flint`,
-`chalk`, and `gabbro` through one watchface runtime with shape-aware layout and
-platform-aware styling.
+Share your feedback. The goal is a display that feels *precise, neutral, obvious, and available at a glance*.
 
-## Features
+## Install
 
-- Dominant time
-- Must-have data-points: Time, Weather, Date (*Aplite* treated as 1st class devices)
-- Battery status track with charging bolt
-- Weather icon and temperature from Open-Meteo
-- Date context beside weather
-- BPM and steps from Pebble Health where available
-- Steps progress bar and configurable daily goal
-- Four display modes: `Black on White`, `White on Black`, `Clear as Celeste`,
-  and `Duke Blue Moon`
-- Color- and monochrome-aware palettes
-- Familiar and obvious battery, heart-rate, and weather glyphs
-- Recolored bitmap walking and heart-rate icons
-- Rebble Clay configuration page
-
-## Supported Watches
-
-`package.json` currently targets:
-
-- `aplite` - Pebble / Pebble Steel, black and white
-- `basalt` - Pebble Time / Pebble Time Steel, color
-- `diorite` - Pebble 2, black and white
-- `emery` - Pebble Time 2, color
-- `flint` - Pebble 2 Duo, black and white
-- `chalk` - Pebble Time Round
-- `gabbro` - Pebble Round 2
-
-Round targets ship through the same runtime boundary and prepared-surface
-contract as rectangular targets. Geometry differs by platform; hierarchy does
-not.
-
-## Layout
-
-The selected visual stack is shared across display families:
-
-```text
-top heart-rate context
-dominant centered time
-centered battery track and charging bolt
-weather/date context
-bottom steps context
-```
-
-This shared stack and orange centered time represent the product's visual DNA. Layout and
-style have been customized for each display's geometry while retaining core visual identity.
-
-`src/c/ataglance.c` owns Pebble lifecycle, services, persistent settings,
-AppMessage parsing, and transport dispatch. `src/modules/watchface_runtime_boundary.c`
-interprets runtime events, mutates settings/domain state, and decides repaint
-versus refresh. `src/modules/watchface.c` owns the live `WatchfaceSurface`,
-feature-module lifecycle, and visual dispatch. `src/modules/layout_architect.c`
-prepares geometry, and `src/modules/layout_stylist.c` resolves palette and font
-selection.
-
-Core layout invariant:
-
-- the architect resolves compact/full once
-- the result is stored on `WatchfaceSurfaceStyle.is_compact`
-- the stylist consumes that state
-- downstream modules use prepared substrata and do not rederive layout policy
-- text widths and heights are per-field decisions dictated by font selection,
-  field role, row ownership, and platform geometry
-- there is no uniform text-width invariant across all fields
-
-Detailed UI reference, including computed geometry, font selections, palettes,
-and screenshot slots, lives in [`User Interface.md`](User%20Interface.md).
-
-## Visual Vocabulary
-
-- Time is the dominant visual object.
-- Text is primary; icons support recognition.
-- Battery uses a primary-color outline track with module-owned state-color fill.
-- The charging bolt is a shape cue so charging does not rely on green alone.
-- Health metrics use centerline vocabulary rather than far-corner placement.
-- Unavailable data uses the shared diagonal absence slash.
-- Round displays preserve the same visual hierarchy with tailored accommodations.
-
-See `VisualVocabulary.md`, `DESIGN.md`, and `ARCHITECTURE_LEDGER.md` for current design
-and boundary contracts.
-
-## Display Modes
-
-Monochrome: Use black, white primarily, sparing use of dithered gray.
-- `Black on White`: white background, black primary text, black date, black
-  time, black unavailable
-- `White on Black`: black background, white primary text, white date, white
-  time, white unavailable
-
-Color: Customized palette to maximize information capture; uniform status-indicating
-colors for all metrics.
-- `Black on White`: white background, black primary text, black date, black
-  time, black unavailable, colors for battery status, steps progress, heart-rate
-- `White on Black`: black background, white primary text, white date, white
-  time, white unavailable
-- `Clear as Celeste`: Celeste background, black primary text, Duke Blue date,
-  orange time, dark gray unavailable
-- `Duke Blue Moon`: Duke Blue background, white primary text, Celeste date,
-  orange time, light gray unavailable
-
-Dynamic metric colors remain module-owned. Status-indicating colors are consistent across all modules:
-
-- Battery owns charge-state fill colors.
-- BPM owns zone colors.
-- Steps owns approaching-goal and achieved colors.
-- Climate owns weather glyph colors.
-  - Weather glyphs are outline vs. filled to account for limited display affordances on monochrome devices
-
-## Configuration
-
-Configuration is powered by Rebble Clay:
-
-```json
-"dependencies": {
-  "@rebble/clay": "^1.0.10"
-}
-```
-
-Settings:
-
-- Time format: 24-hour or 12-hour
-- Temperature unit: Fahrenheit or Celsius
-- Display mode: one of four mode-specific palettes, depending on platform
-- Heart rate sampling: 10, 15, 30, 60, or 120 minutes
-- Steps goal: preset values from `4,000` to `20,000`, with custom override
-  support from `4,000` to `32,000`
-
-The watchface persists settings through Pebble persistent storage.
-
-## Climate Data
-
-The phone companion app requests current weather from Open-Meteo every
-30 minutes. It uses phone geolocation when available. When location is
-unavailable, the fixed fallback weather location is Oakland, CA:
-
-```text
-37.85626, -122.21383
-```
-
-Temperature is sent to the watch in Celsius tenths and rendered as Fahrenheit
-or Celsius according to settings. Open-Meteo `weather_code` and `is_day` are
-sent to C for glyph selection. Runtime transport completeness is evaluated
-before climate state is applied; incomplete or invalid weather updates clear
-stale weather state and render the unavailable vocabulary.
-
-## Build
-
-### Prerequisites
-
-- [Pebble SDK](https://developer.repebble.com/sdk/)
-- Node.js for PebbleKit JS dependencies
-
-### Build The PBW
-
-```sh
-npm install
-pebble build
-```
-
-Confirm the generated PBW under `build/` before submission.
-
-## Run In An Emulator
+Install on an emulator:
 
 ```sh
 # Pebble Time 2, color, 200x228
@@ -191,53 +30,143 @@ To test the config page in an emulator:
 pebble emu-app-config
 ```
 
-## Install On Hardware
+Install on hardware:
 
 ```sh
 pebble install --phone YOUR_PHONE_IP
 ```
 
-`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile
-app. A `169.254.x.x` address is link-local; reconnect Wi-Fi, confirm Local
-Network permission, and restart Developer Connection until the app reports a LAN
-address such as `192.168.x.x` or `10.x.x.x`.
+- Pebble App Store: [Update this link before publishing](PASTE_APP_STORE_LINK_HERE)
 
-## Build/Test Harness
+`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app. If the app reports a `169.254.x.x` address, reconnect Wi-Fi, confirm Local Network permission, and restart Developer Connection until it reports a LAN address such as `192.168.x.x` or `10.x.x.x`.
 
-`ataglance_build_test_harness.sh` wraps the local Pebble SDK flow:
+## Features
 
-```sh
-./ataglance_build_test_harness.sh --build
-./ataglance_build_test_harness.sh --install --emulators emery,chalk
-./ataglance_build_test_harness.sh --phone YOUR_PHONE_IP
-./ataglance_build_test_harness.sh --test weather,battery --emulators emery
-```
+- Dominant time in 12H/24H format, configurable via Settings
+- Must-have data points: time, weather, and date
+- Battery status track with charging bolt
+- Weather icon and temperature from Open-Meteo
+- Date beside weather
+- BPM and steps from Pebble Health where available
+- Steps progress bar and configurable daily goal
+- Two `monochrome` display modes: `Black on White`, `White on Black`
+- Four `color` display modes: `Black on White`, `White on Black`, `Clear as Celeste`, and `Duke Blue Moon`
+- Familiar battery, heart-rate, and weather glyphs, walking and heart-rate icons
+- Settings page to personalize watch face on connected phone
 
-The harness automation is emulator-focused. The phone path only installs
-through the Pebble mobile app Developer Connection server.
+### Health activity and goals
 
-## Project Structure
+#### Steps
+
+- Daily sum displayed with footprints icon
+- Steps goal configured via Settings; out of the box goal is 10,000 steps
+- Progress towards goal indicated by progress bar and color
+
+#### Steps
+
+- Current heart-rate displayed with heart icon
+- Time between updates configured via Settings
+- Heart-rate changes conveyed via icon color
+
+### Climate: Temperature and Weather Condition based on Location
+
+- Weather data retrieved from Open-Meteo every 30-minutes using phone geolocation, when available
+- When unavailable, the fixed fallback weather location is Oakland, CA: `37.85626, -122.21383`
+- Temperature rendered as Fahrenheit or Celsius according to Settings
+
+## Supported Platforms
+
+This watchface is compatible with all Pebble smartwatch models.
+
+- `aplite` - Pebble / Pebble Steel, black and white
+- `basalt` - Pebble Time / Pebble Time Steel, color
+- `diorite` - Pebble 2, black and white
+- `emery` - Pebble Time 2, color
+- `flint` - Pebble 2 Duo, black and white
+- `chalk` - Pebble Time Round
+- `gabbro` - Pebble Round 2
+
+## How information is displayed
+
+The selected visual stack is shared across display families:
 
 ```text
-resources/      Static image and font resources
-src/c/          Pebble lifecycle entrypoint and app-level constants
-src/modules/    Watchface runtime, layout surface, renderer, and modules
-src/pkjs/       Phone-side climate data and Clay configuration
-package.json    Platforms, capabilities, message keys, and resources
-wscript         Pebble build entrypoint
+bottom steps context
+dominant centered time
+centered battery track and charging bolt
+weather/date context
+top heart-rate context
 ```
 
-## Publication
+This shared stack and dominant time are the product's visual DNA. Layout and style are adjusted for each display shape (round, rectangular, compact) while keeping the same information hierarchy and glanceability. Detailed geometry, font, palette, and screenshot references live in `UserInterface.md`.
 
-Use `appstore-submission.md` for the RePebble App Store submission checklist.
-Use `archive/project-rename-plan.md` only if the package/repo rename work is
-re-opened.
+Text is primary. Icons support recognition. The battery track uses a primary-color outline with a state-colored fill. The charging bolt is a shape cue, so charging does not rely on color alone. Health metrics use centerline vocabulary, and unavailable data uses a clear diagonal absence slash through the supporting icon.
 
-Before publication:
+### Display Modes
 
-- run `pebble build`
-- review App Store metadata
-- confirm no generated artifacts or local scratch files are staged
+On monochrome devices, two display modes are available:
+
+1. `Black on White`: white background, black primary text, black date, black time, black unavailable
+2. `White on Black`: black background, white primary text, white date, white time, white unavailable
+
+On color devices, four display modes are available:
+
+1. `Black on White`: White background, Black primary text, Black date, Black time, Black unavailable, colors for battery status, steps progress, and heart-rate
+2. `White on Black`: Black background, White primary text, White date, White time, White unavailable
+3. `Clear as Celeste`: Celeste background, Black primary text, Oxford Blue date, Orange time, Dark Gray unavailable
+4. `Night in Oxford`: Oxford Blue background, White primary text, Celeste date, Orange time, Light Gray unavailable
+
+## Configuration
+
+Configuration is powered by Rebble Clay:
+
+```json
+"dependencies": {
+  "@rebble/clay": "^1.0.10"
+}
+```
+
+### Personalization options (Settings)
+
+- Time format: 24-hour or 12-hour
+- Temperature unit: Fahrenheit or Celsius
+- Display mode: one of four mode-specific palettes, depending on platform
+- Heart rate sampling: 10, 15, 30, 60, or 120 minutes
+- Steps goal: preset values from `4,000` to `20,000`, with custom override support from `4,000` to `32,000`
+
+The watchface persists settings using Pebble's persistent storage.
+
+## Build
+
+### Prerequisites
+
+- [Pebble SDK](https://developer.repebble.com/sdk/)
+- Node.js for PebbleKit JS dependencies
+
+### Build The PBW
+
+```sh
+npm install
+pebble build
+```
+
+Confirm the generated PBW under `build/` before submission.
+
+## Further Reading
+
+- `./ataglance_build_test_harness.sh` wraps the local Pebble SDK flow for build, install, and emulator-led validation.
+In the `./docs` folder:
+- `Design.md` for product intent, influences, and glance-first design goals
+- `ProductInvariants.md` for the product truths that should remain stable
+- `VisualVocabulary.md` for the visual rules that express those truths
+- `UserInterface.md` for current geometry, fonts, palettes, and screenshot status
+- `ArchitectureLedger.md` for runtime architecture, boundaries, and ownership
+- `Contributing.md` for contributor workflow, validation, and review discipline
+
+Additional project references:
+
+- `appstore-submission.md` for the RePebble App Store submission checklist
+- `archive/project-rename-plan.md` only if package or repo rename work is reopened
 
 ## License
 
