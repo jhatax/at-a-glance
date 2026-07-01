@@ -6,7 +6,7 @@ It covers the shared watchface composition, channel responsibilities, glyph rule
 
 ## Required Reading
 
-- README.md
+- ../README.md
 - Design.md
 - ProductInvariants.md
 
@@ -106,11 +106,11 @@ If palette resolution fails, the display should degrade to a simple black-and-wh
 The shared watchface composition is:
 
 ```text
-top heart-rate context
+top steps context
 dominant centered time
 centered battery track and charging bolt
 weather/date context
-bottom steps context
+bottom heart-rate context
 ```
 
 This stack is part of the product's visual DNA. Rectangular and round displays may use different geometry, but they should still read as the same watchface.

@@ -423,8 +423,8 @@ Type: Decision
 Status: Accepted
 
 Rectangular and round targets should feel like the same product: top
-heart-rate context, dominant centered time, centered battery track,
-weather/date context, and bottom steps context. Geometry can differ by shape.
+steps context, dominant centered time, centered battery track,
+weather/date context, and bottom heart-rate context. Geometry can differ by shape.
 
 ### Glyph lab is the validation gate for glyph work
 

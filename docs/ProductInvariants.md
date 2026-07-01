@@ -6,9 +6,9 @@ These are acceptance properties, not current implementation notes.
 
 ## Required Reading
 
-- README.md
-- Design.md
-- VisualVocabulary.md
+- `../README.md`
+- `Design.md`
+- `VisualVocabulary.md`
 
 ## Dominant Time
 
@@ -20,7 +20,7 @@ These are acceptance properties, not current implementation notes.
 
 - Information hierarchy remains recognizable across display families.
 - Rectangular and round targets should feel like the same product.
-- The shared hierarchy is: top heart-rate context, dominant centered time, centered battery track, weather/date context, and bottom steps context.
+- The shared hierarchy is: top steps context, dominant centered time, centered battery track, weather/date context, and bottom heart-rate context.
 - Geometry can differ by shape without changing the hierarchy.
 - Layout changes may rebalance spacing, but they should not change which information reads first, second, and third.
 

@@ -50,23 +50,21 @@ pebble install --phone YOUR_PHONE_IP
 - BPM and steps from Pebble Health where available
 - Steps progress bar and configurable daily goal
 - Two `monochrome` display modes: `Black on White`, `White on Black`
-- Four `color` display modes: `Black on White`, `White on Black`, `Clear as Celeste`, and `Duke Blue Moon`
-- Familiar battery, heart-rate, and weather glyphs, walking and heart-rate icons
+- Four `color` display modes: `Black on White`, `White on Black`, `Clear as Celeste`, and `Night in Oxford`
+- Familiar heart-and-waveform, weather, and walking icons, plus a battery charging bolt
 - Settings page to personalize watch face on connected phone
 
 ### Health activity and goals
 
 #### Steps
 
-- Daily sum displayed with footprints icon
 - Steps goal configured via Settings; out of the box goal is 10,000 steps
 - Progress towards goal indicated by progress bar and color
 
-#### Steps
+#### BPM
 
-- Current heart-rate displayed with heart icon
 - Time between updates configured via Settings
-- Heart-rate changes conveyed via icon color
+- Heart-rate changes conveyed via color
 
 ### Climate: Temperature and Weather Condition based on Location
 
@@ -91,11 +89,11 @@ This watchface is compatible with all Pebble smartwatch models.
 The selected visual stack is shared across display families:
 
 ```text
-bottom steps context
+top steps context
 dominant centered time
 centered battery track and charging bolt
 weather/date context
-top heart-rate context
+bottom heart-rate context
 ```
 
 This shared stack and dominant time are the product's visual DNA. Layout and style are adjusted for each display shape (round, rectangular, compact) while keeping the same information hierarchy and glanceability. Detailed geometry, font, palette, and screenshot references live in `UserInterface.md`.
@@ -111,8 +109,8 @@ On monochrome devices, two display modes are available:
 
 On color devices, four display modes are available:
 
-1. `Black on White`: White background, Black primary text, Black date, Black time, Black unavailable, colors for battery status, steps progress, and heart-rate
-2. `White on Black`: Black background, White primary text, White date, White time, White unavailable
+1. `Black on White`: White background, Black primary text, Black date, Orange time, Black unavailable
+2. `White on Black`: Black background, White primary text, White date, Orange time, White unavailable
 3. `Clear as Celeste`: Celeste background, Black primary text, Oxford Blue date, Orange time, Dark Gray unavailable
 4. `Night in Oxford`: Oxford Blue background, White primary text, Celeste date, Orange time, Light Gray unavailable
 
@@ -156,12 +154,12 @@ Confirm the generated PBW under `build/` before submission.
 
 - `./ataglance_build_test_harness.sh` wraps the local Pebble SDK flow for build, install, and emulator-led validation.
 In the `./docs` folder:
-- `Design.md` for product intent, influences, and glance-first design goals
-- `ProductInvariants.md` for the product truths that should remain stable
-- `VisualVocabulary.md` for the visual rules that express those truths
-- `UserInterface.md` for current geometry, fonts, palettes, and screenshot status
-- `ArchitectureLedger.md` for runtime architecture, boundaries, and ownership
-- `Contributing.md` for contributor workflow, validation, and review discipline
+- `./docs/Design.md` for product intent, influences, and glance-first design goals
+- `./docs/ProductInvariants.md` for the product truths that should remain stable
+- `./docs/VisualVocabulary.md` for the visual rules that express those truths
+- `./docs/UserInterface.md` for current geometry, fonts, palettes, and screenshot status
+- `./docs/ArchitectureLedger.md` for runtime architecture, boundaries, and ownership
+- `./docs/Contributing.md` for contributor workflow, validation, and review discipline
 
 Additional project references:
 

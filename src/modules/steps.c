@@ -131,7 +131,6 @@ static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
 
 static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_steps_palette)) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Layer or Ctx or the palette are invalid");
     return;
   }
 

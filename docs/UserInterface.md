@@ -6,10 +6,10 @@ It is the reference for the implemented stack, geometry, fonts, palettes, icon s
 
 ## Required Reading
 
-- README.md
-- Design.md
-- ProductInvariants.md
-- VisualVocabulary.md
+- `../README.md`
+- `Design.md`
+- `ProductInvariants.md`
+- `VisualVocabulary.md`
 
 ## Current Screenshots
 
@@ -22,11 +22,11 @@ Use this document to track what has been captured, what is still pending, and wh
 The current stack is shared across display families:
 
 ```text
-top heart-rate context
+top steps context
 dominant centered time
 centered battery track and charging bolt
 weather/date context
-bottom steps context
+bottom heart-rate context
 ```
 
 Rectangular and round displays use different geometry, but this is the implemented stack on both families.
@@ -51,6 +51,9 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 
 | Element | Frame |
 | --- | --- |
+| Steps icon | `69,10,28,28` |
+| Steps text | `100,10,56,28` |
+| Steps progress | `69,38,87,4` |
 | Time text | `4,62,192,60` |
 | Battery track | `25,127,150,8` |
 | Battery fill | `26,128,148,6` |
@@ -58,9 +61,6 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 | Climate text | `4,140,62,28` |
 | Climate icon | `69,140,28,28` |
 | Date text | `100,140,99,28` |
-| Steps icon | `69,10,28,28` |
-| Steps text | `100,10,56,28` |
-| Steps progress | `69,38,87,4` |
 | BPM icon | `69,190,28,28` |
 | BPM text | `100,190,36,28` |
 
@@ -72,6 +72,9 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 
 | Element | Frame |
 | --- | --- |
+| Steps icon | `99,10,28,28` |
+| Steps text | `130,10,56,28` |
+| Steps progress | `99,38,87,4` |
 | Time text | `4,70,252,72` |
 | Battery track | `32,147,195,8` |
 | Battery fill | `33,148,193,6` |
@@ -79,9 +82,6 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 | Climate text | `4,160,92,28` |
 | Climate icon | `99,160,28,28` |
 | Date text | `130,160,129,28` |
-| Steps icon | `99,10,28,28` |
-| Steps text | `130,10,56,28` |
-| Steps progress | `99,38,87,4` |
 | BPM icon | `99,222,28,28` |
 | BPM text | `130,222,36,28` |
 
@@ -93,6 +93,9 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 
 | Element | Frame |
 | --- | --- |
+| Steps icon | `69,10,18,18` |
+| Steps text | `90,10,40,18` |
+| Steps progress | `69,28,61,4` |
 | Time text | `2,43,176,40` |
 | Battery track | `22,88,135,8` |
 | Battery fill | `23,89,133,6` |
@@ -100,9 +103,6 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 | Climate text | `2,101,64,18` |
 | Climate icon | `69,101,18,18` |
 | Date text | `90,101,89,18` |
-| Steps icon | `69,10,18,18` |
-| Steps text | `90,10,40,18` |
-| Steps progress | `69,28,61,4` |
 | BPM icon | `69,152,18,18` |
 | BPM text | `90,152,30,18` |
 
@@ -114,6 +114,9 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 
 | Element | Frame |
 | --- | --- |
+| Steps icon | `51,6,18,18` |
+| Steps text | `72,6,40,18` |
+| Steps progress | `51,24,61,4` |
 | Time text | `2,40,140,40` |
 | Battery track | `18,85,108,8` |
 | Battery fill | `19,86,106,6` |
@@ -121,9 +124,6 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 | Climate text | `2,98,46,18` |
 | Climate icon | `51,98,18,18` |
 | Date text | `72,98,71,18` |
-| Steps icon | `51,6,18,18` |
-| Steps text | `72,6,40,18` |
-| Steps progress | `51,24,61,4` |
 | BPM icon | `51,144,18,18` |
 | BPM text | `72,144,30,18` |
 
@@ -165,11 +165,11 @@ Each palette defines the background, primary text, unavailable text, date, and t
 | Palette | Mode | Capability | Background | Primary text | Unavailable text | Date | Time |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorOxfordBlue` | `GColorOrange` |
-| **White on Black** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
+| **Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
 | **Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorCeleste` | `GColorOrange` |
-| **Black on White** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
 
-On color-capable watches, all four modes are available. The first two are monochrome-style presentations rendered on color hardware. The latter two are the color-background palettes.
+On color-capable watches, all four modes are available. The first two rows above describe the monochrome-capability palettes. When those same modes are rendered on color hardware, time remains orange. The latter two are the color-background palettes.
 
 Module-owned colors then layer on top for battery, BPM, steps, and climate state. On monochrome displays, weather glyphs use heavier outline and line treatment so the same conditions still read clearly without color.
 
@@ -182,13 +182,12 @@ Current icon sizes are stable within the compact and full layout classes:
 
 ## Current Glyph Realization
 
-The current glyph system uses familiar battery, heart-rate, weather, and steps marks that read at watch scale.
+The current glyph system uses familiar heart-and-waveform, weather, and walking marks that read at watch scale.
 
-Walking and heart-rate icons are recolored bitmap assets in the current implementation.
+Walking and heart-and-waveform icons are recolored bitmap assets in the current implementation. Their color is selected based on the metric's current value.
 
-Battery uses a track-first treatment. The outer track is a primary-color outline, and the inner fill uses the battery module's live state color. Charging uses a visible bolt so the state does not rely on green alone.
+Battery uses a track to convey level. The outer track is a primary-color outline, and the inner fill uses the battery module's live state color. Charging uses a visible bolt so the state does not rely on green alone.
 
 Weather glyph treatment varies by capability. Black-and-white rendering favors bold line and outline treatment. Color rendering may add fills or accents when they help recognition without becoming the only source of meaning.
 
 Unavailable states use the shared absence slash.
-

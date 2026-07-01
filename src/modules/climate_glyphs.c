@@ -526,7 +526,7 @@ void draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weather_condit
 #if ATAGLANCE_DEBUG
   // Draw a rectangle around the icon's bounds
   graphics_context_set_stroke_color(ctx, climate_palette->normal);
-  raphics_draw_rect(ctx, *frame);
+  graphics_draw_rect(ctx, *frame);
 #endif
 
   switch (icon_kind) {

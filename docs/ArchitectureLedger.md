@@ -6,7 +6,7 @@ It describes runtime flow, ownership, boundaries, lifecycle, and source organiza
 
 ## Required Reading
 
-- README.md
+- ../README.md
 - ProductInvariants.md
 - VisualVocabulary.md
 - UserInterface.md
@@ -20,29 +20,74 @@ Core flow:
 ```text
 ataglance.c
   -> settings_load(&settings)
-  -> watchface_create(window, &settings)
-       -> layout_watchface_initialize(width, height, &surface)
-            -> memset(surface, 0, sizeof(*surface))
-            -> calculate active blueprint and final geometry
-            -> store compact/full on surface.style.is_compact
-       -> layout_watchface_update_palette(&surface.style, display_mode)
-       -> feature_module_create(root, &surface)
-       -> watchface_refresh(...)
+  -> window_set_window_handlers(...)
+  -> window_stack_push(window, true)
+       -> main_window_load(window)
+            -> watchface_create(window, &settings)
+                 -> window_get_root_layer(window)
+                 -> layout_watchface_initialize(width, height, &surface)
+                      -> memset(surface, 0, sizeof(*surface))
+                      -> calculate active blueprint and final geometry
+                      -> store compact/full on surface.style.is_compact
+                 -> layout_watchface_update_palette(&surface.style, display_mode)
+                 -> window_set_background_color(...)
+                 -> layout_watchface_initialize_fonts(...)
+                 -> layout_watchface_load_custom_fonts(...)
+                 -> feature_module_create(root, prepared surface strata...)
+                 -> require date/time/battery strata to succeed
+                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
+  -> subscribe tick, battery, and health services
+  -> register AppMessage callbacks
+  -> open_app_message()
 ```
 
-Display-mode repaint:
+Runtime event flow:
 
 ```text
-ataglance.c updates settings
-  -> watchface_repaint()
-       -> layout_watchface_update_palette(&surface.style, display_mode)
-       -> window_set_background_color(...)
-       -> refresh created strata
+service callback or AppMessage callback in ataglance.c
+  -> build WatchfaceEventData
+  -> watchface_apply_received_data()
+       -> apply_setting_data(...)
+            -> mutate settings for time format, temp unit, display mode, steps goal
+            -> accumulate targeted refresh mask
+            -> mark repaint only for a valid display-mode change
+       -> apply_weather_data(...)
+            -> push complete or unavailable climate state
+            -> request climate refresh when any weather field was received
+       -> apply_service_event_data(...)
+            -> translate tick, battery, and health callbacks into refresh masks
+       -> apply_health_setting_data(...)
+            -> mutate HR sample setting only
+       -> apply_debug_health_data(...) in debug builds
+            -> queue one-shot BPM/steps overrides
+            -> request health refresh
+       -> if repaint
+            -> watchface_repaint()
+                 -> layout_watchface_update_palette(&surface.style, display_mode)
+                 -> window_set_background_color(...)
+                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
+       -> else if refresh mask != WATCHFACE_UPDATE_NONE
+            -> watchface_refresh(mask)
+                 -> refresh only the addressed strata that were created
+```
+
+Settings persistence and side effects:
+
+```text
+ataglance.c inbox_received_callback(iter)
+  -> copy previous_settings
+  -> parse settings, weather, health settings, and debug health tuples
+  -> watchface_apply_received_data(&data, &settings)
+  -> if any persisted setting changed
+       -> settings_save(&settings)
+  -> if hr_sample_minutes changed
+       -> apply_hr_sample_period()
 ```
 
 Notes:
 - `watchface_runtime_boundary.c` owns runtime interpretation and repaint-versus-refresh decisions.
 - `ataglance.c` owns message receipt, parsing, and dispatch.
+- `watchface.c` owns palette application, full repaint, and per-stratum refresh dispatch after the runtime boundary decides what changed.
 
 ## Prepared Surface
 
@@ -70,6 +115,14 @@ Blueprints are immutable product choices. Calculated layout is the resolved geom
 - `watchface_runtime_boundary.c` interprets runtime events, mutates settings and domain state, and decides repaint versus refresh.
 - `watchface.c` owns the live `WatchfaceSurface`, feature-module lifecycle, and visual dispatch.
 - `watchface_apply_received_data()` is the single runtime ingress for watchface updates.
+
+## Selective Watchface Refresh Strategy
+
+- The runtime prefers targeted refresh over whole-watchface redraw.
+- Incoming events are translated into narrow update masks so only affected strata refresh.
+- `watchface.c` dispatches those masks to the owning modules instead of repainting unrelated layers.
+- Full repaint is reserved for style-wide changes such as display-mode transitions.
+- This selective-refresh discipline, along with other narrow runtime decisions, exists to avoid unnecessary work and help maximize time between charges.
 
 ## Module Ownership
 
@@ -102,9 +155,9 @@ The phone companion requests current weather from Open-Meteo every 30 minutes, u
 
 Temperature is sent to the watch in Celsius tenths and rendered according to settings. `weather_code` and `is_day` are sent to C for glyph selection.
 
-Runtime transport completeness is evaluated before climate state is applied. Incomplete or invalid weather updates clear stale weather state and render the unavailable vocabulary.
+Any received weather field triggers a climate refresh. Only a fully parsed temperature/condition/`is_day` triplet is applied as complete climate state; incomplete or invalid weather payloads fall back to the unavailable vocabulary.
 
-Do not guess lifecycle, AppMessage, generated resource, or SDK behavior. Verify it.
+Note: Verify lifecycle, AppMessage, generated resource, or SDK behaviors.
 
 ## Lifecycle
 
@@ -116,16 +169,16 @@ Architecture review comes before non-trivial edits. Keep code changes small and 
 
 ## Header Boundaries
 
-Public headers expose only the concepts callers need.
+Public and shared headers expose only the concepts cross-module callers need. This section documents the architecture-wide shared header split, not every feature-module header. Shared header split:
 
-Final header split:
+- `watchface.h`: runtime ingress, update masks, event data, and runtime-visible transport keys
+- `watchface_components.h`: reusable watchface display primitives built on shared layout/style vocabulary
+- `layout.h`: public layout facade
+- `layout_surface.h`: shared layout geometry/design vocabulary and calculated layout structures
+- `layout_style.h`: shared style vocabulary, including font roles, color roles, palettes, and font bookkeeping
+- `watchface_debug.h`: debug-gate normalization only
 
-- `watchface.h`
-- `watchface_components.h`
-- `layout_surface.h`
-- `layout.h`
-- `layout_design.h`
-- `watchface_debug.h`
+Feature-module headers such as `battery.h`, `climate.h`, `time.h`, `steps.h`, and `bpm.h` remain narrow module-local API surfaces. They are expected to consume the shared header vocabulary above, not expand the architecture-wide boundary set.
 
 Feature module headers must not include `layout.h`.
 
@@ -136,15 +189,15 @@ Feature module headers must not include `layout.h`.
 Current contract:
 
 - `src/modules/watchface_debug.h` owns debug-gate normalization only, with `wscript` as the build-time enable point.
-- Debug ingress and debug-only declarations flow through `watchface_debug.h`.
-- `watchface.h` owns public transport key definitions that must be visible at runtime, including debug transport keys when they are part of ingress handling.
-- `watchface_debug.h` remains dedicated to the debug flag and debug ingress only.
+- `watchface.h` owns runtime-visible debug transport keys and debug event fields when they participate in ingress handling.
+- `watchface_runtime_boundary.c` applies debug health payloads as one-shot health refresh overrides.
+- `watchface_debug.h` remains dedicated to the debug flag only; it is not a home for helper APIs, product flags, layout policy, or runtime behavior.
 
 Debug-hook policy:
 
 - Treat debug hooks as narrow transport or render test hooks layered on top of normal runtime behavior.
 - Normal runtime data is used when no debug packet is queued.
-- Debug state defaults to off and is cleared during module teardown.
+- Debug state defaults to off and queued debug health overrides are cleared during watchface teardown.
 
 `APP_LOG` policy:
 
@@ -174,12 +227,12 @@ Current source map:
 - `src/c/ataglance.c`: Pebble app lifecycle, window ownership, service subscriptions, settings load/save, AppMessage parsing, and dispatch into the watchface runtime
 - `src/modules/watchface.c`: watchface runtime clearing house, live `WatchfaceSurface` owner, module create/destroy order, repaint, refresh, and lifecycle cleanup
 - `src/modules/watchface.h`: public watchface runtime ingress, update masks, event data, and runtime-visible transport key definitions
-- `src/modules/watchface_debug.h`: debug-gate normalization and debug ingress declarations only
+- `src/modules/watchface_debug.h`: debug-gate normalization only
 - `src/modules/watchface_runtime_boundary.c`: runtime event interpretation, settings mutation, weather ingress application, debug health ingress application, and repaint-versus-refresh decisions
 - `src/modules/watchface_components.h`: shared display primitives, palettes, strata, roles, and reusable watchface component vocabulary
 - `src/modules/layout.h`: public layout facade for surface initialization, palette updates, and font lifecycle
-- `src/modules/layout_surface.h`: assembled `WatchfaceSurface` and style output contract
-- `src/modules/layout_design.h`: private layout design constants, blueprints, and calculated-layout vocabulary
+- `src/modules/layout_surface.h`: shared layout geometry/design vocabulary and calculated layout structures
+- `src/modules/layout_style.h`: shared style vocabulary, including font roles, color roles, palettes, and font bookkeeping
 - `src/modules/layout_architect.c`: geometry provider, blueprint selection, compact/full classification, and prepared-surface assembly
 - `src/modules/layout_stylist.c`: palette resolution, font-role selection, custom-font load/unload, and display-mode styling
 - `src/modules/substratum_renderer.c/.h`: shared text/icon layer setup, text updates, color-role lookup, glyph primitives, and small rendering helpers
@@ -195,3 +248,7 @@ Current source map:
 - `src/pkjs/index.js`: Clay bootstrap, geolocation, Open-Meteo weather fetch, fallback location handling, request sequencing, and weather AppMessage sends
 - `package.json`: app manifest, target platforms, capabilities, message keys, and resources
 - `wscript`: Pebble build definition, source globs, JS bundling, and optional `ATAGLANCE_DEBUG` build define
+
+## Further Reading
+
+- `Contributing.md` for contributor workflow, validation, and review discipline

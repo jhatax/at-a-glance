@@ -6,11 +6,11 @@ It is a workflow and review guide for contributors. It does not own product rule
 
 ## Required Reading
 
-- README.md
-- ProductInvariants.md
-- VisualVocabulary.md
-- UserInterface.md
-- ArchitectureLedger.md
+- `../README.md`
+- `ProductInvariants.md`
+- `VisualVocabulary.md`
+- `UserInterface.md`
+- `ArchitectureLedger.md`
 
 ## Scope
 
@@ -20,6 +20,8 @@ It is a workflow and review guide for contributors. It does not own product rule
 
 ## C-Coding Decisions
 
+- Use portable C within the Pebble SDK's constrained embedded runtime model.
+- Format code with `clang-format`
 - Use integer layout and drawing math only.
 - Avoid heap allocation unless required.
 - Match every acquired resource with a destroy path.
@@ -53,10 +55,7 @@ If the build fails, stop and report it before staging or committing.
 Choose a target and install to it:
 
 ```sh
-pebble install --emulator emery
-pebble install --emulator flint
-pebble install --emulator chalk
-pebble install --emulator gabbro
+pebble install --emulator {emery,flint,chalk,gabbro}
 ```
 
 To test the config page in an emulator:
@@ -79,8 +78,9 @@ pebble install --phone YOUR_PHONE_IP
 
 Use Pebble's built-in `APP_LOG` with restraint.
 
-- `INFO` logs are temporary bring-up scaffolding, not normal committed behavior.
-- Use `APP_LOG_LEVEL_DEBUG` and `APP_LOG_LEVEL_ERROR` only when they materially help diagnosis.
+- `INFO` logs are temporary messages during feature development, not normal committed behavior.
+- Use `APP_LOG_LEVEL_DEBUG` sparingly for temporary diagnostics.
+- Use `APP_LOG_LEVEL_WARNING` and `APP_LOG_LEVEL_ERROR` for durable runtime diagnostics when they materially help diagnosis.
 - Delete all `APP_LOG(APP_LOG_LEVEL_INFO, ...)` calls before committing code.
 
 ### Running In The Emulator
@@ -131,16 +131,15 @@ For display palettes:
 Examples:
 
 ```sh
-pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=1
-pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=0
-pebble send-app-message --emulator emery --int 10002=-32768 10003=-1 10004=0
-pebble send-app-message --emulator emery --int 10002=280 10003=0 10004=1 10006=0
-pebble send-app-message --emulator emery --int 10002=280 10003=0 10004=1 10006=3
+pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=0 # night or day
+pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=1 # day
+pebble send-app-message --emulator emery --int 10002=-32768 10003=-1 10004=0 # unavailable condition
+pebble send-app-message --emulator emery --int 10006=0 # Black on White palette
+pebble send-app-message --emulator emery --int 10006=2 # Clear as Celeste palette on color targets; invalid on monochrome
 ```
 
 QA notes:
-
-1. Use the same weather code for both sends when the goal is to inspect only the day/night glyph delta.
+1. Use the same weather code but change IS_DAY value when the goal is to inspect only the day/night glyph delta.
 2. Pair display-mode changes with weather or battery checks when validating light/dark behavior.
 
 ### Message Validation Discipline
@@ -173,7 +172,7 @@ Recommended flow:
 To toggle debug builds:
 
 1. Open `wscript`.
-2. Comment or uncomment the line:
+2. Uncomment or re-comment the line:
    ```py
    # ctx.env.append_value('DEFINES', ['ATAGLANCE_DEBUG=1'])
    ```
@@ -212,13 +211,11 @@ Current debug-only keys:
 Examples:
 
 ```sh
-pebble send-app-message --emulator emery --int 10020=72
-pebble send-app-message --emulator emery --int 10021=8500
-pebble send-app-message --emulator emery --int 10020=0
-pebble send-app-message --emulator emery --int 10021=0
+pebble send-app-message --emulator emery --int 10020=72 # BPM
+pebble send-app-message --emulator emery --int 10021=8500 # Steps
+pebble send-app-message --emulator emery --int 10020=0 # unavailable BPM icon
+pebble send-app-message --emulator emery --int 10021=0 # unavailable Steps icon
 ```
-
-Use `0` to exercise the unavailable-icon path.
 
 ## Review and Commit Discipline
 

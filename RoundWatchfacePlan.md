@@ -66,16 +66,7 @@ This is the shared visual DNA between display families. The implementation
 must still be judged by screenshots on real emulator targets because a shared
 sequence does not prove that every target has enough optical room.
 
-## Remaining Round Work
-
-The remaining work is tracked in the ledger, but the current round-specific
-themes are:
-
-- screenshot-led round visual validation on Chalk and Gabbro
-- confirmation of the single round margin exception
-- review of round-safe spans versus the current unified layout
-- cleanup of stale shape-file vocabulary in docs and comments
-- eventual publication readiness checks after final screenshots
+## Remaining Round Work -- Complete
 
 ## Historical Notes
 
