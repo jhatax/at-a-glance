@@ -36,16 +36,16 @@ static const ClimatePalette c_dark_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
     .cold = PBL_IF_COLOR_ELSE(GColorMintGreen, GColorWhite),
     .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
-    .clear_ring = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-    .clear_fill = GColorLightGray,
+    .clear_ring = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorWhite),
+    .clear_fill = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorLightGray),
 };
 
 static const ClimatePalette c_light_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
     .cold = PBL_IF_COLOR_ELSE(GColorCobaltBlue, GColorBlack),
     .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
-    .clear_ring = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
-    .clear_fill = GColorLightGray,
+    .clear_ring = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorDarkGray),
+    .clear_fill = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorDarkGray),
 };
 
 static void climate_module_update_palette(const ColorPalette *palette) {
