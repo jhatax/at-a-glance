@@ -1,7 +1,7 @@
 {
   "name": "AtAGlance",
   "author": "Manoj Mehta",
-  "description": "Get all the info you need, with a glance at your Pebble!",
+  "description": "Get all the info you need, with a glance at your Pebble.",
   "version": "1.0.0",
   "keywords": [
     "pebble",
@@ -51,39 +51,42 @@
         },
         {
           "characterRegex": "[-0-9CF ]",
-          "file": "fonts/Antonio-Regular.ttf",
-          "name": "FONT_ANTONIO_REGULAR_16",
+          "file": "fonts/BarlowCondensed-Regular.ttf",
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
+          "name": "FONT_TEXT_REGULAR_16",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "characterRegex": "[-0-9CF ]",
-          "file": "fonts/Antonio-Regular.ttf",
-          "name": "FONT_ANTONIO_REGULAR_22",
+          "file": "fonts/BarlowCondensed-Regular.ttf",
+          "targetPlatforms": ["emery", "gabbro"],
+          "name": "FONT_TEXT_REGULAR_22",
           "type": "font",
           "compatibility": "2.7"
         },
         {
-          "characterRegex": "[-0-9.A-Z a-z]",
-          "file": "fonts/Antonio-SemiBold.ttf",
-          "name": "FONT_ANTONIO_SEMIBOLD_16",
-          "type": "font",
+          "characterRegex": "[-0-9.A-Z a-z·]",
+          "file": "fonts/BarlowCondensed-SemiBold.ttf",
           "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
+          "name": "FONT_TEXT_SEMIBOLD_16",
+          "type": "font",
           "compatibility": "2.7"
         },
         {
-          "characterRegex": "[-0-9.A-Z a-z]",
-          "file": "fonts/Antonio-SemiBold.ttf",
-          "name": "FONT_ANTONIO_SEMIBOLD_22",
+          "characterRegex": "[-0-9.A-Z a-z·]",
+          "file": "fonts/BarlowCondensed-SemiBold.ttf",
+          "targetPlatforms": ["emery", "gabbro"],
+          "name": "FONT_TEXT_SEMIBOLD_22",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
           "name": "FONT_CABIN_SEMIBOLD_40",
           "type": "font",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
           "compatibility": "2.7"
         },
         {
