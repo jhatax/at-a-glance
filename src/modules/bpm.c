@@ -109,7 +109,7 @@ static void bpm_icon_update_proc(Layer *layer, GContext *ctx) {
   graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
 
   if (!s_bpm_is_valid) {
-    substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_bpm_palette.unknown);
+    substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_bpm_palette.normal);
   }
 }
 

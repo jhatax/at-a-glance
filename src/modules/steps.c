@@ -37,7 +37,6 @@ typedef struct {
   GColor unknown;
   GColor approaching;
   GColor achieved;
-  GColor track_back;
 } StepsPalette;
 
 static StepsPalette s_steps_palette = {0};
@@ -50,13 +49,11 @@ static int s_debug_steps = STEPS_INVALID;
 static const StepsPalette c_dark_steps_palette = {
     .approaching = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
     .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
-    .track_back = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorLightGray),
 };
 
 static const StepsPalette c_light_steps_palette = {
     .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
     .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
-    .track_back = PBL_IF_COLOR_ELSE(GColorLightGray, GColorDarkGray),
 };
 
 static void steps_update_palette(const ColorPalette *palette);
@@ -125,7 +122,7 @@ static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
 
   if (!s_steps_is_available) {
     substratum_renderer_draw_unavailable_slash(
-      ctx, &bounds.size, s_steps_palette.unknown);
+      ctx, &bounds.size, s_steps_palette.normal);
   }
 }
 
@@ -141,9 +138,13 @@ static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
   GPoint pt1 = bounds.origin;
 
   if (s_steps_is_available) {
-    // Set the fill color to fill the track
-    graphics_context_set_fill_color(ctx, s_steps_palette.track_back);
+    // Set the fill color to fill the track with the background
+    // Set the stroke color to be the steps color to outline the track
+    // This is particularly important for monochrome displays
+    graphics_context_set_stroke_color(ctx, s_steps_color);
+    graphics_context_set_fill_color(ctx, s_steps_palette.background);
     graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+    graphics_draw_rect(ctx, bounds);
     // The text and progress bar need to be the same color. There might not be a steps icon.
     graphics_context_set_fill_color(ctx, s_steps_color);
     // We need to calculate the % that should be filled, i.e. x of the second point
@@ -153,7 +154,7 @@ static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
     int width = 0;
     if (completed > 0) {
       // Change the width to be drawn. While this should never be greater than the width,
-      // it doesn't hurt to be defensive
+      // it doesn't hurt to be defensive+
       width = HELPER_CLAMP_MAX(
         HELPER_ROUND_UP((completed * bounds.size.w), 100), (bounds.size.w - 1));
     }

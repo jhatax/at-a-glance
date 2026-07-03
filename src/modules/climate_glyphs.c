@@ -462,7 +462,10 @@ static void draw_weather_unavailable_icon(GContext *ctx, const GRect *frame,
     return;
   }
   draw_weather_cloud(ctx, frame, climate_palette, WEATHER_ICON_UNKNOWN);
-  substratum_renderer_draw_unavailable_slash(ctx, &frame->size, climate_palette->unknown);
+  substratum_renderer_draw_unavailable_slash(
+    ctx,
+    &frame->size,
+    climate_palette->normal);
 }
 
 static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
