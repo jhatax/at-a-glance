@@ -50,10 +50,9 @@ void date_module_refresh(const ColorPalette *palette) {
     return;
   }
 
-  const char* day = c_weekdays[t->tm_wday];
-  snprintf(s_date_buffer, MAX_STR_LEN, "%s ", day);
+  snprintf(s_date_buffer, MAX_STR_LEN, "%s·", c_weekdays[t->tm_wday]);
   uint8_t len = (uint8_t) strlen(s_date_buffer);
-  strftime(s_date_buffer + len, (ARRAY_LENGTH(s_date_buffer) - len), "%d %b", t);
+  strftime(s_date_buffer + len, (ARRAY_LENGTH(s_date_buffer) - len), "%d·%b", t);
 
   // uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(

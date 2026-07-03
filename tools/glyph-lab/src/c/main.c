@@ -11,27 +11,16 @@
 #define OUTER_PADDING_ROUND 12
 #define CELL_PADDING 4
 
-typedef enum {
-  GLYPH_KIND_BATTERY = 0,
-  GLYPH_KIND_BOLT,
-  GLYPH_KIND_CHARGE,
-  GLYPH_KIND_WEATHER,
-  GLYPH_KIND_STEPS,
-  GLYPH_KIND_STEPS_BITMAP,
-  GLYPH_KIND_BPM,
-} GlyphKind;
-
 typedef struct {
   const char *label;
-  GlyphKind kind;
-  int value;
-  bool flag;
-} GlyphCell;
+  int weather_code;
+  bool is_day;
+} ClimateCell;
 
 typedef struct {
   const char *title;
-  GlyphCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
-} GlyphPageTemplate;
+  ClimateCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
+} ClimatePageTemplate;
 
 typedef struct {
   const char *title;
@@ -45,115 +34,45 @@ static GFont s_label_font;
 static bool s_is_light_mode = false;
 static int s_page_index = 0;
 
-static const GlyphPageTemplate GLYPH_PAGE_TEMPLATES[] = {
+static const ClimatePageTemplate GLYPH_PAGE_TEMPLATES[] = {
     {
-        .title = "OVERVIEW",
+        .title = "CLEAR CLOUD",
         .cells =
             {
-                {"BAT 74", GLYPH_KIND_BATTERY, 74, false},
-                {"W 02", GLYPH_KIND_WEATHER, 2, false},
-                {"STEPS", GLYPH_KIND_STEPS, 1, true},
-                {"BPM 72", GLYPH_KIND_BPM, 72, true},
+                {"CLEAR D", 0, true},
+                {"CLEAR N", 0, false},
+                {"PARTLY D", 2, true},
+                {"CLOUD", 3, false},
             },
     },
     {
-        .title = "BATTERY",
+        .title = "FOG DRIZZLE",
         .cells =
             {
-                {"100", GLYPH_KIND_BATTERY, 100, false},
-                {"45", GLYPH_KIND_BATTERY, 45, false},
-                {"18", GLYPH_KIND_BATTERY, 18, false},
-                {"CHG", GLYPH_KIND_BATTERY, 43, true},
+                {"FOG", 45, false},
+                {"DRIZZLE", 51, false},
+                {"RAIN", 61, false},
+                {"HEAVY", 65, false},
             },
     },
     {
-        .title = "STEP BMPS",
+        .title = "SLEET SNOW",
         .cells =
             {
-                {"W16", GLYPH_KIND_STEPS_BITMAP, 0, false},
-                {"W24", GLYPH_KIND_STEPS_BITMAP, 1, false},
-                {"BLUE", GLYPH_KIND_STEPS_BITMAP, 2, false},
-                {"GREEN", GLYPH_KIND_STEPS_BITMAP, 3, false},
+                {"SLEET L", 56, false},
+                {"SLEET H", 66, false},
+                {"SNOW", 71, false},
+                {"SNOW SH", 85, false},
             },
     },
     {
-        .title = "BOLT",
+        .title = "SHOWERS ETC",
         .cells =
             {
-                {"BOLT", GLYPH_KIND_BOLT, 0, false},
-                {"BOLT", GLYPH_KIND_BOLT, 0, false},
-                {"BOLT", GLYPH_KIND_BOLT, 0, false},
-                {"BOLT", GLYPH_KIND_BOLT, 0, false},
-            },
-    },
-    {
-        .title = "CHARGE",
-        .cells =
-            {
-                {"PROC", GLYPH_KIND_CHARGE, 0, false},
-                {"BMP", GLYPH_KIND_CHARGE, 1, false},
-                {"PROC", GLYPH_KIND_CHARGE, 0, false},
-                {"BMP", GLYPH_KIND_CHARGE, 1, false},
-            },
-    },
-    {
-        .title = "WEATHER 1",
-        .cells =
-            {
-                {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
-                {"SUN", GLYPH_KIND_WEATHER, 1, false},
-                {"PART", GLYPH_KIND_WEATHER, 2, false},
-                {"CLOUD", GLYPH_KIND_WEATHER, 3, false},
-            },
-    },
-    {
-        .title = "WEATHER 2",
-        .cells =
-            {
-                {"FOG", GLYPH_KIND_WEATHER, 45, false},
-                {"DRIZ", GLYPH_KIND_WEATHER, 51, false},
-                {"RAIN", GLYPH_KIND_WEATHER, 61, false},
-                {"H RAIN", GLYPH_KIND_WEATHER, 65, false},
-            },
-    },
-    {
-        .title = "WEATHER 3",
-        .cells =
-            {
-                {"SLEET", GLYPH_KIND_WEATHER, 56, false},
-                {"SNOW", GLYPH_KIND_WEATHER, 71, false},
-                {"SHOW", GLYPH_KIND_WEATHER, 80, false},
-                {"H SHOW", GLYPH_KIND_WEATHER, 82, false},
-            },
-    },
-    {
-        .title = "WEATHER 4",
-        .cells =
-            {
-                {"S SHOW", GLYPH_KIND_WEATHER, 85, false},
-                {"STORM", GLYPH_KIND_WEATHER, 95, false},
-                {"UNAV", GLYPH_KIND_WEATHER, -1, false},
-                {"CLEAR", GLYPH_KIND_WEATHER, 0, false},
-            },
-    },
-    {
-        .title = "HEALTH",
-        .cells =
-            {
-                {"STEPS", GLYPH_KIND_STEPS, 1, true},
-                {"NO STEP", GLYPH_KIND_STEPS, 0, false},
-                {"BPM 72", GLYPH_KIND_BPM, 72, true},
-                {"BPM HI", GLYPH_KIND_BPM, 128, true},
-            },
-    },
-    {
-        .title = "UNAVAIL",
-        .cells =
-            {
-                {"LOW", GLYPH_KIND_BATTERY, 9, false},
-                {"UNAV", GLYPH_KIND_WEATHER, -1, false},
-                {"NO STEP", GLYPH_KIND_STEPS, 0, false},
-                {"NO BPM", GLYPH_KIND_BPM, 0, false},
+                {"SHOWERS", 80, false},
+                {"HEAVY SH", 82, false},
+                {"STORM", 95, false},
+                {"UNAVAIL", -1, false},
             },
     },
 };
@@ -179,11 +98,11 @@ static void mark_canvas_dirty(void) {
 }
 
 static void draw_status(GContext *ctx, const GRect *bounds, const ColorPalette *palette) {
-  char status[32];
+  char status[40];
   int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
   int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
   const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
-  const GlyphPageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
+  const ClimatePageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
 
   snprintf(status, sizeof(status), "%d/%d %s %s %s", s_page_index + 1, GLYPH_PAGE_COUNT,
            size_mode->title, page_template->title, s_is_light_mode ? "LIGHT" : "DARK");
@@ -201,7 +120,7 @@ static void draw_cell_label(GContext *ctx, const GRect *frame, const ColorPalett
                      GTextAlignmentCenter, NULL);
 }
 
-static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const GlyphCell *cell,
+static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const ClimateCell *cell,
                             const ColorPalette *palette, int16_t icon_size_override) {
   GRect icon_area = GRect(cell_frame->origin.x + CELL_PADDING, cell_frame->origin.y + CELL_PADDING,
                           cell_frame->size.w - (CELL_PADDING * 2),
@@ -219,31 +138,7 @@ static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const GlyphC
       GRect(cell_frame->origin.x + 2, cell_frame->origin.y + cell_frame->size.h - LABEL_HEIGHT,
             cell_frame->size.w - 4, LABEL_HEIGHT);
 
-  switch (cell->kind) {
-  case GLYPH_KIND_BATTERY:
-    glyph_lab_draw_battery_icon(ctx, &icon_frame, palette, s_is_light_mode, cell->value,
-                                cell->flag);
-    break;
-  case GLYPH_KIND_BOLT:
-    glyph_lab_draw_bolt_icon(ctx, &icon_frame, palette, palette->primary_text);
-    break;
-  case GLYPH_KIND_CHARGE:
-    glyph_lab_draw_charge_icon(ctx, &icon_frame, palette, cell->value);
-    break;
-  case GLYPH_KIND_WEATHER:
-    glyph_lab_draw_climate_icon(ctx, &icon_frame, cell->value, palette);
-    break;
-  case GLYPH_KIND_STEPS:
-    glyph_lab_draw_steps_icon(ctx, &icon_frame, palette, cell->flag);
-    break;
-  case GLYPH_KIND_STEPS_BITMAP:
-    glyph_lab_draw_steps_bitmap_icon(ctx, &icon_frame, palette, cell->value);
-    break;
-  case GLYPH_KIND_BPM:
-    glyph_lab_draw_bpm_icon(ctx, &icon_frame, palette, s_is_light_mode, cell->value, cell->flag);
-    break;
-  }
-
+  glyph_lab_draw_climate_icon(ctx, &icon_frame, cell->weather_code, cell->is_day, palette);
   draw_cell_label(ctx, &label_frame, palette, cell->label);
 }
 
@@ -259,7 +154,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
                             content_bounds.size.w, content_bounds.size.h - STATUS_HEIGHT);
   int16_t cell_w = grid_bounds.size.w / GLYPH_COL_COUNT;
   int16_t cell_h = grid_bounds.size.h / GLYPH_ROW_COUNT;
-  const GlyphPageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
+  const ClimatePageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
   const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
 
   glyph_lab_select_palette(&palette, s_is_light_mode);

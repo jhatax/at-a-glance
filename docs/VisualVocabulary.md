@@ -85,7 +85,7 @@ Keep glyphs stable inside a fixed frame.
 
 Keep value and state changes from shifting the visual footprint.
 
-Prefer visual continuity across display families even when geometry changes.
+Prefer visual continuity across display families.
 
 The user should see state change, not layout wobble.
 
@@ -113,7 +113,9 @@ weather/date context
 bottom heart-rate context
 ```
 
-This stack is part of the product's visual DNA. Rectangular and round displays may use different geometry, but they should still read as the same watchface.
+This stack is part of the product's visual DNA. Rectangular and round displays
+implement the same information hierarchy and stack. Placement is resolved from
+defined layout constants.
 
 Visual guidance:
 
@@ -246,7 +248,7 @@ The charging bolt should be prominent enough to read at watch scale.
 
 ## Round Displays
 
-Round displays preserve the same text-first hierarchy while using round-aware geometry.
+Round displays preserve the same text-first hierarchy and the same stack.
 
 Use the same surface stack before inventing a separate round-only product.
 

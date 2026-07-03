@@ -1,8 +1,6 @@
 # At A Glance Design
 
-At A Glance is a glance-first Pebble watchface shaped by cockpit instrumentation and transit signage.
-
-The product is built to make complex information simple to perceive at a glance.
+At A Glance is a glance-first Pebble watchface built to make complex information simple to perceive automatically, with minimal cognitive load.
 
 ## Product Intent
 
@@ -16,9 +14,7 @@ Nothing on screen should explain the data when the data can be shown clearly on 
 
 ## Design Influences
 
-Inspired by cockpit instrumentation.
-
-Inspired by transit signage.
+Inspired by transit signage and cockpit instrumentation.
 
 These influences show up in clear hierarchy, strong alignment, restrained color, and direct labeling instead of decoration.
 
@@ -28,7 +24,9 @@ Maximize information capture while minimizing the effort and attention required 
 
 Design for automatic perception before deliberate reading.
 
-The watchface should reward a quick glance. A user should not need to stop and decode the layout.
+Reward a quick glance. A user should not need to stop and decode the layout.
+
+The design uses the principle of irreducible simplicity: reduce each element until any further reduction would compromise function, recognition, or glanceability.
 
 ## Restraint And Negative Space
 
@@ -54,16 +52,20 @@ Those differences should not make any supported platform feel like a scaled copy
 
 Rectangular and round targets should feel like the same product.
 
-Geometry can differ by shape.
+Rectangular and round displays implement the same information hierarchy and
+stack. Placement is resolved from defined layout constants.
 
 The shared stack, dominant time, centered battery treatment, weather/date row, and stable hierarchy should preserve that family resemblance across platforms.
 
 Shared visual DNA is about recognition, not about reusing the same coordinates on every device.
 
-## Acceptance Criterion
+## Design Invariant
 
-Automatic perception of information is the acceptance criterion.
+Automatic perception of information is the singular design invariant for this watch face.
 
-A user should be able to understand the display quickly, with minimal effort and minimal interpretation.
+- A user should be able to understand the display quickly, with minimal effort and minimal interpretation.
+- If a change improves implementation neatness but makes the display slower to read, it fails the design invariant.
 
-If a change improves implementation neatness but makes the display slower to read, it fails the design goal.
+## Further Reading
+
+- [Product Invariants](Product-Invariants.md) describes the functional and semantic rules that preserve the product identity across devices, layouts, and feature configurations.

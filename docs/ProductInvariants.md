@@ -21,14 +21,15 @@ These are acceptance properties, not current implementation notes.
 - Information hierarchy remains recognizable across display families.
 - Rectangular and round targets should feel like the same product.
 - The shared hierarchy is: top steps context, dominant centered time, centered battery track, weather/date context, and bottom heart-rate context.
-- Geometry can differ by shape without changing the hierarchy.
+- Rectangular and round displays implement the same information hierarchy and stack.
+- Placement is resolved from defined layout constants.
 - Layout changes may rebalance spacing, but they should not change which information reads first, second, and third.
 
 ## First-Class Device Support
 
 - Every supported device deserves an equally intentional experience within the capabilities it supports.
 - Intentional does not mean identical.
-- Platform differences may change geometry, spacing, and visual treatment.
+- Placement is resolved from defined layout constants for the active platform.
 - Platform differences must not reduce the product to a careless port.
 - The product should adapt to capability differences without treating any supported device as an afterthought.
 

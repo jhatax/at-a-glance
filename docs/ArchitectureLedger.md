@@ -13,7 +13,9 @@ It describes runtime flow, ownership, boundaries, lifecycle, and source organiza
 
 ## Runtime Flow
 
-The current source uses one watchface runtime with shape-aware layout and platform-aware styling.
+The current source uses one watchface runtime with a shared information
+hierarchy and stack across rectangular and round displays. Placement is
+resolved from defined layout constants.
 
 Core flow:
 
@@ -101,7 +103,8 @@ Blueprints are immutable product choices. Calculated layout is the resolved geom
 
 - Owns geometry and compact/full classification.
 - Resolves compact/full once and stores the result on `WatchfaceSurfaceStyle.is_compact`.
-- Responsible for platform-specific geometry. It does not assume that one device class can be scaled blindly into another.
+- Resolves placement from defined layout constants for the active platform. It
+  does not assume that one device class can be scaled blindly into another.
 
 ## Stylist
 
@@ -151,7 +154,7 @@ Required layer or resource creation gates module success and retained state. Opt
 
 `ataglance.c` is the Pebble container and transport/service adapter.
 
-The phone companion requests current weather from Open-Meteo every 30 minutes, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable.
+The phone companion requests current weather from Open-Meteo every 15 minutes, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable. Defined as `WEATHER_INTERVAL_MS` in `pkjs/index.js`.
 
 Temperature is sent to the watch in Celsius tenths and rendered according to settings. `weather_code` and `is_day` are sent to C for glyph selection.
 

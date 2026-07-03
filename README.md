@@ -2,9 +2,9 @@
 
 ## What It Is
 
-At A Glance is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers provide values. Lines show progress. Color communicates state.
+At A Glance is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers quantify. Lines show progress. Color communicates state.
 
-Share your feedback. The goal is a display that feels *precise, neutral, obvious, and available at a glance*.
+The goal is a display that feels *precise, neutral, obvious, and available at a glance*.
 
 ## Install
 
@@ -43,10 +43,10 @@ pebble install --phone YOUR_PHONE_IP
 ## Features
 
 - Dominant time in 12H/24H format, configurable via Settings
-- Must-have data points: time, weather, and date
+- Core data points: time, weather, and date
 - Battery status track with charging bolt
-- Weather icon and temperature from Open-Meteo
-- Date beside weather
+- Weather condition and temperature from Open-Meteo
+- Date displayed beside weather icon and temperature
 - BPM and steps from Pebble Health where available
 - Steps progress bar and configurable daily goal
 - Two `monochrome` display modes: `Black on White`, `White on Black`
@@ -96,7 +96,10 @@ weather/date context
 bottom heart-rate context
 ```
 
-This shared stack and dominant time are the product's visual DNA. Layout and style are adjusted for each display shape (round, rectangular, compact) while keeping the same information hierarchy and glanceability. Detailed geometry, font, palette, and screenshot references live in `UserInterface.md`.
+This shared stack and dominant time are the product's visual DNA. Rectangular
+and round displays implement the same information hierarchy and stack.
+Placement is resolved from defined layout constants. Detailed geometry, font,
+palette, and screenshot references live in `UserInterface.md`.
 
 Text is primary. Icons support recognition. The battery track uses a primary-color outline with a state-colored fill. The charging bolt is a shape cue, so charging does not rely on color alone. Health metrics use centerline vocabulary, and unavailable data uses a clear diagonal absence slash through the supporting icon.
 
@@ -141,7 +144,7 @@ The watchface persists settings using Pebble's persistent storage.
 - [Pebble SDK](https://developer.repebble.com/sdk/)
 - Node.js for PebbleKit JS dependencies
 
-### Build The PBW
+### Build the PBW
 
 ```sh
 npm install

@@ -29,13 +29,15 @@ weather/date context
 bottom heart-rate context
 ```
 
-Rectangular and round displays use different geometry, but this is the implemented stack on both families.
+Rectangular and round displays implement the same information hierarchy and the
+same stack. Placement is resolved from defined layout constants.
 
 ## Current Geometry
 
 Geometry is platform-specific and integer-based.
 
-The current implementation uses shape-aware layout and platform-aware styling rather than scaling one master layout across every device.
+The current implementation resolves placement from defined layout constants for
+the active platform rather than scaling one master layout across every device.
 
 Health rows are present only on `PBL_HEALTH` builds.
 
@@ -144,15 +146,18 @@ Coordinates are `x,y,w,h` and reflect the current architect formulas.
 | Climate icon | `51,98,18,18` |
 | Date text | `72,98,71,18` |
 
-### Current Fonts
+### Typography
 
 The stylist selects fonts by display class (compact or full) and font role. The `Text` role is shared by all non-time, non-date fields (for example, climate, BPM, and steps). System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
+
+Custom Fonts: ##Cabin## for Time, ##Barlow Condensed## for date & metrics
+Font sizes: Customized for display sizes
 
 | Role | Compact system font | Compact custom font | Full system font | Full custom font |
 | --- | --- | --- | --- | --- |
 | Time | `FONT_KEY_BITHAM_34_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_40` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60`<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (Gabbro) |
-| Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_ANTONIO_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28_BOLD` | `RESOURCE_ID_FONT_ANTONIO_SEMIBOLD_22` |
-| Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_ANTONIO_REGULAR_16` | `FONT_KEY_GOTHIC_28` | `RESOURCE_ID_FONT_ANTONIO_REGULAR_22` |
+| Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
 
 Text metrics are defined per field. Font selection depends on role, display class, and platform, with Gabbro using a larger custom time font on large-display devices.
 

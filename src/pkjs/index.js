@@ -62,7 +62,7 @@ Pebble.addEventListener("webviewclosed", function(e) {
 });
 
 // Weather stuff
-var WEATHER_INTERVAL_MS = 30 * 60 * 1000;
+var WEATHER_INTERVAL_MS = 15 * 60 * 1000;
 // Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.c.
 var WEATHER_TEMP_INVALID = -32768;
 // Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.c.
