@@ -195,7 +195,6 @@ if [[ "$RUN_AUTOMATION" == true ]]; then
                     done
                     for c in $charging; do # Not-charging, Charging
                         local suffix="${${c:#0}:+--charging}"
-                        echo "Suffix is ${suffix:+"$suffix"}"
                         for l in $smoke_levels; do # Each level
                             echo "Setting battery level to $l on emulator $emu. Is charging: $c $suffix"
                             pebble emu-battery --emulator "$emu" --percent "$l" ${suffix:+"$suffix"}
