@@ -24,7 +24,7 @@ The current stack is shared across display families:
 ```text
 top steps context
 dominant centered time
-centered battery track and charging bolt
+centered battery track and plugged-in bolt
 weather/date context
 bottom heart-rate context
 ```
@@ -191,7 +191,7 @@ The current glyph system uses familiar heart-and-waveform, weather, and walking 
 
 Walking and heart-and-waveform icons are recolored bitmap assets in the current implementation. Their color is selected based on the metric's current value.
 
-Battery uses a track to convey level. The outer track is a primary-color outline, and the inner fill uses the battery module's live state color. Charging uses a visible bolt so the state does not rely on green alone.
+Battery uses a track to convey level. The outer track is a primary-color outline, and the inner fill uses the battery module's live state color. A visible bolt indicates that the watch is plugged in. On color displays, the plugged-in state also shifts the battery color to the module's plugged-in color.
 
 Weather glyph treatment varies by capability. Black-and-white rendering favors bold line and outline treatment. Color rendering may add fills or accents when they help recognition without becoming the only source of meaning.
 

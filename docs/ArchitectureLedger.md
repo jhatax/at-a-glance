@@ -41,6 +41,7 @@ ataglance.c
   -> subscribe tick, battery, and health services
   -> register AppMessage callbacks
   -> open_app_message()
+  -> send loaded WEATHER_UPDATE_MINUTES to PKJS
 ```
 
 Runtime event flow:
@@ -84,6 +85,19 @@ ataglance.c inbox_received_callback(iter)
        -> settings_save(&settings)
   -> if hr_sample_minutes changed
        -> apply_hr_sample_period()
+```
+
+Startup weather-cadence sync:
+
+```text
+ataglance.c init()
+  -> settings_load(&s_settings)
+  -> open_app_message()
+  -> send loaded WEATHER_UPDATE_MINUTES through outbox
+
+src/pkjs/index.js appmessage handler
+  -> applyWeatherUpdateMinutes(minutes, true)
+  -> schedule weather polling from the watch-loaded value
 ```
 
 Notes:
@@ -154,7 +168,11 @@ Required layer or resource creation gates module success and retained state. Opt
 
 `ataglance.c` is the Pebble container and transport/service adapter.
 
-The phone companion requests current weather from Open-Meteo every 15 minutes, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable. Defined as `WEATHER_INTERVAL_MS` in `pkjs/index.js`.
+The phone companion requests current weather from Open-Meteo on a configurable
+cadence of 15, 30, 45, or 60 minutes, uses phone geolocation when available,
+and falls back to Oakland, CA when location is unavailable. The selected
+cadence is persisted in watch settings, pushed to PKJS at startup, and also
+updated from Clay config changes through `pkjs/index.js`.
 
 Temperature is sent to the watch in Celsius tenths and rendered according to settings. `weather_code` and `is_day` are sent to C for glyph selection.
 
@@ -240,15 +258,15 @@ Current source map:
 - `src/modules/layout_stylist.c`: palette resolution, font-role selection, custom-font load/unload, and display-mode styling
 - `src/modules/substratum_renderer.c/.h`: shared text/icon layer setup, text updates, color-role lookup, glyph primitives, and small rendering helpers
 - `src/modules/helper.c/.h`: shared utility helpers and macros with no feature-module ownership
-- `src/modules/settings.c/.h`: defaults, persistence, validation, and heart-rate sample-period mapping
+- `src/modules/settings.c/.h`: defaults, persistence, and validation for time, display, health, and weather cadence settings
 - `src/modules/date.c/.h`: date layer lifecycle and date-text refresh
 - `src/modules/time.c/.h`: time layer lifecycle, formatting, and custom-font use
 - `src/modules/climate.c/.h`: climate source state, weather availability handling, temperature text, and climate icon lifecycle
 - `src/modules/climate_glyphs.c/.h`: Open-Meteo weather-code mapping and procedural weather glyph rendering
-- `src/modules/battery.c/.h`: battery source state, track/fill/bolt rendering, and battery refresh
+- `src/modules/battery.c/.h`: battery source state, track/fill/bolt rendering, plugged-in bolt visibility, and battery refresh
 - `src/modules/bpm.c/.h`: BPM source state, health reads, BPM text/icon refresh, and debug BPM override handling
 - `src/modules/steps.c/.h`: steps source state, health reads, steps text/icon/progress refresh, and debug steps override handling
-- `src/pkjs/index.js`: Clay bootstrap, geolocation, Open-Meteo weather fetch, fallback location handling, request sequencing, and weather AppMessage sends
+- `src/pkjs/index.js`: Clay bootstrap, startup weather-cadence sync, geolocation, Open-Meteo weather fetch, fallback location handling, request sequencing, and weather AppMessage sends
 - `package.json`: app manifest, target platforms, capabilities, message keys, and resources
 - `wscript`: Pebble build definition, source globs, JS bundling, and optional `ATAGLANCE_DEBUG` build define
 

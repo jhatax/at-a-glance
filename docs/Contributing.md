@@ -124,8 +124,12 @@ For weather data:
 - `10003` = `WEATHER_CONDITION`, for example `10003=0` exercises a clear-weather glyph
 - `10004` = `IS_DAY`, where `1` is day and `0` is night
 
+For weather settings:
+- `10006` = `WEATHER_UPDATE_MINUTES`
+- supported values are `15`, `30`, `45`, and `60`
+
 For display palettes:
-- `10006` = `DISPLAY_MODE`
+- `10007` = `DISPLAY_MODE`
 - supported modes are `0` to `3` on color targets and `0` to `1` on monochrome targets
 
 Examples:
@@ -134,8 +138,9 @@ Examples:
 pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=0 # night or day
 pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=1 # day
 pebble send-app-message --emulator emery --int 10002=-32768 10003=-1 10004=0 # unavailable condition
-pebble send-app-message --emulator emery --int 10006=0 # Black on White palette
-pebble send-app-message --emulator emery --int 10006=2 # Clear as Celeste palette on color targets; invalid on monochrome
+pebble send-app-message --emulator emery --int 10006=15 # weather every 15 minutes
+pebble send-app-message --emulator emery --int 10007=0 # Black on White palette
+pebble send-app-message --emulator emery --int 10007=2 # Clear as Celeste palette on color targets; invalid on monochrome
 ```
 
 QA notes:

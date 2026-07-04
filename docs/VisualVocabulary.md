@@ -12,94 +12,79 @@ It covers the shared watchface composition, channel responsibilities, glyph rule
 
 ## Visual Channels & Responsibilities
 
-Each visual channel should have one primary visual expression.
+1. Each visual channel should have one primary visual expression.
 
 - Text for exact values
 - Icons for metric identity
 - Lines for progress
 - Color for state
 
-Nothing on screen should interpret the data when direct presentation is enough.
+2. Nothing on screen should interpret the data when direct presentation is enough.
 
-Text is the primary glance surface. Icons support recognition, but they do not carry the product alone.
+3. Text is the primary glance surface. Icons support recognition, but they do not carry the product alone.
 
-## Why Custom Glyphs
+## Information Display
 
-The goal is not decorative detail. The goal is glanceable, compact, confident glyphs that work across monochrome and color modes.
+- A text-only metric is acceptable when an icon cannot be created or does not fit the platform.
+- An icon-only metric is not acceptable.
 
-Use custom glyphs when the product needs stronger recognition than borrowed icon sets can provide.
+## Glyph and Icon Selection
 
-A text-only metric is acceptable when an icon cannot be created or does not fit the platform.
+1. All icons and glyphs satisfy principal design invariant of automatic recognition on all supported Pebble devices:
+- Color, Monochrome
+- Compact, Full
+- Rectangular, Round
 
-An icon-only metric is not acceptable.
+2. Use custom glyphs when the product needs stronger recognition than borrowed icon sets can provide.
 
-Create review variants in `glyph-lab` before porting a glyph into production code.
+3. Color glyphs to show progress only when glanceability is enhanced.
 
 ## Icon Recognizability
 
-Design for one-second recognition.
-
-Prefer fewer, stronger marks over dots, texture, wisps, and small accents.
-
-Make the primary metaphor large.
-
-Drop secondary accents when they force the primary shape to shrink.
-
-Every glyph must work in black and white.
-
-A glyph that works only when enlarged, or only in color, is not good enough.
+- Design for one-second recognition.
+- Prefer fewer, stronger marks over dots, texture, wisps, and small accents.
+- Make the primary metaphor large.
+- Drop secondary accents when they force the primary shape to shrink.
 
 ## Silhouette
 
-Prefer solid filled silhouettes over hollow outlines.
+- The silhouette should convey meaning without internal detail inspection.
+- Prefer solid filled silhouettes over hollow outlines.
+- Use line art only when the line itself is the message.
 
-Use line art only when the line itself is the message.
+### Climate glyphs
 
-Keep condition marks sparse and strong.
-
-Prefer condition-first icons over cloud-first icons.
-
-Use a cloud only when it helps the condition read faster.
-
-The silhouette should read before its internal detail does.
+- Prefer silhouttes over filled glyphs. Use filled glyphs to improve perception based on visual contrast. 
+- Keep condition marks sparse and strong.
+- Prefer condition-first icons over cloud-first icons.
+- Use a cloud only when it helps read the condition faster.
 
 ## Stroke And Simplification
 
-When using lines, use heavy strokes that survive watch scale.
+1. When using lines, use heavy strokes that survive watch scale.
+2. Use a fixed design grid for procedural glyphs. The current reference grid is `28x28`.
+3. Keep visual footprint stable when state changes.
+4. Scale glyphs and icons to fit compact grid sizes.
 
-Use a fixed design grid for procedural glyphs. The current reference grid is `28x28`.
+5. For layered same-color shapes:
+- Draw the rear shape.
+- Separate it with a background halo.
+- Draw the foreground shape.
 
-Keep the visual footprint stable when state changes.
-
-For layered same-color shapes:
-
-1. Draw the rear shape.
-2. Separate it with a background halo.
-3. Draw the foreground shape.
-
-Use simplification to preserve recognition, not to strip away meaning.
+6. Use simplification to preserve recognition, not to strip away meaning.
 
 ## Stable Visual Footprint
 
-Keep glyphs stable inside a fixed frame.
-
-Keep value and state changes from shifting the visual footprint.
-
-Prefer visual continuity across display families.
-
-The user should see state change, not layout wobble.
+- Keep glyphs stable inside a fixed frame.
+- Keep value and state changes from shifting the visual footprint.
+- Prefer visual continuity across display families.
+- The user should see state change, not layout wobble.
 
 ## Color As State Support
 
-Color is a state cue.
-
-It is not the only source of meaning.
-
-Display mode is a product decision, not a post-process tint.
-
-Fallback rendering should remain legible when richer palettes are unavailable.
-
-If palette resolution fails, the display should degrade to a simple black-and-white presentation rather than hiding data.
+- Display mode is a top-level product decision, not a post-process tint.
+- Color is a state cue.
+- Color is **not** the only source of meaning.
 
 ## Surface Composition
 
@@ -108,38 +93,49 @@ The shared watchface composition is:
 ```text
 top steps context
 dominant centered time
-centered battery track and charging bolt
+centered battery track and plugged-in bolt
 weather/date context
 bottom heart-rate context
 ```
 
-This stack is part of the product's visual DNA. Rectangular and round displays
-implement the same information hierarchy and stack. Placement is resolved from
-defined layout constants.
+This stack is part of the product's visual DNA. Rectangular and round displays implement the same information hierarchy and stack. Placement is resolved from defined layout constants.
 
-Visual guidance:
+Display hierarchy invariant is the location and order in which time, battery track, weather, and date are displayed:
 
-- Keep time visually dominant.
-- Keep the battery track directly under time.
-- Keep weather and date on one context row.
-- Keep BPM on the top context row and steps on the bottom context row on health platforms.
-- Keep health metrics on centerline vocabulary rather than far-corner placement.
-- Preserve negative space instead of filling every pixel.
+- time is bold and centered.
+- the battery track is directly below time.
+- weather and date are on one context row.
+- Steps and progress bar on the top context row and heart-rate on the bottom context row on health platforms.
+  - Steps, heart-rate, weather condition glyphs / icons don't need to be rendered.
+- health metrics on centerline vocabulary rather than far-corner placement.
+- preserve negative space when possible.
 
-## Display Modes And Palette Fallback
+## Display Modes And Associated Palettes
 
-The live display-mode families are:
+### Modes
+
+Live display-mode families are:
 
 1. `Black on White`
 2. `White on Black`
 3. `Clear as Celeste`
 4. `Night in Oxford`
 
-On color-capable watches, all four modes are available. The first two are monochrome-style presentations rendered on color hardware. The latter two are the color-background palettes.
+### Palettes
 
-Base text, date, time, and unavailable colors come from the selected display mode. Module-owned colors then layer on top for battery, BPM, steps, and climate state.
+- Organize color decisions using hierarchical palettes.
+ - One palette to display time, date, and metrics
+ - Per-module palettes for state
+ - Clear state change visibility
+ - Consistent vocabulary per palette to indicate current state of all metrics
+- Select colors in each palette as a whole; do not convey different states or information with the same color.
+- Fallback rendering should remain legible when richer palettes are unavailable.
+- If palette resolution fails, the display should degrade to a simple black-and-white presentation rather than hiding data.
 
-Showing legible data in black and white matters more than preserving a richer accent palette.
+### Availability
+
+- **Color devices**: All four modes
+- **Monochrome devices**: Modes 1 and 2
 
 ## Absence Language
 
@@ -149,13 +145,8 @@ Unavailable data uses the accepted absence slash:
 \
 ```
 
-Do not use question marks for unavailable data.
-
-Do not use exclamation points for unavailable data.
-
-Keep pause bars as rejected history.
-
-The mark should read as absent or unavailable without feeling alarming.
+1. Do not use question marks or exclamation point or pause bars (play/pause) for unavailable data.
+2. The mark should read as absent or unavailable without feeling alarming.
 
 Meaning examples:
 
@@ -163,7 +154,7 @@ Meaning examples:
 - footprint + slash
 - cloud + slash
 
-Use a bold slash. Start slightly above the canceled glyph and end slightly below it.
+3. Use a bold slash. Start slightly above the canceled glyph and end slightly below it.
 
 ## Steps
 
@@ -201,7 +192,7 @@ General rules:
 
 ### Clear Sky
 
-Clear sky uses a simple disk, not a sun, moon, horizon, or text.
+- Clear sky uses a simple disk, not a sun, moon, horizon, or text.
 
 Rules:
 
@@ -214,13 +205,12 @@ If the outer ring disappears on a monochrome target, the filled disk should stil
 
 ### Partly Cloudy
 
-Partly cloudy uses a subordinate sun behind a dominant reduced cloud.
-
-If the sun forces the cloud to become too small, show only the cloud.
+- Partly cloudy uses a subordinate sun (day) or clear orb (night) behind a reduced cloud.
+- If the sun forces the cloud to become too small, show only the cloud.
 
 ### Fog
 
-Fog may omit the cloud.
+- Fog may omit the cloud.
 
 Preferred direction:
 
@@ -230,31 +220,23 @@ Preferred direction:
 
 ## BPM
 
-BPM uses a heart-rate monitor or ECG-style waveform icon, not a heart.
-
-Preserve BPM state color on color displays.
-
-Unavailable BPM uses the muted waveform plus the shared slash.
+- BPM uses a heart-rate monitor or ECG-style waveform icon, not a heart.
+- Preserve BPM state color on color displays.
+- Unavailable BPM uses the muted waveform plus the shared slash.
 
 ## Battery
 
-Battery uses a horizontal track rather than relying on text percentage in the primary layout.
-
-The outer track is a primary-color outline. The inner fill uses the module-owned battery state color.
-
-Charging must use a visible shape cue, not color alone.
-
-The charging bolt should be prominent enough to read at watch scale.
+- Battery uses a horizontal track rather than relying on text percentage in the primary layout.
+- The outer track is a primary-color outline. The inner fill uses the module-owned battery state color.
+- A plugged-in state must use a visible shape cue, not color alone.
+- The plugged-in shape should be prominent enough to read at watch scale.
 
 ## Round Displays
 
-Round displays preserve the same text-first hierarchy and the same stack.
-
-Use the same surface stack before inventing a separate round-only product.
-
-Confirm readable chord width at each y-position.
-
-Disable optional icons before allowing text to clip.
+- Round displays preserve the same text-first hierarchy and the same stack.
+- Use the same surface stack before inventing a separate round-only product.
+- Confirm readable chord width at each y-position.
+- Disable optional icons before allowing text to clip.
 
 ## Review Workflow
 
@@ -270,3 +252,4 @@ Recommended loop:
 6. Pick one direction.
 7. Port the selected drawing rules into production modules.
 8. Validate in the real watchface layout.
+

@@ -44,14 +44,14 @@ pebble install --phone YOUR_PHONE_IP
 
 - Dominant time in 12H/24H format, configurable via Settings
 - Core data points: time, weather, and date
-- Battery status track with charging bolt
+- Battery status track with plugged-in bolt
 - Weather condition and temperature from Open-Meteo
 - Date displayed beside weather icon and temperature
 - BPM and steps from Pebble Health where available
 - Steps progress bar and configurable daily goal
 - Two `monochrome` display modes: `Black on White`, `White on Black`
 - Four `color` display modes: `Black on White`, `White on Black`, `Clear as Celeste`, and `Night in Oxford`
-- Familiar heart-and-waveform, weather, and walking icons, plus a battery charging bolt
+- Familiar heart-and-waveform, weather, and walking icons, plus a battery power bolt
 - Settings page to personalize watch face on connected phone
 
 ### Health activity and goals
@@ -68,7 +68,7 @@ pebble install --phone YOUR_PHONE_IP
 
 ### Climate: Temperature and Weather Condition based on Location
 
-- Weather data retrieved from Open-Meteo every 30-minutes using phone geolocation, when available
+- Weather data retrieved from Open-Meteo using phone geolocation when available
 - When unavailable, the fixed fallback weather location is Oakland, CA: `37.85626, -122.21383`
 - Temperature rendered as Fahrenheit or Celsius according to Settings
 
@@ -91,7 +91,7 @@ The selected visual stack is shared across display families:
 ```text
 top steps context
 dominant centered time
-centered battery track and charging bolt
+centered battery track and plugged-in bolt
 weather/date context
 bottom heart-rate context
 ```
@@ -101,7 +101,7 @@ and round displays implement the same information hierarchy and stack.
 Placement is resolved from defined layout constants. Detailed geometry, font,
 palette, and screenshot references live in `UserInterface.md`.
 
-Text is primary. Icons support recognition. The battery track uses a primary-color outline with a state-colored fill. The charging bolt is a shape cue, so charging does not rely on color alone. Health metrics use centerline vocabulary, and unavailable data uses a clear diagonal absence slash through the supporting icon.
+Text is primary. Icons support recognition. The battery track uses a primary-color outline with a state-colored fill. The bolt is a shape cue for plugged-in state, so external power does not rely on color alone. Health metrics use centerline vocabulary, and unavailable data uses a clear diagonal absence slash through the supporting icon.
 
 ### Display Modes
 
@@ -131,11 +131,12 @@ Configuration is powered by Rebble Clay:
 
 - Time format: 24-hour or 12-hour
 - Temperature unit: Fahrenheit or Celsius
+- Weather updates: 15, 30, 45, or 60 minutes
 - Display mode: one of four mode-specific palettes, depending on platform
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 - Steps goal: preset values from `4,000` to `20,000`, with custom override support from `4,000` to `32,000`
 
-The watchface persists settings using Pebble's persistent storage.
+The watchface persists settings using Pebble's persistent storage. On startup, the watch pushes the persisted weather cadence back to PKJS so weather polling resumes from the saved value.
 
 ## Build
 
