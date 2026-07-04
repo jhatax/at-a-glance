@@ -12,7 +12,6 @@ static WatchfaceSettings s_settings = {0};
 
 #ifdef PBL_HEALTH
 static bool s_health_events_subscribed = false;
-static void apply_hr_sample_period();
 static void health_handler(HealthEventType event, void *context);
 #endif
 
@@ -34,19 +33,12 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
                                    void *context);
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context);
 static uint32_t app_message_inbox_size(void);
-static AppMessageResult open_app_message(void);
+static AppMessageResult initialize_inbox_outbox(void);
+static void send_loaded_weather_update_minutes(void);
 static void main_window_load(Window *window);
 static void main_window_unload(Window *window);
 static void init(void);
 static void deinit(void);
-
-#ifdef PBL_HEALTH
-static void apply_hr_sample_period() {
-  uint8_t minutes = settings_get_hr_sample_minutes(s_settings.hr_sample_minutes);
-  uint16_t interval_sec = (uint16_t)minutes * 60;
-  health_service_set_heart_rate_sample_period(interval_sec);
-}
-#endif
 
 #ifdef PBL_HEALTH
 static void health_handler(HealthEventType event, void *context) {
@@ -115,6 +107,9 @@ static void parse_settings_data(DictionaryIterator *iter, WatchfaceEventData *da
   parse_int_tuple(iter, MESSAGE_KEY_TEMP_UNIT, data, WATCHFACE_DATA_TEMP_UNIT, &data->temp_unit);
   parse_int_tuple(iter, MESSAGE_KEY_DISPLAY_MODE, data, WATCHFACE_DATA_DISPLAY_MODE,
                   &data->display_mode);
+  parse_int_tuple(iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES, data,
+                  WATCHFACE_DATA_WEATHER_UPDATE_MINUTES,
+                  &data->weather_update_minutes);
 }
 
 static void parse_weather_data(DictionaryIterator *iter, WatchfaceEventData *data) {
@@ -164,6 +159,9 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
   }
 
   WatchfaceEventData data = {0};
+
+  // Copy current settings over before retrieving them from storage.
+  // If there are any changes, apply them.
   WatchfaceSettings previous_settings = s_settings;
 
   parse_settings_data(iter, &data);
@@ -182,13 +180,14 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
       previous_settings.temp_unit != s_settings.temp_unit ||
       previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
       previous_settings.display_mode != s_settings.display_mode ||
-      previous_settings.steps_goal != s_settings.steps_goal) {
+      previous_settings.steps_goal != s_settings.steps_goal ||
+      previous_settings.weather_update_minutes != s_settings.weather_update_minutes) {
     settings_save(&s_settings);
   }
 
 #ifdef PBL_HEALTH
   if (previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes) {
-    apply_hr_sample_period();
+    health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
   }
 #endif
 }
@@ -211,21 +210,50 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 }
 
 static uint32_t app_message_inbox_size(void) {
-  // the only debug messages we can receive for state are for health
+  // Inbound tuples, in order:
+  // 1. TIME_FORMAT: APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 2. TEMP_UNIT: APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 3. DISPLAY_MODE: APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 4. TEMPERATURE: sizeof(int32_t)
+  // 5. WEATHER_CONDITION: sizeof(int32_t)
+  // 6. IS_DAY: sizeof(int32_t)
+  // 7. WEATHER_UPDATE_MINUTES: APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 8. HR_SAMPLE_MINUTES: APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 9. STEPS_GOAL: sizeof(int32_t)
+  //
+  // Debug-only tuples:
+  // 10. DEBUG_BPM: sizeof(int32_t)
+  // 11. DEBUG_STEPS: sizeof(int32_t)
 #if defined(PBL_HEALTH) && (ATAGLANCE_DEBUG)
-  return dict_calc_buffer_size(10, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
-                               sizeof(int32_t), sizeof(int32_t), sizeof(int32_t),
-                               APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
-                               sizeof(int32_t), sizeof(int32_t), sizeof(int32_t));
+  return dict_calc_buffer_size(
+    11, // tuples
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t),
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t));
 #else
-  return dict_calc_buffer_size(8, APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
-                               sizeof(int32_t), sizeof(int32_t), sizeof(int32_t),
-                               APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE,
-                               sizeof(int32_t));
+  return dict_calc_buffer_size(
+    9,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t),
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t));
 #endif
 }
 
-static AppMessageResult open_app_message(void) {
+static AppMessageResult initialize_inbox_outbox(void) {
   uint32_t inbox_size = app_message_inbox_size();
   bool pebblekit_connected = connection_service_peek_pebblekit_connection();
   AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE);
@@ -233,17 +261,41 @@ static AppMessageResult open_app_message(void) {
     return result;
   }
 
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu", result, inbox_size);
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d kit=%d", APP_MESSAGE_OUTBOX_SIZE,
-          pebblekit_connected);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu",
+    result, inbox_size);
+  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d kit=%d",
+    APP_MESSAGE_OUTBOX_SIZE, pebblekit_connected);
 
-  result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM,
+    APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage retry failed: result=%d kit=%d", result,
-            pebblekit_connected);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage retry failed: result=%d kit=%d",
+      result, pebblekit_connected);
   }
 
   return result;
+}
+
+static void send_loaded_weather_update_minutes(void) {
+  DictionaryIterator *out_iter = NULL;
+  AppMessageResult result = app_message_outbox_begin(&out_iter);
+  if (result != APP_MSG_OK || !out_iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox begin failed: result=%d", result);
+    return;
+  }
+
+  DictionaryResult dict_result =
+      dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
+                       s_settings.weather_update_minutes);
+  if (dict_result != DICT_OK) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
+    return;
+  }
+
+  result = app_message_outbox_send();
+  if (result != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox send failed: result=%d", result);
+  }
 }
 
 static void main_window_load(Window *window) {
@@ -293,7 +345,7 @@ static void init(void) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Health service subscription failed");
   } else {
     s_health_events_subscribed = true;
-    apply_hr_sample_period();
+    health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
   }
 #endif
 
@@ -301,7 +353,9 @@ static void init(void) {
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  open_app_message();
+  if (initialize_inbox_outbox() == APP_MSG_OK) {
+    send_loaded_weather_update_minutes();
+  }
 }
 
 static void deinit(void) {

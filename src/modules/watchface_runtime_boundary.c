@@ -62,6 +62,15 @@ static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings
     }
   }
 
+  if (data->parsed & WATCHFACE_DATA_WEATHER_UPDATE_MINUTES) {
+    if (WEATHER_UPDATE_MINUTES_VALID(data->weather_update_minutes)) {
+      settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
+    } else {
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
+              data->weather_update_minutes);
+    }
+  }
+
 #ifdef PBL_HEALTH
   if (data->parsed & WATCHFACE_DATA_STEPS_GOAL) {
     uint16_t d_s_g = (uint16_t) data->steps_goal;

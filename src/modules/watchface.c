@@ -3,7 +3,6 @@
 #include "climate.h"
 #include "date.h"
 #include "layout.h"
-#include "pebble.h"
 #include "time.h"
 
 #ifdef PBL_HEALTH

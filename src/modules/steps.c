@@ -173,10 +173,6 @@ static void apply_steps_value(int steps, bool is_available) {
 
   s_steps = steps;
   s_steps_is_available = is_available;
-  s_steps_color = HELPER_IF_ELSE(
-    is_available,
-    calculate_steps_color(steps),
-    s_steps_palette.unknown);
 
   // Do not render the text in the same color as the icon
   // except when the text is available vs. unavailable

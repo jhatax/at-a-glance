@@ -6,6 +6,9 @@ var messageKeys = require("message_keys");
 var STEPS_GOAL_MIN = 4000;
 var STEPS_GOAL_DEFAULT = 10000;
 var STEPS_GOAL_MAX = 32000;
+var WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+var s_weatherIntervalHandle = null;
+var s_weatherUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -21,8 +24,7 @@ function parseStepsGoal(rawSettings) {
   var goal = STEPS_GOAL_DEFAULT;
   if (rawSettings) {
     var presetGoal = parseInt(rawSettings.STEPS_GOAL_PRESET, 10);
-    var customGoalText = rawSettings.STEPS_GOAL_CUSTOM;
-    var customGoal = parseInt(customGoalText, 10);
+    var customGoal = parseInt(rawSettings.STEPS_GOAL_CUSTOM, 10);
 
     if (!isNaN(customGoal)) {
       goal = clampStepsGoal(customGoal);
@@ -34,10 +36,41 @@ function parseStepsGoal(rawSettings) {
   return goal;
 }
 
+// Return the default value if setting is invalid or irretrievable
+function parseWeatherUpdateMinutes(rawSettings) {
+  var toreturn = (rawSettings) ?
+    parseInt(rawSettings.WEATHER_UPDATE_MINUTES, 10) :
+    WEATHER_UPDATE_MINUTES_DEFAULT;
+  return (isNaN(toreturn)) ? WEATHER_UPDATE_MINUTES_DEFAULT : toreturn;
+}
+
+function applyWeatherUpdateMinutes(minutes, shouldRefreshWeather) {
+  if (isNaN(minutes)) {
+    s_weatherUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
+  } else {
+    s_weatherUpdateInterval = minutes;
+  }
+
+  if (shouldRefreshWeather) {
+    updateWeather();
+  }
+  scheduleWeatherUpdates();
+}
+
 var clay = new Clay(clayConfig);
 
 Pebble.addEventListener("showConfiguration", function() {
   Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener("appmessage", function(e) {
+  if (!e || !e.payload) {
+    return;
+  }
+
+  if (typeof e.payload[messageKeys.WEATHER_UPDATE_MINUTES] === "number") {
+    applyWeatherUpdateMinutes(e.payload[messageKeys.WEATHER_UPDATE_MINUTES], true);
+  }
 });
 
 Pebble.addEventListener("webviewclosed", function(e) {
@@ -47,12 +80,10 @@ Pebble.addEventListener("webviewclosed", function(e) {
 
   var dict = clay.getSettings(e.response);
   var rawSettings = clay.getSettings(e.response, false);
-  var stepsGoal = parseStepsGoal(rawSettings);
-
+  dict[messageKeys.STEPS_GOAL] = parseStepsGoal(rawSettings);
   delete dict[messageKeys.STEPS_GOAL_PRESET];
   delete dict[messageKeys.STEPS_GOAL_CUSTOM];
-  dict[messageKeys.STEPS_GOAL] = stepsGoal;
-
+  applyWeatherUpdateMinutes(parseWeatherUpdateMinutes(rawSettings), true);
   Pebble.sendAppMessage(dict, function() {
     console.log("Sent config data to Pebble");
   }, function(err) {
@@ -62,7 +93,6 @@ Pebble.addEventListener("webviewclosed", function(e) {
 });
 
 // Weather stuff
-var WEATHER_INTERVAL_MS = 15 * 60 * 1000;
 // Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.c.
 var WEATHER_TEMP_INVALID = -32768;
 // Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.c.
@@ -103,6 +133,10 @@ function sendWeatherUnavailable(reason) {
   );
 }
 
+function weatherIntervalMs() {
+  return s_weatherUpdateInterval * 60 * 1000;
+}
+
 function fetchWeather(lat, lon, requestId) {
   var url =
     "https://api.open-meteo.com/v1/forecast?latitude=" +
@@ -113,7 +147,7 @@ function fetchWeather(lat, lon, requestId) {
 
   var xhr = new XMLHttpRequest();
   xhr.open("GET", url, true);
-  xhr.timeout = WEATHER_INTERVAL_MS;
+  xhr.timeout = weatherIntervalMs();
   xhr.onload = function () {
     if (requestId !== s_weatherRequestId) {
       return;
@@ -175,19 +209,24 @@ function updateWeather() {
           return;
         }
 
-        fetchWeather(
-            OAK_WEATHER_LATITUDE,
-            OAK_WEATHER_LONGITUDE,
-            requestId);
+        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE, requestId);
       },
-      { timeout: WEATHER_INTERVAL_MS, maximumAge: WEATHER_INTERVAL_MS }
+      { timeout: weatherIntervalMs(), maximumAge: weatherIntervalMs() }
     );
   } else {
     fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE, requestId);
   }
 }
 
+function scheduleWeatherUpdates() {
+  if (s_weatherIntervalHandle !== null) {
+    clearInterval(s_weatherIntervalHandle);
+  }
+
+  s_weatherIntervalHandle = setInterval(updateWeather, weatherIntervalMs());
+}
+
 Pebble.addEventListener("ready", function () {
   updateWeather();
-  setInterval(updateWeather, WEATHER_INTERVAL_MS);
+  scheduleWeatherUpdates();
 });

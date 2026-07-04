@@ -36,6 +36,7 @@
       "WEATHER_CONDITION",
       "IS_DAY",
       "HR_SAMPLE_MINUTES",
+      "WEATHER_UPDATE_MINUTES",
       "DISPLAY_MODE",
       "STEPS_GOAL",
       "STEPS_GOAL_PRESET",

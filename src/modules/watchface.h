@@ -1,8 +1,7 @@
 #pragma once
-
+#include <pebble.h>
 #include "settings.h"
 #include "watchface_debug.h"
-#include <pebble.h>
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
@@ -24,16 +23,17 @@ typedef enum {
   WATCHFACE_DATA_IS_DAY = 1 << 4,
   WATCHFACE_DATA_HR_SAMPLE_MINUTES = 1 << 5,
   WATCHFACE_DATA_DISPLAY_MODE = 1 << 6,
-  WATCHFACE_DATA_TIME_TICK = 1 << 7,
-  WATCHFACE_DATA_DATE_TICK = 1 << 8,
-  WATCHFACE_DATA_BATTERY_EVENT = 1 << 9,
+  WATCHFACE_DATA_WEATHER_UPDATE_MINUTES = 1 << 7,
+  WATCHFACE_DATA_TIME_TICK = 1 << 8,
+  WATCHFACE_DATA_DATE_TICK = 1 << 9,
+  WATCHFACE_DATA_BATTERY_EVENT = 1 << 10,
 #ifdef PBL_HEALTH
-  WATCHFACE_DATA_HEALTH_EVENT = 1 << 10,
-  WATCHFACE_DATA_STEPS_GOAL = 1 << 11,
+  WATCHFACE_DATA_HEALTH_EVENT = 1 << 11,
+  WATCHFACE_DATA_STEPS_GOAL = 1 << 12,
 #endif
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-  WATCHFACE_DATA_DEBUG_BPM = 1 << 12,
-  WATCHFACE_DATA_DEBUG_STEPS = 1 << 13,
+  WATCHFACE_DATA_DEBUG_BPM = 1 << 13,
+  WATCHFACE_DATA_DEBUG_STEPS = 1 << 14,
 #endif
 } WatchfaceDataMask;
 
@@ -48,6 +48,7 @@ typedef struct {
   int is_day;
   int hr_sample_minutes;
   int display_mode;
+  int weather_update_minutes;
   int steps_goal;
   int time_units_changed;
 #ifdef PBL_HEALTH

@@ -1,32 +1,28 @@
 [
-  {"type": "heading", "defaultValue": "Display Customization"},
-  {"type": "text", "defaultValue": "Personalize what you see At A Glance."},
+  {"type": "heading", "defaultValue": "Personalize every Pebble glance"},
   {
     "type": "section",
-    "id": "displayModeBnWSection",
-    "capabilities": ["BW"],
     "items": [
       {
+        "type": "text",
+        "defaultValue": "DISPLAY & TIME MODES"
+      },
+      {
         "type": "select",
+        "capabilities": ["BW"],
         "messageKey": "DISPLAY_MODE",
-        "label": "Display Mode",
+        "label": "Select a display mode",
         "defaultValue": "0",
         "options": [
           { "value": "0", "label": "Black on White" },
           { "value": "1", "label": "White on Black" }
         ]
-      }
-    ]
-  },
-  {
-    "type": "section",
-    "id": "displayModeColorSection",
-    "capabilities": ["COLOR"],
-    "items": [
+      },
       {
         "type": "select",
         "messageKey": "DISPLAY_MODE",
-        "label": "Display Mode",
+        "capabilities": ["COLOR"],
+        "label": "Select a display mode",
         "defaultValue": "0",
         "options": [
           { "value": "0", "label": "Black on White" },
@@ -34,21 +30,26 @@
           { "value": "2", "label": "Clear as Celeste" },
           { "value": "3", "label": "Night in Oxford" }
         ]
-      }
-    ]
-  },
-  {
-    "type": "section",
-    "items": [
+      },
       {
         "type": "select",
         "messageKey": "TIME_FORMAT",
-        "label": "Time Format",
+        "label": "How do you like to view time?",
         "defaultValue": "0",
         "options": [
           {"value": "0", "label": "24-hour"},
           {"value": "1", "label": "12-hour"}
         ]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "id": "weatherSection",
+    "items": [
+      {
+        "type": "text",
+        "defaultValue": "WEATHER"
       },
       {
         "type": "select",
@@ -65,44 +66,66 @@
             "label": "Celsius (°C)"
           }
         ]
+      },
+      {
+        "type": "select",
+        "messageKey": "WEATHER_UPDATE_MINUTES",
+        "label": "Weather Updates",
+        "defaultValue": "15",
+        "options": [
+          {
+            "value": "15",
+            "label": "Every 15 minutes"
+          },
+          {
+            "value": "30",
+            "label": "Every 30 minutes"
+          },
+          {
+            "value": "45",
+            "label": "Every 45 minutes"
+          },
+          {
+            "value": "60",
+            "label": "Every hour"
+          }
+        ]
       }
     ]
   },
-
   {
     "type": "section",
     "id": "healthSettingsSection",
     "capabilities": ["HEALTH"],
     "items": [
-      {"type": "heading", "defaultValue": "Health & Activity"},
       {
         "type": "text",
-        "defaultValue": "Choose a steps goal & when to refresh your heart-rate."
+        "defaultValue": "HEALTH"
       },
       {
         "type": "select",
         "messageKey": "HR_SAMPLE_MINUTES",
         "label": "Heart Rate Updates",
-        "defaultValue": "0",
+        "defaultValue": "15",
         "options": [
           {
-            "value": "0",
+            "value": "10",
             "label": "Every 10 minutes"
           },
           {
-            "value": "1",
+            "value": "15",
             "label": "Every 15 minutes"
           },
           {
-            "value": "2",
+            "value": "30",
             "label": "Every 30 minutes"
           },
           {
-            "value": "3",
+            "value": "60",
             "label": "Every hour"
           },
           {
-            "value": "4",
+            "value": "120",
             "label": "Every 2 hours"
           }
         ]
