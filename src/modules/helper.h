@@ -6,8 +6,9 @@
 
 #define HELPER_MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-#define HELPER_VALID_DESIGN_X(x) (((x) >= 0) && ((x) < WATCHFACE_ICON_GRID_WIDTH))
-#define HELPER_VALID_DESIGN_Y(y) (((y) >= 0) && ((y) < WATCHFACE_ICON_GRID_HEIGHT))
+#define HELPER_VALUE_IN_RANGE(value,min, max) (((value) >= (min)) && ((value) <= (max)))
+#define HELPER_VALID_DESIGN_X(x) HELPER_VALUE_IN_RANGE((x),0,(WATCHFACE_ICON_GRID_WIDTH - 1))
+#define HELPER_VALID_DESIGN_Y(y) HELPER_VALUE_IN_RANGE((y),0,(WATCHFACE_ICON_GRID_HEIGHT - 1))
 
 #define HELPER_CLAMP_MIN(exp, min) HELPER_MAX((exp), (min))
 #define HELPER_CLAMP_MAX(exp, max) HELPER_MIN((exp), (max))

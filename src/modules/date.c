@@ -1,5 +1,4 @@
 #include "date.h"
-#include "pebble.h"
 #include "substratum_renderer.h"
 #include <stdint.h>
 

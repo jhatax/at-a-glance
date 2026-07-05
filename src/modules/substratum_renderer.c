@@ -1,6 +1,4 @@
 #include "substratum_renderer.h"
-#include "helper.h"
-#include "pebble.h"
 #include "watchface_debug.h"
 
 // Scale icon's X relative to the current frame vs. the reference design

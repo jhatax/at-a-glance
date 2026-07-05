@@ -2,6 +2,7 @@
 #ifdef PBL_HEALTH
 
 #include "helper.h"
+#include "pebble.h"
 #include "settings.h"
 #include "substratum_renderer.h"
 
@@ -17,10 +18,10 @@ enum {
 #define ARE_STEPS_VALID(s) ((s) >= STEPS_MIN && (s) < STEPS_MAX)
 
 // This needs to be the main color of the steps icon
-static GColor s_steps_icon_color = GColorBlack;
+static GColor s_steps_icon_color;
 
 // This needs to be any color other than the main color of the steps icon
-static GColor s_steps_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
+static GColor s_steps_color;
 
 static char s_steps_buffer[MAX_STR_LEN] = {0};
 static GBitmap* s_steps_bitmap = NULL;
@@ -28,8 +29,9 @@ static TextLayer* s_steps_layer = NULL;
 static Layer* s_steps_icon_layer = NULL;
 static Layer* s_steps_progress_layer = NULL;
 static bool s_steps_is_available = true;
-static uint16_t s_steps_goal = STEPS_GOAL_DEFAULT;
-static int s_steps = 4500;
+static uint16_t s_steps_goal = STEPS_INVALID;
+static uint16_t s_steps_approaching_threshold = STEPS_INVALID;
+static int s_steps = STEPS_INVALID;
 
 typedef struct {
   GColor background;
@@ -47,7 +49,7 @@ static int s_debug_steps = STEPS_INVALID;
 #endif
 
 static const StepsPalette c_dark_steps_palette = {
-    .approaching = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
+    .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
     .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
@@ -111,7 +113,8 @@ static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
 
   if (s_steps_bitmap) {
      if (!HELPER_COLOR_EQUAL(s_steps_icon_color, s_steps_color)) {
-      if (helper_replace_color_in_bitmap(s_steps_bitmap, s_steps_icon_color, s_steps_color)) {
+      if (helper_replace_color_in_bitmap(s_steps_bitmap,
+        s_steps_icon_color, s_steps_color)) {
         s_steps_icon_color = s_steps_color;
       }
     }
@@ -173,6 +176,9 @@ static void apply_steps_value(int steps, bool is_available) {
 
   s_steps = steps;
   s_steps_is_available = is_available;
+
+  // You have to save the steps color even though we show text in only normal / unknown
+  s_steps_color = calculate_steps_color(steps);
 
   // Do not render the text in the same color as the icon
   // except when the text is available vs. unavailable
@@ -253,6 +259,12 @@ bool steps_module_create(
   // cached color to that source palette value so the first recolor
   // pass knows which color to replace.
   s_steps_icon_color = GColorBlack;
+  // By making these different from the get-go, we ensure that the icon is replaced
+  // the first time
+  s_steps_color = gcolor_legible_over(s_steps_icon_color);
+  s_steps_goal = STEPS_GOAL_DEFAULT;
+  s_steps_approaching_threshold = HELPER_ROUND_UP(
+    (s_steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
 
   if (icon) {
     uint32_t resource_id = 0;

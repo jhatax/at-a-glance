@@ -8,11 +8,9 @@
 #include "steps.h"
 #endif
 
-static const WatchfaceDataMask c_weather_mask =
-    WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
-
-static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings,
-                               WatchfaceUpdateMask *refresh, bool *repaint);
+static void apply_setting_data(const WatchfaceEventData *data,
+  WatchfaceSettings *settings,
+  WatchfaceUpdateMask *refresh);
 static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
 static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
 #ifdef PBL_HEALTH
@@ -22,10 +20,23 @@ static void apply_debug_health_data(const WatchfaceEventData *data, WatchfaceUpd
 #endif
 #endif
 
-static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings,
-                               WatchfaceUpdateMask *refresh, bool *repaint) {
-  if (!data || !settings || !refresh || !repaint) {
+static void apply_setting_data(
+  const WatchfaceEventData *data,
+  WatchfaceSettings *settings,
+  WatchfaceUpdateMask *refresh) {
+  if (!data || !settings || !refresh) {
     return;
+  }
+
+  if (data->parsed & WATCHFACE_DATA_DISPLAY_MODE) {
+    if (DISPLAY_MODE_VALID(data->display_mode)) {
+      if (settings->display_mode != (uint8_t)data->display_mode) {
+        settings->display_mode = (uint8_t)data->display_mode;
+        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
+      }
+    } else {
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d", data->display_mode);
+    }
   }
 
   if (data->parsed & WATCHFACE_DATA_TIME_FORMAT) {
@@ -35,7 +46,8 @@ static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TIME_FORMAT: value=%d", data->time_format);
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+        "Runtime received invalid TIME_FORMAT: value=%d", data->time_format);
     }
   }
 
@@ -51,23 +63,13 @@ static void apply_setting_data(const WatchfaceEventData *data, WatchfaceSettings
     }
   }
 
-  if (data->parsed & WATCHFACE_DATA_DISPLAY_MODE) {
-    if (DISPLAY_MODE_VALID(data->display_mode)) {
-      if (settings->display_mode != (uint8_t)data->display_mode) {
-        settings->display_mode = (uint8_t)data->display_mode;
-        *repaint = true;
-      }
-    } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d", data->display_mode);
-    }
-  }
-
   if (data->parsed & WATCHFACE_DATA_WEATHER_UPDATE_MINUTES) {
     if (WEATHER_UPDATE_MINUTES_VALID(data->weather_update_minutes)) {
       settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
-              data->weather_update_minutes);
+      APP_LOG(APP_LOG_LEVEL_WARNING,
+        "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
+        data->weather_update_minutes);
     }
   }
 
@@ -93,6 +95,9 @@ static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMa
   if (!data || !refresh) {
     return;
   }
+
+  static const WatchfaceDataMask c_weather_mask =
+    WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
   WatchfaceDataMask weather_received = (WatchfaceDataMask)(data->received & c_weather_mask);
   if (weather_received == WATCHFACE_DATA_NONE) {
@@ -181,9 +186,8 @@ void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSett
   }
 
   WatchfaceUpdateMask refresh = WATCHFACE_UPDATE_NONE;
-  bool repaint = false;
 
-  apply_setting_data(data, settings, &refresh, &repaint);
+  apply_setting_data(data, settings, &refresh);
   apply_weather_data(data, &refresh);
   apply_service_event_data(data, &refresh);
 
@@ -194,7 +198,7 @@ void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSett
 #endif
 #endif
 
-  if (repaint) {
+  if (refresh & WATCHFACE_REPAINT) {
     watchface_repaint();
   } else if (refresh != WATCHFACE_UPDATE_NONE) {
     watchface_refresh(refresh);

@@ -1,5 +1,4 @@
 #include "settings.h"
-#include <pebble.h>
 
 // The ID / key that specifies where settings are persisted in storage
 static const uint32_t c_key_persisted_settings = 2;
@@ -15,6 +14,7 @@ void settings_apply_defaults(WatchfaceSettings *settings) {
   settings->hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT;
   settings->display_mode = DISPLAY_MODE_DEFAULT;
   settings->steps_goal = STEPS_GOAL_DEFAULT;
+  settings->weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
 }
 
 static void settings_sanitize(WatchfaceSettings *settings) {
@@ -35,6 +35,9 @@ static void settings_sanitize(WatchfaceSettings *settings) {
   }
   if (!STEPS_GOAL_VALID(settings->steps_goal)) {
     settings->steps_goal = STEPS_GOAL_DEFAULT;
+  }
+  if (!WEATHER_UPDATE_MINUTES_VALID(settings->weather_update_minutes)) {
+    settings->weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
   }
 }
 
@@ -75,23 +78,6 @@ static void settings_read_stored(WatchfaceSettings *settings) {
 }
 
 // This "API" block is called by other modules or main
-uint8_t settings_get_hr_sample_minutes(uint8_t hr_sample_minutes) {
-  switch ((HrSampleMinutes)hr_sample_minutes) {
-  case HR_SAMPLE_MINUTES_10:
-    return 10;
-  case HR_SAMPLE_MINUTES_15:
-    return 15;
-  case HR_SAMPLE_MINUTES_30:
-    return 30;
-  case HR_SAMPLE_MINUTES_60:
-    return 60;
-  case HR_SAMPLE_MINUTES_120:
-    return 120;
-  default:
-    return 10;
-  }
-}
-
 void settings_load(WatchfaceSettings *settings) {
   if (!settings) {
     return;

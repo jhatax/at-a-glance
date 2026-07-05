@@ -54,7 +54,8 @@ static void watchface_debug_clear_health(void);
 
 void watchface_load_and_apply_palette() {
   // Update the palette
-  layout_watchface_update_palette(&(s_surface.style), s_wf_settings->display_mode);
+  layout_watchface_update_palette(
+    &(s_surface.style), s_wf_settings->display_mode);
 
   // set the background color according to palette
   if (s_surface.style.palette) {
@@ -92,7 +93,9 @@ bool watchface_create(Window *window, const WatchfaceSettings *settings) {
   // Wait until the end to set s_watchface_initialized to the final value of this bool.
   bool success = true;
   if (success && !(window && settings)) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Cannot create watchface without watchface inputs");
+    APP_LOG(
+      APP_LOG_LEVEL_ERROR,
+      "Cannot create watchface without watchface inputs");
     success = false;
   }
 
@@ -126,20 +129,22 @@ bool watchface_create(Window *window, const WatchfaceSettings *settings) {
     // Load & Apply Fonts (one-time activity for every launch)
     watchface_load_and_apply_fonts();
 
-    s_strata_created_mask |=
-        date_module_create(root, &s_surface.date.text,
-                           s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role])
-            ? DATE_STRATUM_MASK
-            : 0;
+    s_strata_created_mask |= date_module_create(
+      root,
+      &s_surface.date.text,
+      s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role])
+      ? DATE_STRATUM_MASK : 0;
 
-    s_strata_created_mask |=
-        time_module_create(root, &s_surface.time.text,
-                           s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role])
-            ? TIME_STRATUM_MASK
-            : 0;
+    s_strata_created_mask |= time_module_create(
+      root,
+      &s_surface.time.text,
+      s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role])
+      ? TIME_STRATUM_MASK : 0;
 
-    s_strata_created_mask |=
-        battery_module_create(root, &s_surface.battery) ? BATTERY_STRATUM_MASK : 0;
+    s_strata_created_mask |= battery_module_create(
+      root,
+      &s_surface.battery)
+      ? BATTERY_STRATUM_MASK : 0;
 
     if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
@@ -148,32 +153,32 @@ bool watchface_create(Window *window, const WatchfaceSettings *settings) {
   }
 
   if (success) {
-    s_strata_created_mask |=
-        climate_module_create(
-            root, &s_surface.climate.text, &s_surface.climate.icon,
-            s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role])
-            ? CLIMATE_STRATUM_MASK
-            : 0;
+    s_strata_created_mask |= climate_module_create(
+      root,
+      &s_surface.climate.text,
+      &s_surface.climate.icon,
+      s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role])
+      ? CLIMATE_STRATUM_MASK : 0;
 
 #ifdef PBL_HEALTH
-    s_strata_created_mask |=
-        bpm_module_create(root, &s_surface.bpm.text, &s_surface.bpm.icon,
-                          s_surface.style.fontbook.chosen_fonts[s_surface.bpm.text.font_role])
-            ? BPM_STRATUM_MASK
-            : 0;
+    s_strata_created_mask |= bpm_module_create(
+      root,
+      &s_surface.bpm.text,
+      &s_surface.bpm.icon,
+      s_surface.style.fontbook.chosen_fonts[s_surface.bpm.text.font_role])
+      ? BPM_STRATUM_MASK : 0;
 
-    s_strata_created_mask |=
-        steps_module_create(root,
-          &s_surface.steps.text,
-          &s_surface.steps.icon,
-          &s_surface.steps.progress,
-          s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role])
-            ? STEPS_STRATUM_MASK
-            : 0;
+    s_strata_created_mask |= steps_module_create(
+      root,
+      &s_surface.steps.text,
+      &s_surface.steps.icon,
+      &s_surface.steps.progress,
+      s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role])
+      ? STEPS_STRATUM_MASK : 0;
 #endif
 
-    success = true;
-    watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
+success = true;
+watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
   }
 
   s_watchface_initialized = success;

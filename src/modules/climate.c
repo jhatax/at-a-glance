@@ -1,6 +1,5 @@
 #include "climate.h"
 #include "climate_glyphs.h"
-#include "gcolor_definitions.h"
 #include "helper.h"
 #include "settings.h"
 #include "substratum_renderer.h"
@@ -14,6 +13,12 @@ enum {
   WEATHER_CONDITION_MAX = 99,
 };
 
+#define TEMPERATURE_IS_VALID(cel_tenths) (HELPER_VALUE_IN_RANGE((cel_tenths), \
+  WEATHER_TEMP_MIN_CELSIUS_TENTHS, WEATHER_TEMP_MAX_CELSIUS_TENTHS))
+
+#define CONDITION_IS_VALID(cond) (HELPER_VALUE_IN_RANGE((cond), WEATHER_CONDITION_MIN, \
+  WEATHER_CONDITION_MAX))
+
 // Initialize static variables to known starting state values
 static Layer *s_climate_icon_layer = NULL;
 static TextLayer *s_temperature_layer = NULL;
@@ -26,8 +31,6 @@ static ClimatePalette s_climate_palette = {0};
 
 static bool s_climate_is_available = false;
 static bool format_temperature(char *buf, size_t buflen, uint8_t temp_unit);
-static bool climate_temperature_is_valid(int celsius_tenths);
-static bool climate_condition_is_valid(int weather_condition);
 static void climate_module_update_display(uint8_t temp_unit);
 static void climate_module_set_temperature(int celsius_tenths);
 static void climate_module_set_condition(int weather_condition);
@@ -90,17 +93,6 @@ static bool format_temperature(char *buf, size_t buflen, uint8_t temp_unit) {
   return true;
 }
 
-static bool climate_temperature_is_valid(int celsius_tenths) {
-  return celsius_tenths == CLIMATE_TEMP_UNAVAILABLE ||
-         (celsius_tenths >= WEATHER_TEMP_MIN_CELSIUS_TENTHS &&
-          celsius_tenths <= WEATHER_TEMP_MAX_CELSIUS_TENTHS);
-}
-
-static bool climate_condition_is_valid(int weather_condition) {
-  return weather_condition == CLIMATE_CONDITION_UNKNOWN ||
-         (weather_condition >= WEATHER_CONDITION_MIN && weather_condition <= WEATHER_CONDITION_MAX);
-}
-
 static bool climate_is_day_is_valid(int is_day) { return (is_day == 0 || is_day == 1); }
 
 static void climate_module_update_display(uint8_t temp_unit) {
@@ -114,7 +106,8 @@ static void climate_module_update_display(uint8_t temp_unit) {
   GColor text_color =
       is_temperature_available ? s_climate_palette.normal : s_climate_palette.unknown;
 
-  substratum_renderer_update_text_layer(s_temperature_layer, s_temperature_buffer, text_color);
+  substratum_renderer_update_text_layer(
+    s_temperature_layer, s_temperature_buffer, text_color);
 
   // Weather is available if there is a temperature and condition is known
   s_climate_is_available =
@@ -145,8 +138,9 @@ static void climate_icon_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void climate_module_set_temperature(int celsius_tenths) {
-  if (!climate_temperature_is_valid(celsius_tenths)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather temperature invalid: value=%d", celsius_tenths);
+  if (!(TEMPERATURE_IS_VALID(celsius_tenths))) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Weather temperature invalid: value=%d", celsius_tenths);
     celsius_tenths = CLIMATE_TEMP_UNAVAILABLE;
   }
 
@@ -154,7 +148,7 @@ static void climate_module_set_temperature(int celsius_tenths) {
 }
 
 static void climate_module_set_condition(int weather_condition) {
-  if (!climate_condition_is_valid(weather_condition)) {
+  if (!(CONDITION_IS_VALID(weather_condition))) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather condition invalid: value=%d", weather_condition);
     weather_condition = CLIMATE_CONDITION_UNKNOWN;
   }
@@ -222,10 +216,11 @@ void climate_module_set_weather(ClimateUpdate *update) {
   int celsius_tenths = update->celsius_tenths;
   int weather_condition = update->weather_condition;
   int is_day = update->is_day;
-  if (!update->is_complete || !climate_temperature_is_valid(celsius_tenths) ||
-      !climate_condition_is_valid(weather_condition) || !climate_is_day_is_valid(is_day)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather data invalid: temp=%d condition=%d is_day=%d",
-            celsius_tenths, weather_condition, is_day);
+  if (!update->is_complete || !(TEMPERATURE_IS_VALID(celsius_tenths)) ||
+      !(CONDITION_IS_VALID(weather_condition)) || !(climate_is_day_is_valid(is_day))) {
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Weather data invalid: temp=%d condition=%d is_day=%d",
+      celsius_tenths, weather_condition, is_day);
     // Invalidate previous weather data
     s_temp_celsius_tenths = CLIMATE_TEMP_UNAVAILABLE;
     s_weather_condition = CLIMATE_CONDITION_UNKNOWN;

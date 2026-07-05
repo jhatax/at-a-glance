@@ -1,4 +1,3 @@
-#include "gcolor_definitions.h"
 #include "layout.h"
 #include "helper.h"
 #include "layout_style.h"

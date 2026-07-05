@@ -1,6 +1,7 @@
 #include "bpm.h"
 #ifdef PBL_HEALTH
 #include "helper.h"
+#include "pebble.h"
 #include "substratum_renderer.h"
 
 #define MAX_STR_LEN 12
@@ -10,7 +11,7 @@
 #define BPM_EXTREME 120
 #define BPM_HIGH 100
 #define BPM_MAX 220
-#define IS_BPM_VALID(bpm) ((bpm) >= BPM_MIN && (bpm) < BPM_MAX)
+#define IS_BPM_VALID(bpm) HELPER_VALUE_IN_RANGE((bpm), BPM_MIN, BPM_MAX)
 
 typedef struct {
   GColor background;
@@ -29,9 +30,9 @@ static TextLayer *s_bpm_layer = NULL;
 static bool s_bpm_is_valid = false;
 
 // This needs to be the main color of the BPM icon
-static GColor s_bpm_icon_color = GColorBlack;
+static GColor s_bpm_icon_color;
 // This needs to be any color other than the main color of the bpm icon
-static GColor s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
+static GColor s_bpm_color;
 
 #if ATAGLANCE_DEBUG
 static bool s_debug_bpm_is_set = false;
@@ -39,13 +40,13 @@ static int s_debug_bpm = BPM_INVALID;
 #endif
 
 static const BpmPalette c_dark_bpm_palette = {
-    .warning = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
-    .critical = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
+  .warning = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
+  .critical = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
 };
 
 static const BpmPalette c_light_bpm_palette = {
-    .warning = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-    .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
+  .warning = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+  .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
 };
 
 static void bpm_update_palette(const ColorPalette *palette);
@@ -146,8 +147,7 @@ static void update_bpm(void) {
   s_bpm_is_valid = IS_BPM_VALID(bpm_to_render);
   s_bpm_color = calculate_bpm_color(bpm_to_render);
 
-  // Do not render the text in the same color as the icon
-  // except when the text is available vs. unavailable
+  // Color the text as either normal or unknown
   GColor text_color = s_bpm_palette.normal;
   if (s_bpm_is_valid) {
     snprintf(s_bpm_buffer, MAX_STR_LEN, "%d", bpm_to_render);
@@ -163,8 +163,9 @@ static void update_bpm(void) {
   }
 }
 
-bool bpm_module_create(Layer *root, const WatchfaceTextSubstratum *text,
-                       const WatchfaceIconSubstratum *icon, GFont font) {
+bool bpm_module_create(Layer *root,
+  const WatchfaceTextSubstratum *text,
+  const WatchfaceIconSubstratum *icon, GFont font) {
   if (!root || !text || !font) {
     return false;
   }
@@ -178,6 +179,9 @@ bool bpm_module_create(Layer *root, const WatchfaceTextSubstratum *text,
 
   s_bpm_is_valid = false;
   s_bpm_icon_color = GColorBlack;
+  // By making these different from the get-go, we ensure that the
+  // color is replaced the first time the icon is rendered in the right color
+  s_bpm_color = gcolor_legible_over(s_bpm_icon_color);
 #if ATAGLANCE_DEBUG
   s_debug_bpm_is_set = false;
   s_debug_bpm = BPM_INVALID;
