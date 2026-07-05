@@ -47,7 +47,6 @@ static void health_handler(HealthEventType event, void *context) {
   WatchfaceEventData data = {0};
   data.received = WATCHFACE_DATA_HEALTH_EVENT;
   data.parsed = WATCHFACE_DATA_HEALTH_EVENT;
-  data.health_event = (int)event;
   watchface_apply_received_data(&data, &s_settings);
 }
 #endif
@@ -74,7 +73,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     data.parsed = (WatchfaceDataMask)(data.parsed | WATCHFACE_DATA_DATE_TICK);
   }
 
-  data.time_units_changed = (int)units_changed;
   watchface_apply_received_data(&data, &s_settings);
 }
 
@@ -176,6 +174,9 @@ static void inbox_received_callback(DictionaryIterator *iter, void *context) {
 
   watchface_apply_received_data(&data, &s_settings);
 
+  // The check for weather update interval is managed in JS directly
+  // You could be defensive here and send a message but it is redundant
+
   if (previous_settings.time_format != s_settings.time_format ||
       previous_settings.temp_unit != s_settings.temp_unit ||
       previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
@@ -256,21 +257,22 @@ static uint32_t app_message_inbox_size(void) {
 static AppMessageResult initialize_inbox_outbox(void) {
   uint32_t inbox_size = app_message_inbox_size();
   bool pebblekit_connected = connection_service_peek_pebblekit_connection();
-  AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE);
+  AppMessageResult result = app_message_open(inbox_size,
+    APP_MESSAGE_OUTBOX_SIZE);
   if (result == APP_MSG_OK) {
     return result;
   }
 
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu",
-    result, inbox_size);
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d kit=%d",
-    APP_MESSAGE_OUTBOX_SIZE, pebblekit_connected);
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+    "AppMessage open failed: result=%d inbox=%lu", result,inbox_size);
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+    "AppMessage sizes: outbox=%d kit=%d", APP_MESSAGE_OUTBOX_SIZE, pebblekit_connected);
 
   result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM,
     APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage retry failed: result=%d kit=%d",
-      result, pebblekit_connected);
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+      "AppMessage retry failed: result=%d kit=%d", result, pebblekit_connected);
   }
 
   return result;
@@ -280,21 +282,24 @@ static void send_loaded_weather_update_minutes(void) {
   DictionaryIterator *out_iter = NULL;
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if (result != APP_MSG_OK || !out_iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox begin failed: result=%d", result);
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Weather cadence outbox begin failed: result=%d", result);
     return;
   }
 
-  DictionaryResult dict_result =
-      dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
-                       s_settings.weather_update_minutes);
+  DictionaryResult dict_result = dict_write_int32(out_iter,
+    MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
+    s_settings.weather_update_minutes);
   if (dict_result != DICT_OK) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Weather cadence dict write failed: result=%d", dict_result);
     return;
   }
 
   result = app_message_outbox_send();
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox send failed: result=%d", result);
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Weather cadence outbox send failed: result=%d", result);
   }
 }
 
@@ -328,12 +333,15 @@ static void init(void) {
     return;
   }
 
+  // We load settings but where do we apply them to the watchface?
   settings_load(&s_settings);
 
-  window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = main_window_load,
-                                           .unload = main_window_unload,
-                                       });
+  window_set_window_handlers(
+    s_window,
+    (WindowHandlers){
+      .load = main_window_load,
+      .unload = main_window_unload,
+    });
   window_stack_push(s_window, true);
 
   // Subscribe to services

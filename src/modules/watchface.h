@@ -5,10 +5,11 @@
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
-  WATCHFACE_UPDATE_TIME = 1 << 0,
-  WATCHFACE_UPDATE_DATE = 1 << 1,
-  WATCHFACE_UPDATE_BATTERY = 1 << 2,
-  WATCHFACE_UPDATE_CLIMATE = 1 << 3,
+  WATCHFACE_REPAINT = 1 << 0,
+  WATCHFACE_UPDATE_TIME = 1 << 1,
+  WATCHFACE_UPDATE_DATE = 1 << 2,
+  WATCHFACE_UPDATE_BATTERY = 1 << 3,
+  WATCHFACE_UPDATE_CLIMATE = 1 << 4,
 #ifdef PBL_HEALTH
   WATCHFACE_UPDATE_HEALTH = 1 << 5,
 #endif
@@ -30,10 +31,10 @@ typedef enum {
 #ifdef PBL_HEALTH
   WATCHFACE_DATA_HEALTH_EVENT = 1 << 11,
   WATCHFACE_DATA_STEPS_GOAL = 1 << 12,
-#endif
-#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
+#if ATAGLANCE_DEBUG
   WATCHFACE_DATA_DEBUG_BPM = 1 << 13,
   WATCHFACE_DATA_DEBUG_STEPS = 1 << 14,
+#endif
 #endif
 } WatchfaceDataMask;
 
@@ -43,17 +44,15 @@ typedef struct {
 
   int time_format;
   int temp_unit;
-  int temperature_celsius_tenths;
-  int weather_condition;
-  int is_day;
   int hr_sample_minutes;
   int display_mode;
   int weather_update_minutes;
   int steps_goal;
-  int time_units_changed;
-#ifdef PBL_HEALTH
-  int health_event;
-#endif
+
+  // Climate data
+  int temperature_celsius_tenths;
+  int weather_condition;
+  int is_day;
 
 #if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
   int debug_bpm;
