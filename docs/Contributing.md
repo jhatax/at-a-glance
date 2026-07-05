@@ -14,7 +14,7 @@ It is a workflow and review guide for contributors. It does not own product rule
 
 ## Scope
 
-- Treat every change as small firmware work.
+- Treat every change as small embedded firmware work.
 - Design first. Audit live source, docs, generated files, and dirty tree before editing. Keep one coherent slice. Preserve existing user work.
 - Cleanup, visual changes, AppMessage changes, platform work, and glyph tuning are separate unless explicitly approved together.
 
