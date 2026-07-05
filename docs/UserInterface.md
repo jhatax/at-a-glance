@@ -11,12 +11,6 @@ It is the reference for the implemented stack, geometry, fonts, palettes, icon s
 - `ProductInvariants.md`
 - `VisualVocabulary.md`
 
-## Current Screenshots
-
-Screenshots are still placeholders until the visual QA pass captures the final emulator set.
-
-Use this document to track what has been captured, what is still pending, and which platforms or display modes still need review.
-
 ## Current Visual Stack
 
 The current stack is shared across display families:
@@ -29,21 +23,17 @@ weather/date context
 bottom heart-rate context
 ```
 
-Rectangular and round displays implement the same information hierarchy and the
-same stack. Placement is resolved from defined layout constants.
+Rectangular and round displays implement the same information hierarchy and visual stack.
 
-## Current Geometry
+## Current Information Placement
 
-Geometry is platform-specific and integer-based.
-
-The current implementation resolves placement from defined layout constants for
-the active platform rather than scaling one master layout across every device.
-
-Health rows are present only on `PBL_HEALTH` builds.
+- Platform-specific and integer-based.
+- Resolved from defined layout constants for the active platform rather than scaling one master layout across every device.
+- Health rows are present only on `PBL_HEALTH` builds.
 
 ## Current Coordinates
 
-Coordinates are `x,y,w,h` and reflect the current architect formulas.
+Coordinates are `x,y,w,h`.
 
 ### Emery
 
@@ -159,24 +149,95 @@ Font sizes: Customized for display sizes
 | Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
 | Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
 
-Text metrics are defined per field. Font selection depends on role, display class, and platform, with Gabbro using a larger custom time font on large-display devices.
+- Text metrics -- coordinates, height, width --  are defined per field.
+- Font selection depends on role, display class, and platform.
 
-## Current Palettes
+## Supported Display Modes
 
-Static palettes are defined in `layout_stylist.c`. Dynamic BPM and battery-state colors remain owned by their respective modules.
+- There are four display modes.
+  - Each mode uses a defined palette to render text, icons, and convey state.
+- On color-capable watches, all four modes are available.
+- On monochrome-capable watches, two monochrome-specific modes are available.
 
-Each palette defines the background, primary text, unavailable text, date, and time colors used for a display mode.
 
-| Palette | Mode | Capability | Background | Primary text | Unavailable text | Date | Time |
+### Display Mode Palette Characteristics
+
+- Each palette is composed of five mutually exclusive and collectively exhaustive sets of colors.
+- The combined palette for each mode satisfies the design invariant of perceptual fluency.
+
+1. Primary Display
+2. Module: Battery
+3. Module: BPM
+4. Module: Climate
+5. Module: Steps
+
+### Realization of Shared Visual Identity
+
+1. On Color hardware, time remains orange.
+2. On Monochrome hardware, light and dark palettes are mirror images of one another.
+3. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have {date text, background} in one swapped with their opposite metric in the other.
+4. Module displays define `normal` and `unknown` that mirror values from the active primary display palette.
+
+### Primary Display Palette
+
+- Defines the background, primary text, unavailable text, date, and time colors used.
+- Colors are defined in `layout_stylist.c`.
+
+| Palette | Mode | Display Type | Background | Primary text | Unavailable text | Date | Time |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorOxfordBlue` | `GColorOrange` |
-| **Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
-| **Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorCeleste` | `GColorOrange` |
-| **White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
+| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorOxfordBlue` | `GColorOrange` |
+| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorCeleste` | `GColorOrange` |
 
-On color-capable watches, all four modes are available. The first two rows above describe the monochrome-capability palettes. When those same modes are rendered on color hardware, time remains orange. The latter two are the color-background palettes.
+### BPM Palette
 
-Module-owned colors then layer on top for battery, BPM, steps, and climate state. On monochrome displays, weather glyphs use heavier outline and line treatment so the same conditions still read clearly without color.
+- The BPM module palette is initialized in `bpm.c`
+- `warning` and `critical` come from the BPM-specific light/dark template.
+
+| Palette | Mode | Display Type | Background | Normal | Unavailable | Warning (`>=100`) | Critical (`>=120`) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
+| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorVividViolet` | `GColorRed` |
+| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorYellow` | `GColorShockingPink` |
+
+### Battery Palette
+
+- The battery module palette is initialized in `battery.c`.
+- `medium`, `low`, and `pluggedin` come from the battery-specific light/dark template.
+
+| Palette | Mode | Display Type | Background | Normal (`>50`) | Medium (`21-50`) | Low (`<=20`) | Plugged In |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
+| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorVividViolet` | `GColorRed` | `GColorGreen` |
+| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorYellow` | `GColorShockingPink` | `GColorIslamicGreen` |
+
+### Climate Palette
+
+- The climate module palette is initialized in `climate.c` and consumed by `climate_glyphs.c`.
+- Colors selected enhance weather condition identification.
+- On monochrome displays, weather glyphs use heavier outline and line treatment so the same conditions still read clearly sans color.
+
+| Palette | Mode | Display Type | Background | Normal | Unavailable | Sun | Cold | Cloud | Clear Ring (night) | Clear Fill |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorWindsorTan` | `GColorCobaltBlue` | `GColorBlue` | `GColorBabyBlueEyes` | `GColorBabyBlueEyes` |
+| **Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorDarkGray` | `GColorDarkGray` |
+| **Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorChromeYellow` | `GColorMintGreen` | `GColorElectricBlue` | `GColorBabyBlueEyes` | `GColorBabyBlueEyes` |
+| **White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorLightGray` |
+
+### Steps Palette
+
+- The steps module palette is initialized in `steps.c`.
+- `approaching` and `achieved` come from the steps-specific light/dark template.
+
+| Palette | Mode | Display Type | Background | Normal | Unavailable | Approaching (`>70%` of goal) | Achieved (`>= goal`) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
+| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
+| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorVividViolet` | `GColorIslamicGreen` |
+| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorYellow` | `GColorIslamicGreen` |
 
 ## Current Icon Sizes
 

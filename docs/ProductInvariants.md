@@ -10,6 +10,14 @@ These are acceptance properties, not current implementation notes.
 - `Design.md`
 - `VisualVocabulary.md`
 
+## Glanceability
+
+- Design for one-second recognition.
+- Keep the product hierarchy stable across display families.
+- Keep value and state changes from shifting the visual footprint unnecessarily.
+- The display should reward quick reading, not inspection.
+- A user should be able to understand the watchface at a glance without decoding it field by field.
+
 ## Dominant Time
 
 - Time is always dominant.
@@ -20,9 +28,8 @@ These are acceptance properties, not current implementation notes.
 
 - Information hierarchy remains recognizable across display families.
 - Rectangular and round targets should feel like the same product.
-- The shared hierarchy is: top steps context, dominant centered time, centered battery track, weather/date context, and bottom heart-rate context.
+- The shared hierarchy is: top steps context, centered time, centered battery track, weather/date context, and bottom heart-rate context.
 - Rectangular and round displays implement the same information hierarchy and stack.
-- Placement is resolved from defined layout constants.
 - Layout changes may rebalance spacing, but they should not change which information reads first, second, and third.
 
 ## First-Class Device Support
@@ -36,7 +43,7 @@ These are acceptance properties, not current implementation notes.
 ## Identifiable Visual Elements
 
 - Icons identify information.
-- Numbers provide values.
+- Numbers quantify values.
 - Text is primary; icons support recognition.
 - A text-only metric is acceptable when an icon cannot be created or does not fit the platform.
 - An icon-only metric is not acceptable.
@@ -45,15 +52,16 @@ These are acceptance properties, not current implementation notes.
 
 ## Stable Semantic Meaning
 
-Every visual channel has one responsibility.
+1. Every visual channel has one responsibility:
 
-- Text provides exact values.
-- Icons identify the metric.
-- Lines show progress.
-- Color indicates state.
-- Do not make one channel carry another channel's job when the product can avoid it.
-- Do not encode step count progress with icon color or icon shape. The text value already carries the count.
-- Users should not have to relearn the meaning of a channel from one metric to another.
+- Text = Exact values.
+- Icons = Metric identification.
+- Bars = Progress.
+- Color = State.
+
+2. Color an icon or glyph vs. text to maximize glanceability.
+
+3. Users should not have to relearn the meaning of a channel from one metric to another.
 
 ## Stable Color Meaning
 
@@ -62,14 +70,6 @@ Every visual channel has one responsibility.
 - Status meaning should stay consistent across the product.
 - Color may add speed and confidence, but the display must remain interpretable when color is absent, muted, or unavailable.
 - State meaning should survive across monochrome and color-capable devices.
-
-## Glanceability
-
-- Design for one-second recognition.
-- Keep the product hierarchy stable across display families.
-- Keep value and state changes from shifting the visual footprint unnecessarily.
-- The display should reward quick reading, not inspection.
-- A user should be able to understand the watchface at a glance without decoding it field by field.
 
 ## Calm Availability Language
 
