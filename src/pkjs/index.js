@@ -45,16 +45,26 @@ function parseWeatherUpdateMinutes(rawSettings) {
 }
 
 function applyWeatherUpdateMinutes(minutes, shouldRefreshWeather) {
+  var shouldUpdateRefreshSchedule = false;
   if (isNaN(minutes)) {
+    // If the current s_weatherUpdateInterval is not the same as the default
+    // to which the interval is going to be set, let's update refresh schedule.
+    if (s_weatherUpdateInterval != WEATHER_UPDATE_MINUTES_DEFAULT) {
+      shouldUpdateRefreshSchedule = true;
+    }
     s_weatherUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
   } else {
+    // If the current s_weatherUpdateInterval is not the same as the input
+    // to which the interval is going to be set, let's update the refresh schedule.
+    if (s_weatherUpdateInterval != minutes) {
+      shouldUpdateRefreshSchedule = true;
+    }
     s_weatherUpdateInterval = minutes;
   }
 
-  if (shouldRefreshWeather) {
-    updateWeather();
-  }
-  scheduleWeatherUpdates();
+  if (shouldRefreshWeather) { updateWeather(); }
+
+  if (shouldUpdateRefreshSchedule) { scheduleWeatherUpdates(); }
 }
 
 var clay = new Clay(clayConfig);
