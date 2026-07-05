@@ -1,6 +1,5 @@
 #include "battery.h"
 #include "helper.h"
-#include "pebble.h"
 #include "substratum_renderer.h"
 
 typedef struct {
@@ -8,8 +7,7 @@ typedef struct {
   GColor normal;
   GColor medium;
   GColor low;
-  GColor charging;
-  GColor full;
+  GColor pluggedin;
 } BatteryPalette;
 
 static BatteryPalette s_battery_palette = {0};
@@ -23,17 +21,15 @@ static Layer *s_battery_bolt_layer = NULL;
 static BatteryChargeState s_battery_state = {0};
 
 static const BatteryPalette c_dark_battery_palette = {
-    .medium = PBL_IF_COLOR_ELSE(GColorPastelYellow, GColorWhite),
+    .medium = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
     .low = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
-    .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
-    .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+    .pluggedin = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
 static const BatteryPalette c_light_battery_palette = {
     .medium = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
     .low = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
-    .charging = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
-    .full = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+    .pluggedin = PBL_IF_COLOR_ELSE(GColorGreen, GColorBlack),
 };
 
 static void battery_update_palette(const ColorPalette *palette);
@@ -63,12 +59,8 @@ static GColor calculate_battery_color(int16_t percent) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
-  if (s_battery_state.is_charging) {
-    return s_battery_palette.charging;
-  }
-
-  if (percent == 100) {
-    return s_battery_palette.full;
+  if (s_battery_state.is_plugged) {
+    return s_battery_palette.pluggedin;
   }
 
   if (percent > 50) {
@@ -129,7 +121,7 @@ static void update_battery_state(void) {
 
   layer_mark_dirty(s_battery_track_layer);
   if (s_battery_bolt_layer) {
-    layer_set_hidden(s_battery_bolt_layer, !s_battery_state.is_charging);
+    layer_set_hidden(s_battery_bolt_layer, !(s_battery_state.is_plugged));
     layer_mark_dirty(s_battery_bolt_layer);
   }
 }
