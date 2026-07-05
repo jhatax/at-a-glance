@@ -12,84 +12,82 @@
 #define CELL_PADDING 4
 
 typedef struct {
-  const char *label;
+  const char* label;
   int weather_code;
   bool is_day;
 } ClimateCell;
 
 typedef struct {
-  const char *title;
+  const char* title;
   ClimateCell cells[GLYPH_COL_COUNT * GLYPH_ROW_COUNT];
 } ClimatePageTemplate;
 
 typedef struct {
-  const char *title;
+  const char* title;
   int16_t icon_size;
 } GlyphSizeMode;
 
-static Window *s_window;
-static Layer *s_canvas_layer;
+static Window* s_window;
+static Layer* s_canvas_layer;
 static GFont s_status_font;
 static GFont s_label_font;
 static bool s_is_light_mode = false;
 static int s_page_index = 0;
 
 static const ClimatePageTemplate GLYPH_PAGE_TEMPLATES[] = {
-    {
-        .title = "CLEAR CLOUD",
-        .cells =
-            {
-                {"CLEAR D", 0, true},
-                {"CLEAR N", 0, false},
-                {"PARTLY D", 2, true},
-                {"CLOUD", 3, false},
-            },
+  {
+      .title = "CLEAR CLOUD",
+      .cells =
+          {
+              {"CLEAR D", 0, true},
+              {"CLEAR N", 0, false},
+              {"PARTLY D", 2, true},
+              {"CLOUD", 3, false},
+          },
+  },
+  {
+      .title = "FOG DRIZZLE",
+      .cells =
+          {
+              {"FOG", 45, false},
+              {"DRIZZLE", 51, false},
+              {"RAIN", 61, false},
+              {"HEAVY", 65, false},
+          },
+  },
+  {
+    .title = "SLEET SNOW",
+    .cells = {
+        {"SLEET L", 56, false},
+        {"SLEET H", 66, false},
+        {"SNOW", 71, false},
+        {"SNOW SH", 85, false},
     },
-    {
-        .title = "FOG DRIZZLE",
-        .cells =
-            {
-                {"FOG", 45, false},
-                {"DRIZZLE", 51, false},
-                {"RAIN", 61, false},
-                {"HEAVY", 65, false},
-            },
+  },
+  {
+    .title = "SHOWERS ETC",
+    .cells = {
+        {"SHOWERS", 80, false},
+        {"HEAVY SH", 82, false},
+        {"STORM", 95, false},
+        {"UNAVAIL", -1, false},
     },
-    {
-        .title = "SLEET SNOW",
-        .cells =
-            {
-                {"SLEET L", 56, false},
-                {"SLEET H", 66, false},
-                {"SNOW", 71, false},
-                {"SNOW SH", 85, false},
-            },
-    },
-    {
-        .title = "SHOWERS ETC",
-        .cells =
-            {
-                {"SHOWERS", 80, false},
-                {"HEAVY SH", 82, false},
-                {"STORM", 95, false},
-                {"UNAVAIL", -1, false},
-            },
-    },
+  },
 };
 
 static const GlyphSizeMode GLYPH_SIZE_MODES[] = {
-    {.title = "28", .icon_size = 28},
-    {.title = "20", .icon_size = 20},
-    {.title = "16", .icon_size = 16},
-    {.title = "10", .icon_size = 10},
+  {.title = "28", .icon_size = 28},
+  {.title = "20", .icon_size = 20},
+  {.title = "16", .icon_size = 16},
+  {.title = "10", .icon_size = 10},
 };
 
 static const int GLYPH_PAGE_TEMPLATE_COUNT =
-    sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0]);
+  sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0]);
 
 static const int GLYPH_PAGE_COUNT =
-    (sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0])) *
-    (sizeof(GLYPH_SIZE_MODES) / sizeof(GLYPH_SIZE_MODES[0]));
+  (sizeof(GLYPH_PAGE_TEMPLATES) / sizeof(GLYPH_PAGE_TEMPLATES[0])) *
+  (sizeof(GLYPH_SIZE_MODES) / sizeof(GLYPH_SIZE_MODES[0]));
 
 static void mark_canvas_dirty(void) {
   if (s_canvas_layer) {
@@ -97,12 +95,12 @@ static void mark_canvas_dirty(void) {
   }
 }
 
-static void draw_status(GContext *ctx, const GRect *bounds, const ColorPalette *palette) {
+static void draw_status(GContext* ctx, const GRect* bounds, const ColorPalette* palette) {
   char status[40];
   int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
   int template_index = s_page_index % GLYPH_PAGE_TEMPLATE_COUNT;
-  const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
-  const ClimatePageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
+  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
+  const ClimatePageTemplate* page_template = &GLYPH_PAGE_TEMPLATES[template_index];
 
   snprintf(status, sizeof(status), "%d/%d %s %s %s", s_page_index + 1, GLYPH_PAGE_COUNT,
            size_mode->title, page_template->title, s_is_light_mode ? "LIGHT" : "DARK");
@@ -113,15 +111,15 @@ static void draw_status(GContext *ctx, const GRect *bounds, const ColorPalette *
                      GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
-static void draw_cell_label(GContext *ctx, const GRect *frame, const ColorPalette *palette,
-                            const char *label) {
-  graphics_context_set_text_color(ctx, palette->unavailable_text);
+static void
+draw_cell_label(GContext* ctx, const GRect* frame, const ColorPalette* palette, const char* label) {
+  graphics_context_set_text_color(ctx, palette->outofrange_text);
   graphics_draw_text(ctx, label, s_label_font, *frame, GTextOverflowModeTrailingEllipsis,
                      GTextAlignmentCenter, NULL);
 }
 
-static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const ClimateCell *cell,
-                            const ColorPalette *palette, int16_t icon_size_override) {
+static void
+draw_glyph_cell(GContext* ctx, const GRect* cell_frame, const ClimateCell* cell, const ColorPalette* palette, int16_t icon_size_override) {
   GRect icon_area = GRect(cell_frame->origin.x + CELL_PADDING, cell_frame->origin.y + CELL_PADDING,
                           cell_frame->size.w - (CELL_PADDING * 2),
                           cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
@@ -142,7 +140,8 @@ static void draw_glyph_cell(GContext *ctx, const GRect *cell_frame, const Climat
   draw_cell_label(ctx, &label_frame, palette, cell->label);
 }
 
-static void canvas_update_proc(Layer *layer, GContext *ctx) {
+static void
+canvas_update_proc(Layer* layer, GContext* ctx) {
   GRect bounds = layer_get_bounds(layer);
   ColorPalette palette;
   int size_index = s_page_index / GLYPH_PAGE_TEMPLATE_COUNT;
@@ -154,8 +153,8 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
                             content_bounds.size.w, content_bounds.size.h - STATUS_HEIGHT);
   int16_t cell_w = grid_bounds.size.w / GLYPH_COL_COUNT;
   int16_t cell_h = grid_bounds.size.h / GLYPH_ROW_COUNT;
-  const ClimatePageTemplate *page_template = &GLYPH_PAGE_TEMPLATES[template_index];
-  const GlyphSizeMode *size_mode = &GLYPH_SIZE_MODES[size_index];
+  const ClimatePageTemplate* page_template = &GLYPH_PAGE_TEMPLATES[template_index];
+  const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
 
   glyph_lab_select_palette(&palette, s_is_light_mode);
   graphics_context_set_fill_color(ctx, palette.background);
@@ -174,7 +173,8 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   }
 }
 
-static void select_click_handler(ClickRecognizerRef recognizer, void *ctx) {
+static void
+select_click_handler(ClickRecognizerRef recognizer, void* ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -182,7 +182,8 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   mark_canvas_dirty();
 }
 
-static void up_click_handler(ClickRecognizerRef recognizer, void *ctx) {
+static void
+up_click_handler(ClickRecognizerRef recognizer, void* ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -190,7 +191,8 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   mark_canvas_dirty();
 }
 
-static void down_click_handler(ClickRecognizerRef recognizer, void *ctx) {
+static void
+down_click_handler(ClickRecognizerRef recognizer, void* ctx) {
   (void)recognizer;
   (void)ctx;
 
@@ -198,7 +200,8 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *ctx) {
   mark_canvas_dirty();
 }
 
-static void click_config_provider(void *ctx) {
+static void
+click_config_provider(void* ctx) {
   (void)ctx;
 
   window_single_click_subscribe(BUTTON_ID_UP, up_click_handler);
@@ -206,8 +209,9 @@ static void click_config_provider(void *ctx) {
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
-static void main_window_load(Window *window) {
-  Layer *root = window_get_root_layer(window);
+static void
+main_window_load(Window* window) {
+  Layer* root = window_get_root_layer(window);
   GRect bounds = layer_get_bounds(root);
 
   s_canvas_layer = layer_create(bounds);
@@ -219,7 +223,8 @@ static void main_window_load(Window *window) {
   layer_add_child(root, s_canvas_layer);
 }
 
-static void main_window_unload(Window *window) {
+static void
+main_window_unload(Window* window) {
   (void)window;
 
   if (s_canvas_layer) {
@@ -228,7 +233,8 @@ static void main_window_unload(Window *window) {
   }
 }
 
-static void init(void) {
+static void
+init(void) {
   s_status_font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
   s_label_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
   glyph_lab_glyphs_init();
@@ -238,14 +244,13 @@ static void init(void) {
   }
 
   window_set_click_config_provider(s_window, click_config_provider);
-  window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = main_window_load,
-                                           .unload = main_window_unload,
-                                       });
+  window_set_window_handlers(s_window,
+    (WindowHandlers){.load = main_window_load, .unload = main_window_unload,});
   window_stack_push(s_window, true);
 }
 
-static void deinit(void) {
+static void
+deinit(void) {
   glyph_lab_glyphs_deinit();
   if (s_window) {
     window_destroy(s_window);
@@ -253,7 +258,8 @@ static void deinit(void) {
   }
 }
 
-int main(void) {
+int
+main(void) {
   init();
   app_event_loop();
   deinit();

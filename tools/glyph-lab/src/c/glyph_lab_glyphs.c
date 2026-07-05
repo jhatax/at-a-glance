@@ -7,7 +7,7 @@
 typedef struct {
   GColor background;
   GColor normal;
-  GColor unknown;
+  GColor outofrange;
   GColor sun;
   GColor cold;
   GColor cloud;
@@ -31,7 +31,7 @@ typedef enum {
   WEATHER_ICON_HEAVY_SHOWERS,
   WEATHER_ICON_SNOW_SHOWERS,
   WEATHER_ICON_THUNDERSTORM,
-  WEATHER_ICON_UNKNOWN,
+  WEATHER_ICON_OUTOFRANGE,
 } WeatherIconKind;
 
 enum {
@@ -41,8 +41,8 @@ enum {
   WEATHER_ICON_CENTER_Y = WEATHER_ICON_GRID_H / 2,
 };
 
-static void weather_subframe(const GRect *frame, GRect *out, int16_t x, int16_t y, int16_t w,
-                             int16_t h) {
+static void
+weather_subframe(const GRect* frame, GRect* out, int16_t x, int16_t y, int16_t w, int16_t h) {
   if (!frame || !out) {
     return;
   }
@@ -53,7 +53,8 @@ static void weather_subframe(const GRect *frame, GRect *out, int16_t x, int16_t 
   out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, WEATHER_ICON_GRID_H);
 }
 
-static int16_t glyph_lab_scale_icon_x_in_frame(const GRect *frame, int16_t coord) {
+static int16_t
+glyph_lab_scale_icon_x_in_frame(const GRect* frame, int16_t coord) {
   if (!frame) {
     return 0;
   }
@@ -62,7 +63,8 @@ static int16_t glyph_lab_scale_icon_x_in_frame(const GRect *frame, int16_t coord
                     frame->origin.x + frame->size.w - 1);
 }
 
-static int16_t glyph_lab_scale_icon_y_in_frame(const GRect *frame, int16_t coord) {
+static int16_t
+glyph_lab_scale_icon_y_in_frame(const GRect* frame, int16_t coord) {
   if (!frame) {
     return 0;
   }
@@ -71,12 +73,14 @@ static int16_t glyph_lab_scale_icon_y_in_frame(const GRect *frame, int16_t coord
                     frame->origin.y + frame->size.h - 1);
 }
 
-static GPoint glyph_lab_scale_icon_x_y_in_frame(const GRect *frame, int16_t x, int16_t y) {
+static GPoint
+glyph_lab_scale_icon_x_y_in_frame(const GRect* frame, int16_t x, int16_t y) {
   return GPoint(glyph_lab_scale_icon_x_in_frame(frame, x),
                 glyph_lab_scale_icon_y_in_frame(frame, y));
 }
 
-static void draw_scaled_line_in_frame(GContext *ctx, const GRect *frame, int16_t x0, int16_t y0,
+static void
+draw_scaled_line_in_frame(GContext* ctx, const GRect* frame, int16_t x0, int16_t y0,
                                       int16_t x1, int16_t y1) {
   if (!ctx || !frame) {
     return;
@@ -86,25 +90,23 @@ static void draw_scaled_line_in_frame(GContext *ctx, const GRect *frame, int16_t
                      glyph_lab_scale_icon_x_y_in_frame(frame, x1, y1));
 }
 
-static void fill_scaled_rect_from_corners_in_frame(GContext *ctx, const GRect *frame, int16_t x0,
-                                                   int16_t y0, int16_t x1, int16_t y1) {
+static void
+fill_scaled_rect_from_corners_in_frame(GContext* ctx, const GRect* frame, int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
   if (!ctx || !frame) {
     return;
   }
 
   graphics_fill_rect(
       ctx,
-      GRect(glyph_lab_scale_icon_x_in_frame(frame, x0),
-            glyph_lab_scale_icon_y_in_frame(frame, y0),
-            glyph_lab_scale_icon_x_in_frame(frame, x1) -
-                glyph_lab_scale_icon_x_in_frame(frame, x0),
+      GRect(glyph_lab_scale_icon_x_in_frame(frame, x0), glyph_lab_scale_icon_y_in_frame(frame, y0),
+            glyph_lab_scale_icon_x_in_frame(frame, x1) - glyph_lab_scale_icon_x_in_frame(frame, x0),
             glyph_lab_scale_icon_y_in_frame(frame, y1) -
                 glyph_lab_scale_icon_y_in_frame(frame, y0)),
       0, GCornerNone);
 }
 
-static void fill_scaled_circle_in_frame(GContext *ctx, const GRect *frame, int16_t x, int16_t y,
-                                        int16_t r) {
+static void
+fill_scaled_circle_in_frame(GContext* ctx, const GRect* frame, int16_t x, int16_t y, int16_t r) {
   if (!ctx || !frame) {
     return;
   }
@@ -113,8 +115,8 @@ static void fill_scaled_circle_in_frame(GContext *ctx, const GRect *frame, int16
                        glyph_lab_scale_icon_coord(&frame->size, r));
 }
 
-static void draw_scaled_circle_in_frame(GContext *ctx, const GRect *frame, int16_t x, int16_t y,
-                                        int16_t r) {
+static void
+draw_scaled_circle_in_frame(GContext* ctx, const GRect* frame, int16_t x, int16_t y, int16_t r) {
   if (!ctx || !frame) {
     return;
   }
@@ -123,7 +125,8 @@ static void draw_scaled_circle_in_frame(GContext *ctx, const GRect *frame, int16
                        glyph_lab_scale_icon_coord(&frame->size, r));
 }
 
-static void draw_unavailable_slash(GContext *ctx, const GSize *size, GColor color) {
+static void
+draw_unavailable_slash(GContext* ctx, const GSize* size, GColor color) {
   if (!ctx || !size) {
     return;
   }
@@ -135,7 +138,8 @@ static void draw_unavailable_slash(GContext *ctx, const GSize *size, GColor colo
   glyph_lab_draw_scaled_line(ctx, size, 22, 22, 26, 26);
 }
 
-static void draw_filled_bolt_in_frame(GContext *ctx, const GRect *frame, GColor fill_color) {
+static void
+draw_filled_bolt_in_frame(GContext* ctx, const GRect* frame, GColor fill_color) {
   if (!ctx || !frame) {
     return;
   }
@@ -154,7 +158,7 @@ static void draw_filled_bolt_in_frame(GContext *ctx, const GRect *frame, GColor 
       .num_points = ARRAY_LENGTH(bolt_points),
       .points = bolt_points,
   };
-  GPath *path = gpath_create(&path_info);
+  GPath* path = gpath_create(&path_info);
 
   if (path) {
     uint8_t stroke_width = GLYPH_LAB_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h));
@@ -168,7 +172,8 @@ static void draw_filled_bolt_in_frame(GContext *ctx, const GRect *frame, GColor 
   }
 }
 
-static GColor weather_clear_ring_color(const ClimatePalette *climate_palette, bool is_day) {
+static GColor
+weather_clear_ring_color(const ClimatePalette* climate_palette, bool is_day) {
   if (!climate_palette) {
     return GColorWhite;
   }
@@ -176,7 +181,8 @@ static GColor weather_clear_ring_color(const ClimatePalette *climate_palette, bo
   return HELPER_IF_ELSE(is_day, climate_palette->sun, climate_palette->clear_ring);
 }
 
-static GColor weather_clear_fill_color(const ClimatePalette *climate_palette, bool is_day) {
+static GColor
+weather_clear_fill_color(const ClimatePalette* climate_palette, bool is_day) {
   if (!climate_palette) {
     return GColorWhite;
   }
@@ -184,7 +190,8 @@ static GColor weather_clear_fill_color(const ClimatePalette *climate_palette, bo
   return HELPER_IF_ELSE(is_day, climate_palette->sun, climate_palette->clear_fill);
 }
 
-static GColor weather_color_for_kind(WeatherIconKind kind, const ClimatePalette *climate_palette) {
+static GColor
+weather_color_for_kind(WeatherIconKind kind, const ClimatePalette* climate_palette) {
   if (!climate_palette) {
     return GColorWhite;
   }
@@ -209,15 +216,15 @@ static GColor weather_color_for_kind(WeatherIconKind kind, const ClimatePalette 
     return climate_palette->cloud;
   case WEATHER_ICON_CLEAR:
     return climate_palette->normal;
-  case WEATHER_ICON_UNKNOWN:
-    return climate_palette->unknown;
+  case WEATHER_ICON_OUTOFRANGE:
+    return climate_palette->outofrange;
   }
 
   return climate_palette->normal;
 }
 
-static void draw_weather_outline_sun(GContext *ctx, const GRect *frame,
-                                     const ClimatePalette *climate_palette, bool is_outline) {
+static void
+draw_weather_outline_sun(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, bool is_outline) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -226,8 +233,8 @@ static void draw_weather_outline_sun(GContext *ctx, const GRect *frame,
   GColor sun_fill_color = HELPER_IF_ELSE(is_outline, climate_palette->background, color);
   graphics_context_set_fill_color(ctx, sun_fill_color);
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, GLYPH_LAB_ICON_STROKE_WIDTH(
-                                             HELPER_MIN(frame->size.w, frame->size.h)));
+  graphics_context_set_stroke_width(
+      ctx, GLYPH_LAB_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h)));
   draw_scaled_circle_in_frame(ctx, frame, WEATHER_ICON_CENTER_X, WEATHER_ICON_CENTER_Y, 6);
   draw_scaled_line_in_frame(ctx, frame, WEATHER_ICON_CENTER_X, WEATHER_ICON_CENTER_Y - 13,
                             WEATHER_ICON_CENTER_X, WEATHER_ICON_CENTER_Y - 9);
@@ -247,8 +254,8 @@ static void draw_weather_outline_sun(GContext *ctx, const GRect *frame,
                             WEATHER_ICON_CENTER_X + 10, WEATHER_ICON_CENTER_Y + 10);
 }
 
-static void draw_weather_sun(GContext *ctx, const GRect *frame,
-                             const ClimatePalette *climate_palette) {
+static void
+draw_weather_sun(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -256,9 +263,8 @@ static void draw_weather_sun(GContext *ctx, const GRect *frame,
   draw_weather_outline_sun(ctx, frame, climate_palette, false);
 }
 
-static void draw_weather_filled_cloud(GContext *ctx, const GRect *frame,
-                                      const ClimatePalette *climate_palette,
-                                      WeatherIconKind icon_kind, bool is_filled) {
+static void
+draw_weather_filled_cloud(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, WeatherIconKind icon_kind, bool is_filled) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -310,8 +316,8 @@ static void draw_weather_filled_cloud(GContext *ctx, const GRect *frame,
                             cloud_base_y);
 }
 
-static void draw_weather_cloud(GContext *ctx, const GRect *frame,
-                               const ClimatePalette *climate_palette, WeatherIconKind icon_kind) {
+static void
+draw_weather_cloud(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, WeatherIconKind icon_kind) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -319,9 +325,8 @@ static void draw_weather_cloud(GContext *ctx, const GRect *frame,
   draw_weather_filled_cloud(ctx, frame, climate_palette, icon_kind, false);
 }
 
-static void draw_weather_clear_icon(GContext *ctx, const GRect *frame,
-                                    const ClimatePalette *climate_palette, bool is_day,
-                                    bool is_filled) {
+static void
+draw_weather_clear_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, bool is_day, bool is_filled) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -345,8 +350,8 @@ static void draw_weather_clear_icon(GContext *ctx, const GRect *frame,
   }
 }
 
-static void draw_weather_partly_cloudy_icon(GContext *ctx, const GRect *frame,
-                                            const ClimatePalette *climate_palette, bool is_day) {
+static void
+draw_weather_partly_cloudy_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, bool is_day) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -360,8 +365,8 @@ static void draw_weather_partly_cloudy_icon(GContext *ctx, const GRect *frame,
   draw_weather_filled_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_PARTLY_CLOUDY, false);
 }
 
-static void draw_weather_fog_icon(GContext *ctx, const GRect *frame,
-                                  const ClimatePalette *climate_palette) {
+static void
+draw_weather_fog_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -373,28 +378,29 @@ static void draw_weather_fog_icon(GContext *ctx, const GRect *frame,
   draw_scaled_line_in_frame(ctx, frame, 7, 22, 21, 22);
 }
 
-static void draw_weather_drizzle_icon(GContext *ctx, const GRect *frame,
-                                      const ClimatePalette *climate_palette) {
+static void
+draw_weather_drizzle_icon(GContext* ctx,const GRect* frame,const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
 
-  graphics_context_set_stroke_color(ctx,
-                                    weather_color_for_kind(WEATHER_ICON_DRIZZLE, climate_palette));
+  graphics_context_set_stroke_color(
+    ctx, weather_color_for_kind(WEATHER_ICON_DRIZZLE, climate_palette));
   graphics_context_set_stroke_width(ctx, 2);
   draw_scaled_line_in_frame(ctx, frame, 7, 5, 4, 13);
   draw_scaled_line_in_frame(ctx, frame, 14, 10, 11, 18);
   draw_scaled_line_in_frame(ctx, frame, 21, 15, 18, 23);
 }
 
-static void draw_weather_rain_marks(GContext *ctx, const GRect *frame, GColor color, bool heavy) {
+static void
+draw_weather_rain_marks(GContext* ctx, const GRect* frame, GColor color, bool heavy) {
   if (!ctx || !frame) {
     return;
   }
 
   graphics_context_set_stroke_color(ctx, color);
-  graphics_context_set_stroke_width(ctx, GLYPH_LAB_ICON_STROKE_WIDTH(
-                                             HELPER_MIN(frame->size.w, frame->size.h)));
+  graphics_context_set_stroke_width(
+      ctx, GLYPH_LAB_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h)));
   if (heavy) {
     draw_scaled_line_in_frame(ctx, frame, 4, 1, 1, 27);
     draw_scaled_line_in_frame(ctx, frame, 11, 1, 8, 27);
@@ -408,20 +414,21 @@ static void draw_weather_rain_marks(GContext *ctx, const GRect *frame, GColor co
   }
 }
 
-static void draw_weather_rain_icon(GContext *ctx, const GRect *frame, bool heavy,
-                                   const ClimatePalette *climate_palette) {
+static void
+draw_weather_rain_icon(GContext* ctx, const GRect* frame, bool heavy, const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
 
   draw_weather_rain_marks(
-      ctx, frame,
-      weather_color_for_kind(HELPER_IF_ELSE(heavy, WEATHER_ICON_HEAVY_RAIN, WEATHER_ICON_RAIN),
-                             climate_palette),
-      heavy);
+    ctx, frame,
+    weather_color_for_kind(
+      HELPER_IF_ELSE(heavy, WEATHER_ICON_HEAVY_RAIN, WEATHER_ICON_RAIN), climate_palette),
+    heavy);
 }
 
-static inline void draw_snowflake_segment_fixed(GContext *ctx, GPoint *center, int32_t cos_a,
+static void
+draw_snowflake_segment_fixed(GContext* ctx, GPoint* center, int32_t cos_a,
                                                 int32_t sin_a, int x1, int y1, int x2, int y2) {
   int32_t r_x1 = ((int32_t)x1 * cos_a - (int32_t)y1 * sin_a);
   int32_t r_y1 = ((int32_t)x1 * sin_a + (int32_t)y1 * cos_a);
@@ -435,7 +442,8 @@ static inline void draw_snowflake_segment_fixed(GContext *ctx, GPoint *center, i
                             center->y + HELPER_SCALE_ROUND(r_y2, 1, TRIG_MAX_RATIO)));
 }
 
-static void draw_weather_snowflake(GContext *ctx, const GRect *frame, GColor color) {
+static void
+draw_weather_snowflake(GContext* ctx, const GRect* frame, GColor color) {
   if (!ctx || !frame) {
     return;
   }
@@ -461,14 +469,14 @@ static void draw_weather_snowflake(GContext *ctx, const GRect *frame, GColor col
     int32_t cos_a = cos_lookup(angle);
 
     draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, 0, 0, -max_radius);
-    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -inner_v_pos,
-                                 -feather_w, -inner_v_pos - feather_h);
-    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -inner_v_pos,
-                                 feather_w, -inner_v_pos - feather_h);
-    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -outer_v_pos,
-                                 -feather_w, -outer_v_pos - feather_h);
-    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -outer_v_pos,
-                                 feather_w, -outer_v_pos - feather_h);
+    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -inner_v_pos, -feather_w,
+                                 -inner_v_pos - feather_h);
+    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -inner_v_pos, feather_w,
+                                 -inner_v_pos - feather_h);
+    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -outer_v_pos, -feather_w,
+                                 -outer_v_pos - feather_h);
+    draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -outer_v_pos, feather_w,
+                                 -outer_v_pos - feather_h);
     draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -max_radius, -1,
                                  -max_radius - 1);
     draw_snowflake_segment_fixed(ctx, &absolute_center, cos_a, sin_a, 0, -max_radius, 1,
@@ -482,8 +490,8 @@ static void draw_weather_snowflake(GContext *ctx, const GRect *frame, GColor col
   graphics_fill_circle(ctx, absolute_center, stroke_width);
 }
 
-static void draw_weather_sleet_icon(GContext *ctx, const GRect *frame,
-                                    const ClimatePalette *climate_palette, bool heavy) {
+static void
+draw_weather_sleet_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette, bool heavy) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -494,8 +502,7 @@ static void draw_weather_sleet_icon(GContext *ctx, const GRect *frame,
   draw_weather_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_CLOUD);
 
   GColor color = weather_color_for_kind(
-      HELPER_IF_ELSE(heavy, WEATHER_ICON_SLEET_HEAVY, WEATHER_ICON_SLEET_DRIZZLE),
-      climate_palette);
+      HELPER_IF_ELSE(heavy, WEATHER_ICON_SLEET_HEAVY, WEATHER_ICON_SLEET_DRIZZLE), climate_palette);
 
   weather_subframe(frame, &sub_frame, 13, 13, 14, 14);
   if (heavy) {
@@ -508,8 +515,8 @@ static void draw_weather_sleet_icon(GContext *ctx, const GRect *frame,
   draw_weather_snowflake(ctx, &sub_frame, color);
 }
 
-static void draw_weather_snow_showers_icon(GContext *ctx, const GRect *frame,
-                                           const ClimatePalette *climate_palette) {
+static void
+draw_weather_snow_showers_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -525,8 +532,8 @@ static void draw_weather_snow_showers_icon(GContext *ctx, const GRect *frame,
   draw_weather_snowflake(ctx, &sub_frame, color);
 }
 
-static void draw_weather_showers_icon(GContext *ctx, const GRect *frame, bool heavy,
-                                      const ClimatePalette *climate_palette) {
+static void draw_weather_showers_icon(GContext* ctx, const GRect* frame, bool heavy,
+                                      const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
@@ -543,19 +550,19 @@ static void draw_weather_showers_icon(GContext *ctx, const GRect *frame, bool he
   draw_weather_rain_marks(ctx, &sub_frame, color, heavy);
 }
 
-static void draw_weather_unavailable_icon(GContext *ctx, const GRect *frame,
-                                          const ClimatePalette *climate_palette) {
+static void
+draw_weather_unavailable_icon(GContext* ctx, const GRect* frame, const ClimatePalette* climate_palette) {
   if (!ctx || !frame || !climate_palette) {
     return;
   }
 
-  draw_weather_cloud(ctx, frame, climate_palette, WEATHER_ICON_UNKNOWN);
+  draw_weather_cloud(ctx, frame, climate_palette, WEATHER_ICON_OUTOFRANGE);
   draw_unavailable_slash(ctx, &frame->size, climate_palette->normal);
 }
 
 static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
   if (weather_condition < 0) {
-    return WEATHER_ICON_UNKNOWN;
+    return WEATHER_ICON_OUTOFRANGE;
   }
   if (weather_condition <= 1) {
     return WEATHER_ICON_CLEAR;
@@ -600,14 +607,15 @@ static WeatherIconKind get_weather_icon_kind(int16_t weather_condition) {
     return WEATHER_ICON_THUNDERSTORM;
   }
 
-  return WEATHER_ICON_UNKNOWN;
+  return WEATHER_ICON_OUTOFRANGE;
 }
 
 bool glyph_lab_glyphs_init(void) { return true; }
 
 void glyph_lab_glyphs_deinit(void) {}
 
-void glyph_lab_select_palette(ColorPalette *palette, bool is_light_mode) {
+void
+glyph_lab_select_palette(ColorPalette* palette, bool is_light_mode) {
   if (!palette) {
     return;
   }
@@ -618,7 +626,7 @@ void glyph_lab_select_palette(ColorPalette *palette, bool is_light_mode) {
         .background_layer_background = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
         .background_layer_rule = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
         .primary_text = PBL_IF_COLOR_ELSE(GColorBlack, GColorBlack),
-        .unavailable_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
+        .outofrange_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
         .date = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
         .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
     };
@@ -630,14 +638,14 @@ void glyph_lab_select_palette(ColorPalette *palette, bool is_light_mode) {
       .background_layer_background = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
       .background_layer_rule = GColorWhite,
       .primary_text = GColorWhite,
-      .unavailable_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
+      .outofrange_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
       .date = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
       .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
   };
 }
 
-void glyph_lab_draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weather_condition,
-                                 bool is_day, const ColorPalette *palette) {
+void
+glyph_lab_draw_climate_icon(GContext* ctx, const GRect* frame, int16_t weather_condition, bool is_day, const ColorPalette* palette) {
   if (!ctx || !frame || !palette) {
     return;
   }
@@ -645,20 +653,17 @@ void glyph_lab_draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weat
   ClimatePalette climate_palette = {
       .background = palette->background,
       .normal = palette->primary_text,
-      .unknown = palette->unavailable_text,
+      .outofrange = palette->outofrange_text,
 #ifdef PBL_COLOR
-      .sun = HELPER_IF_ELSE(
-          helper_color_equal(palette->background, GColorWhite) ||
-              helper_color_equal(palette->background, GColorCeleste),
-          GColorWindsorTan, GColorChromeYellow),
-      .cold = HELPER_IF_ELSE(
-          helper_color_equal(palette->background, GColorWhite) ||
-              helper_color_equal(palette->background, GColorCeleste),
-          GColorCobaltBlue, GColorMintGreen),
-      .cloud = HELPER_IF_ELSE(
-          helper_color_equal(palette->background, GColorWhite) ||
-              helper_color_equal(palette->background, GColorCeleste),
-          GColorBlue, GColorElectricBlue),
+      .sun = HELPER_IF_ELSE(helper_color_equal(palette->background, GColorWhite) ||
+                                helper_color_equal(palette->background, GColorCeleste),
+                            GColorWindsorTan, GColorChromeYellow),
+      .cold = HELPER_IF_ELSE(helper_color_equal(palette->background, GColorWhite) ||
+                                 helper_color_equal(palette->background, GColorCeleste),
+                             GColorCobaltBlue, GColorMintGreen),
+      .cloud = HELPER_IF_ELSE(helper_color_equal(palette->background, GColorWhite) ||
+                                  helper_color_equal(palette->background, GColorCeleste),
+                              GColorBlue, GColorElectricBlue),
 #else
       .sun = palette->primary_text,
       .cold = palette->primary_text,
@@ -716,10 +721,10 @@ void glyph_lab_draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weat
     draw_weather_snow_showers_icon(ctx, frame, &climate_palette);
     break;
   case WEATHER_ICON_THUNDERSTORM:
-    draw_filled_bolt_in_frame(
-        ctx, frame, weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, &climate_palette));
+    draw_filled_bolt_in_frame(ctx, frame,
+                              weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, &climate_palette));
     break;
-  case WEATHER_ICON_UNKNOWN:
+  case WEATHER_ICON_OUTOFRANGE:
     draw_weather_unavailable_icon(ctx, frame, &climate_palette);
     break;
   }

@@ -12,7 +12,7 @@ typedef struct {
   GColor background_layer_background;
   GColor background_layer_rule;
   GColor primary_text;
-  GColor unavailable_text;
+  GColor outofrange_text;
   GColor date;
   GColor time;
 } ColorPalette;
