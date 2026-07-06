@@ -38,7 +38,8 @@ At A Glance is a glance-first Pebble watchface built to make complex information
 ## Shared Visual DNA
 
 - Rectangular and round targets should feel like the same product.
-- Rectangular and round displays implement the same information hierarchy and stack. Placement is resolved from defined layout constants.
+- Rectangular and round displays implement the same information hierarchy and stack.
+- Placement doesn't rely on unpredictable scaling coefficients.
 - Shared visual DNA is about recognition, not about reusing the same coordinates on every device.
   - Define the information hierarchy and rules that establish shared visual DNA across platforms.
 
