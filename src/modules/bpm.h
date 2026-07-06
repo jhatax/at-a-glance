@@ -1,19 +1,19 @@
 #pragma once
 
-#include "watchface_components.h"
-#include "watchface_debug.h"
 #include <pebble.h>
 
-#ifdef PBL_HEALTH
-bool bpm_module_create(Layer *root, const WatchfaceTextSubstratum *text,
-                       const WatchfaceIconSubstratum *icon, GFont font);
-void bpm_module_destroy(void);
-void bpm_module_refresh(const ColorPalette *palette);
+#include "watchface_components.h"
+#include "watchface_debug.h"
 
-#if ATAGLANCE_DEBUG
-void bpm_module_debug_set_bpm(int bpm);
-void bpm_module_debug_clear_bpm(void);
-#endif
-// End Debug
+#ifdef PBL_HEALTH
+bool bpm_module_create(Layer* root,
+  const WatchfaceTextSubstratum* text,
+  const WatchfaceIconSubstratum* icon,
+  GFont font);
+void bpm_module_destroy();
+void bpm_module_refresh(const ColorPalette* palette);
+
+void bpm_module_oneshot_set_bpm(int bpm);
+void bpm_module_oneshot_clear_bpm();
 #endif
 // End Health Capability Check

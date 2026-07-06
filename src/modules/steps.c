@@ -1,5 +1,5 @@
 #include "steps.h"
-#ifdef PBL_HEALTH
+// #ifdef PBL_HEALTH
 
 #include "helper.h"
 #include "pebble.h"
@@ -12,10 +12,11 @@ enum {
   STEPS_INVALID = -1,
   STEPS_MIN = 1,
   STEPS_APPROACHING_GOAL_PERCENT = 70,
-  STEPS_MAX=100000,
+  STEPS_MAX = 100000,
 };
 
-#define ARE_STEPS_VALID(s) ((s) >= STEPS_MIN && (s) < STEPS_MAX)
+// Steps should at least be STEPS_MIN and less than STEPS_MAX
+#define STEPS_IN_RANGE(s) (HELPER_VALUE_IN_RANGE((s), STEPS_MIN, STEPS_MAX))
 
 // This needs to be the main color of the steps icon
 static GColor s_steps_icon_color;
@@ -28,46 +29,45 @@ static GBitmap* s_steps_bitmap = NULL;
 static TextLayer* s_steps_layer = NULL;
 static Layer* s_steps_icon_layer = NULL;
 static Layer* s_steps_progress_layer = NULL;
+static int s_steps = STEPS_INVALID;
 static bool s_steps_is_available = true;
 static uint16_t s_steps_goal = STEPS_INVALID;
-static uint16_t s_steps_approaching_threshold = STEPS_INVALID;
-static int s_steps = STEPS_INVALID;
+static uint16_t s_steps_threshold = STEPS_INVALID;
+
+static bool s_oneshot_steps_is_set = false;
+static int s_oneshot_steps = STEPS_INVALID;
 
 typedef struct {
   GColor background;
   GColor normal;
-  GColor unknown;
+  GColor outofrange;
   GColor approaching;
   GColor achieved;
 } StepsPalette;
 
 static StepsPalette s_steps_palette = {0};
 
-#if ATAGLANCE_DEBUG
-static bool s_debug_steps_is_set = false;
-static int s_debug_steps = STEPS_INVALID;
-#endif
-
 static const StepsPalette c_dark_steps_palette = {
-    .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
-    .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+  .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
+  .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
 static const StepsPalette c_light_steps_palette = {
-    .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-    .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
+  .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+  .achieved = PBL_IF_COLOR_ELSE(GColorGreen, GColorBlack),
 };
 
-static void steps_update_palette(const ColorPalette *palette);
+static void steps_update_palette(const ColorPalette* palette);
 static GColor calculate_steps_color(int steps);
-static void steps_icon_update_proc(Layer *layer, GContext *ctx);
-static void steps_progress_update_proc(Layer *layer, GContext *ctx);
+static void steps_icon_update_proc(Layer* layer, GContext* ctx);
+static void steps_progress_update_proc(Layer* layer, GContext* ctx);
 static void apply_steps_value(int steps, bool is_available);
-static void update_steps(void);
+static void update_steps();
 
-static void steps_update_palette(const ColorPalette *palette) {
-  const StepsPalette *template =
-      palette->is_light_mode ? &c_light_steps_palette : &c_dark_steps_palette;
+static void steps_update_palette(
+  const ColorPalette* palette) {
+  const StepsPalette* template =
+    palette->is_light_mode ? &c_light_steps_palette : &c_dark_steps_palette;
 
   if (MODULE_PALETTE_LOADED(s_steps_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
@@ -82,29 +82,32 @@ static void steps_update_palette(const ColorPalette *palette) {
   s_steps_palette = *template;
   s_steps_palette.background = palette->background;
   s_steps_palette.normal = palette->primary_text;
-  s_steps_palette.unknown = palette->unavailable_text;
+  s_steps_palette.outofrange = palette->outofrange_text;
 }
 
-static GColor calculate_steps_color(int steps) {
+static GColor calculate_steps_color(
+  int steps) {
   if (!MODULE_PALETTE_LOADED(s_steps_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
-  if (!(STEPS_GOAL_VALID(s_steps_goal))) {
-    return s_steps_palette.unknown;
+  if (!(STEPS_IN_RANGE(steps))) {
+    return s_steps_palette.outofrange;
   }
+
   if (steps >= s_steps_goal) {
     return s_steps_palette.achieved;
   }
 
-  int threshold = HELPER_ROUND_UP((s_steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
-  if (steps > threshold) {
+  if (steps >= s_steps_threshold) {
     return s_steps_palette.approaching;
   }
   return s_steps_palette.normal;
 }
 
-static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
+static void steps_icon_update_proc(
+  Layer* layer,
+  GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -112,9 +115,8 @@ static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
   GRect bounds = layer_get_bounds(layer);
 
   if (s_steps_bitmap) {
-     if (!HELPER_COLOR_EQUAL(s_steps_icon_color, s_steps_color)) {
-      if (helper_replace_color_in_bitmap(s_steps_bitmap,
-        s_steps_icon_color, s_steps_color)) {
+    if (!HELPER_COLOR_EQUAL(s_steps_icon_color, s_steps_color)) {
+      if (helper_replace_color_in_bitmap(s_steps_bitmap, s_steps_icon_color, s_steps_color)) {
         s_steps_icon_color = s_steps_color;
       }
     }
@@ -124,12 +126,13 @@ static void steps_icon_update_proc(Layer *layer, GContext *ctx) {
   graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, bounds);
 
   if (!s_steps_is_available) {
-    substratum_renderer_draw_unavailable_slash(
-      ctx, &bounds.size, s_steps_palette.normal);
+    substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_steps_palette.normal);
   }
 }
 
-static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
+static void steps_progress_update_proc(
+  Layer* layer,
+  GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -158,8 +161,8 @@ static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
     if (completed > 0) {
       // Change the width to be drawn. While this should never be greater than the width,
       // it doesn't hurt to be defensive+
-      width = HELPER_CLAMP_MAX(
-        HELPER_ROUND_UP((completed * bounds.size.w), 100), (bounds.size.w - 1));
+      width =
+        HELPER_CLAMP_MAX(HELPER_ROUND_UP((completed * bounds.size.w), 100), (bounds.size.w - 1));
     }
     graphics_fill_rect(ctx, GRect(pt1.x, pt1.y, width, bounds.size.h), 0, GCornerNone);
   } else {
@@ -169,7 +172,9 @@ static void steps_progress_update_proc(Layer *layer, GContext *ctx) {
   }
 }
 
-static void apply_steps_value(int steps, bool is_available) {
+static void apply_steps_value(
+  int steps,
+  bool is_available) {
   if (!s_steps_layer || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -186,8 +191,8 @@ static void apply_steps_value(int steps, bool is_available) {
   if (is_available) {
     snprintf(s_steps_buffer, MAX_STR_LEN, "%d", steps);
   } else {
-    snprintf(s_steps_buffer, MAX_STR_LEN, "%s", WATCHFACE_UNAVAILABLE_TEXT);
-    text_color = s_steps_palette.unknown;
+    snprintf(s_steps_buffer, MAX_STR_LEN, "%s", WATCHFACE_OUTOFRANGE_TEXT);
+    text_color = s_steps_palette.outofrange;
   }
 
   substratum_renderer_update_text_layer(s_steps_layer, s_steps_buffer, text_color);
@@ -202,7 +207,7 @@ static void apply_steps_value(int steps, bool is_available) {
   }
 }
 
-static void update_steps(void) {
+static void update_steps() {
   int steps = STEPS_INVALID;
   bool is_available = false;
 
@@ -212,31 +217,29 @@ static void update_steps(void) {
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue health_steps = health_service_sum_today(HealthMetricStepCount);
-    is_available = ARE_STEPS_VALID((int)health_steps);
+    is_available = STEPS_IN_RANGE((int)health_steps);
     if (is_available) {
       steps = (int)health_steps;
     }
   }
 
-  // If there is a one-shot debug value, overwrite the retrieved sum of steps
-#if ATAGLANCE_DEBUG
-  if (s_debug_steps_is_set) {
-    steps = s_debug_steps;
-    is_available = ARE_STEPS_VALID(s_debug_steps);
-    s_debug_steps_is_set = false;
-    s_debug_steps = STEPS_INVALID;
+  // If there is a one-shot steps value, overwrite the retrieved sum of steps
+  if (s_oneshot_steps_is_set) {
+    steps = s_oneshot_steps;
+    is_available = STEPS_IN_RANGE(s_oneshot_steps);
+    s_oneshot_steps_is_set = false;
+    s_oneshot_steps = STEPS_INVALID;
   }
-#endif
 
   apply_steps_value(steps, is_available);
 }
 
 bool steps_module_create(
-    Layer *root,
-    const WatchfaceTextSubstratum *text,
-    const WatchfaceIconSubstratum *icon,
-    const GRect* progress,
-    GFont font) {
+  Layer* root,
+  const WatchfaceTextSubstratum* text,
+  const WatchfaceIconSubstratum* icon,
+  const GRect* progress,
+  GFont font) {
   // The icon is not mandatory
   if (!root || !text || !progress || !font) {
     return false;
@@ -251,10 +254,8 @@ bool steps_module_create(
 
   s_steps_is_available = false;
   s_steps = STEPS_INVALID;
-#if ATAGLANCE_DEBUG
-  s_debug_steps_is_set = false;
-  s_debug_steps = STEPS_INVALID;
-#endif
+  s_oneshot_steps_is_set = false;
+  s_oneshot_steps = STEPS_INVALID;
   // The walking bitmap ships with black foreground pixels. Seed the
   // cached color to that source palette value so the first recolor
   // pass knows which color to replace.
@@ -263,8 +264,7 @@ bool steps_module_create(
   // the first time
   s_steps_color = gcolor_legible_over(s_steps_icon_color);
   s_steps_goal = STEPS_GOAL_DEFAULT;
-  s_steps_approaching_threshold = HELPER_ROUND_UP(
-    (s_steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
+  s_steps_threshold = HELPER_ROUND_UP((s_steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
 
   if (icon) {
     uint32_t resource_id = 0;
@@ -273,7 +273,7 @@ bool steps_module_create(
 
     if (s_steps_bitmap) {
       s_steps_icon_layer =
-          substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
+        substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
       if (!s_steps_icon_layer) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
         gbitmap_destroy(s_steps_bitmap);
@@ -308,7 +308,7 @@ bool steps_module_create(
   return true;
 }
 
-void steps_module_destroy(void) {
+void steps_module_destroy() {
   if (s_steps_layer) {
     text_layer_destroy(s_steps_layer);
     s_steps_layer = NULL;
@@ -336,33 +336,32 @@ void steps_module_destroy(void) {
   s_steps_icon_color = GColorBlack;
   s_steps_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   s_steps_goal = STEPS_GOAL_DEFAULT;
-#if ATAGLANCE_DEBUG
-  s_debug_steps_is_set = false;
-  s_debug_steps = STEPS_INVALID;
-#endif
+  s_oneshot_steps_is_set = false;
+  s_oneshot_steps = STEPS_INVALID;
 }
 
-void steps_module_refresh(const ColorPalette *palette, uint16_t steps_goal) {
+void steps_module_refresh(
+  const ColorPalette* palette,
+  uint16_t steps_goal) {
   if (!palette) {
     return;
   }
 
   s_steps_goal = steps_goal;
+  s_steps_threshold = HELPER_ROUND_UP((steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
   steps_update_palette(palette);
   update_steps();
 }
 
-#if ATAGLANCE_DEBUG
-void steps_module_debug_set_steps(int steps) {
-  s_debug_steps = steps;
-  s_debug_steps_is_set = true;
+void steps_module_oneshot_set_steps(
+  int steps) {
+  s_oneshot_steps = steps;
+  s_oneshot_steps_is_set = true;
 }
 
-void steps_module_debug_clear_steps(void) {
-  s_debug_steps_is_set = false;
-  s_debug_steps = STEPS_INVALID;
+void steps_module_oneshot_clear_steps() {
+  s_oneshot_steps_is_set = false;
+  s_oneshot_steps = STEPS_INVALID;
 }
-#endif
-// Debug Mode
-#endif
+// #endif
 // Health capabilities

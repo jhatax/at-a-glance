@@ -14,9 +14,6 @@ bool steps_module_create(
 void steps_module_destroy(void);
 void steps_module_refresh(const ColorPalette *palette, uint16_t steps_goal);
 
-#if ATAGLANCE_DEBUG
-void steps_module_debug_set_steps(int steps);
-void steps_module_debug_clear_steps(void);
-#endif
-
+void steps_module_oneshot_set_steps(int steps);
+void steps_module_oneshot_clear_steps(void);
 #endif

@@ -11,22 +11,22 @@
 #define BPM_EXTREME 120
 #define BPM_HIGH 100
 #define BPM_MAX 220
-#define IS_BPM_VALID(bpm) HELPER_VALUE_IN_RANGE((bpm), BPM_MIN, BPM_MAX)
+#define BPM_IN_RANGE(bpm) HELPER_VALUE_IN_RANGE((bpm), BPM_MIN, BPM_MAX)
 
 typedef struct {
   GColor background;
   GColor normal;
-  GColor warning;
+  GColor elevated;
   GColor critical;
-  GColor unknown;
+  GColor outofrange;
 } BpmPalette;
 
 static BpmPalette s_bpm_palette = {0};
 
 static char s_bpm_buffer[MAX_STR_LEN] = {0};
-static GBitmap *s_bpm_bitmap = NULL;
-static Layer *s_bpm_icon_layer = NULL;
-static TextLayer *s_bpm_layer = NULL;
+static GBitmap* s_bpm_bitmap = NULL;
+static Layer* s_bpm_icon_layer = NULL;
+static TextLayer* s_bpm_layer = NULL;
 static bool s_bpm_is_valid = false;
 
 // This needs to be the main color of the BPM icon
@@ -34,28 +34,27 @@ static GColor s_bpm_icon_color;
 // This needs to be any color other than the main color of the bpm icon
 static GColor s_bpm_color;
 
-#if ATAGLANCE_DEBUG
-static bool s_debug_bpm_is_set = false;
-static int s_debug_bpm = BPM_INVALID;
-#endif
+static bool s_oneshot_bpm_is_set = false;
+static int s_oneshot_bpm = BPM_INVALID;
 
 static const BpmPalette c_dark_bpm_palette = {
-  .warning = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
-  .critical = PBL_IF_COLOR_ELSE(GColorShockingPink, GColorWhite),
+  .elevated = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
+  .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorWhite),
 };
 
 static const BpmPalette c_light_bpm_palette = {
-  .warning = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+  .elevated = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
   .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
 };
 
-static void bpm_update_palette(const ColorPalette *palette);
+static void bpm_update_palette(const ColorPalette* palette);
 static GColor calculate_bpm_color(int bpm);
-static void bpm_icon_update_proc(Layer *layer, GContext *ctx);
-static void update_bpm(void);
+static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
+static void update_bpm();
 
-static void bpm_update_palette(const ColorPalette *palette) {
-  const BpmPalette *template = palette->is_light_mode ? &c_light_bpm_palette : &c_dark_bpm_palette;
+static void bpm_update_palette(
+  const ColorPalette* palette) {
+  const BpmPalette* template = palette->is_light_mode ? &c_light_bpm_palette : &c_dark_bpm_palette;
 
   if (MODULE_PALETTE_LOADED(s_bpm_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
@@ -70,27 +69,30 @@ static void bpm_update_palette(const ColorPalette *palette) {
   s_bpm_palette = *template;
   s_bpm_palette.background = palette->background;
   s_bpm_palette.normal = palette->primary_text;
-  s_bpm_palette.unknown = palette->unavailable_text;
+  s_bpm_palette.outofrange = palette->outofrange_text;
 }
 
-static GColor calculate_bpm_color(int bpm) {
+static GColor calculate_bpm_color(
+  int bpm) {
   if (!MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
 
-  if (bpm < BPM_MIN) {
-    return s_bpm_palette.unknown;
+  if (!(BPM_IN_RANGE(bpm))) {
+    return s_bpm_palette.outofrange;
   }
   if (bpm >= BPM_EXTREME) {
     return s_bpm_palette.critical;
   }
   if (bpm >= BPM_HIGH) {
-    return s_bpm_palette.warning;
+    return s_bpm_palette.elevated;
   }
   return s_bpm_palette.normal;
 }
 
-static void bpm_icon_update_proc(Layer *layer, GContext *ctx) {
+static void bpm_icon_update_proc(
+  Layer* layer,
+  GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return;
   }
@@ -121,30 +123,28 @@ static void bpm_icon_update_proc(Layer *layer, GContext *ctx) {
 // 4. Render text.
 // 5. Mark icon to be repainted.
 //
-// Debug values intentionally overwrite the peeked value only for the current
-// refresh. This keeps ATAGLANCE_DEBUG as a transport/render test hook without
-// making debug builds synthetic-only when no debug BPM packet is pending.
-static void update_bpm(void) {
+// One-shot values intentionally overwrite the peeked value only for the current
+// refresh. This keeps one-shot messages as a transport/render test hook without
+// needing special-casing.
+static void update_bpm() {
   int bpm_to_render = BPM_INVALID;
 
   time_t now = time(NULL);
   HealthServiceAccessibilityMask hr_mask =
-      health_service_metric_accessible(HealthMetricHeartRateBPM, now, now);
+    health_service_metric_accessible(HealthMetricHeartRateBPM, now, now);
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
     bpm_to_render = (int)health_service_peek_current_value(HealthMetricHeartRateBPM);
   }
 
-#if ATAGLANCE_DEBUG
-  if (s_debug_bpm_is_set) {
-    bpm_to_render = s_debug_bpm;
-    s_debug_bpm_is_set = false;
-    s_debug_bpm = BPM_INVALID;
+  if (s_oneshot_bpm_is_set) {
+    bpm_to_render = s_oneshot_bpm;
+    s_oneshot_bpm_is_set = false;
+    s_oneshot_bpm = BPM_INVALID;
   }
-#endif
 
   // Save this state unconditionally
-  s_bpm_is_valid = IS_BPM_VALID(bpm_to_render);
+  s_bpm_is_valid = BPM_IN_RANGE(bpm_to_render);
   s_bpm_color = calculate_bpm_color(bpm_to_render);
 
   // Color the text as either normal or unknown
@@ -152,8 +152,8 @@ static void update_bpm(void) {
   if (s_bpm_is_valid) {
     snprintf(s_bpm_buffer, MAX_STR_LEN, "%d", bpm_to_render);
   } else {
-    snprintf(s_bpm_buffer, MAX_STR_LEN, "%s", WATCHFACE_UNAVAILABLE_TEXT);
-    text_color = s_bpm_palette.unknown;
+    snprintf(s_bpm_buffer, MAX_STR_LEN, "%s", WATCHFACE_OUTOFRANGE_TEXT);
+    text_color = s_bpm_palette.outofrange;
   }
 
   substratum_renderer_update_text_layer(s_bpm_layer, s_bpm_buffer, text_color);
@@ -163,9 +163,11 @@ static void update_bpm(void) {
   }
 }
 
-bool bpm_module_create(Layer *root,
-  const WatchfaceTextSubstratum *text,
-  const WatchfaceIconSubstratum *icon, GFont font) {
+bool bpm_module_create(
+  Layer* root,
+  const WatchfaceTextSubstratum* text,
+  const WatchfaceIconSubstratum* icon,
+  GFont font) {
   if (!root || !text || !font) {
     return false;
   }
@@ -182,10 +184,8 @@ bool bpm_module_create(Layer *root,
   // By making these different from the get-go, we ensure that the
   // color is replaced the first time the icon is rendered in the right color
   s_bpm_color = gcolor_legible_over(s_bpm_icon_color);
-#if ATAGLANCE_DEBUG
-  s_debug_bpm_is_set = false;
-  s_debug_bpm = BPM_INVALID;
-#endif
+  s_oneshot_bpm_is_set = false;
+  s_oneshot_bpm = BPM_INVALID;
 
   if (icon) {
     uint32_t resource_id = 0;
@@ -206,7 +206,7 @@ bool bpm_module_create(Layer *root,
   return true;
 }
 
-void bpm_module_destroy(void) {
+void bpm_module_destroy() {
   if (s_bpm_icon_layer) {
     layer_destroy(s_bpm_icon_layer);
     s_bpm_icon_layer = NULL;
@@ -225,13 +225,12 @@ void bpm_module_destroy(void) {
   s_bpm_buffer[0] = '\0';
   s_bpm_is_valid = false;
   s_bpm_palette = (BpmPalette){0};
-#if ATAGLANCE_DEBUG
-  s_debug_bpm_is_set = false;
-  s_debug_bpm = BPM_INVALID;
-#endif
+  s_oneshot_bpm_is_set = false;
+  s_oneshot_bpm = BPM_INVALID;
 }
 
-void bpm_module_refresh(const ColorPalette *palette) {
+void bpm_module_refresh(
+  const ColorPalette* palette) {
   if (!palette) {
     return;
   }
@@ -240,16 +239,14 @@ void bpm_module_refresh(const ColorPalette *palette) {
   update_bpm();
 }
 
-#if ATAGLANCE_DEBUG
-void bpm_module_debug_set_bpm(int bpm) {
-  s_debug_bpm = bpm;
-  s_debug_bpm_is_set = true;
+void bpm_module_oneshot_set_bpm(
+  int bpm) {
+  s_oneshot_bpm = bpm;
+  s_oneshot_bpm_is_set = true;
 }
 
-void bpm_module_debug_clear_bpm(void) {
-  s_debug_bpm_is_set = false;
-  s_debug_bpm = BPM_INVALID;
+void bpm_module_oneshot_clear_bpm() {
+  s_oneshot_bpm_is_set = false;
+  s_oneshot_bpm = BPM_INVALID;
 }
-#endif
-
 #endif
