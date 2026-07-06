@@ -1,7 +1,7 @@
 #pragma once
-#include <pebble.h>
 #include "settings.h"
 #include "watchface_debug.h"
+#include <pebble.h>
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
@@ -31,12 +31,14 @@ typedef enum {
 #ifdef PBL_HEALTH
   WATCHFACE_DATA_HEALTH_EVENT = 1 << 11,
   WATCHFACE_DATA_STEPS_GOAL = 1 << 12,
-#if ATAGLANCE_DEBUG
-  WATCHFACE_DATA_DEBUG_BPM = 1 << 13,
-  WATCHFACE_DATA_DEBUG_STEPS = 1 << 14,
-#endif
+  WATCHFACE_DATA_ONESHOT_BPM = 1 << 13,
+  WATCHFACE_DATA_ONESHOT_STEPS = 1 << 14,
 #endif
 } WatchfaceDataMask;
+
+#if defined(PBL_HEALTH)
+enum { WATCHFACE_ONESHOT_MESSAGE_KEY_BPM = 10020, WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS = 10021 };
+#endif
 
 typedef struct {
   WatchfaceDataMask received;
@@ -54,15 +56,11 @@ typedef struct {
   int weather_condition;
   int is_day;
 
-#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-  int debug_bpm;
-  int debug_steps;
+#if defined(PBL_HEALTH)
+  int oneshot_bpm;
+  int oneshot_steps;
 #endif
 } WatchfaceEventData;
-
-#if defined(PBL_HEALTH) && ATAGLANCE_DEBUG
-enum { WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020, WATCHFACE_DEBUG_MESSAGE_KEY_STEPS = 10021 };
-#endif
 
 // Create/destroy contract:
 // `watchface` is a runtime module. Callers that invoke `watchface_create()` must
@@ -70,8 +68,8 @@ enum { WATCHFACE_DEBUG_MESSAGE_KEY_BPM = 10020, WATCHFACE_DEBUG_MESSAGE_KEY_STEP
 // create returns false, because a failed create may leave partial module state
 // that must be unwound. Calling create after a successful create is idempotent
 // and returns true without rebuilding the active surface.
-bool watchface_create(Window *window, const WatchfaceSettings *settings);
+bool watchface_create(Window* window, const WatchfaceSettings* settings);
 void watchface_destroy();
 void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
-void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSettings *settings);
+void watchface_apply_received_data(const WatchfaceEventData* data, WatchfaceSettings* settings);
