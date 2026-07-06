@@ -178,66 +178,55 @@ Font sizes: Customized for display sizes
 3. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have {date text, background} in one swapped with their opposite metric in the other.
 4. Module displays define `normal` and `unknown` that mirror values from the active primary display palette.
 
-### Primary Display Palette
+### Consolidated Color Palettes for Display Modes
 
-- Defines the background, primary text, unavailable text, date, and time colors used.
-- Colors are defined in `layout_stylist.c`.
+Source of truth: current palette code in `layout_stylist.c`, `climate.c`, `bpm.c`, `steps.c`, `battery.c`.
 
-| Palette | Mode | Display Type | Background | Primary text | Unavailable text | Date | Time |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
-| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
-| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorOxfordBlue` | `GColorOrange` |
-| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorCeleste` | `GColorOrange` |
+Columns:
+- Color's primary role
+- `Mono-Light BW`: `DISPLAY_MODE_LIGHT_MONOCHROME` (on monochrome)
+- `Mono-Dark BW`: `DISPLAY_MODE_DARK_MONOCHROME` (on monochrome)
+- `Mono-Light C`: `DISPLAY_MODE_LIGHT_MONOCHROME` (on color)
+- `Mono-Dark C`: `DISPLAY_MODE_DARK_MONOCHROME` (on color)
+- `Clear as Celeste`: `DISPLAY_MODE_LIGHT_COLOR` (on color)
+- `Night in Oxford`: `DISPLAY_MODE_DARK_COLOR` (on color)
 
-### BPM Palette
 
-- The BPM module palette is initialized in `bpm.c`
-- `warning` and `critical` come from the BPM-specific light/dark template.
-
-| Palette | Mode | Display Type | Background | Normal | Unavailable | Warning (`>=100`) | Critical (`>=120`) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
-| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
-| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorVividViolet` | `GColorRed` |
-| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorYellow` | `GColorShockingPink` |
-
-### Battery Palette
-
-- The battery module palette is initialized in `battery.c`.
-- `medium`, `low`, and `pluggedin` come from the battery-specific light/dark template.
-
-| Palette | Mode | Display Type | Background | Normal (`>50`) | Medium (`21-50`) | Low (`<=20`) | Plugged In |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
-| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
-| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorVividViolet` | `GColorRed` | `GColorGreen` |
-| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorYellow` | `GColorShockingPink` | `GColorIslamicGreen` |
-
-### Climate Palette
-
-- The climate module palette is initialized in `climate.c` and consumed by `climate_glyphs.c`.
-- Colors selected enhance weather condition identification.
-- On monochrome displays, weather glyphs use heavier outline and line treatment so the same conditions still read clearly sans color.
-
-| Palette | Mode | Display Type | Background | Normal | Unavailable | Sun | Cold | Cloud | Clear Ring (night) | Clear Fill |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorWindsorTan` | `GColorCobaltBlue` | `GColorBlue` | `GColorBabyBlueEyes` | `GColorBabyBlueEyes` |
-| **Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorDarkGray` | `GColorDarkGray` |
-| **Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorChromeYellow` | `GColorMintGreen` | `GColorElectricBlue` | `GColorBabyBlueEyes` | `GColorBabyBlueEyes` |
-| **White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorLightGray` |
-
-### Steps Palette
-
-- The steps module palette is initialized in `steps.c`.
-- `approaching` and `achieved` come from the steps-specific light/dark template.
-
-| Palette | Mode | Display Type | Background | Normal | Unavailable | Approaching (`>70%` of goal) | Achieved (`>= goal`) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **1. Black on White** | Light | Monochrome | `GColorWhite` | `GColorBlack` | `GColorBlack` | `GColorBlack` | `GColorBlack` |
-| **2. White on Black** | Dark | Monochrome | `GColorBlack` | `GColorWhite` | `GColorWhite` | `GColorWhite` | `GColorWhite` |
-| **3. Clear as Celeste** | Light | Color | `GColorCeleste` | `GColorBlack` | `GColorDarkGray` | `GColorVividViolet` | `GColorIslamicGreen` |
-| **4. Night in Oxford** | Dark | Color | `GColorOxfordBlue` | `GColorWhite` | `GColorLightGray` | `GColorYellow` | `GColorIslamicGreen` |
+| Color role | Mono-Light BW | Mono-Dark BW | Mono-Light C | Mono-Dark C | Clear as Celeste | Night in Oxford |
+| --- | --- | --- | --- | --- | --- | --- |
+| **PRIMARY** |
+| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Primary text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
+| Out-of-Range text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Date | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
+| Time | `GColorBlack` | `GColorWhite` | `GColorOrange` | `GColorOrange` | `GColorOrange` | `GColorOrange` |
+| **BATTERY** |
+| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
+| Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
+| Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
+| Plugged In | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| **STEPS** |
+| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
+| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Approaching (`>70%` of goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
+| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| **CLIMATE** |
+| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
+| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Sun | `GColorBlack` | `GColorWhite` | `GColorWindsorTan` | `GColorChromeYellow` | `GColorWindsorTan` | `GColorChromeYellow` |
+| Cold | `GColorBlack` | `GColorWhite` | `GColorCobaltBlue` | `GColorMintGreen` | `GColorCobaltBlue` | `GColorMintGreen` |
+| Cloud | `GColorBlack` | `GColorWhite` | `GColorBlue` | `GColorElectricBlue` | `GColorBlue` | `GColorElectricBlue` |
+| Clear Ring (night) | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
+| Clear Fill | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
+| **BPM** |
+| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
+| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Elevated (`>=100`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
+| Critical (`>=120`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
 
 ## Current Icon Sizes
 
