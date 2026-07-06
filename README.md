@@ -69,7 +69,7 @@ pebble install --phone YOUR_PHONE_IP
 ### Climate: Temperature and Weather Condition based on Location
 
 - Weather data retrieved from Open-Meteo using phone geolocation when available
-- When unavailable, the fixed fallback weather location is Oakland, CA: `37.85626, -122.21383`
+- When out-of-range, the fixed fallback weather location is Oakland, CA: `37.85626, -122.21383`
 - Temperature rendered as Fahrenheit or Celsius according to Settings
 
 ## Supported Platforms
@@ -86,7 +86,7 @@ This watchface is compatible with all Pebble smartwatch models.
 
 ## How information is displayed
 
-The selected visual stack is shared across display families:
+The selected visual stack is shared across display families and modes. :
 
 ```text
 top steps context
@@ -96,26 +96,25 @@ weather/date context
 bottom heart-rate context
 ```
 
-This shared stack and dominant time are the product's visual DNA. Rectangular
-and round displays implement the same information hierarchy and stack.
-Placement is resolved from defined layout constants. Detailed geometry, font,
-palette, and screenshot references live in `UserInterface.md`.
-
-Text is primary. Icons support recognition. The battery track uses a primary-color outline with a state-colored fill. The bolt is a shape cue for plugged-in state, so external power does not rely on color alone. Health metrics use centerline vocabulary, and unavailable data uses a clear diagonal absence slash through the supporting icon.
+- Same hierarchy and flow on all Pebbles.
+- Text is primary; icons support recognition.
+- The battery track uses a primary-color outline with a state-colored fill.
+- The bolt is a shape cue for plugged-in state, so external power does not rely on color alone.
+- Out-of-range data uses a clear diagonal absence slash through the supporting icon.
+- Rectangular and round displays implement the same information hierarchy and stack.
 
 ### Display Modes
 
 On monochrome devices, two display modes are available:
 
-1. `Black on White`: white background, black primary text, black date, black time, black unavailable
-2. `White on Black`: black background, white primary text, white date, white time, white unavailable
+1. `Black on White`: white background, black primary text, black date, black time, black out-of-range.
+2. `White on Black`: black background, white primary text, white date, white time, white out-of-range.
 
-On color devices, four display modes are available:
-
-1. `Black on White`: White background, Black primary text, Black date, Orange time, Black unavailable
-2. `White on Black`: Black background, White primary text, White date, Orange time, White unavailable
-3. `Clear as Celeste`: Celeste background, Black primary text, Oxford Blue date, Orange time, Dark Gray unavailable
-4. `Night in Oxford`: Oxford Blue background, White primary text, Celeste date, Orange time, Light Gray unavailable
+On color devices, four display modes are available. The first two are monochrome-modes with state and climate colors shared with their color-mode counterparts.
+1. `Black on White`: White background, Black primary text, Black date, Orange time, Black out-of-range.
+2. `White on Black`: Black background, White primary text, White date, Orange time, White out-of-range.
+3. `Clear as Celeste`: Celeste background, Black primary text, Oxford Blue date, Orange time, Dark Gray out-of-range.
+4. `Night in Oxford`: Oxford Blue background, White primary text, Celeste date, Orange time, Light Gray out-of-range.
 
 ## Configuration
 
@@ -156,14 +155,14 @@ Confirm the generated PBW under `build/` before submission.
 
 ## Further Reading
 
-- `./ataglance_build_test_harness.sh` wraps the local Pebble SDK flow for build, install, and emulator-led validation.
 In the `./docs` folder:
 - `./docs/Design.md` for product intent, influences, and glance-first design goals
 - `./docs/ProductInvariants.md` for the product truths that should remain stable
 - `./docs/VisualVocabulary.md` for the visual rules that express those truths
 - `./docs/UserInterface.md` for current geometry, fonts, palettes, and screenshot status
 - `./docs/ArchitectureLedger.md` for runtime architecture, boundaries, and ownership
-- `./docs/Contributing.md` for contributor workflow, validation, and review discipline
+- `./docs/Build and Validation.md` for build, install, editor-tooling, compile-commands, and validation architecture
+- `./docs/Contributing.md` for contributor workflow, review discipline, and documentation QA
 
 Additional project references:
 
