@@ -28,6 +28,27 @@ It covers the shared watchface composition, channel responsibilities, glyph rule
 - A text-only metric is acceptable when an icon cannot be created or does not fit the platform.
 - An icon-only metric is not acceptable.
 
+## Surface Composition
+
+The shared watchface composition is:
+
+```text
+top steps layer with progress and state
+dominant bold and centered time
+centered battery track and plugged-in bolt
+weather/date context
+bottom heart-rate layer with state
+```
+
+- This stack is part of the product's visual DNA.
+- Rectangular and round displays implement the same information hierarchy and stack.
+- Placement is resolved from defined layout constants to reduce positioning ambiguity.
+- Text has to convey information precisely and independent of supporting visual channels.
+  - Icons and progress bars support text in glanceability but can be hidden.
+- Negative space is used to serve glanceability.
+
+**Display hierarchy invariant** is the location and order in which time, battery track, weather, and date are displayed:
+
 ## Glyph and Icon Selection
 
 1. All icons and glyphs satisfy principal design invariant of automatic recognition on all supported Pebble devices:
@@ -54,7 +75,7 @@ It covers the shared watchface composition, channel responsibilities, glyph rule
 
 ### Climate glyphs
 
-- Prefer silhouttes over filled glyphs. Use filled glyphs to improve perception based on visual contrast. 
+- Prefer silhouttes over filled glyphs. Use filled glyphs to improve perception based on visual contrast.
 - Keep condition marks sparse and strong.
 - Prefer condition-first icons over cloud-first icons.
 - Use a cloud only when it helps read the condition faster.
@@ -86,40 +107,11 @@ It covers the shared watchface composition, channel responsibilities, glyph rule
 - Color is a state cue.
 - Color is **not** the only source of meaning.
 
-## Surface Composition
-
-The shared watchface composition is:
-
-```text
-top steps context
-dominant centered time
-centered battery track and plugged-in bolt
-weather/date context
-bottom heart-rate context
-```
-
-This stack is part of the product's visual DNA. Rectangular and round displays implement the same information hierarchy and stack. Placement is resolved from defined layout constants.
-
-Display hierarchy invariant is the location and order in which time, battery track, weather, and date are displayed:
-
-- time is bold and centered.
-- the battery track is directly below time.
-- weather and date are on one context row.
-- Steps and progress bar on the top context row and heart-rate on the bottom context row on health platforms.
-  - Steps, heart-rate, weather condition glyphs / icons don't need to be rendered.
-- health metrics on centerline vocabulary rather than far-corner placement.
-- preserve negative space when possible.
-
 ## Display Modes And Associated Palettes
 
 ### Modes
 
-Live display-mode families are:
-
-1. `Black on White`
-2. `White on Black`
-3. `Clear as Celeste`
-4. `Night in Oxford`
+- At least two modes for every supported Pebble.
 
 ### Palettes
 
@@ -132,29 +124,12 @@ Live display-mode families are:
 - Fallback rendering should remain legible when richer palettes are unavailable.
 - If palette resolution fails, the display should degrade to a simple black-and-white presentation rather than hiding data.
 
-### Availability
-
-- **Color devices**: All four modes
-- **Monochrome devices**: Modes 1 and 2
-
 ## Absence Language
 
-Unavailable data uses the accepted absence slash:
-
-```text
-\
-```
-
-1. Do not use question marks or exclamation point or pause bars (play/pause) for unavailable data.
-2. The mark should read as absent or unavailable without feeling alarming.
-
-Meaning examples:
-
-- waveform + slash
-- footprint + slash
-- cloud + slash
-
-3. Use a bold slash. Start slightly above the canceled glyph and end slightly below it.
+1. Out-of-range data uses a unique color and icon indicator.
+2. Do not use question marks or exclamation point or pause bars (play/pause) for out-of-range data.
+3. The mark should read as absent or out-of-range without feeling alarming.
+4. Prefer bold slashes that start slightly above the canceled glyph and end slightly below it.
 
 ## Steps
 
@@ -162,13 +137,21 @@ Use a station-style footprint that reads as familiar and obvious at watch scale.
 
 Direction:
 
-- one large filled ball-of-foot circle
-- one background-color separator cut
-- one smaller filled heel circle
-- no toe dots
-- no shoe detail
+- Filled footprints, with color fills to denote state (PBL_COLOR).
+- Out-of-range steps fills the icon with out-of-range color plus the unavailable slash.
 
 Do not encode step count progress with icon color or shape. The text value already carries the count.
+
+## BPM
+
+- Heart-rate monitor or ECG-style waveform icon, with color fills to denote state (PBL_COLOR).
+- Out-of-range BPM uses the muted waveform plus the shared slash.
+
+## Battery
+
+- Battery uses a horizontal track rather than relying on text percentage in the primary layout.
+- The outer track is a primary-color outline. The inner fill uses the module-owned battery state color.
+- A plugged-in state must use a prominent and visible shape cue at watch scale.
 
 ## Weather
 
@@ -218,26 +201,6 @@ Preferred direction:
 - bars heavy enough to survive black-and-white display
 - add a cloud only if it does not reduce fog readability
 
-## BPM
-
-- BPM uses a heart-rate monitor or ECG-style waveform icon, not a heart.
-- Preserve BPM state color on color displays.
-- Unavailable BPM uses the muted waveform plus the shared slash.
-
-## Battery
-
-- Battery uses a horizontal track rather than relying on text percentage in the primary layout.
-- The outer track is a primary-color outline. The inner fill uses the module-owned battery state color.
-- A plugged-in state must use a visible shape cue, not color alone.
-- The plugged-in shape should be prominent enough to read at watch scale.
-
-## Round Displays
-
-- Round displays preserve the same text-first hierarchy and the same stack.
-- Use the same surface stack before inventing a separate round-only product.
-- Confirm readable chord width at each y-position.
-- Disable optional icons before allowing text to clip.
-
 ## Review Workflow
 
 Use `glyph-lab` for broad vocabulary work.
@@ -252,4 +215,3 @@ Recommended loop:
 6. Pick one direction.
 7. Port the selected drawing rules into production modules.
 8. Validate in the real watchface layout.
-
