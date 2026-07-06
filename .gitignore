@@ -4,7 +4,6 @@
 .prompts/
 .clangd
 .cache/
-.clang-format
 .DS_Store
 .lock-waf_darwin_build
 .prompts
@@ -18,4 +17,7 @@ build/
 node_modules/
 clangd_old
 compile-commands.json
-agents.md
+qa/data/battery_levels.sh
+qa/data/display_modes.sh
+qa/data/health_vectors.sh
+qa/data/targets.sh
