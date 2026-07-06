@@ -5,7 +5,7 @@
 #include <pebble.h>
 
 #define WATCHFACE_UNAVAILABLE_TEXT "---"
-#define WATCHFACE_UNINITIALIZED_TEXT_COLOR PBL_IF_COLOR_ELSE(GColorMelon, GColorClear)
+#define WATCHFACE_UNINITIALIZED_TEXT_COLOR GColorWhite
 
 #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
 #define WATCHFACE_HAS_LARGE_DISPLAY 1
@@ -16,7 +16,6 @@
 typedef struct {
   GRect frame;
 } WatchfaceIconSubstratum;
-
 
 typedef struct {
   GRect frame;
@@ -43,7 +42,6 @@ typedef struct {
 typedef struct {
   const ColorPalette *palette;
   bool is_compact;
-  // These two MUST ALWAYS BE THE SAME SIZE
   FontBook fontbook;
 } WatchfaceSurfaceStyle;
 

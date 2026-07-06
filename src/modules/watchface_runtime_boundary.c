@@ -6,24 +6,25 @@
 #ifdef PBL_HEALTH
 #include "bpm.h"
 #include "steps.h"
+
+static void
+apply_health_setting_data(const WatchfaceEventData* data, WatchfaceSettings* settings);
+static void
+apply_oneshot_health_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh);
 #endif
 
-static void apply_setting_data(const WatchfaceEventData *data,
-  WatchfaceSettings *settings,
-  WatchfaceUpdateMask *refresh);
-static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
-static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
-#ifdef PBL_HEALTH
-static void apply_health_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings);
-#if ATAGLANCE_DEBUG
-static void apply_debug_health_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh);
-#endif
-#endif
+static void
+apply_setting_data(const WatchfaceEventData* data, WatchfaceSettings* settings, WatchfaceUpdateMask* refresh);
 
-static void apply_setting_data(
-  const WatchfaceEventData *data,
-  WatchfaceSettings *settings,
-  WatchfaceUpdateMask *refresh) {
+static void
+apply_weather_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh);
+
+static void
+apply_subscribed_service_updates(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh);
+
+// Function definitions
+static void
+apply_setting_data(const WatchfaceEventData* data, WatchfaceSettings* settings, WatchfaceUpdateMask* refresh) {
   if (!data || !settings || !refresh) {
     return;
   }
@@ -35,7 +36,8 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d", data->display_mode);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid DISPLAY_MODE: value=%d",
+              data->display_mode);
     }
   }
 
@@ -46,8 +48,8 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid TIME_FORMAT: value=%d", data->time_format);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid TIME_FORMAT: value=%d",
+              data->time_format);
     }
   }
 
@@ -67,37 +69,37 @@ static void apply_setting_data(
     if (WEATHER_UPDATE_MINUTES_VALID(data->weather_update_minutes)) {
       settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
-        data->weather_update_minutes);
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
+              data->weather_update_minutes);
     }
   }
 
 #ifdef PBL_HEALTH
   if (data->parsed & WATCHFACE_DATA_STEPS_GOAL) {
-    uint16_t d_s_g = (uint16_t) data->steps_goal;
+    uint16_t d_s_g = (uint16_t)data->steps_goal;
     if (!STEPS_GOAL_VALID(d_s_g)) {
       // Set steps goal back to the default setting
       d_s_g = STEPS_GOAL_DEFAULT;
+      APP_LOG(APP_LOG_LEVEL_WARNING, "Runtime reset STEPS_GOAL to default. Received: %d",
+              data->steps_goal);
     }
     if (settings->steps_goal != d_s_g) {
-        settings->steps_goal = d_s_g;
-        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
-      }
-    } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid STEPS_GOAL: value=%d", data->steps_goal);
+      settings->steps_goal = d_s_g;
+      *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
     }
+  }
 #endif
 }
 
-static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
+static void
+apply_weather_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
 
+  // Make this a function local const vs. a global const
   static const WatchfaceDataMask c_weather_mask =
-    WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
+      WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
   WatchfaceDataMask weather_received = (WatchfaceDataMask)(data->received & c_weather_mask);
   if (weather_received == WATCHFACE_DATA_NONE) {
@@ -121,7 +123,8 @@ static void apply_weather_data(const WatchfaceEventData *data, WatchfaceUpdateMa
   climate_module_set_weather(&climate);
 }
 
-static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
+static void
+apply_subscribed_service_updates(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
@@ -144,7 +147,7 @@ static void apply_service_event_data(const WatchfaceEventData *data, WatchfaceUp
 }
 
 #ifdef PBL_HEALTH
-static void apply_health_setting_data(const WatchfaceEventData *data, WatchfaceSettings *settings) {
+static void apply_health_setting_data(const WatchfaceEventData* data, WatchfaceSettings* settings) {
   if (!data || !settings) {
     return;
   }
@@ -161,26 +164,26 @@ static void apply_health_setting_data(const WatchfaceEventData *data, WatchfaceS
   }
 }
 
-#if ATAGLANCE_DEBUG
-static void apply_debug_health_data(const WatchfaceEventData *data, WatchfaceUpdateMask *refresh) {
+static void
+apply_oneshot_health_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
 
-  if (data->parsed & WATCHFACE_DATA_DEBUG_BPM) {
-    bpm_module_debug_set_bpm(data->debug_bpm);
+  if (data->parsed & WATCHFACE_DATA_ONESHOT_BPM) {
+    bpm_module_oneshot_set_bpm(data->oneshot_bpm);
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
   }
 
-  if (data->parsed & WATCHFACE_DATA_DEBUG_STEPS) {
-    steps_module_debug_set_steps(data->debug_steps);
+  if (data->parsed & WATCHFACE_DATA_ONESHOT_STEPS) {
+    steps_module_oneshot_set_steps(data->oneshot_steps);
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
   }
 }
 #endif
-#endif
 
-void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSettings *settings) {
+void
+watchface_apply_received_data(const WatchfaceEventData* data, WatchfaceSettings* settings) {
   if (!data || !settings) {
     return;
   }
@@ -189,13 +192,11 @@ void watchface_apply_received_data(const WatchfaceEventData *data, WatchfaceSett
 
   apply_setting_data(data, settings, &refresh);
   apply_weather_data(data, &refresh);
-  apply_service_event_data(data, &refresh);
+  apply_subscribed_service_updates(data, &refresh);
 
 #ifdef PBL_HEALTH
   apply_health_setting_data(data, settings);
-#if ATAGLANCE_DEBUG
-  apply_debug_health_data(data, &refresh);
-#endif
+  apply_oneshot_health_data(data, &refresh);
 #endif
 
   if (refresh & WATCHFACE_REPAINT) {
