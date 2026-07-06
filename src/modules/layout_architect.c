@@ -1,9 +1,8 @@
-#include <stdint.h>
-#include "layout.h"
+#include "helper.h"
 #include "layout_style.h"
 #include "layout_surface.h"
-#include "helper.h"
 #include "watchface_components.h"
+#include "watchface_layout.h"
 
 // Blueprint support structures
 typedef struct {
@@ -23,41 +22,43 @@ typedef struct {
 } LayoutBlueprint;
 
 static const LayoutBlueprint c_rect_reference_blueprint = {
-    .margin_x = DESIGN_FULL_X_MARGIN,
-    .margin_y = DESIGN_FULL_Y_MARGIN,
-    .icon_w = DESIGN_FULL_ICON_WIDTH,
-    .icon_h = DESIGN_FULL_ICON_HEIGHT,
-    .time_y_percent = DESIGN_TIME_Y_PERCENT,
-    .date_text_height = DESIGN_FULL_DATE_TEXT_HEIGHT,
-    .time_text_height = DESIGN_FULL_TIME_TEXT_HEIGHT,
-    .data_text_height = DESIGN_FULL_DATA_TEXT_HEIGHT,
-    .climate_text_width = DESIGN_FULL_CLIMATE_TEXT_WIDTH,
+  .margin_x = DESIGN_FULL_X_MARGIN,
+  .margin_y = DESIGN_FULL_Y_MARGIN,
+  .icon_w = DESIGN_FULL_ICON_WIDTH,
+  .icon_h = DESIGN_FULL_ICON_HEIGHT,
+  .time_y_percent = DESIGN_TIME_Y_PERCENT,
+  .date_text_height = DESIGN_FULL_DATE_TEXT_HEIGHT,
+  .time_text_height = DESIGN_FULL_TIME_TEXT_HEIGHT,
+  .data_text_height = DESIGN_FULL_DATA_TEXT_HEIGHT,
+  .climate_text_width = DESIGN_FULL_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
-    .steps_text_width = DESIGN_FULL_STEPS_TEXT_WIDTH,
-    .bpm_text_width = DESIGN_FULL_BPM_TEXT_WIDTH,
+  .steps_text_width = DESIGN_FULL_STEPS_TEXT_WIDTH,
+  .bpm_text_width = DESIGN_FULL_BPM_TEXT_WIDTH,
 #endif
 };
 
 static const LayoutBlueprint c_rect_compact_blueprint = {
-    .margin_x = DESIGN_COMPACT_X_MARGIN,
-    .margin_y = DESIGN_COMPACT_Y_MARGIN,
-    .icon_w = DESIGN_COMPACT_ICON_WIDTH,
-    .icon_h = DESIGN_COMPACT_ICON_HEIGHT,
-    .time_y_percent = DESIGN_COMPACT_TIME_Y_PERCENT,
-    .time_text_height = DESIGN_COMPACT_TIME_TEXT_HEIGHT,
-    .date_text_height = DESIGN_COMPACT_DATE_TEXT_HEIGHT,
-    .data_text_height = DESIGN_COMPACT_DATA_TEXT_HEIGHT,
-    .climate_text_width = DESIGN_COMPACT_CLIMATE_TEXT_WIDTH,
+  .margin_x = DESIGN_COMPACT_X_MARGIN,
+  .margin_y = DESIGN_COMPACT_Y_MARGIN,
+  .icon_w = DESIGN_COMPACT_ICON_WIDTH,
+  .icon_h = DESIGN_COMPACT_ICON_HEIGHT,
+  .time_y_percent = DESIGN_COMPACT_TIME_Y_PERCENT,
+  .time_text_height = DESIGN_COMPACT_TIME_TEXT_HEIGHT,
+  .date_text_height = DESIGN_COMPACT_DATE_TEXT_HEIGHT,
+  .data_text_height = DESIGN_COMPACT_DATA_TEXT_HEIGHT,
+  .climate_text_width = DESIGN_COMPACT_CLIMATE_TEXT_WIDTH,
 #ifdef PBL_HEALTH
-    .steps_text_width = DESIGN_COMPACT_STEPS_TEXT_WIDTH,
-    .bpm_text_width = DESIGN_COMPACT_BPM_TEXT_WIDTH,
+  .steps_text_width = DESIGN_COMPACT_STEPS_TEXT_WIDTH,
+  .bpm_text_width = DESIGN_COMPACT_BPM_TEXT_WIDTH,
 #endif
 };
 
-static void architect_prepare_health_display(const LayoutBlueprint *blueprint,
-  CalculatedLayout *computed, int16_t face_width, int16_t face_height) {
-
 #ifdef PBL_HEALTH
+static void architect_prepare_health_display(
+  const LayoutBlueprint* blueprint,
+  CalculatedLayout* computed,
+  int16_t face_width,
+  int16_t face_height) {
   const int16_t margin_y = blueprint->margin_y;
   // Icon and text are on either side of the face_center
   // Steps progress spreads on either side of x_center
@@ -78,8 +79,8 @@ static void architect_prepare_health_display(const LayoutBlueprint *blueprint,
   // Module Y stays unchanged from icon's Y
   module_x = face_center;
   module_w = blueprint->steps_text_width;
-  computed->steps_layer.steps.text = GRect(
-    module_x, module_y, module_w, blueprint->data_text_height);
+  computed->steps_layer.steps.text =
+    GRect(module_x, module_y, module_w, blueprint->data_text_height);
 
   // Progress Bar is at the bottom and starts at the icon's X and extends
   // until the end of the text-box. Bar's width uses Progress Bar width %
@@ -93,8 +94,8 @@ static void architect_prepare_health_display(const LayoutBlueprint *blueprint,
   module_x = computed->steps_layer.steps.icon.origin.x;
   module_y = current_row_y;
   // height is DESIGN_STEPS_PROGRESS_HEIGHT
-  computed->steps_layer.progress = GRect(
-    module_x, module_y, module_w, DESIGN_STEPS_PROGRESS_HEIGHT);
+  computed->steps_layer.progress =
+    GRect(module_x, module_y, module_w, DESIGN_STEPS_PROGRESS_HEIGHT);
 
   // BPM at the bottom of the screen
   current_row_y = face_height - margin_y - icon_h;
@@ -108,17 +109,14 @@ static void architect_prepare_health_display(const LayoutBlueprint *blueprint,
   module_x = face_center;
   module_w = blueprint->bpm_text_width;
   computed->bpm.text = GRect(module_x, module_y, module_w, blueprint->data_text_height);
-#else
-  (void)blueprint;
-  (void)computed;
-  (void)face_width;
-  (void)face_height;
-#endif
 }
+#endif
 
-static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint,
-  CalculatedLayout *computed, int16_t face_width, int16_t face_height) {
-
+static void architect_get_layout_from_blueprint(
+  const LayoutBlueprint* blueprint,
+  CalculatedLayout* computed,
+  int16_t face_width,
+  int16_t face_height) {
   if (!blueprint || !computed) {
     return;
   }
@@ -209,27 +207,30 @@ static void architect_get_layout_from_blueprint(const LayoutBlueprint *blueprint
 
   // Climate Icon is to the left of x_center
   const int16_t face_center = (face_width >> 1);
-  module_x =  face_center - icon_w - DESIGN_ICON_TEXT_GAP;
+  module_x = face_center - icon_w - DESIGN_ICON_TEXT_GAP;
   module_w = icon_w;
   computed->climate.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Climate Text Width
-  computed->climate.text = GRect(
-    x_start,
+  computed->climate.text = GRect(x_start,
     module_y,
     module_x - DESIGN_ICON_TEXT_GAP - x_start,
     blueprint->data_text_height);
 
   // Date text
   module_x = face_center;
-  module_w = face_width - module_x - 1; // last X - current x-coordinate yields available width
+  module_w = face_width - module_x - 1;  // last X - current x-coordinate yields available width
   computed->date = GRect(module_x, module_y, module_w, blueprint->date_text_height);
 
+#ifdef PBL_HEALTH
   architect_prepare_health_display(blueprint, computed, face_width, face_height);
+#endif
 }
 
-bool layout_watchface_initialize(int16_t face_width, int16_t face_height,
-  WatchfaceSurface *surface) {
+bool layout_watchface_initialize(
+  int16_t face_width,
+  int16_t face_height,
+  WatchfaceSurface* surface) {
   if (!surface) {
     return false;
   }
@@ -242,44 +243,44 @@ bool layout_watchface_initialize(int16_t face_width, int16_t face_height,
   surface->face_width = face_width;
   surface->face_height = face_height;
 
-  const LayoutBlueprint *blueprint =
-      is_compact ? &c_rect_compact_blueprint : &c_rect_reference_blueprint;
+  const LayoutBlueprint* blueprint =
+    is_compact ? &c_rect_compact_blueprint : &c_rect_reference_blueprint;
   CalculatedLayout computed = {0};
   architect_get_layout_from_blueprint(blueprint, &computed, face_width, face_height);
 
   // Time
   surface->time.text = (WatchfaceTextSubstratum){
-      .frame = computed.time,
-      .alignment = GTextAlignmentCenter,
-      .font_role = WATCHFACE_FONT_ROLE_TIME,
-      .color_role = WATCHFACE_COLOR_ROLE_TIME,
-    };
+    .frame = computed.time,
+    .alignment = GTextAlignmentCenter,
+    .font_role = WATCHFACE_FONT_ROLE_TIME,
+    .color_role = WATCHFACE_COLOR_ROLE_TIME,
+  };
 
   // Date
   surface->date.text = (WatchfaceTextSubstratum){
-      .frame = computed.date,
-      .alignment = GTextAlignmentLeft,
-      .font_role = WATCHFACE_FONT_ROLE_DATE,
-      .color_role = WATCHFACE_COLOR_ROLE_DATE,
-    };
+    .frame = computed.date,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_DATE,
+    .color_role = WATCHFACE_COLOR_ROLE_DATE,
+  };
 
   // Battery
   surface->battery = (WatchfaceBatteryStratum){
     .fill = computed.battery.fill,
     .track = computed.battery.track,
     .bolt = computed.battery.bolt,
-    };
+  };
 
   // Climate
   surface->climate.icon = (WatchfaceIconSubstratum){
-      .frame = computed.climate.icon,
-    };
+    .frame = computed.climate.icon,
+  };
 
   surface->climate.text = (WatchfaceTextSubstratum){
-      .frame = computed.climate.text,
-      .alignment = GTextAlignmentRight,
-      .font_role = WATCHFACE_FONT_ROLE_TEXT,
-    };
+    .frame = computed.climate.text,
+    .alignment = GTextAlignmentRight,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
 
 #ifdef PBL_HEALTH
   // Steps
@@ -288,22 +289,22 @@ bool layout_watchface_initialize(int16_t face_width, int16_t face_height,
   };
 
   surface->steps.text = (WatchfaceTextSubstratum){
-      .frame = computed.steps_layer.steps.text,
-      .alignment = GTextAlignmentLeft,
-      .font_role = WATCHFACE_FONT_ROLE_TEXT,
-    };
+    .frame = computed.steps_layer.steps.text,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
 
   surface->steps.progress = computed.steps_layer.progress;
 
   // BPM
   surface->bpm.icon = (WatchfaceIconSubstratum){
-      .frame = computed.bpm.icon,
-    };
+    .frame = computed.bpm.icon,
+  };
   surface->bpm.text = (WatchfaceTextSubstratum){
-      .frame = computed.bpm.text,
-      .alignment = GTextAlignmentLeft,
-      .font_role = WATCHFACE_FONT_ROLE_TEXT,
-    };
+    .frame = computed.bpm.text,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
 #endif
   return true;
 }
