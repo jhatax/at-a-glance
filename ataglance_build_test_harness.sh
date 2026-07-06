@@ -58,7 +58,7 @@ Options:
   -i,  --install          Install on selected emulators
   -p,  --phone IP         Install through Pebble mobile-app Developer Connection
   -e,  --emulators LIST   Comma-separated emulators: emery, flint, chalk, gabbro,
-                          aplite, diorite
+                          aplite, basalt, diorite
   -t,  --test LIST        Comma-separated tests: weather, battery, smoke, health
   -w,  --wipe             Wipe emulator data
   -n,  --nuclear          Kill emulators, wipe, and force a clean build

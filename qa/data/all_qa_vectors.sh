@@ -2,7 +2,7 @@
 
 # CONFIG Constants
 typeset -gr -a QA_DEFAULT_EMULATORS=(gabbro emery chalk flint)
-typeset -gr -a QA_SUPPORTED_EMULATORS=(aplite chalk diorite emery flint gabbro)
+typeset -gr -a QA_SUPPORTED_EMULATORS=(aplite basalt chalk diorite emery flint gabbro)
 typeset -gr -a QA_SUPPORTED_TESTS=(battery health smoke weather)
 
 # DISPLAYS
@@ -19,5 +19,5 @@ typeset -gr -a QA_BATTERY_LEVELS=(1 10 20 25 50 60 70 80 90 100)
 typeset -gr -a QA_BATTERY_CHARGING_STATES=(1 0)
 
 # HEALTH
-typeset -gr -a QA_HEALTH_BPM_VALUES=(99 101 121)
-typeset -gr -a QA_HEALTH_STEPS_VALUES=(1000 8000 11000)
+typeset -gr -a QA_HEALTH_BPM_VALUES=(99 101 121 0)
+typeset -gr -a QA_HEALTH_STEPS_VALUES=(1000 8000 11000 0)
