@@ -20,13 +20,17 @@ static void parse_oneshot_health_data(DictionaryIterator* iter, WatchfaceEventDa
 static void battery_handler(BatteryChargeState state);
 static void tick_handler(struct tm* tick_time, TimeUnits units_changed);
 static void inbox_received_callback(DictionaryIterator* iter, void* context);
-static void parse_int_tuple(DictionaryIterator* iter, uint32_t key, WatchfaceEventData* data,
-                            WatchfaceDataMask mask, int* value);
+static void parse_int_tuple(DictionaryIterator* iter,
+  uint32_t key,
+  WatchfaceEventData* data,
+  WatchfaceDataMask mask,
+  int* value);
 static void parse_settings_data(DictionaryIterator* iter, WatchfaceEventData* data);
 static void parse_weather_data(DictionaryIterator* iter, WatchfaceEventData* data);
 static void inbox_dropped_callback(AppMessageResult reason, void* context);
-static void outbox_failed_callback(DictionaryIterator* iterator, AppMessageResult reason,
-                                   void* context);
+static void outbox_failed_callback(DictionaryIterator* iterator,
+  AppMessageResult reason,
+  void* context);
 static void outbox_sent_callback(DictionaryIterator* iterator, void* context);
 static uint32_t app_message_inbox_size(void);
 static AppMessageResult initialize_inbox_outbox(void);
@@ -36,7 +40,8 @@ static void main_window_unload(Window* window);
 static void init(void);
 static void deinit(void);
 
-static void battery_handler(BatteryChargeState state) {
+static void battery_handler(
+  BatteryChargeState state) {
   (void)state;
 
   WatchfaceEventData data = {0};
@@ -46,7 +51,9 @@ static void battery_handler(BatteryChargeState state) {
   watchface_apply_received_data(&data, &s_settings);
 }
 
-static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
+static void tick_handler(
+  struct tm* tick_time,
+  TimeUnits units_changed) {
   (void)tick_time;
 
   WatchfaceEventData data = {0};
@@ -62,8 +69,12 @@ static void tick_handler(struct tm* tick_time, TimeUnits units_changed) {
   watchface_apply_received_data(&data, &s_settings);
 }
 
-static void parse_int_tuple(DictionaryIterator* iter, uint32_t key, WatchfaceEventData* data,
-                            WatchfaceDataMask mask, int* value) {
+static void parse_int_tuple(
+  DictionaryIterator* iter,
+  uint32_t key,
+  WatchfaceEventData* data,
+  WatchfaceDataMask mask,
+  int* value) {
   if (!iter || !data || !value) {
     return;
   }
@@ -81,34 +92,55 @@ static void parse_int_tuple(DictionaryIterator* iter, uint32_t key, WatchfaceEve
   }
 }
 
-static void parse_settings_data(DictionaryIterator* iter, WatchfaceEventData* data) {
+static void parse_settings_data(
+  DictionaryIterator* iter,
+  WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
 
-  parse_int_tuple(iter, MESSAGE_KEY_TIME_FORMAT, data, WATCHFACE_DATA_TIME_FORMAT,
-                  &data->time_format);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_TIME_FORMAT,
+    data,
+    WATCHFACE_DATA_TIME_FORMAT,
+    &data->time_format);
   parse_int_tuple(iter, MESSAGE_KEY_TEMP_UNIT, data, WATCHFACE_DATA_TEMP_UNIT, &data->temp_unit);
-  parse_int_tuple(iter, MESSAGE_KEY_DISPLAY_MODE, data, WATCHFACE_DATA_DISPLAY_MODE,
-                  &data->display_mode);
-  parse_int_tuple(iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES, data,
-                  WATCHFACE_DATA_WEATHER_UPDATE_MINUTES, &data->weather_update_minutes);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_DISPLAY_MODE,
+    data,
+    WATCHFACE_DATA_DISPLAY_MODE,
+    &data->display_mode);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
+    data,
+    WATCHFACE_DATA_WEATHER_UPDATE_MINUTES,
+    &data->weather_update_minutes);
 }
 
-static void parse_weather_data(DictionaryIterator* iter, WatchfaceEventData* data) {
+static void parse_weather_data(
+  DictionaryIterator* iter,
+  WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
 
-  parse_int_tuple(iter, MESSAGE_KEY_TEMPERATURE, data, WATCHFACE_DATA_TEMPERATURE,
-                  &data->temperature_celsius_tenths);
-  parse_int_tuple(iter, MESSAGE_KEY_WEATHER_CONDITION, data, WATCHFACE_DATA_WEATHER_CONDITION,
-                  &data->weather_condition);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_TEMPERATURE,
+    data,
+    WATCHFACE_DATA_TEMPERATURE,
+    &data->temperature_celsius_tenths);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_WEATHER_CONDITION,
+    data,
+    WATCHFACE_DATA_WEATHER_CONDITION,
+    &data->weather_condition);
   parse_int_tuple(iter, MESSAGE_KEY_IS_DAY, data, WATCHFACE_DATA_IS_DAY, &data->is_day);
 }
 
 #ifdef PBL_HEALTH
-static void health_handler(HealthEventType event, void* context) {
+static void health_handler(
+  HealthEventType event,
+  void* context) {
   (void)context;
   // We ignore the event because we use any health update to update all health items
   (void)event;
@@ -120,28 +152,43 @@ static void health_handler(HealthEventType event, void* context) {
   watchface_apply_received_data(&data, &s_settings);
 }
 
-static void parse_health_settings_data(DictionaryIterator* iter, WatchfaceEventData* data) {
+static void parse_health_settings_data(
+  DictionaryIterator* iter,
+  WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
-  parse_int_tuple(iter, MESSAGE_KEY_HR_SAMPLE_MINUTES, data, WATCHFACE_DATA_HR_SAMPLE_MINUTES,
-                  &data->hr_sample_minutes);
+  parse_int_tuple(iter,
+    MESSAGE_KEY_HR_SAMPLE_MINUTES,
+    data,
+    WATCHFACE_DATA_HR_SAMPLE_MINUTES,
+    &data->hr_sample_minutes);
   parse_int_tuple(iter, MESSAGE_KEY_STEPS_GOAL, data, WATCHFACE_DATA_STEPS_GOAL, &data->steps_goal);
 }
 
-static void parse_oneshot_health_data(DictionaryIterator* iter, WatchfaceEventData* data) {
+static void parse_oneshot_health_data(
+  DictionaryIterator* iter,
+  WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
 
-  parse_int_tuple(iter, WATCHFACE_ONESHOT_MESSAGE_KEY_BPM, data, WATCHFACE_DATA_ONESHOT_BPM,
-                  &data->oneshot_bpm);
-  parse_int_tuple(iter, WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS, data, WATCHFACE_DATA_ONESHOT_STEPS,
-                  &data->oneshot_steps);
+  parse_int_tuple(iter,
+    WATCHFACE_ONESHOT_MESSAGE_KEY_BPM,
+    data,
+    WATCHFACE_DATA_ONESHOT_BPM,
+    &data->oneshot_bpm);
+  parse_int_tuple(iter,
+    WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS,
+    data,
+    WATCHFACE_DATA_ONESHOT_STEPS,
+    &data->oneshot_steps);
 }
 #endif
 
-static void inbox_received_callback(DictionaryIterator* iter, void* context) {
+static void inbox_received_callback(
+  DictionaryIterator* iter,
+  void* context) {
   (void)context;
 
   if (!iter) {
@@ -169,9 +216,11 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
   // You could be defensive here and send a message but it is redundant
   if (previous_settings.time_format != s_settings.time_format ||
       previous_settings.temp_unit != s_settings.temp_unit ||
-      previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
       previous_settings.display_mode != s_settings.display_mode ||
+#ifdef PBL_HEALTH
       previous_settings.steps_goal != s_settings.steps_goal ||
+      previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
+#endif
       previous_settings.weather_update_minutes != s_settings.weather_update_minutes) {
     settings_save(&s_settings);
   }
@@ -183,24 +232,30 @@ static void inbox_received_callback(DictionaryIterator* iter, void* context) {
 #endif
 }
 
-static void inbox_dropped_callback(AppMessageResult reason, void* context) {
+static void inbox_dropped_callback(
+  AppMessageResult reason,
+  void* context) {
   (void)context;
   APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox dropped: reason=%d", reason);
 }
 
-static void outbox_failed_callback(DictionaryIterator* iterator, AppMessageResult reason,
-                                   void* context) {
+static void outbox_failed_callback(
+  DictionaryIterator* iterator,
+  AppMessageResult reason,
+  void* context) {
   (void)iterator;
   (void)context;
   APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
 }
 
-static void outbox_sent_callback(DictionaryIterator* iterator, void* context) {
+static void outbox_sent_callback(
+  DictionaryIterator* iterator,
+  void* context) {
   (void)iterator;
   (void)context;
 }
 
-static uint32_t app_message_inbox_size(void) {
+static uint32_t app_message_inbox_size() {
   // Inbound tuples, in order:
   // Refer to package.json for tuple ordering
   // Key-name | Key-Value | Size
@@ -220,21 +275,31 @@ static uint32_t app_message_inbox_size(void) {
   // 10. ONESHOT_BPM | 10020 | sizeof(int32_t)
   // 11. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
-  return dict_calc_buffer_size(
-    11, // tuples
-    APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE, sizeof(int32_t),
-    sizeof(int32_t), sizeof(int32_t), APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE, sizeof(int32_t), sizeof(int32_t), sizeof(int32_t));
+  return dict_calc_buffer_size(11,  // tuples
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t),
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t));
 #else
-  return dict_calc_buffer_size(
-    9, // tuples
-    APP_MESSAGE_CONFIG_VALUE_SIZE, APP_MESSAGE_CONFIG_VALUE_SIZE, sizeof(int32_t),
-    sizeof(int32_t), sizeof(int32_t), APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE, sizeof(int32_t));
+  return dict_calc_buffer_size(9,  // tuples
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t),
+    sizeof(int32_t),
+    sizeof(int32_t),
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
+    sizeof(int32_t));
 #endif
 }
 
-static AppMessageResult initialize_inbox_outbox(void) {
+static AppMessageResult initialize_inbox_outbox() {
   uint32_t inbox_size = app_message_inbox_size();
   bool pebblekit_connected = connection_service_peek_pebblekit_connection();
   AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE);
@@ -243,19 +308,23 @@ static AppMessageResult initialize_inbox_outbox(void) {
   }
 
   APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu", result, inbox_size);
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d kit=%d", APP_MESSAGE_OUTBOX_SIZE,
-          pebblekit_connected);
+  APP_LOG(APP_LOG_LEVEL_WARNING,
+    "AppMessage sizes: outbox=%d kit=%d",
+    APP_MESSAGE_OUTBOX_SIZE,
+    pebblekit_connected);
 
   result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage retry failed: result=%d kit=%d", result,
-            pebblekit_connected);
+    APP_LOG(APP_LOG_LEVEL_ERROR,
+      "AppMessage retry failed: result=%d kit=%d",
+      result,
+      pebblekit_connected);
   }
 
   return result;
 }
 
-static void send_loaded_weather_update_minutes(void) {
+static void send_loaded_weather_update_minutes() {
   DictionaryIterator* out_iter = NULL;
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if (result != APP_MSG_OK || !out_iter) {
@@ -263,8 +332,9 @@ static void send_loaded_weather_update_minutes(void) {
     return;
   }
 
-  DictionaryResult dict_result = dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
-                                                  s_settings.weather_update_minutes);
+  DictionaryResult dict_result = dict_write_int32(out_iter,
+    MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
+    s_settings.weather_update_minutes);
   if (dict_result != DICT_OK) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
     return;
@@ -276,7 +346,8 @@ static void send_loaded_weather_update_minutes(void) {
   }
 }
 
-static void main_window_load(Window* window) {
+static void main_window_load(
+  Window* window) {
   if (!window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
     return;
@@ -289,12 +360,13 @@ static void main_window_load(Window* window) {
   }
 }
 
-static void main_window_unload(Window* window) {
+static void main_window_unload(
+  Window* window) {
   (void)window;
   watchface_destroy();
 }
 
-static void init(void) {
+static void init() {
 // Create the window before initializing app state and services.
 #ifdef PBL_HEALTH
   s_health_events_subscribed = false;
@@ -306,13 +378,11 @@ static void init(void) {
     return;
   }
 
-  // We load settings but where do we apply them to the watchface?
+  // Load settings
   settings_load(&s_settings);
 
-  window_set_window_handlers(s_window, (WindowHandlers){
-                                           .load = main_window_load,
-                                           .unload = main_window_unload,
-                                       });
+  window_set_window_handlers(s_window,
+    (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
   window_stack_push(s_window, true);
 
   // Subscribe to services
@@ -337,7 +407,7 @@ static void init(void) {
   }
 }
 
-static void deinit(void) {
+static void deinit() {
   if (!s_window) {
     return;
   }
@@ -355,7 +425,7 @@ static void deinit(void) {
   s_window = NULL;
 }
 
-int main(void) {
+int main() {
   init();
   app_event_loop();
   deinit();
