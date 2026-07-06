@@ -1,6 +1,7 @@
 #pragma once
 
 #include <pebble.h>
+
 #include "helper.h"
 
 enum {
@@ -21,14 +22,14 @@ enum {
 
 enum {
   DISPLAY_MODE_LIGHT_MONOCHROME = 0,
-  DISPLAY_MODE_DARK_MONOCHROME = 1,
   DISPLAY_MODE_MIN = DISPLAY_MODE_LIGHT_MONOCHROME,
   DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT_MONOCHROME,
+  DISPLAY_MODE_DARK_MONOCHROME = 1,
 #ifdef PBL_COLOR
   DISPLAY_MODE_LIGHT_COLOR = 2,
   DISPLAY_MODE_DARK_COLOR = 3,
   DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_COLOR,
-  #else
+#else
   DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_MONOCHROME,
 #endif
 };
@@ -62,20 +63,25 @@ enum {
 
 #define TEMP_UNIT_VALID(value) (HELPER_VALUE_IN_RANGE((value), TEMP_UNIT_MIN, TEMP_UNIT_MAX))
 #define TIME_FORMAT_VALID(value) (HELPER_VALUE_IN_RANGE((value), TIME_FMT_MIN, TIME_FMT_MAX))
-#define DISPLAY_MODE_VALID(value) (HELPER_VALUE_IN_RANGE((value), DISPLAY_MODE_MIN, DISPLAY_MODE_MAX))
-#define HR_SAMPLE_MINUTES_VALID(value) ((HELPER_VALUE_IN_RANGE((value), HR_SAMPLE_MINUTES_MIN, HR_SAMPLE_MINUTES_MAX)))
+#define DISPLAY_MODE_VALID(value) \
+  (HELPER_VALUE_IN_RANGE((value), DISPLAY_MODE_MIN, DISPLAY_MODE_MAX))
+#define HR_SAMPLE_MINUTES_VALID(value) \
+  ((HELPER_VALUE_IN_RANGE((value), HR_SAMPLE_MINUTES_MIN, HR_SAMPLE_MINUTES_MAX)))
 #define STEPS_GOAL_VALID(value) (HELPER_VALUE_IN_RANGE((value), STEPS_GOAL_MIN, STEPS_GOAL_MAX))
-#define WEATHER_UPDATE_MINUTES_VALID(value) (HELPER_VALUE_IN_RANGE((value), WEATHER_UPDATE_MINUTES_MIN, WEATHER_UPDATE_MINUTES_MAX))
+#define WEATHER_UPDATE_MINUTES_VALID(value) \
+  (HELPER_VALUE_IN_RANGE((value), WEATHER_UPDATE_MINUTES_MIN, WEATHER_UPDATE_MINUTES_MAX))
 
 typedef struct {
   // Add persisted fields at the bottom
   uint8_t temp_unit;
   uint8_t time_format;
-  uint8_t hr_sample_minutes;
   uint8_t display_mode;
-  uint16_t steps_goal;
   uint8_t weather_update_minutes;
+#ifdef PBL_HEALTH
+  uint8_t hr_sample_minutes;
+  uint16_t steps_goal;
+#endif
 } WatchfaceSettings;
 
-void settings_load(WatchfaceSettings *settings);
-bool settings_save(const WatchfaceSettings *settings);
+void settings_load(WatchfaceSettings* settings);
+bool settings_save(const WatchfaceSettings* settings);
