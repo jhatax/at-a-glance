@@ -12,15 +12,12 @@ These are acceptance properties, not current implementation notes.
 
 ## Glanceability
 
-- Design for one-second recognition.
+- A user should be able to understand the watchface within a glance (sub-second attention) without decoding information field by field.
 - Keep the product hierarchy stable across display families.
 - Keep value and state changes from shifting the visual footprint unnecessarily.
-- The display should reward quick reading, not inspection.
-- A user should be able to understand the watchface at a glance without decoding it field by field.
 
 ## Dominant Time
 
-- Time is always dominant.
 - Time remains the dominant visual object.
 - Other information may add context, but it must not compete with time for first attention.
 
@@ -28,7 +25,7 @@ These are acceptance properties, not current implementation notes.
 
 - Information hierarchy remains recognizable across display families.
 - Rectangular and round targets should feel like the same product.
-- The shared hierarchy is: top steps context, centered time, centered battery track, weather/date context, and bottom heart-rate context.
+- The invariant information hierarchy is: top steps context, centered time, centered battery track, weather/date context, and bottom heart-rate context (time, battery, weather, date supported on all Pebbles).
 - Rectangular and round displays implement the same information hierarchy and stack.
 - Layout changes may rebalance spacing, but they should not change which information reads first, second, and third.
 
@@ -36,7 +33,6 @@ These are acceptance properties, not current implementation notes.
 
 - Every supported device deserves an equally intentional experience within the capabilities it supports.
 - Intentional does not mean identical.
-- Placement is resolved from defined layout constants for the active platform.
 - Platform differences must not reduce the product to a careless port.
 - The product should adapt to capability differences without treating any supported device as an afterthought.
 
