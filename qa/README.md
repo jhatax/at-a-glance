@@ -18,3 +18,16 @@ Public entrypoint:
 The top-level harness owns CLI parsing and stage orchestration. The files in
 this directory own the implementation details of those stages and validation
 flows.
+
+## Test Descriptions
+
+- `weather`: exercises weather-condition, day/night, and display-mode sweeps
+- `battery`: exercises battery-level and charging-state sweeps across display modes
+- `health`: exercises BPM and steps overrides, including unavailable-state coverage
+- `smoke`: exercises a subset of scenarios across battery, weather, and health
+
+## Further Reading
+
+- `../docs/ArchitectureLedger.md`
+- `../docs/Contributing.md`
+- `../docs/Build and Validation.md`
