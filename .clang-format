@@ -1,0 +1,16 @@
+BasedOnStyle: Google
+ColumnLimit: 100
+IndentWidth: 2
+ContinuationIndentWidth: 2
+PointerAlignment: Left
+UseTab: Never
+
+BreakAfterReturnType: None
+BreakFunctionDefinitionParameters: true
+PenaltyBreakBeforeFirstCallParameter: 0
+BinPackArguments: false
+
+AlignAfterOpenBracket: DontAlign
+BinPackParameters: OnePerLine
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllArgumentsOnNextLine: false
