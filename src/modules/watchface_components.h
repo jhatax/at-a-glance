@@ -1,10 +1,11 @@
 #pragma once
 
-#include "layout_style.h"
-#include "layout_surface.h"
 #include <pebble.h>
 
-#define WATCHFACE_UNAVAILABLE_TEXT "---"
+#include "layout_style.h"
+#include "layout_surface.h"
+
+#define WATCHFACE_OUTOFRANGE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR GColorWhite
 
 #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
@@ -40,7 +41,7 @@ typedef struct {
 } WatchfaceTextWithIconAndProgressStratum;
 
 typedef struct {
-  const ColorPalette *palette;
+  const ColorPalette* palette;
   bool is_compact;
   FontBook fontbook;
 } WatchfaceSurfaceStyle;

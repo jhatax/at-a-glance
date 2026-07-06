@@ -9,8 +9,14 @@
 // the transport contract.
 enum {
   CLIMATE_TEMP_UNAVAILABLE = INT16_MIN,
-  CLIMATE_CONDITION_UNKNOWN = -1,
+  CLIMATE_CONDITION_OUTOFRANGE = -1,
+  CLIMATE_CONDITION_MIN = 0,
+  CLIMATE_CONDITION_MAX = 99,
 };
+
+// This macro should reside here where the enum is defined vs. in climate.c
+#define CLIMATE_CONDITION_IS_VALID(cond) \
+  (HELPER_VALUE_IN_RANGE((cond), CLIMATE_CONDITION_MIN, CLIMATE_CONDITION_MAX))
 
 // Runtime supplies an atomic climate update packet. `is_complete` reflects
 // runtime-owned transport completeness; climate owns applying valid weather or
@@ -22,8 +28,10 @@ typedef struct {
   int is_day;
 } ClimateUpdate;
 
-bool climate_module_create(Layer *root, const WatchfaceTextSubstratum *text,
-                           const WatchfaceIconSubstratum *icon, GFont font);
-void climate_module_destroy(void);
-void climate_module_refresh(const ColorPalette *palette, uint8_t temp_unit);
-void climate_module_set_weather(ClimateUpdate *update);
+bool climate_module_create(Layer* root,
+  const WatchfaceTextSubstratum* text,
+  const WatchfaceIconSubstratum* icon,
+  GFont font);
+void climate_module_destroy();
+void climate_module_refresh(const ColorPalette* palette, uint8_t temp_unit);
+void climate_module_set_weather(ClimateUpdate* update);

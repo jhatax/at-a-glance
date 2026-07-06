@@ -32,13 +32,13 @@ static void outbox_failed_callback(DictionaryIterator* iterator,
   AppMessageResult reason,
   void* context);
 static void outbox_sent_callback(DictionaryIterator* iterator, void* context);
-static uint32_t app_message_inbox_size(void);
-static AppMessageResult initialize_inbox_outbox(void);
-static void send_loaded_weather_update_minutes(void);
+static uint32_t app_message_inbox_size();
+static AppMessageResult initialize_inbox_outbox();
+static void send_loaded_weather_update_minutes();
 static void main_window_load(Window* window);
 static void main_window_unload(Window* window);
-static void init(void);
-static void deinit(void);
+static void init();
+static void deinit();
 
 static void battery_handler(
   BatteryChargeState state) {

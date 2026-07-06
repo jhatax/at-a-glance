@@ -6,7 +6,7 @@
 typedef struct {
   GColor background;
   GColor normal;
-  GColor unknown;
+  GColor outofrange;
   GColor sun;
   GColor cold;
   GColor cloud;
@@ -14,5 +14,9 @@ typedef struct {
   GColor clear_fill;
 } ClimatePalette;
 
-void draw_climate_icon(GContext *ctx, const GRect *frame, int16_t weather_condition, bool is_day,
-                       const ClimatePalette *climate_palette);
+void draw_climate_icon(
+  GContext *ctx,
+  const GRect *frame,
+  int16_t weather_condition,
+  bool is_day,
+  const ClimatePalette *climate_palette);
