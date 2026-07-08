@@ -1,50 +1,55 @@
 # Product Invariants
 
-This document defines the product truths that should remain stable as the watchface evolves.
+This document defines the product truths that must remain stable as the
+watchface evolves.
 
-These are acceptance properties, not current implementation notes.
+These are acceptance properties that must be satisfied by any implementation,
+so they have been written to be simple to understand and verifiable.
 
-## Required Reading
+It is the task of implementation documentation to cover decisions made to
+satisfy these properties.
 
-- `../README.md`
-- `Design.md`
-- `VisualVocabulary.md`
+**Key document relationships**
 
-## Glanceability
+`Design` establishes the motivation, foundational concepts, and overarching usability outcomes
+for *At A Glance*, the entire watch face.
+|
+V
+`ProductInvariants`, i.e. `this`, states **what** must be true to achieve usability outcomes across devices.
+|
+V
+`VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
 
-- A user should be able to understand the watchface within a glance (sub-second attention) without decoding information field by field.
-- Keep the product hierarchy stable across display families.
-- Keep value and state changes from shifting the visual footprint unnecessarily.
+## Glanceability & Automatic Perception
 
-## Dominant Time
+- The watchface must be immediately legible within a glance (sub-second
+  attention span).
+- The information should be understandable without the need to decode
+  field by field.
+- The product hierarchy is stable across display families.
+- Values and state changes do not shift the visual footprint.
+- The user should gain perceptual fluency with the display over time.
 
-- Time remains the dominant visual object.
-- Other information may add context, but it must not compete with time for first attention.
+## First-Class Device Support
+
+- Every supported device receives an equally intentional experience within
+  supported capabilities.
 
 ## Recognizable Information Hierarchy
 
 - Information hierarchy remains recognizable across display families.
-- Rectangular and round targets should feel like the same product.
-- The invariant information hierarchy is: top steps context, centered time, centered battery track, weather/date context, and bottom heart-rate context (time, battery, weather, date supported on all Pebbles).
-- Rectangular and round displays implement the same information hierarchy and stack.
-- Layout changes may rebalance spacing, but they should not change which information reads first, second, and third.
+- Time, battery, weather, and date form the always-present core.
+- Layout changes may rebalance spacing, but they must not change which
+  information reads first, second, and third.
 
-## First-Class Device Support
+## Dominant Information
 
-- Every supported device deserves an equally intentional experience within the capabilities it supports.
-- Intentional does not mean identical.
-- Platform differences must not reduce the product to a careless port.
-- The product should adapt to capability differences without treating any supported device as an afterthought.
+- **Time** remains the dominant visual object.
+- Other information may add context, but it must not compete with time for first attention.
 
 ## Identifiable Visual Elements
 
-- Icons identify information.
-- Numbers quantify values.
-- Text is primary; icons support recognition.
-- A text-only metric is acceptable when an icon cannot be created or does not fit the platform.
-- An icon-only metric is not acceptable.
-- Every icon and glyph must work in black and white.
-- Identifiability matters at watch scale, not only in enlarged mockups or editor views.
+- Every visual element must be immediately identifiable at watch scale.
 
 ## Stable Semantic Meaning
 
@@ -57,20 +62,17 @@ These are acceptance properties, not current implementation notes.
 
 2. Color an icon or glyph vs. text to maximize glanceability.
 
-3. Users should not have to relearn the meaning of a channel from one metric to another.
+3. Users must not have to relearn the meaning of a channel within the same glance surface.
 
 ## Stable Color Meaning
 
-- Use color as a state cue, not as the only source of meaning.
-- Dynamic metric colors may vary by module or state.
-- Status meaning should stay consistent across the product.
-- Color may add speed and confidence, but the display must remain interpretable when color is absent, muted, or unavailable.
-- State meaning should survive across monochrome and color-capable devices.
+- When different colors are used for the same metric, color should merely
+  convey state change without alarm or seeking attention.
+- Status meaning must stay consistent across the product.
+- Color may add speed, confidence, and state meaning, but the display
+  must remain interpretable when color is absent, muted, or unavailable.
 
-## Calm Availability Language
+## Out of Range Perception
 
-- Unavailable data uses the accepted absence slash.
-- The slash reads as absent or unavailable.
-- The mark means absent, unavailable, or not currently usable.
-- The mark should be visible without feeling alarming.
-- Unavailable states should read as calm product behavior, not as an error condition demanding attention.
+- Out of range information is recognizable immediately without causing alarm or
+  demanding attention.

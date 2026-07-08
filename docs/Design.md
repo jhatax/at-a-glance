@@ -1,55 +1,58 @@
 # At A Glance Design
 
-At A Glance is a glance-first Pebble watchface built to make complex information simple to perceive automatically, with minimal cognitive load.
+At A Glance is a glance-first Pebble watchface. Its goal is to make complex
+information simple to absorb and act on with minimal cognitive load.
 
 ## Product Intent
 
-- At A Glance presents information with minimal interpretation.
-- The interface should present information directly, without explanatory friction.
-- Complex information should be simple to perceive.
-- Nothing on screen should explain the data when the data can be shown clearly on its own.
+- Organize and present precise information without interpretation.
+- Make information immediate to perceive and intuitive to understand.
 
 ## Design Influences
 
-- Inspired by transit signage and cockpit instrumentation.
-- These influences show up in clear hierarchy, strong alignment, restrained color, and direct labeling instead of decoration.
+- Cockpit instrumentation and transit signage: Clear information hierarchy,
+  strong alignment, restrained color, and direct labeling.
 
 ## Glance-First Philosophy
 
-- Maximize information capture while minimizing the effort and attention required to understand it.
-- Design for automatic perception before deliberate reading.
-- Reward a quick glance. A user should not need to stop and decode the layout.
-- The design uses the principle of irreducible simplicity: reduce each element until any further reduction would compromise function, recognition, or glanceability.
+*The information takes center stage. The watch face fades into the background.*
+
+- Reward a quick glance with maximum information capture. A user must not need to
+  stop and decode the layout.
+- Use irreducible simplicity: reduce each element until any further reduction
+  would compromise function, recognition, or glanceability.
+- Anchor information in stable display locations to reduce cognitive load.
 
 ## Restraint And Negative Space
 
+Maintain clarity of information hierarchy on a calm screen,
+even when several metrics are present.
+
+- Keep the display ordered, not crowded.
 - Negative space is part of the design.
-- The display should feel ordered, not crowded.
 - Visual restraint is part of the product, not leftover space.
-- The goal is to keep the hierarchy clear and the screen calm, even when several metrics are present.
 
 ## Intentional Experience Across Devices
 
-- Every supported device deserves an equally intentional experience within the capabilities it supports.
-- Intentional does not mean identical.
+Every supported device deserves an equally intentional experience within the capabilities it supports.
+
 - Differences in shape, color capability, and screen class may change the layout, spacing, and treatment.
-- Those differences should not make any supported platform feel like a scaled copy or an afterthought.
+- Those differences must not make any supported platform feel like a scaled copy or an afterthought.
 
 ## Shared Visual DNA
 
-- Rectangular and round targets should feel like the same product.
-- Rectangular and round displays implement the same information hierarchy and stack.
-- Placement doesn't rely on unpredictable scaling coefficients.
+- Define the information hierarchy and rules that establish shared visual DNA across all devices.
 - Shared visual DNA is about recognition, not about reusing the same coordinates on every device.
-  - Define the information hierarchy and rules that establish shared visual DNA across platforms.
 
 ## Design Invariant
 
-Automatic perception of information is the singular design invariant for this watch face.
+Automatic perception of information is the singular design invariant for this watchface.
 
-- A user should be able to understand the display quickly, with minimal effort and minimal interpretation.
-- If a change improves implementation neatness but makes the display slower to read, it fails the design invariant.
+- A user must be able to understand the display quickly, with minimal effort
+  and minimal interpretation.
+- If a change improves implementation neatness but makes the display slower to read,
+  it fails the design invariant.
 
 ## Further Reading
 
-- [Product Invariants](Product-Invariants.md) describes the functional and semantic rules that preserve the product identity across devices, layouts, and feature configurations.
+- [Product Invariants](ProductInvariants.md) defines the functional and semantic rules that preserve product identity across devices, layouts, and feature configurations.

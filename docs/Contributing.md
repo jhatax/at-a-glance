@@ -2,204 +2,153 @@
 
 This document explains how to change At A Glance safely.
 
-It is a workflow and review guide for contributors. It does not own product rules, visual vocabulary, or runtime architecture decisions.
+Use it as the workflow and review guide for contributors. Keep product rules,
+visual vocabulary, and runtime architecture decisions in their dedicated
+documents.
 
 ## Required Reading
 
-- `../README.md`
-- `Build and Validation.md`
-- `ProductInvariants.md`
-- `VisualVocabulary.md`
-- `UserInterface.md`
-- `ArchitectureLedger.md`
+- `../qa/README.md` for Build & QA harness source navigation.
+- `UserInterface.md` for the full visual reference implementation.
+- `ArchitectureLedger.md` for the runtime architecture.
 
-## Scope
+## Scope: Changes to Code, Docs, User Interface
 
 - Treat every change as small embedded firmware work.
-- Design first. Audit live source, docs, generated files, and dirty tree before editing. Keep one coherent slice. Preserve existing user work.
-- Cleanup, visual changes, AppMessage changes, platform work, and glyph tuning are separate unless explicitly approved together.
+- Review architecture before non-trivial edits.
+- Design first. Audit live source, docs, generated files, and dirty tree before editing.
+- Prefer direct code over helper churn when the boundary is obvious and local.
 
 ## C-Coding Decisions
 
 - Use portable C within the Pebble SDK's constrained embedded runtime model.
-- Format code with `clang-format`
+- Format code with `clang-format`, repo has a `.clang-format`.
 - Use integer layout and drawing math only.
 - Avoid heap allocation unless required.
 - Match every acquired resource with a destroy path.
 - Use fixed-size buffers and `snprintf`.
-- Keep allocation, network, JSON, heavy formatting, and layout calculation out of layer update procs.
-- Prefer capability guards.
+- Keep allocation, network, JSON, heavy formatting, and layout calculation
+  out of layer update procs.
+- Prefer the use of Pebble platform provided capability guards, e.g., PBL_HEALTH.
 - Do not pass or return large watchface or layout structs by value.
 - Keep module APIs narrow.
 - Prefer direct, auditable code.
+- Check `helper.c/.h, substratum_renderer.c/.h` before adding new helpers
+
+## C-Code Formatting and Clangd Integration
+
+The repository includes `.clang-format` and `.clangd` so contributors get
+consistent formatting and Pebble-aware editor diagnostics from the repo root.
+
+Use `clang-format` before committing C changes:
+
+```sh
+clang-format -i src/c/*.[ch] src/modules/*.[ch]
+```
+
+If `clangd` cannot locate the Pebble compiler, configure your editor with the
+toolchain driver:
+
+```text
+--query-driver=/path/to/arm-none-eabi-gcc
+```
+
+For how `compile_commands.json` is generated from Pebble's verbose build output,
+see `Build and Validation.md`.
+
+## Repository Maintenance
+
+Use `.gitignore` to keep generated local state out of source control. Build
+artifacts, editor indexes, logs, temporary QA vectors, dependency directories,
+and generated compile databases should not become source files.
+
+The exception is a release PBW when explicitly prepared for distribution. A PBW
+is an output artifact to review or publish, not a substitute for committing the
+source, manifest, resources, and documentation that produced it.
 
 ## Build And Validation
 
-For build, install, editor-tooling setup, `compile_commands.json`, harness
-behavior, and validation flow, see `Build and Validation.md`.
+For build, install, editor-tooling setup, harness behavior, and validation flow,
+see `Build and Validation.md`.
 
-Contributor rule:
+**Contributor rule**
 
-- If a code change needs build or runtime verification, run the relevant build and validation flow from `Build and Validation.md` or explicitly report the gap.
+- If a code change needs build or runtime verification, run the relevant build and
+  validation flow from `Build and Validation.md` or explicitly report the gap.
+- If a change touches settings, Clay, PKJS normalization, AppMessage keys, or
+  persistence, update `Settings and Configuration.md` and run the relevant
+  settings validation path.
 
-## Install
+## Basic Local Loop
 
-### Emulator
-
-Choose a target and install to it:
-
-```sh
-pebble install --emulator {emery,flint,chalk,gabbro}
-```
-
-To test the config page in an emulator:
+Build and launch on the default emulator:
 
 ```sh
-pebble emu-app-config
+pebble build
+pebble install --emulator emery
 ```
 
-### Hardware
+Recover a stale or unresponsive emulator:
 
 ```sh
-pebble install --phone YOUR_PHONE_IP
+pebble kill --force
+pebble wipe
 ```
 
-`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app.
+Use the harness nuclear path when the emulator is not responding or persisted
+emulator state is interfering with validation:
 
-Detailed install workflow, harness flow, and target-validation rules live in
-`Build and Validation.md`.
+```sh
+./ataglance_build_test_harness.sh -n
+```
 
-## QA: Logs, Emulators, Debugging
+The `-n` / `--nuclear` flag kills emulators, wipes emulator state, and forces a
+clean build. This is stronger than a normal rebuild because it clears stale
+emulator process and persistence state before rebuilding. Combine it with
+`--install` or `--test` when recovery should continue into emulator install or
+validation.
+
+For emulator matrices, phone install, config-page validation, compile database
+generation, and QA command details, use `Build and Validation.md`. For the
+current QA helper, stage, test, and data layout, use `../qa/README.md`.
+
+## Logs And Debugging
 
 ### Logs
 
 Use Pebble's built-in `APP_LOG` with restraint.
 
-- `INFO` logs are temporary messages during feature development, not normal committed behavior.
+- Use `INFO` logs as temporary messages during feature development.
 - Use `APP_LOG_LEVEL_DEBUG` sparingly for temporary diagnostics.
-- Use `APP_LOG_LEVEL_WARNING` and `APP_LOG_LEVEL_ERROR` for durable runtime diagnostics when they materially help diagnosis.
+- Use `APP_LOG_LEVEL_WARNING` and `APP_LOG_LEVEL_ERROR` for durable runtime
+  messages when they materially help diagnosis.
 - Delete all `APP_LOG(APP_LOG_LEVEL_INFO, ...)` calls before committing code.
-
-### Validating features using the Emulator
-
-- Weather, display mode, and health overrides are sent through AppMessage.
-- Battery state is changed through the emulator battery service.
-
-#### Battery State Change: Emulator Messages
-
-```sh
-pebble emu-battery --emulator emery --percent 19
-pebble emu-battery --emulator emery --percent 75 --charging
-```
-
-Use the harness or repeated emulator commands to validate multiple charge levels and charging status when checking bolt visibility and fill behavior.
-
-#### Weather And Display Palette Change: AppMessages
-
-Numeric message keys:
-
-For weather data:
-- `10002` = `TEMPERATURE`, for example `10002=539` sends `53.9C`
-- `10003` = `WEATHER_CONDITION`, for example `10003=0` exercises a clear-weather glyph
-- `10004` = `IS_DAY`, where `1` is day and `0` is night
-
-For weather settings:
-- `10005` = `WEATHER_UPDATE_MINUTES`
-- supported values are `15`, `30`, `45`, and `60`
-
-For display palettes:
-- `10006` = `DISPLAY_MODE`
-- supported modes are `0` to `3` on color targets and `0` to `1` on monochrome targets
-
-Examples:
-
-```sh
-pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=0 # night or day
-pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=1 # day
-pebble send-app-message --emulator emery --int 10002=-32768 10003=-1 10004=0 # unavailable condition
-pebble send-app-message --emulator emery --int 10005=15 # weather every 15 minutes
-pebble send-app-message --emulator emery --int 10006=0 # Black on White palette
-pebble send-app-message --emulator emery --int 10006=2 # Clear as Celeste palette on color targets; invalid on monochrome
-```
-
-QA notes:
-1. Use the same weather code but change IS_DAY value when the goal is to inspect only the day/night glyph delta.
-2. Pair display-mode changes with weather or battery checks when validating light/dark behavior.
-
-#### One-shot Health validation: AppMessages
-
-One-shot health ingress exists as one-shot overrides that affect the next health refresh only. Here's the flow:
-
-- `watchface_runtime_boundary.c`
-  - accepts one-shot health payloads and converts them into normal health refreshes
-- `bpm.c`
-  - supports a one-shot BPM override for the next health refresh only
-  - falls back to the real HealthService value when no one-shot BPM packet is queued
-- `steps.c`
-  - supports a one-shot steps override for the next health refresh only
-  - falls back to the real HealthService value when no one-shot steps packet is queued
-- `watchface.c`
-  - clears queued one-shot health state during destroy so stale values do not survive teardown
-
-Current one-shot keys:
-- `10020` = One-shot BPM
-- `10021` = One-shot steps
-
-Examples:
-
-```sh
-pebble send-app-message --emulator emery --int 10020=72 # BPM
-pebble send-app-message --emulator emery --int 10021=8500 # Steps
-pebble send-app-message --emulator emery --int 10020=0 # unavailable BPM icon
-pebble send-app-message --emulator emery --int 10021=0 # unavailable Steps icon
-```
-
-### Message Validation Discipline [TODO review]
-
-- Keep AppMessage examples synchronized with live `package.json` key order and current harness commands.
-- Recheck manual numeric keys after any key add, remove, or reorder.
-- Validate both transport and render behavior:
-  - tuple parsed
-  - runtime accepted the value
-  - module refreshed
-  - visible state matches the intended scenario
-- When a test is battery-only, use `pebble emu-battery`; do not invent battery AppMessage keys.
-- Prefer harness automation for broad sweeps and direct `pebble send-app-message` commands for focused debugging.
 
 ### Debugging
 
-`ATAGLANCE_DEBUG` provides narrow, debug-gated rendering behavior that is off by default.
+For UI changes, one useful validation path is enabling `ATAGLANCE_DEBUG`,
+installing in the emulator, and inspecting the debug-rendered layer or glyph
+bounds. Build activation and emulator validation details live in
+`Build and Validation.md`.
 
-Recommended flow:
+## Glyph Validation
 
-1. Enable `ATAGLANCE_DEBUG` in `wscript`.
-2. Identify whether the module is driven by:
-   - Pebble service callbacks
-   - debug-only render instrumentation
-3. Trigger only that module's path.
-4. Validate the module's visible output.
-5. Remove temporary logs or temporary debug drawing before commit.
+Use `glyph-lab` for broad glyph work before production porting.
 
-To toggle debug builds:
+Recommended loop:
 
-1. Open `wscript`.
-2. Uncomment or re-comment the line:
-   ```py
-   # ctx.env.append_value('DEFINES', ['ATAGLANCE_DEBUG=1'])
-   ```
-3. Rebuild:
-   ```sh
-   pebble clean && pebble build
-   ```
+1. Define the glyph decision in prose.
+2. Identify the real state variants used by the product.
+3. Create or update lab variants only for those states.
+4. Review color and black-and-white screenshots.
+5. Review at least `aplite` and `emery` before production porting.
+6. Pick one direction.
+7. Port the selected drawing rules into production modules.
+8. Validate in the real watchface layout.
 
-#### Debug-Enabled Modules
-
-Current `ATAGLANCE_DEBUG` behavior is narrow and module-specific:
-
-- `substratum_renderer.c`
-  - in debug builds, text layers render with a visible background/text-color inversion so frame and text bounds are obvious
-- `climate_glyphs.c`
-  - contains a debug-gated icon-bounds rectangle outline in the primary text color
+Glyph validation is required whenever glyphs are modified or new glyphs are
+introduced. Treat screenshots as evidence; keep accepted visual evidence in
+`UserInterface.md`.
 
 ## Review and Commit Discipline
 
@@ -216,8 +165,15 @@ Before committing a change:
 
 ## Documentation QA
 
-Move content to canonical owners before rewriting it heavily.
+Use the Ontology to place documentation in its canonical owner. Each document
+should still carry enough local context to be useful without forcing a reader to
+inspect code for basic understanding.
 
-Cross-references can expand understanding, but each doc should preserve enough detail that a reader can understand a section without having to inspect code unless they want implementation proof.
+## Further Reading
 
-Update the documentation set when accepted architectural or product decisions change.
+- `Settings and Configuration.md` for the settings catalog, Clay mapping, message-key contract,
+   persistence, and validation obligations
+- `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
+- `ProductInvariants.md` for the invariants that preserve product identity across devices.
+- `VisualVocabulary` for the visual grammar that *can* satisfy visual invariants.
+- `../README.md` for a product introduction: screenshots, getting started, download links.

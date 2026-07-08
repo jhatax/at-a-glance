@@ -28,6 +28,6 @@ flows.
 
 ## Further Reading
 
-- `../docs/ArchitectureLedger.md`
-- `../docs/Contributing.md`
-- `../docs/Build and Validation.md`
+- `../docs/ArchitectureLedger.md` for the runtime architecture.
+- `../docs/Contributing.md` for contributor workflow, validation, and review discipline.
+- `../docs/Build and Validation.md` for build, install, editor-tooling, and validation architecture.

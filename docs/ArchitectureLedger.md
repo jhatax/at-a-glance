@@ -1,23 +1,50 @@
 # Architecture Ledger
 
-This ledger is the current source of truth for At A Glance runtime architecture.
+This ledger is the current source of truth for At A Glance's architecture:
+runtime flow, ownership, boundaries, lifecycle, and source organization.
 
-It describes runtime flow, ownership, boundaries, lifecycle, and source organization. It does not own product principles, visual rules, or current UI tables.
+**Key document relationships**
+
+`ProductInvariants` states **what** must be true for *At A Glance*, the entire watch face.
+|
+V
+`ArchitectureLedger`, i.e. `this`, describes **how** architectural invariants are satisfied.
 
 ## Required Reading
 
-- ../README.md
-- ProductInvariants.md
-- VisualVocabulary.md
-- UserInterface.md
+- `../README.md` for a product introduction: screenshots, getting started, download links.
+- `ProductInvariants.md` states invariants to achieve goals across devices.
+- `VisualVocabulary` for the visual grammar that can satisfy visual invariants.
+- `UserInterface.md` for the full visual reference implementation.
 
-## Runtime Flow
+## Watch face conceptual layers
 
-The current source uses one watchface runtime with a shared information
-hierarchy and stack across rectangular and round displays. Placement is
-resolved from defined layout constants.
+### Layers
 
-Core flow:
+Layers have been implemented to satisfy visual display and runtime-architecture invariants.
+
+1. Pebble OS adapter: `ataglance.c` => app lifecycle adapter / main window owner
+2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events
+   into watch face vocabulary
+3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules
+  - `layout_architect.c` => Prepares the surface
+  - `layout_stylist.c` => Associates styles and fonts with visual channels
+4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
+
+### Core Concepts
+- The watch face surface is organized as tiles (strata).
+  - Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
+- Information updates are relayed from Pebble OS (subscriptions, user-settings changes,
+  major events, emulator messages).
+- Updates are scoped to new information only; multiple strata changes are batched.
+- Use of repaint is limited to maximize battery-life.
+
+## Initialization and Runtime Flows
+
+These **four flows are the same** for supported capabilities of all Pebble devices, thereby
+satisfying the **invariant of architectural parity** for and compatibility with all devices.
+
+### 1. Initialization flow
 
 ```text
 ataglance.c
@@ -30,7 +57,7 @@ ataglance.c
                  -> layout_watchface_initialize(width, height, &surface)
                       -> memset(surface, 0, sizeof(*surface))
                       -> calculate active blueprint and final geometry
-                      -> store compact/full on surface.style.is_compact
+                      -> store compact/full on surface.style
                  -> layout_watchface_update_palette(&surface.style, display_mode)
                  -> window_set_background_color(...)
                  -> layout_watchface_initialize_fonts(...)
@@ -44,7 +71,7 @@ ataglance.c
   -> send loaded WEATHER_UPDATE_MINUTES to PKJS
 ```
 
-Runtime event flow:
+### 2. Runtime event flow
 
 ```text
 service callback or AppMessage callback in ataglance.c
@@ -57,11 +84,11 @@ service callback or AppMessage callback in ataglance.c
        -> apply_weather_data(...)
             -> push complete or unavailable climate state
             -> request climate refresh when any weather field was received
-       -> apply_service_event_data(...)
+       -> apply_subscribed_service_updates(...)
             -> translate tick, battery, and health callbacks into refresh masks
        -> apply_health_setting_data(...)
             -> mutate HR sample setting only
-       -> apply_debug_health_data(...) in debug builds
+       -> apply_oneshot_health_data(...)
             -> queue one-shot BPM/steps overrides
             -> request health refresh
        -> if repaint
@@ -74,12 +101,12 @@ service callback or AppMessage callback in ataglance.c
                  -> refresh only the addressed strata that were created
 ```
 
-Settings persistence and side effects:
+### 3. Settings persistence and side effects
 
 ```text
 ataglance.c inbox_received_callback(iter)
   -> copy previous_settings
-  -> parse settings, weather, health settings, and debug health tuples
+  -> parse settings, weather, health settings, and one-shot health tuples
   -> watchface_apply_received_data(&data, &settings)
   -> if any persisted setting changed
        -> settings_save(&settings)
@@ -87,7 +114,7 @@ ataglance.c inbox_received_callback(iter)
        -> apply_hr_sample_period()
 ```
 
-Startup weather-cadence sync:
+### 4. Startup weather-cadence sync:
 
 ```text
 ataglance.c init()
@@ -100,31 +127,32 @@ src/pkjs/index.js appmessage handler
   -> schedule weather polling from the watch-loaded value
 ```
 
-Notes:
-- `watchface_runtime_boundary.c` owns runtime interpretation and repaint-versus-refresh decisions.
-- `ataglance.c` owns message receipt, parsing, and dispatch.
-- `watchface.c` owns palette application, full repaint, and per-stratum refresh dispatch after the runtime boundary decides what changed.
-
 ## Prepared Surface
 
-At A Glance is organized around a prepared `WatchfaceSurface`.
+At A Glance is organized around a prepared `WatchfaceSurface` using `blueprints` customized for
+watch face geometry and shape. Two device categories have been defined:
+1. `full` [`gabbro`, `emery`]
+2. `compact` [`aplite`, `flint`, `diorite`, `chalk`]
 
-Layout initialization clears and prepares the caller-owned surface from scratch. Feature modules then consume prepared substrata, frames, fonts, and palettes instead of recalculating layout policy for themselves.
+The surface is prepared as follows:
 
-Blueprints are immutable product choices. Calculated layout is the resolved geometry used to place live strata on the surface.
+1. Layout initialization clears and prepares the caller-owned surface from scratch.
+2. Layout placement is calculated based on platform-specific constants.
+3. Feature modules consume prepared substrata, frames, fonts, palettes, and layout policy.
+4. A watch face supplied renderer place components on screen based on layout policy.
+
+Current visual placement, palette, and typography evidence lives as screenshots in `UserInterface.md`.
 
 ## Architect
 
 - Owns geometry and compact/full classification.
-- Resolves compact/full once and stores the result on `WatchfaceSurfaceStyle.is_compact`.
-- Resolves placement from defined layout constants for the active platform. It
-  does not assume that one device class can be scaled blindly into another.
+- Resolves placement from defined layout `blueprint` for the active platform.
 
 ## Stylist
 
-- Consumes `WatchfaceSurfaceStyle.is_compact`.
 - `layout_watchface_update_palette()` resolves palette and font selection.
-- Owns display-mode styling decisions. It does not own live module state such as BPM zone, battery charge condition, or climate condition colors.
+- Owns display-mode styling decisions.
+- Delegates strata / information styling to modules.
 
 ## Watchface Runtime
 
@@ -133,143 +161,251 @@ Blueprints are immutable product choices. Calculated layout is the resolved geom
 - `watchface.c` owns the live `WatchfaceSurface`, feature-module lifecycle, and visual dispatch.
 - `watchface_apply_received_data()` is the single runtime ingress for watchface updates.
 
-## Selective Watchface Refresh Strategy
+## Modules
 
-- The runtime prefers targeted refresh over whole-watchface redraw.
-- Incoming events are translated into narrow update masks so only affected strata refresh.
-- `watchface.c` dispatches those masks to the owning modules instead of repainting unrelated layers.
-- Full repaint is reserved for style-wide changes such as display-mode transitions.
-- This selective-refresh discipline, along with other narrow runtime decisions, exists to avoid unnecessary work and help maximize time between charges.
+- Own Pebble layer lifecycle and source state.
+- `create()` APIs receive only the prepared substrata, frames, and fonts they need.
+- `refresh()` APIs receive the current palette and narrow runtime payloads where needed.
+- Do not retain `WatchfaceSurface*` and global style.
 
-## Module Ownership
+Two classes of strata have been defined:
+1. Required: [`time`, `date`, `weather`]
+2. Others
+`Required` strata have been selected based on shared capabilities for all devices.
 
-Responsibilities of feature modules:
-- own Pebble layer lifecycle and source state
-- `create()` APIs receive only the prepared substrata, frames, and fonts they need
-- `refresh()` APIs receive the current palette and narrow runtime payloads where needed
-- must not retain `WatchfaceSurface*`
+Additionally,
+- **only text elements** are considered as required within each strata.
+- Placement of text is not impacted if icons cannot be created, are disabled,
+or cannot be displayed.
+- If `Required` strata cannot be created, watch face initialization fails and control
+is returned back to the Pebble OS.
 
-Required layer or resource creation gates module success and retained state. Optional resources may fail only when that failure is explicitly non-fatal and cleaned up correctly.
+This categorization satisfies the visual invariant of information hierarchy and display consistency
+for all supported devices.
 
-## Palette Resolution
+## Reference Architecture Of A Module
 
-- Static palette roles come from the stylist.
-- Dynamic colors remain module-owned when they depend on live source state, such as BPM, battery, steps, or climate condition state.
-- Module-specific palette policy belongs to the owning feature module.
-- Bitmap palette mutation helpers require palettized PNG resources.
+Feature modules follow the same lifecycle shape, though their rendering details
+can differ based on what they display.
+
+### Module creation flow
+
+```text
+watchface_create()
+  -> module_create(root, prepared substrata, font or narrow geometry)
+       -> validate required inputs
+       -> create required Pebble layers and resources
+       -> configure update procs, fonts, frames, alignment, and static layer state
+       -> add created layers to the root layer
+       -> retain only module-owned handles and source state
+       -> return success only after required layer/resource creation succeeds
+```
+
+### Runtime data flow
+
+```text
+service callback or AppMessage callback
+  -> ataglance.c parses raw Pebble input
+  -> watchface_runtime_boundary.c validates and interprets runtime facts
+  -> optional module source-state setter
+       -> module stores source state only
+  -> watchface_refresh(mask)
+       -> module_refresh(active palette, narrow runtime inputs)
+            -> read current source state or Pebble service state
+            -> derive render text, icon, progress, and live colors locally
+            -> update only module-owned layers
+```
+
+### Module destroy flow
+
+```text
+watchface_destroy()
+  -> module_destroy()
+       -> destroy module-owned layers and resources
+       -> clear retained handles
+       -> clear queued one-shot or source state when needed
+```
+
+### Current module variants
+
+- Text-only modules such as date and time own a text layer and refresh text
+  from time/date state plus the active palette.
+- Service-backed modules such as battery, BPM, and steps read Pebble service
+  state during refresh, then map that source state to text, progress, icon, or
+  live colors.
+- Transport-backed modules such as climate receive source state through a
+  setter, then render temperature and glyph state during refresh.
+- QA-only one-shot health setters queue a single source-state override that is
+  consumed by the next health refresh and cleared during module or watchface
+  teardown.
+
+### Module boundaries
+
+- Modules own their layers, update procs, source state, dynamic color policy,
+  and destroy path.
+- Modules consume prepared substrata; they do not recalculate layout policy.
+- Modules consume the active palette; they do not choose display mode.
+- Modules accept narrow runtime inputs; they do not accept `WatchfaceSurface`.
+- Modules may expose a setter only when runtime ingress needs to update
+  module-owned source state before refresh.
+
+### Reference Example: Steps Module
+
+`steps.c` is the most complex current feature-module example because it owns
+text, bitmap icon rendering, progress rendering, HealthService reads, a
+settings-driven goal, and a QA-only one-shot override.
+
+**Steps creation flow**
+
+```text
+watchface_create()
+  -> steps_module_create(root, text substratum, icon substratum, progress frame, font)
+       -> require root, text, progress frame, and font
+       -> create required steps text layer
+       -> initialize source state, goal, threshold, icon color cache, and one-shot state
+       -> if icon substratum exists
+            -> load RESOURCE_ID_WALK bitmap
+            -> create optional icon layer with steps_icon_update_proc
+            -> destroy bitmap if optional icon layer creation fails
+       -> create optional progress layer from prepared progress frame
+       -> if icon is absent
+            -> narrow progress frame to text width
+       -> return true once required text layer exists
+```
+
+**Steps refresh flow**
+
+```text
+watchface_refresh(WATCHFACE_UPDATE_HEALTH)
+  -> steps_module_refresh(active palette, settings.steps_goal)
+       -> store current steps goal
+       -> calculate approaching-goal threshold at 70 percent
+       -> update module palette from the active display palette
+       -> update_steps()
+            -> read today's HealthService step sum when available
+            -> if one-shot steps override is queued
+                 -> replace HealthService value for this refresh only
+                 -> clear queued one-shot value
+            -> apply_steps_value(steps, availability)
+                 -> store source state and availability
+                 -> calculate live steps color
+                 -> render text or unavailable token
+                 -> mark icon layer dirty
+                 -> mark progress layer dirty
+```
+
+**Steps render callbacks**
+
+```text
+steps_icon_update_proc()
+  -> recolor WALK bitmap when live steps color changes
+  -> draw bitmap
+  -> draw unavailable slash when steps are unavailable
+
+steps_progress_update_proc()
+  -> draw background-filled track with live outline
+  -> fill completed width from steps / goal
+  -> clear track to background when steps are unavailable
+```
+
+**Steps one-shot flow (via AppMessage)**
+
+```text
+pebble send-app-message ... 10021=<steps>
+  -> ataglance.c parses WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS
+  -> watchface_runtime_boundary.c calls steps_module_oneshot_set_steps()
+  -> next steps_module_refresh()
+       -> consumes queued value
+       -> clears queued value
+       -> renders exactly one health refresh from the override
+```
+
+**Steps destroy flow**
+
+```text
+watchface_destroy()
+  -> steps_module_destroy()
+       -> destroy text layer
+       -> destroy WALK bitmap
+       -> destroy icon layer
+       -> destroy progress layer
+       -> clear text buffer, source state, palette, colors, goal, and one-shot state
+```
+
+The steps module demonstrates the intended boundary:
+
+- `watchface.c` decides when health refreshes happen.
+- `settings.steps_goal` is passed as a narrow runtime input.
+- `steps.c` owns HealthService interpretation, threshold calculation, progress
+  fill math, bitmap recoloring, unavailable rendering, and one-shot consumption.
+- `steps.c` does not know the full watchface surface or display-mode setting.
+
+## Runtime resolution of palettes and icon colors
+
+- Palette selection is driven by user-preferences.
+- When the palette is changed, the watch face is repainted in layers, back to front.
+- Bitmap palette mutation -- to convey status -- requires palettized PNG resources.
 
 ## Capability Guards
 
-- Treat color, health, sensors, screen shape, resources, and phone data as optional unless verified for the target platform.
+- Treat platform and runtime capabilities as conditional. Gate color, health,
+  shape-specific layout, loaded resources, and phone-provided data through the
+  Pebble SDK macros, manifest capabilities, or runtime validation before relying
+  on them.
 - Prefer `PBL_COLOR`, `PBL_BW`, `PBL_HEALTH`, `PBL_RECT`, `PBL_ROUND`, and `PBL_API_EXISTS()`.
 - Do not assume that a supported target has every capability that a neighboring target has.
 
-## Transport And AppMessage
+## AppMessage Runtime Coverage
 
-`ataglance.c` is the Pebble container and transport/service adapter.
+`ataglance.c` is the Pebble container and transport/service adapter. It parses
+raw AppMessage tuples (using a helper function) into `WatchfaceEventData`,
+tracks whether each tuple was received and parsed, and then delegates
+runtime interpretation to `watchface_apply_received_data()`.
 
-The phone companion requests current weather from Open-Meteo on a configurable
-cadence of 15, 30, 45, or 60 minutes, uses phone geolocation when available,
-and falls back to Oakland, CA when location is unavailable. The selected
-cadence is persisted in watch settings, pushed to PKJS at startup, and also
-updated from Clay config changes through `pkjs/index.js`.
+### Inbound AppMessage coverage
 
-Temperature is sent to the watch in Celsius tenths and rendered according to settings. `weather_code` and `is_day` are sent to C for glyph selection.
+- Settings tuples: time format, temperature unit, display mode, weather cadence,
+  heart-rate cadence, and steps goal.
+- Weather tuples: temperature, weather condition, and `is_day`.
+- QA-only one-shot health tuples: BPM and steps overrides.
 
-Any received weather field triggers a climate refresh. Only a fully parsed temperature/condition/`is_day` triplet is applied as complete climate state; incomplete or invalid weather payloads fall back to the unavailable vocabulary.
+### Outbound AppMessage coverage
 
-Note: Verify lifecycle, AppMessage, generated resource, or SDK behaviors.
+- On startup, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back
+  to PKJS so the phone-side weather polling schedule resumes from watch storage.
 
-## Lifecycle
+Settings, Clay field mapping, generated message-key numbering, PKJS
+normalization, and persistence rules are owned by `Settings and
+Configuration.md`. This section owns only the architecture-level transport
+route.
 
-Safety comes first.
+### Climate-specific transport behavior
 
-Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes, buffer overflows, or hidden failure branches.
+- The phone companion requests current weather from Open-Meteo on the
+  configured cadence, uses phone geolocation when available, and falls back to
+  Oakland, CA when location is unavailable.
+- Temperature is sent to the watch in Celsius tenths and rendered according to
+  settings.
+- `weather_code` and `is_day` are sent to C for glyph selection.
+- Any received weather tuple triggers a climate refresh. The runtime applies
+  weather as complete climate state only when temperature, condition, and
+  `is_day` are all parsed. `climate.c` then validates the parsed domain values;
+  incomplete or invalid packets clear prior weather state and render the
+  unavailable vocabulary.
 
-Architecture review comes before non-trivial edits. Keep code changes small and coherent. Prefer direct code over helper churn when the boundary is obvious and local.
+## Lifecycle Priorities
 
-## Header Boundaries
-
-Public and shared headers expose only the concepts cross-module callers need. This section documents the architecture-wide shared header split, not every feature-module header. Shared header split:
-
-- `watchface.h`: runtime ingress, update masks, event data, and runtime-visible transport keys
-- `watchface_components.h`: reusable watchface display primitives built on shared layout/style vocabulary
-- `layout.h`: public layout facade
-- `layout_surface.h`: shared layout geometry/design vocabulary and calculated layout structures
-- `layout_style.h`: shared style vocabulary, including font roles, color roles, palettes, and font bookkeeping
-- `watchface_debug.h`: debug-gate normalization only
-
-Feature-module headers such as `battery.h`, `climate.h`, `time.h`, `steps.h`, and `bpm.h` remain narrow module-local API surfaces. They are expected to consume the shared header vocabulary above, not expand the architecture-wide boundary set.
-
-Feature module headers must not include `layout.h`.
-
-## Debug And Diagnostic Guardrails
-
-`ATAGLANCE_DEBUG` is a watchface-specific debug build gate, not a product mode.
-
-Current contract:
-
-- `src/modules/watchface_debug.h` owns debug-gate normalization only, with `wscript` as the build-time enable point.
-- `watchface.h` owns runtime-visible debug transport keys and debug event fields when they participate in ingress handling.
-- `watchface_runtime_boundary.c` applies debug health payloads as one-shot health refresh overrides.
-- `watchface_debug.h` remains dedicated to the debug flag only; it is not a home for helper APIs, product flags, layout policy, or runtime behavior.
-
-Debug-hook policy:
-
-- Treat debug hooks as narrow transport or render test hooks layered on top of normal runtime behavior.
-- Normal runtime data is used when no debug packet is queued.
-- Debug state defaults to off and queued debug health overrides are cleared during watchface teardown.
-
-`APP_LOG` policy:
-
-- `APP_LOG(APP_LOG_LEVEL_DEBUG, ...)` is allowed only for narrow diagnostics that materially help runtime investigation.
-- `APP_LOG(APP_LOG_LEVEL_INFO, ...)` should be treated as temporary bring-up scaffolding.
-- Delete all `INFO` logs before commit.
-- Keep durable logs at `WARNING` or `ERROR` when they protect failure diagnosis or transport validation.
-- Avoid noisy logging in hot paths or steady-state rendering.
-
-Review rule:
-
-- If a debug change needs new persistent runtime branching, new state ownership, or a new mode concept, stop and review the architecture before coding.
-
-## Source Organization
-
-```text
-resources/
-src/c/
-src/modules/
-src/pkjs/
-package.json
-wscript
-```
-
-Current source map:
-
-- `src/c/ataglance.c`: Pebble app lifecycle, window ownership, service subscriptions, settings load/save, AppMessage parsing, and dispatch into the watchface runtime
-- `src/modules/watchface.c`: watchface runtime clearing house, live `WatchfaceSurface` owner, module create/destroy order, repaint, refresh, and lifecycle cleanup
-- `src/modules/watchface.h`: public watchface runtime ingress, update masks, event data, and runtime-visible transport key definitions
-- `src/modules/watchface_debug.h`: debug-gate normalization only
-- `src/modules/watchface_runtime_boundary.c`: runtime event interpretation, settings mutation, weather ingress application, debug health ingress application, and repaint-versus-refresh decisions
-- `src/modules/watchface_components.h`: shared display primitives, palettes, strata, roles, and reusable watchface component vocabulary
-- `src/modules/layout.h`: public layout facade for surface initialization, palette updates, and font lifecycle
-- `src/modules/layout_surface.h`: shared layout geometry/design vocabulary and calculated layout structures
-- `src/modules/layout_style.h`: shared style vocabulary, including font roles, color roles, palettes, and font bookkeeping
-- `src/modules/layout_architect.c`: geometry provider, blueprint selection, compact/full classification, and prepared-surface assembly
-- `src/modules/layout_stylist.c`: palette resolution, font-role selection, custom-font load/unload, and display-mode styling
-- `src/modules/substratum_renderer.c/.h`: shared text/icon layer setup, text updates, color-role lookup, glyph primitives, and small rendering helpers
-- `src/modules/helper.c/.h`: shared utility helpers and macros with no feature-module ownership
-- `src/modules/settings.c/.h`: defaults, persistence, and validation for time, display, health, and weather cadence settings
-- `src/modules/date.c/.h`: date layer lifecycle and date-text refresh
-- `src/modules/time.c/.h`: time layer lifecycle, formatting, and custom-font use
-- `src/modules/climate.c/.h`: climate source state, weather availability handling, temperature text, and climate icon lifecycle
-- `src/modules/climate_glyphs.c/.h`: Open-Meteo weather-code mapping and procedural weather glyph rendering
-- `src/modules/battery.c/.h`: battery source state, track/fill/bolt rendering, plugged-in bolt visibility, and battery refresh
-- `src/modules/bpm.c/.h`: BPM source state, health reads, BPM text/icon refresh, and debug BPM override handling
-- `src/modules/steps.c/.h`: steps source state, health reads, steps text/icon/progress refresh, and debug steps override handling
-- `src/pkjs/index.js`: Clay bootstrap, startup weather-cadence sync, geolocation, Open-Meteo weather fetch, fallback location handling, request sequencing, and weather AppMessage sends
-- `package.json`: app manifest, target platforms, capabilities, message keys, and resources
-- `wscript`: Pebble build definition, source globs, JS bundling, and optional `ATAGLANCE_DEBUG` build define
+1. Evaluate architecture changes using embedded platform affordances and limits.
+2. Build for security, usability, performance, code readability, and future maintenance.
+3. Validate before confirming feature completion.
+4. Heap usage should be exception; release memory and initialize to NULL.
+5. Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes,
+   buffer overflows, or hidden failure branches.
 
 ## Further Reading
 
-- `Contributing.md` for contributor workflow, validation, and review discipline
+- `SourceMap.md` for source-code navigation, high-level separation of duties, and inter-connections.
+- `Settings and Configuration.md` for the settings catalog, Clay mapping, message-key contract,
+   persistence, and validation obligations
+- `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
+- `Contributing.md` for contributor workflow, validation, and review discipline.
