@@ -51,22 +51,6 @@
           "menuIcon": true
         },
         {
-          "characterRegex": "[-0-9CF ]",
-          "file": "fonts/BarlowCondensed-Regular.ttf",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
-          "name": "FONT_TEXT_REGULAR_16",
-          "type": "font",
-          "compatibility": "2.7"
-        },
-        {
-          "characterRegex": "[-0-9CF ]",
-          "file": "fonts/BarlowCondensed-Regular.ttf",
-          "targetPlatforms": ["emery", "gabbro"],
-          "name": "FONT_TEXT_REGULAR_22",
-          "type": "font",
-          "compatibility": "2.7"
-        },
-        {
           "characterRegex": "[-0-9.A-Z a-z·]",
           "file": "fonts/BarlowCondensed-SemiBold.ttf",
           "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
@@ -86,7 +70,7 @@
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
           "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
-          "name": "FONT_CABIN_SEMIBOLD_40",
+          "name": "FONT_CABIN_SEMIBOLD_48",
           "type": "font",
           "compatibility": "2.7"
         },
