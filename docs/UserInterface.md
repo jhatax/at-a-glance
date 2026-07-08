@@ -23,12 +23,12 @@ Together with the coordinates, palettes, typography, and glyph realization
 tables below, they provide evidence to satisfy the watch face's visual invariants
 for legibility, placements, and compatibility with all devices.
 
-| Screenshot | Screenshot | Screenshot | Screenshot |
-| --- | --- | --- | --- |
-|<img src="assets/screenshots/at-a-glance-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White|<img src="assets/screenshots/at-a-glance-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black|<img src="assets/screenshots/at-a-glance-clearasceleste.png" alt="Emery Clear as Celeste screenshot" width="160"><br>Emery: Clear as Celeste|<img src="assets/screenshots/at-a-glance-nightinoxford.png" alt="Emery Night in Oxford screenshot" width="160"><br>Emery: Night in Oxford|
-|<img src="assets/screenshots/at-a-glance-chalk-blackonwhite.png" alt="Chalk Black on White screenshot" width="130"> <br>Chalk: Black on White|<img src="assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="Gabbro White on Black screenshot" width="160"> <br>Gabbro: White on Black|<img src="assets/screenshots/at-a-glance-chalk-clearasceleste.png" alt="Chalk Clear as Celeste screenshot" width="130"><br>Chalk: Clear as Celeste|<img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford|
-|<img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White|<img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint Black on White screenshot" width="130"><br>Flint: White on Black| | |
-
+| | | | |
+| :---: | :---: | :---: | :---: |
+| <center><b><img src="assets/screenshots/at-a-glance-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-clearasceleste.png" alt="Emery Clear as Celeste screenshot" width="160"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-nightinoxford.png" alt="Emery Night in Oxford screenshot" width="160"><br>Emery: Night in Oxford</b></center> |
+| <center><b><img src="assets/screenshots/at-a-glance-chalk-blackonwhite.png" alt="Chalk Black on White screenshot" width="130"><br>Chalk: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="Gabbro White on Black screenshot" width="160"><br>Gabbro: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-chalk-clearasceleste.png" alt="Chalk Clear as Celeste screenshot" width="130"><br>Chalk: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford</b></center> |
+| <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint Black on White screenshot" width="130"><br>Flint: White on Black</b></center> | | |
+| | | |
 
 Glyph validation is covered in [Contributing.md](Contributing.md). It should be treated as a
 priority when glyphs are modified or new glyphs are introduced.

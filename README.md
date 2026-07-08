@@ -6,13 +6,13 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 ## Screenshots
 
-| <center>**Color rectangular**</center> | <center>**Round monochrome**</center> |
-| --- | --- |
-|<img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br><center>Emery: Clear as Celeste</center>|<img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br><center>Gabbro: White on Black</center>|
+| <center><b>Color rectangular</b></center> | <center><b>Round monochrome</b></center> |
+| :---: | :---: |
+| <center><b><img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br>Gabbro: White on Black</b></center> |
 
 ## Installation
 
-- Pebble App Store: [Update this link before publishing](PASTE_APP_STORE_LINK_HERE)
+- [Pebble App Store: At A Glance](https://apps.repebble.com/7727666da5c84c259b3a70b3)
 
 - If you've built it locally:
 
@@ -33,9 +33,7 @@ pebble install --phone YOUR_PHONE_IP
 - Display modes for monochrome and color devices
 - Settings page on the connected phone
 
-## Configuration
-
-Personalization options:
+## Personalization options:
 
 - Time format: 24-hour or 12-hour
 - Temperature unit: Fahrenheit or Celsius
