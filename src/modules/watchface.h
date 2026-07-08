@@ -1,7 +1,8 @@
 #pragma once
+#include <pebble.h>
+
 #include "settings.h"
 #include "watchface_debug.h"
-#include <pebble.h>
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,

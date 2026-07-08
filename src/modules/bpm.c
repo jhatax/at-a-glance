@@ -12,6 +12,8 @@
 #define BPM_MAX 220
 #define BPM_IN_RANGE(bpm) HELPER_VALUE_IN_RANGE((bpm), BPM_MIN, BPM_MAX)
 
+#define BPM_ICON_INITIAL_COLOR GColorBlack
+
 typedef struct {
   GColor background;
   GColor normal;
@@ -50,6 +52,7 @@ static void bpm_update_palette(const ColorPalette* palette);
 static GColor calculate_bpm_color(int bpm);
 static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
 static void update_bpm();
+static void bpm_module_oneshot_clear_bpm();
 
 static void bpm_update_palette(
   const ColorPalette* palette) {
@@ -178,13 +181,14 @@ bool bpm_module_create(
     return false;
   }
 
+  // Symmetry with destroy
   s_bpm_is_valid = false;
-  s_bpm_icon_color = GColorBlack;
+  bpm_module_oneshot_clear_bpm();
+
+  s_bpm_icon_color = BPM_ICON_INITIAL_COLOR;
   // By making these different from the get-go, we ensure that the
   // color is replaced the first time the icon is rendered in the right color
   s_bpm_color = gcolor_legible_over(s_bpm_icon_color);
-  s_oneshot_bpm_is_set = false;
-  s_oneshot_bpm = BPM_INVALID;
 
   if (icon) {
     uint32_t resource_id = 0;
@@ -219,13 +223,13 @@ void bpm_module_destroy() {
     s_bpm_bitmap = NULL;
   }
 
-  s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
-  s_bpm_icon_color = GColorBlack;
-  s_bpm_buffer[0] = '\0';
+  // Symmetry with create
   s_bpm_is_valid = false;
-  s_bpm_palette = (BpmPalette){0};
-  s_oneshot_bpm_is_set = false;
-  s_oneshot_bpm = BPM_INVALID;
+  bpm_module_oneshot_clear_bpm();
+  s_bpm_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
+  s_bpm_icon_color = BPM_ICON_INITIAL_COLOR;
+  s_bpm_buffer[0] = '\0';
+  memset(&s_bpm_buffer, 0, sizeof(s_bpm_buffer));
 }
 
 void bpm_module_refresh(
@@ -240,11 +244,16 @@ void bpm_module_refresh(
 
 void bpm_module_oneshot_set_bpm(
   int bpm) {
-  s_oneshot_bpm = bpm;
-  s_oneshot_bpm_is_set = true;
+  if (BPM_IN_RANGE(bpm)) {
+    s_oneshot_bpm = bpm;
+    s_oneshot_bpm_is_set = true;
+  } else {
+    s_oneshot_bpm = BPM_INVALID;
+    s_oneshot_bpm_is_set = false;
+  }
 }
 
-void bpm_module_oneshot_clear_bpm() {
+static void bpm_module_oneshot_clear_bpm() {
   s_oneshot_bpm_is_set = false;
   s_oneshot_bpm = BPM_INVALID;
 }

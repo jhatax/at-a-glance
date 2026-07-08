@@ -14,6 +14,5 @@ void bpm_module_destroy();
 void bpm_module_refresh(const ColorPalette* palette);
 
 void bpm_module_oneshot_set_bpm(int bpm);
-void bpm_module_oneshot_clear_bpm();
 #endif
 // End Health Capability Check

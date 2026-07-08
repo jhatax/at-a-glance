@@ -11,17 +11,46 @@
 #include "steps.h"
 #endif
 
+/*
+ * File invariants:
+ *
+ * - live WatchfaceSurface owner
+ *   This file owns the active prepared surface, its runtime-visible style, and
+ *   the lifecycle of watchface strata built from that surface.
+ *
+ * - watchface orchestration owner
+ *   This file owns create/destroy order, repaint, and targeted refresh
+ *   dispatch into feature modules.
+ *
+ * - consume resolved runtime inputs only
+ *   This file may use already-resolved settings and refresh masks, but it must
+ *   not interpret raw Pebble callbacks or AppMessage tuples.
+ *
+ * - no Pebble OS, transport, or persistence ownership
+ *   Service subscription, AppMessage parsing, and settings load/save policy
+ *   belong to ataglance.c and its Pebble-message adapter helpers.
+ *
+ * - no layout-calculation ownership
+ *   Layout preparation, geometry calculation, and styling policy belong to the
+ *   layout facade, architect, and stylist.
+ *
+ * - module refresh stays narrow
+ *   Feature modules receive only the palette and runtime scalars they need, not
+ *   the whole watchface surface or raw transport data.
+ */
+
 // Weather AppMessage wire sentinels. PebbleKit JS mirrors these values when
 // weather is unavailable; do not change them without updating both sides of
 // the transport contract.
 #define WATCHFACE_WEATHER_TEMP_UNAVAILABLE CLIMATE_TEMP_UNAVAILABLE
 #define WATCHFACE_WEATHER_CONDITION_UNKNOWN CLIMATE_CONDITION_UNKNOWN
 
+#define ARE_CUSTOM_FONTS_LOADED() ((s_surface.style.fontbook.custom_fonts_loaded_count) > 0)
+
 static WatchfaceSurface s_surface = {0};
 
 // Font lifecycle management
 static bool s_fonts_initialized = false;
-static bool s_custom_fonts_loaded = false;
 static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
@@ -46,13 +75,12 @@ typedef enum {
   MUST_HAVE_STRATA_MASK =
     DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
 } WatchfaceStratumMask;
+
 static WatchfaceStratumMask s_strata_created_mask = NO_STRATA_MASK;
 
+// Function declarations
 static void watchface_load_and_apply_palette(void);
 static void watchface_load_and_apply_fonts(void);
-#ifdef PBL_HEALTH
-static void watchface_oneshot_clear_health(void);
-#endif
 
 static void watchface_load_and_apply_palette() {
   // Update the palette
@@ -66,33 +94,15 @@ static void watchface_load_and_apply_palette() {
 
 static void watchface_load_and_apply_fonts() {
   if (!s_fonts_initialized) {
-    // Fragile font-loading and sharing code.
-    // Update and modify carefully.
-
     s_fonts_initialized = layout_watchface_initialize_fonts(&s_surface.style.fontbook);
 
-    if (s_fonts_initialized && !s_custom_fonts_loaded) {
-      s_custom_fonts_loaded = layout_watchface_load_custom_fonts(&s_surface.style.fontbook);
-    }
-
-    if (!s_custom_fonts_loaded && s_surface.style.fontbook.custom_fonts_loaded_count > 0) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Custom fonts were loaded, bad return value");
-      s_custom_fonts_loaded = true;
+    if (s_fonts_initialized && !ARE_CUSTOM_FONTS_LOADED()) {
+      layout_watchface_load_custom_fonts(&s_surface.style.fontbook);
     }
   }
 }
 
-#if defined(PBL_HEALTH)
-static void watchface_oneshot_clear_health() {
-  if (s_strata_created_mask & BPM_STRATUM_MASK) {
-    bpm_module_oneshot_clear_bpm();
-  }
-  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
-    steps_module_oneshot_clear_steps();
-  }
-}
-#endif
-
+// Lifecycle Ownership responsibility
 bool watchface_create(
   Window* window,
   const WatchfaceSettings* settings) {
@@ -126,7 +136,7 @@ bool watchface_create(
     s_strata_created_mask = NO_STRATA_MASK;
 
     GRect bounds = layer_get_bounds(root);
-    if (!layout_watchface_initialize(bounds.size.w, bounds.size.h, &s_surface)) {
+    if (!layout_watchface_prepare(bounds.size.w, bounds.size.h, &s_surface)) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
       success = false;
     }
@@ -213,9 +223,6 @@ void watchface_destroy() {
     }
 
 #ifdef PBL_HEALTH
-    // First clear the debug state before modules are destroyed
-    watchface_oneshot_clear_health();
-
     if (s_strata_created_mask & BPM_STRATUM_MASK) {
       bpm_module_destroy();
       s_strata_created_mask &= ~BPM_STRATUM_MASK;
@@ -228,9 +235,8 @@ void watchface_destroy() {
 #endif
   }
 
-  if (s_custom_fonts_loaded || s_surface.style.fontbook.custom_fonts_loaded_count > 0) {
+  if (ARE_CUSTOM_FONTS_LOADED()) {
     layout_watchface_unload_custom_fonts(&s_surface.style.fontbook);
-    s_custom_fonts_loaded = false;
   }
 
   s_strata_created_mask = (uint8_t)NO_STRATA_MASK;
@@ -243,6 +249,7 @@ void watchface_destroy() {
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
+// Watch face update orchestration responsibility
 void watchface_repaint() {
   if (!s_wf_window || !s_wf_settings) {
     return;
@@ -259,21 +266,13 @@ void watchface_refresh(
     return;
   }
 
-  // Don't assume that some strata were created even though that's the contract
-  // By not assuming this detail, if the product's must-create strata decision changes,
-  // this code won't need to be in sync / will avoid drift.
-
-  // Settings need to be propagated to the watchface appropriately. Here is the rundown:
-  /*
-    time_format; time_module_refresh
-    temp_unit: climate_module_refresh
-    display_mode: watchface_repaint reloads the palette
-    weather_update_minutes: updated in index.js in the handler for web-view closed
-  #ifdef PBL_HEALTH
-    hr_sample_minutes: updated after settings are subscribed or changed (ataglance.c)
-    steps_goal: steps_module_refresh
-  #endif
-   */
+  // Treat s_strata_created_mask as the sole source of truth for stratum creation success.
+  // Using any other mask will create a hidden dependency / source of drift
+  // Three exceptions to settings propagation handled outside this function:
+  // 1. display_mode: watchface_repaint reloads the palette
+  // 2. weather_update_minutes: index.js in the handler for web-view closed
+  // 3. hr_sample_minutes: ataglance.c does this when settings are subscribed or
+  // changed on devices with health capability.
   if ((updates & WATCHFACE_UPDATE_DATE) && (s_strata_created_mask & DATE_STRATUM_MASK)) {
     date_module_refresh(s_surface.style.palette);
   }

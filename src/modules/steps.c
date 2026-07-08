@@ -17,6 +17,8 @@ enum {
 // Steps should at least be STEPS_MIN and less than STEPS_MAX
 #define STEPS_IN_RANGE(s) (HELPER_VALUE_IN_RANGE((s), STEPS_MIN, STEPS_MAX))
 
+#define STEPS_ICON_INITIAL_COLOR GColorBlack
+
 // This needs to be the main color of the steps icon
 static GColor s_steps_icon_color;
 
@@ -62,6 +64,7 @@ static void steps_icon_update_proc(Layer* layer, GContext* ctx);
 static void steps_progress_update_proc(Layer* layer, GContext* ctx);
 static void apply_steps_value(int steps, bool is_available);
 static void update_steps();
+static void steps_module_oneshot_clear_steps();
 
 static void steps_update_palette(
   const ColorPalette* palette) {
@@ -251,14 +254,15 @@ bool steps_module_create(
     return false;
   }
 
+  // Symmetry with destroy
   s_steps_is_available = false;
   s_steps = STEPS_INVALID;
-  s_oneshot_steps_is_set = false;
-  s_oneshot_steps = STEPS_INVALID;
+  steps_module_oneshot_clear_steps();
+
   // The walking bitmap ships with black foreground pixels. Seed the
   // cached color to that source palette value so the first recolor
   // pass knows which color to replace.
-  s_steps_icon_color = GColorBlack;
+  s_steps_icon_color = STEPS_ICON_INITIAL_COLOR;
   // By making these different from the get-go, we ensure that the icon is replaced
   // the first time
   s_steps_color = gcolor_legible_over(s_steps_icon_color);
@@ -329,14 +333,16 @@ void steps_module_destroy() {
   }
 
   s_steps_buffer[0] = '\0';
+
   s_steps = STEPS_INVALID;
   s_steps_is_available = false;
-  s_steps_palette = (StepsPalette){0};
-  s_steps_icon_color = GColorBlack;
+  // Symmetry with create
+  steps_module_oneshot_clear_steps();
+
+  s_steps_icon_color = STEPS_ICON_INITIAL_COLOR;
   s_steps_color = WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   s_steps_goal = STEPS_GOAL_DEFAULT;
-  s_oneshot_steps_is_set = false;
-  s_oneshot_steps = STEPS_INVALID;
+  memset(&s_steps_palette, 0, sizeof(s_steps_palette));
 }
 
 void steps_module_refresh(
@@ -354,11 +360,16 @@ void steps_module_refresh(
 
 void steps_module_oneshot_set_steps(
   int steps) {
-  s_oneshot_steps = steps;
-  s_oneshot_steps_is_set = true;
+  if (STEPS_IN_RANGE(steps)) {
+    s_oneshot_steps = steps;
+    s_oneshot_steps_is_set = true;
+  } else {
+    s_oneshot_steps = STEPS_INVALID;
+    s_oneshot_steps_is_set = false;
+  }
 }
 
-void steps_module_oneshot_clear_steps() {
+static void steps_module_oneshot_clear_steps() {
   s_oneshot_steps_is_set = false;
   s_oneshot_steps = STEPS_INVALID;
 }
