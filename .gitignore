@@ -2,8 +2,8 @@
 .git/
 .vscode/
 .prompts/
-.clangd
 .cache/
+.cursorrules
 .DS_Store
 .lock-waf_darwin_build
 .prompts
