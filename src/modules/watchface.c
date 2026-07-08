@@ -33,19 +33,20 @@ static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
 #endif
   ;
 
-enum {
+typedef enum {
   NO_STRATA_MASK = 0,
-  DATE_STRATUM_MASK = 1,
-  TIME_STRATUM_MASK = 2,
-  BATTERY_STRATUM_MASK = 4,
-  MUST_HAVE_STRATA_MASK = 7,
-  CLIMATE_STRATUM_MASK = 8,
+  DATE_STRATUM_MASK = 1 << 0,
+  TIME_STRATUM_MASK = 1 << 1,
+  BATTERY_STRATUM_MASK = 1 << 2,
+  CLIMATE_STRATUM_MASK = 1 << 3,
 #ifdef PBL_HEALTH
   BPM_STRATUM_MASK = 16,
-  STEPS_STRATUM_MASK = 32
+  STEPS_STRATUM_MASK = 32,
 #endif
-};
-static uint8_t s_strata_created_mask = (uint8_t)NO_STRATA_MASK;
+  MUST_HAVE_STRATA_MASK =
+    DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
+} WatchfaceStratumMask;
+static WatchfaceStratumMask s_strata_created_mask = NO_STRATA_MASK;
 
 static void watchface_load_and_apply_palette(void);
 static void watchface_load_and_apply_fonts(void);
@@ -99,7 +100,7 @@ bool watchface_create(
     return true;
   }
 
-  // At this point, we can confirm that s_watchface_initialized is false.
+  // At this point, we have confirmed that s_watchface_initialized is false.
   // This in-function boolean is going to track whether all modules are initialized.
   // Wait until the end to set s_watchface_initialized to the final value of this bool.
   bool success = true;
@@ -122,7 +123,7 @@ bool watchface_create(
   }
 
   if (success) {
-    s_strata_created_mask = (uint8_t)NO_STRATA_MASK;
+    s_strata_created_mask = NO_STRATA_MASK;
 
     GRect bounds = layer_get_bounds(root);
     if (!layout_watchface_initialize(bounds.size.w, bounds.size.h, &s_surface)) {
@@ -151,20 +152,22 @@ bool watchface_create(
     created = battery_module_create(root, &s_surface.battery);
     s_strata_created_mask |= (created) ? BATTERY_STRATUM_MASK : 0;
 
-    if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
-      success = false;
-    }
-  }
-
-  if (success) {
     created = climate_module_create(root,
       &s_surface.climate.text,
       &s_surface.climate.icon,
       s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role]);
     s_strata_created_mask |= created ? CLIMATE_STRATUM_MASK : 0;
 
+    if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
+      success = false;
+    }
+  }
+
+  s_watchface_initialized = success;
+
 #ifdef PBL_HEALTH
+  if (s_watchface_initialized) {
     created = bpm_module_create(root,
       &s_surface.bpm.text,
       &s_surface.bpm.icon,
@@ -177,14 +180,13 @@ bool watchface_create(
       &s_surface.steps.progress,
       s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role]);
     s_strata_created_mask |= (created) ? STEPS_STRATUM_MASK : 0;
+  }
 #endif
 
-    success = true;
+  if (s_watchface_initialized) {
     watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
   }
-
-  s_watchface_initialized = success;
-  return success;
+  return s_watchface_initialized;
 }
 
 void watchface_destroy() {
