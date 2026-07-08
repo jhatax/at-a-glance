@@ -24,8 +24,8 @@ Key implementation details:
 
 ## Required Reading
 
-- `ArchitectureLedger.md` for the runtime architecture.
-- `UserInterface.md` for details on the full visual reference implementation.
+- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
+- [UserInterface.md](UserInterface.md) for details on the full visual reference implementation.
 
 ## Settings Catalog
 
@@ -67,7 +67,7 @@ keys. Those are AppMessage payloads, not persisted user settings.
 | `src/c/ataglance.c` | AppMessage tuple parsing, settings-save trigger, and HealthService side effects |
 | `src/modules/watchface_runtime_boundary.c` | Runtime setting validation, mutation, repaint/refresh decisions |
 | `src/modules/watchface.c` | Settings consumption during repaint and module refresh |
-| `docs/Settings and Configuration.md` | Human-readable settings contract |
+| [docs/Settings_and_Configuration.md](Settings_and_Configuration.md) | Human-readable settings contract |
 
 ## Clay And PKJS Flow
 
@@ -163,7 +163,7 @@ The current one-shot health keys are runtime-only constants:
 These are not Clay settings, not manifest-backed keys, and not persisted. They
 exist for focused QA and are consumed once by the health refresh path.
 
-`Build and Validation.md` owns the operational command examples for these keys.
+[Build_and_Validation.md](Build_and_Validation.md) owns the operational command examples for these keys.
 This document references them only to keep the settings, data, and QA payloads
 separate.
 
@@ -235,7 +235,7 @@ Minimum checks:
 - The runtime refresh or repaint effect matches the setting's intended scope.
 - Manual QA commands and harness helpers use the current numeric mapping.
 
-Read `Build and Validation.md` for build activation and emulator validation.
+Read [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
 
 ## Change Checklist
 
@@ -251,13 +251,13 @@ For any settings change:
   side effects.
 - Update `src/modules/watchface_runtime_boundary.c` for runtime validation,
   mutation, repaint, or refresh behavior.
-- Update `docs/Settings and Configuration.md`.
-- Update `Build and Validation.md` only when validation flow changes.
-- Update `UserInterface.md` only when visible settings evidence or visual
+- Update [docs/Settings_and_Configuration.md](Settings_and_Configuration.md).
+- Update [Build_and_Validation.md](Build_and_Validation.md) only when validation flow changes.
+- Update [UserInterface.md](UserInterface.md) only when visible settings evidence or visual
   consequences change.
 - Run the relevant build and validation path, or record the validation gap.
 
 ## Further Reading
 
-- `Build and Validation.md` for build activation and emulator validation.
-- `Contributing.md` for contributor workflow, validation, and review discipline.
+- [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
+- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.

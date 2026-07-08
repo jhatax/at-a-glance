@@ -12,10 +12,10 @@ V
 
 ## Required Reading
 
-- `../README.md` for a product introduction: screenshots, getting started, download links.
-- `ProductInvariants.md` states invariants to achieve goals across devices.
+- [../README.md](../README.md) for a product introduction: screenshots, getting started, download links.
+- [ProductInvariants.md](ProductInvariants.md) states invariants to achieve goals across devices.
 - `VisualVocabulary` for the visual grammar that can satisfy visual invariants.
-- `UserInterface.md` for the full visual reference implementation.
+- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
 
 ## Watch face conceptual layers
 
@@ -141,7 +141,7 @@ The surface is prepared as follows:
 3. Feature modules consume prepared substrata, frames, fonts, palettes, and layout policy.
 4. A renderer supplied by the watch face places components on screen based on layout policy.
 
-Current visual placement, palette, and typography are evidenced as screenshots in `UserInterface.md`.
+Current visual placement, palette, and typography are evidenced as screenshots in [UserInterface.md](UserInterface.md).
 
 ## Architect
 
@@ -404,8 +404,8 @@ route.
 
 ## Further Reading
 
-- `SourceMap.md` for source-code navigation, high-level separation of duties, and interconnections.
-- `Settings and Configuration.md` for the settings catalog, Clay mapping, message-key contract,
+- [SourceMap.md](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
+- [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog, Clay mapping, message-key contract,
    persistence, and validation obligations
-- `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
-- `Contributing.md` for contributor workflow, validation, and review discipline.
+- [Build_and_Validation.md](Build_and_Validation.md) for build, install, editor-tooling, and validation architecture.
+- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.

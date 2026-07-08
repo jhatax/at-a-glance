@@ -189,4 +189,4 @@ semantically stable on the supported display capabilities it affects.
 
 ## Further Reading
 
-- `UserInterface.md` for the full visual reference implementation.
+- [UserInterface.md](UserInterface.md) for the full visual reference implementation.

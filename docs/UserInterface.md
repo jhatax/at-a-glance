@@ -30,14 +30,14 @@ for legibility, placements, and compatibility with all devices.
 |<img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White|<img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint Black on White screenshot" width="130"><br>Flint: White on Black| | |
 
 
-Glyph validation is covered in `Contributing.md`. It should be treated as a
+Glyph validation is covered in [Contributing.md](Contributing.md). It should be treated as a
 priority when glyphs are modified or new glyphs are introduced.
 
 ### Settings
 
 The current Clay settings page is captured here as interface evidence only. The
 settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization,
-and persistence rules live in `Settings and Configuration.md`.
+and persistence rules live in [Settings_and_Configuration.md](Settings_and_Configuration.md).
 
 <img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page"/>
 
@@ -346,7 +346,7 @@ is drawn from the 28x28 design-space diagonal with three line segments and a
 
 ## Further Reading
 
-- `SourceMap.md` for source-code navigation, high-level separation of duties, and interconnections.
-- `Settings and Configuration.md` for the settings catalog.
-- `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
-- `Contributing.md` for contributor workflow, validation, and review discipline.
+- [SourceMap.md](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
+- [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog.
+- [Build_and_Validation.md](Build_and_Validation.md) for build, install, editor-tooling, and validation architecture.
+- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.

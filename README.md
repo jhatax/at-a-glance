@@ -6,9 +6,9 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 ## Screenshots
 
-| Color rectangular | Round monochrome |
+| <center>**Color rectangular**</center> | <center>**Round monochrome**</center> |
 | --- | --- |
-|<img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste|<img src="docs/assets/screenshots/at-a-glance-gabbro-blackonwhite.png" alt="At A Glance on a round Pebble in Black on White mode" width="220"><br>Gabbro: Black on White|
+|<img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br><center>Emery: Clear as Celeste</center>|<img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br><center>Gabbro: White on Black</center>|
 
 ## Installation
 
@@ -99,9 +99,9 @@ pebble emu-app-config
 
 ## Further Reading
 
-- `./docs/Contributing.md` for contributor workflow, validation, and review discipline.
-- `./docs/Build and Validation.md` for build, install, and validation details.
-- `./docs/UserInterface.md` for the full visual reference implementation.
+- [docs/Contributing.md](docs/Contributing.md) for contributor workflow, validation, and review discipline.
+- [docs/Build_and_Validation.md](docs/Build_and_Validation.md) for build, install, and validation details.
+- [docs/UserInterface.md](docs/UserInterface.md) for the full visual reference implementation.
 
 ## License
 

@@ -14,9 +14,9 @@ Use this document to understand:
 
 ## Required Reading
 
-- `../qa/README.md` for Build & QA harness source navigation.
-- `ArchitectureLedger.md` for the runtime architecture.
-- `UserInterface.md` for the full visual reference implementation.
+- [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.
+- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
+- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
 
 ## Build And Validation Goals
 
@@ -54,7 +54,7 @@ The current build and validation layer is made up of:
 - direct emulator commands
 - direct AppMessage commands for focused debugging
 
-Use `../qa/README.md` for the current modular QA implementation map. This
+Use [../qa/README.md](../qa/README.md) for the current modular QA implementation map. This
 document defines the build and validation contract; the QA README maps the
 helper, stage, test, and data files that implement that contract.
 
@@ -152,7 +152,7 @@ from a fresh build rather than editing flags by hand.
 ## Runtime Messages And Generated Keys
 
 The QA harness depends on the same runtime-message contract as the watch face.
-Use `Settings and Configuration.md` for the full settings catalog, Clay
+Use [Settings_and_Configuration.md](Settings_and_Configuration.md) for the full settings catalog, Clay
 mapping, generated message-key contract, PKJS normalization, and persistence
 rules.
 
@@ -575,6 +575,6 @@ Before accepting a build/validation refactor:
 
 ## Further Reading
 
-- `Contributing.md` for contributor workflow, validation, and review discipline.
-- `Settings and Configuration.md` for everything related to Settings, from Clay-config to message-keys and transport
-- `ProductInvariants.md` states invariants to achieve goals across devices.
+- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.
+- [Settings_and_Configuration.md](Settings_and_Configuration.md) for everything related to Settings, from Clay-config to message-keys and transport
+- [ProductInvariants.md](ProductInvariants.md) states invariants to achieve goals across devices.

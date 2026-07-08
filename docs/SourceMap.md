@@ -7,8 +7,8 @@ runtime behavior, product rules, visual rules, and build/validation policy.
 
 ## Required Reading
 
-- `ArchitectureLedger.md` for the runtime architecture.
-- `UserInterface.md` for the full visual reference implementation.
+- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
+- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
 
 ## Feature, QA, and Docs Organization
 
@@ -173,6 +173,6 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
 
 ## Future Reading
 
-- `Build and Validation.md` for build activation and emulator validation.
-- `Contributing.md` for contributor workflow, validation, logging, and review discipline.
-- `../qa/README.md` for Build & QA harness source navigation.
+- [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
+- [Contributing.md](Contributing.md) for contributor workflow, validation, logging, and review discipline.
+- [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.

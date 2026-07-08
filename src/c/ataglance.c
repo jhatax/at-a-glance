@@ -283,11 +283,13 @@ static uint32_t app_message_inbox_size() {
     sizeof(int32_t),
     APP_MESSAGE_CONFIG_VALUE_SIZE,
     APP_MESSAGE_CONFIG_VALUE_SIZE,
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
     sizeof(int32_t),
     sizeof(int32_t),
     sizeof(int32_t));
 #else
   return dict_calc_buffer_size(9,  // tuples
+    APP_MESSAGE_CONFIG_VALUE_SIZE,
     APP_MESSAGE_CONFIG_VALUE_SIZE,
     APP_MESSAGE_CONFIG_VALUE_SIZE,
     sizeof(int32_t),

@@ -8,9 +8,9 @@ documents.
 
 ## Required Reading
 
-- `../qa/README.md` for Build & QA harness source navigation.
-- `UserInterface.md` for the full visual reference implementation.
-- `ArchitectureLedger.md` for the runtime architecture.
+- [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.
+- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
+- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
 
 ## Scope: Changes to Code, Docs, User Interface
 
@@ -54,7 +54,7 @@ toolchain driver:
 ```
 
 For how `compile_commands.json` is generated from Pebble's verbose build output,
-see `Build and Validation.md`.
+see [Build_and_Validation.md](Build_and_Validation.md).
 
 ## Repository Maintenance
 
@@ -69,14 +69,14 @@ source, manifest, resources, and documentation that produced it.
 ## Build And Validation
 
 For build, install, editor-tooling setup, harness behavior, and validation flow,
-see `Build and Validation.md`.
+see [Build_and_Validation.md](Build_and_Validation.md).
 
 **Contributor rule**
 
 - If a code change needs build or runtime verification, run the relevant build and
-  validation flow from `Build and Validation.md` or explicitly report the gap.
+  validation flow from [Build_and_Validation.md](Build_and_Validation.md) or explicitly report the gap.
 - If a change touches settings, Clay, PKJS normalization, AppMessage keys, or
-  persistence, update `Settings and Configuration.md` and run the relevant
+  persistence, update [Settings_and_Configuration.md](Settings_and_Configuration.md) and run the relevant
   settings validation path.
 
 ## Basic Local Loop
@@ -109,8 +109,8 @@ emulator process and persistence state before rebuilding. Combine it with
 validation.
 
 For emulator matrices, phone install, config-page validation, compile database
-generation, and QA command details, use `Build and Validation.md`. For the
-current QA helper, stage, test, and data layout, use `../qa/README.md`.
+generation, and QA command details, use [Build_and_Validation.md](Build_and_Validation.md). For the
+current QA helper, stage, test, and data layout, use [../qa/README.md](../qa/README.md).
 
 ## Logs And Debugging
 
@@ -129,7 +129,7 @@ Use Pebble's built-in `APP_LOG` with restraint.
 For UI changes, one useful validation path is enabling `ATAGLANCE_DEBUG`,
 installing in the emulator, and inspecting the debug-rendered layer or glyph
 bounds. Build activation and emulator validation details live in
-`Build and Validation.md`.
+[Build_and_Validation.md](Build_and_Validation.md).
 
 ## Glyph Validation
 
@@ -148,7 +148,7 @@ Recommended loop:
 
 Glyph validation is required whenever glyphs are modified or new glyphs are
 introduced. Treat screenshots as evidence; keep accepted visual evidence in
-`UserInterface.md`.
+[UserInterface.md](UserInterface.md).
 
 ## Review and Commit Discipline
 
@@ -171,9 +171,9 @@ inspect code for basic understanding.
 
 ## Further Reading
 
-- `Settings and Configuration.md` for the settings catalog, Clay mapping,
+- [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog, Clay mapping,
   message-key contract, persistence, and validation obligations.
-- `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
-- `ProductInvariants.md` for the invariants that preserve product identity across devices.
-- `VisualVocabulary.md` for the visual grammar that *can* satisfy visual invariants.
-- `../README.md` for a product introduction: screenshots, getting started, download links.
+- [Build_and_Validation.md](Build_and_Validation.md) for build, install, editor-tooling, and validation architecture.
+- [ProductInvariants.md](ProductInvariants.md) for the invariants that preserve product identity across devices.
+- [VisualVocabulary.md](VisualVocabulary.md) for the visual grammar that *can* satisfy visual invariants.
+- [../README.md](../README.md) for a product introduction: screenshots, getting started, download links.
