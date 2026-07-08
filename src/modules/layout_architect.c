@@ -1,5 +1,4 @@
 #include "helper.h"
-#include "layout_style.h"
 #include "layout_surface.h"
 #include "watchface_components.h"
 #include "watchface_layout.h"
@@ -14,42 +13,30 @@ typedef struct {
   int16_t time_text_height;
   int16_t date_text_height;
   int16_t data_text_height;
-  int16_t climate_text_width;
 #ifdef PBL_HEALTH
   int16_t steps_text_width;
   int16_t bpm_text_width;
 #endif
 } LayoutBlueprint;
 
-static const LayoutBlueprint c_rect_reference_blueprint = {
-  .margin_x = DESIGN_FULL_X_MARGIN,
-  .margin_y = DESIGN_FULL_Y_MARGIN,
-  .icon_w = DESIGN_FULL_ICON_WIDTH,
-  .icon_h = DESIGN_FULL_ICON_HEIGHT,
-  .time_y_percent = DESIGN_TIME_Y_PERCENT,
-  .date_text_height = DESIGN_FULL_DATE_TEXT_HEIGHT,
-  .time_text_height = DESIGN_FULL_TIME_TEXT_HEIGHT,
-  .data_text_height = DESIGN_FULL_DATA_TEXT_HEIGHT,
-  .climate_text_width = DESIGN_FULL_CLIMATE_TEXT_WIDTH,
+static const LayoutBlueprint c_blueprint = {
+  .margin_x = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_X_MARGIN, DESIGN_COMPACT_X_MARGIN),
+  .margin_y = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_Y_MARGIN, DESIGN_COMPACT_Y_MARGIN),
+  .icon_w = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_WIDTH, DESIGN_COMPACT_ICON_WIDTH),
+  .icon_h = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_HEIGHT, DESIGN_COMPACT_ICON_HEIGHT),
+  .time_y_percent =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_TIME_Y_PERCENT, DESIGN_COMPACT_TIME_Y_PERCENT),
+  .date_text_height =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_DATE_TEXT_HEIGHT, DESIGN_COMPACT_DATE_TEXT_HEIGHT),
+  .time_text_height =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_TIME_TEXT_HEIGHT, DESIGN_COMPACT_TIME_TEXT_HEIGHT),
+  .data_text_height =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_DATA_TEXT_HEIGHT, DESIGN_COMPACT_DATA_TEXT_HEIGHT),
 #ifdef PBL_HEALTH
-  .steps_text_width = DESIGN_FULL_STEPS_TEXT_WIDTH,
-  .bpm_text_width = DESIGN_FULL_BPM_TEXT_WIDTH,
-#endif
-};
-
-static const LayoutBlueprint c_rect_compact_blueprint = {
-  .margin_x = DESIGN_COMPACT_X_MARGIN,
-  .margin_y = DESIGN_COMPACT_Y_MARGIN,
-  .icon_w = DESIGN_COMPACT_ICON_WIDTH,
-  .icon_h = DESIGN_COMPACT_ICON_HEIGHT,
-  .time_y_percent = DESIGN_COMPACT_TIME_Y_PERCENT,
-  .time_text_height = DESIGN_COMPACT_TIME_TEXT_HEIGHT,
-  .date_text_height = DESIGN_COMPACT_DATE_TEXT_HEIGHT,
-  .data_text_height = DESIGN_COMPACT_DATA_TEXT_HEIGHT,
-  .climate_text_width = DESIGN_COMPACT_CLIMATE_TEXT_WIDTH,
-#ifdef PBL_HEALTH
-  .steps_text_width = DESIGN_COMPACT_STEPS_TEXT_WIDTH,
-  .bpm_text_width = DESIGN_COMPACT_BPM_TEXT_WIDTH,
+  .steps_text_width =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_STEPS_TEXT_WIDTH, DESIGN_COMPACT_STEPS_TEXT_WIDTH),
+  .bpm_text_width =
+    HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_BPM_TEXT_WIDTH, DESIGN_COMPACT_BPM_TEXT_WIDTH),
 #endif
 };
 
@@ -238,13 +225,10 @@ bool layout_watchface_initialize(
   // Wipe the "surface" clean
   memset(surface, 0, sizeof(*surface));
 
-  bool is_compact = face_width < DESIGN_FACE_WIDTH && face_height < DESIGN_FACE_HEIGHT;
-  surface->style.is_compact = is_compact;
   surface->face_width = face_width;
   surface->face_height = face_height;
 
-  const LayoutBlueprint* blueprint =
-    is_compact ? &c_rect_compact_blueprint : &c_rect_reference_blueprint;
+  const LayoutBlueprint* blueprint = &c_blueprint;
   CalculatedLayout computed = {0};
   architect_get_layout_from_blueprint(blueprint, &computed, face_width, face_height);
 
