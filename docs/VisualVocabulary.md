@@ -12,7 +12,7 @@ These rules must stay relevant across implementations.
 **Key document relationships**
 
 `Design` establishes the motivation, foundational concepts, and overarching usability outcomes
-for *At A Glance*, the entire watch face.
+for the watch face.
 |
 V
 `ProductInvariants` states **what** must be true to achieve usability outcomes across devices.

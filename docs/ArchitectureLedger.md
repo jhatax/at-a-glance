@@ -23,7 +23,7 @@ V
 
 Layers have been implemented to satisfy visual display and runtime-architecture invariants.
 
-1. Pebble OS adapter: `ataglance.c` => app lifecycle adapter / main window owner
+1. Pebble OS adapter: `ataglance.c` => main window & persisted settings lifecycle owner
 2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events
    into watch face vocabulary
 3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules

@@ -4,12 +4,9 @@ This document records the current UI of At A Glance. It is the reference for
 the implemented stack, geometry, fonts, palettes, icon sizes, glyph
 realization, and screenshot status.
 
-Whereas `VisualVocabulary.md` defines the visual grammar for *At A Glance*,
-this document
-
 **Key document relationships**
 
-`ProductInvariants` states **what** must be true for *At A Glance*, the entire watch face.
+`ProductInvariants` states **what** must be true for the entire watch face.
 |
 V
 `VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
