@@ -1,7 +1,6 @@
 #include "bpm.h"
 #ifdef PBL_HEALTH
 #include "helper.h"
-#include "pebble.h"
 #include "substratum_renderer.h"
 
 #define MAX_STR_LEN 12

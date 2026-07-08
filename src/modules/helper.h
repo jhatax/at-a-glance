@@ -2,12 +2,6 @@
 
 #include <pebble.h>
 
-#ifdef PBL_PLATFORM_GABBRO
-#define IS_GABBRO 1
-#else
-#define IS_GABBRO 0
-#endif
-
 #define HELPER_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 #define HELPER_MIN(a, b) (((a) < (b)) ? (a) : (b))

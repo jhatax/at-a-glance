@@ -3,16 +3,9 @@
 #include <pebble.h>
 
 #include "layout_style.h"
-#include "layout_surface.h"
 
 #define WATCHFACE_OUTOFRANGE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR GColorWhite
-
-#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
-#define WATCHFACE_HAS_LARGE_DISPLAY 1
-#else
-#define WATCHFACE_HAS_LARGE_DISPLAY 0
-#endif
 
 typedef struct {
   GRect frame;
@@ -42,7 +35,6 @@ typedef struct {
 
 typedef struct {
   const ColorPalette* palette;
-  bool is_compact;
   FontBook fontbook;
 } WatchfaceSurfaceStyle;
 

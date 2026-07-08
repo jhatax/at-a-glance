@@ -1,6 +1,5 @@
 #include "battery.h"
 
-#include "gcolor_definitions.h"
 #include "helper.h"
 #include "substratum_renderer.h"
 

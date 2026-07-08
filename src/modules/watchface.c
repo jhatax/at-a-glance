@@ -17,8 +17,6 @@
 #define WATCHFACE_WEATHER_TEMP_UNAVAILABLE CLIMATE_TEMP_UNAVAILABLE
 #define WATCHFACE_WEATHER_CONDITION_UNKNOWN CLIMATE_CONDITION_UNKNOWN
 
-// A consequence of this is that s_surface.is_compact = false by default
-// is_compact is then determined during layout_watchface_initialize
 static WatchfaceSurface s_surface = {0};
 
 // Font lifecycle management
@@ -70,8 +68,7 @@ static void watchface_load_and_apply_fonts() {
     // Fragile font-loading and sharing code.
     // Update and modify carefully.
 
-    s_fonts_initialized =
-      layout_watchface_initialize_fonts(&s_surface.style.fontbook, s_surface.style.is_compact);
+    s_fonts_initialized = layout_watchface_initialize_fonts(&s_surface.style.fontbook);
 
     if (s_fonts_initialized && !s_custom_fonts_loaded) {
       s_custom_fonts_loaded = layout_watchface_load_custom_fonts(&s_surface.style.fontbook);

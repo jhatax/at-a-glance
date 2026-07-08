@@ -1,8 +1,7 @@
 #include "steps.h"
-// #ifdef PBL_HEALTH
+#ifdef PBL_HEALTH
 
 #include "helper.h"
-#include "pebble.h"
 #include "settings.h"
 #include "substratum_renderer.h"
 
@@ -363,5 +362,5 @@ void steps_module_oneshot_clear_steps() {
   s_oneshot_steps_is_set = false;
   s_oneshot_steps = STEPS_INVALID;
 }
-// #endif
+#endif
 // Health capabilities
