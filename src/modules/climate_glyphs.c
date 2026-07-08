@@ -4,6 +4,37 @@
 #include "substratum_renderer.h"
 #include "watchface_debug.h"
 
+/*
+ * File invariants:
+ *
+ * - one public contract
+ *   This file exposes only the climate glyph API declared in climate_glyphs.h.
+ *
+ * - private static helpers only
+ *   Internal mapping, color selection, geometry, and drawing helpers stay
+ *   file-local.
+ *
+ * - no layout ownership leaking in
+ *   This file consumes caller-provided frames and palette data. It does not
+ *   decide watchface layout, placement policy, or surface ownership.
+ *
+ * - no app/runtime policy leaking in
+ *   This file maps already-resolved climate facts to glyph kinds and draws
+ *   them. App lifecycle, transport, settings, and refresh policy belong
+ *   elsewhere.
+ *
+ * - no duplicated primitive drawing logic
+ *   Shared line, point, rect, path, and scaling primitives belong in
+ *   substratum_renderer.c/.h, not in repeated local implementations here.
+ *
+ * - clear section ordering inside the file
+ *   Keep the file ordered as:
+ *   1. private enums/constants
+ *   2. private geometry/color/mapping helpers
+ *   3. private glyph drawing helpers
+ *   4. public climate glyph contract
+ */
+
 typedef enum {
   WEATHER_ICON_CLEAR = 0,
   WEATHER_ICON_SUNNY,
@@ -29,27 +60,6 @@ enum {
   WEATHER_ICON_CENTER_X = WEATHER_ICON_GRID_W / 2,
   WEATHER_ICON_CENTER_Y = WEATHER_ICON_GRID_H / 2,
 };
-
-static void weather_subframe(
-  const GRect* frame,
-  GRect* out,
-  int16_t x,
-  int16_t y,
-  int16_t w,
-  int16_t h) {
-  if (!frame || !out) {
-    return;
-  }
-
-  // Set the point to be as it would have been in the reference design
-  // Once you've set this up, you can scale the point's coordinates
-  // to the frame's width and height
-  out->origin.x = x;
-  out->origin.y = y;
-  substratum_renderer_scale_icon_point_in_frame(frame, &out->origin);
-  out->size.w = HELPER_SCALE_ROUND(w, frame->size.w, WEATHER_ICON_GRID_W);
-  out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, WEATHER_ICON_GRID_H);
-}
 
 static GColor weather_clear_ring_color(
   const ClimatePalette* climate_palette,
@@ -346,10 +356,10 @@ static void draw_weather_partly_cloudy_icon(
   }
   GRect sub_frame = {0};
 
-  weather_subframe(frame, &sub_frame, 10, 0, 18, 18);
+  substratum_renderer_create_subframe(frame, &sub_frame, 10, 0, 18, 18);
   draw_weather_clear_icon(ctx, &sub_frame, climate_palette, is_day, false);
 
-  weather_subframe(frame, &sub_frame, 0, 3, 24, 24);
+  substratum_renderer_create_subframe(frame, &sub_frame, 0, 3, 24, 24);
   draw_weather_filled_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_PARTLY_CLOUDY, false);
 }
 
@@ -573,7 +583,7 @@ static void draw_weather_sleet_icon(
   GRect sub_frame = {0};
 
   // Draw the cloud first
-  weather_subframe(frame, &sub_frame, 6, 0, 16, 14);
+  substratum_renderer_create_subframe(frame, &sub_frame, 6, 0, 16, 14);
   draw_weather_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_CLOUD);
 
   GColor color = weather_color_for_kind(
@@ -581,7 +591,7 @@ static void draw_weather_sleet_icon(
     climate_palette);
 
   // Set the right sub-frame
-  weather_subframe(frame, &sub_frame, 13, 13, 14, 14);
+  substratum_renderer_create_subframe(frame, &sub_frame, 13, 13, 14, 14);
   if (heavy) {
     // Draw a snow-flake in this sub-frame
     graphics_context_set_stroke_color(ctx, color);
@@ -593,7 +603,7 @@ static void draw_weather_sleet_icon(
 
   // Now that the heaviness is determined, draw the left sub-frame
   // And set the stroke color in case it was changed
-  weather_subframe(frame, &sub_frame, 0, 13, 14, 14);
+  substratum_renderer_create_subframe(frame, &sub_frame, 0, 13, 14, 14);
   graphics_context_set_stroke_color(ctx, color);
   draw_weather_snowflake(ctx, &sub_frame, color);
 }
@@ -607,12 +617,12 @@ static void draw_weather_snow_showers_icon(
   }
   GRect sub_frame = {0};
 
-  weather_subframe(frame, &sub_frame, 0, 0, 18, 12);
+  substratum_renderer_create_subframe(frame, &sub_frame, 0, 0, 18, 12);
   draw_weather_cloud(ctx, &sub_frame, climate_palette, WEATHER_ICON_CLOUD);
 
   GColor color = weather_color_for_kind(WEATHER_ICON_SNOW_SHOWERS, climate_palette);
 
-  weather_subframe(frame, &sub_frame, 5, 9, 18, 18);
+  substratum_renderer_create_subframe(frame, &sub_frame, 5, 9, 18, 18);
   draw_weather_snowflake(ctx, &sub_frame, color);
 }
 
@@ -629,10 +639,10 @@ static void draw_weather_showers_icon(
   WeatherIconKind kind = HELPER_IF_ELSE(heavy, WEATHER_ICON_HEAVY_SHOWERS, WEATHER_ICON_SHOWERS);
   GColor color = weather_color_for_kind(kind, climate_palette);
 
-  weather_subframe(frame, &sub_frame, 0, 0, 20, 15);
+  substratum_renderer_create_subframe(frame, &sub_frame, 0, 0, 20, 15);
   draw_weather_cloud(ctx, &sub_frame, climate_palette, kind);
 
-  weather_subframe(frame, &sub_frame, 2, 7, 16, 20);
+  substratum_renderer_create_subframe(frame, &sub_frame, 2, 7, 16, 20);
   draw_weather_rain_marks(ctx, &sub_frame, color, heavy);
 }
 

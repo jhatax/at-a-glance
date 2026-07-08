@@ -11,8 +11,8 @@ int16_t substratum_renderer_scale_icon_x(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(
-    HELPER_SCALE_ROUND(coord, size->w, WATCHFACE_ICON_GRID_WIDTH), (size->w - 1));
+  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->w, WATCHFACE_ICON_GRID_WIDTH),
+    (size->w - 1));
 }
 
 // Scale icon's Y relative to the current frame vs. the reference design
@@ -24,8 +24,8 @@ int16_t substratum_renderer_scale_icon_y(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(
-    HELPER_SCALE_ROUND(coord, size->h, WATCHFACE_ICON_GRID_HEIGHT), (size->h - 1));
+  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->h, WATCHFACE_ICON_GRID_HEIGHT),
+    (size->h - 1));
 }
 
 int16_t substratum_renderer_scale_icon_coord(
@@ -43,8 +43,8 @@ int16_t substratum_renderer_scale_icon_coord(
   int16_t design_dimension =
     (chosen_dimension == size->w) ? WATCHFACE_ICON_GRID_WIDTH : WATCHFACE_ICON_GRID_HEIGHT;
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(
-    HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension), (chosen_dimension - 1));
+  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension),
+    (chosen_dimension - 1));
 }
 
 GPoint substratum_renderer_scale_icon_point(
@@ -57,8 +57,8 @@ GPoint substratum_renderer_scale_icon_point(
   }
 
   if (size) {
-    return GPoint(
-      substratum_renderer_scale_icon_x(size, x), substratum_renderer_scale_icon_y(size, y));
+    return GPoint(substratum_renderer_scale_icon_x(size, x),
+      substratum_renderer_scale_icon_y(size, y));
   }
 
   return GPoint(x, y);
@@ -101,6 +101,27 @@ GPoint substratum_renderer_scale_icon_x_y_in_frame(
   int16_t y) {
   return GPoint(substratum_renderer_scale_icon_x_in_frame(frame, x),
     substratum_renderer_scale_icon_y_in_frame(frame, y));
+}
+
+void substratum_renderer_create_subframe(
+  const GRect* frame,
+  GRect* out,
+  int16_t x,
+  int16_t y,
+  int16_t w,
+  int16_t h) {
+  if (!frame || !out) {
+    return;
+  }
+
+  // Set the point to be as it would have been in the reference design
+  // Once you've set this up, you can scale the point's coordinates
+  // to the frame's width and height
+  out->origin.x = x;
+  out->origin.y = y;
+  substratum_renderer_scale_icon_point_in_frame(frame, &out->origin);
+  out->size.w = HELPER_SCALE_ROUND(w, frame->size.w, SUBSTRATUM_RENDERER_ICON_GRID_W);
+  out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, SUBSTRATUM_RENDERER_ICON_GRID_H);
 }
 
 void substratum_renderer_draw_scaled_line(
