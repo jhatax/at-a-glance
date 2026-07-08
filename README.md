@@ -49,7 +49,7 @@ Settings are persisted on the watch.
 
 ## Supported Platforms
 
-This watchface is compatible with all Pebble smartwatch models.
+This watch face is compatible with all Pebble smartwatch models.
 
 - `aplite` - Pebble / Pebble Steel, black and white
 - `basalt` - Pebble Time / Pebble Time Steel, color

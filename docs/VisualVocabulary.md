@@ -3,7 +3,7 @@
 This document defines rules for how the watch face can satisfy legibility
 and automatic perception invariants visually.
 
-Rules and ideas should apply to shared watchface composition, channel
+Rules and ideas should apply to shared watch face composition, channel
 responsibilities, glyph selection, color selection, display-mode behavior,
 and representing out-of-range information.
 
@@ -50,7 +50,7 @@ Immediate identifiability satisfies automatic perception.
 
 ## Surface Composition
 
-A shared watchface composition across all pebbles satisfies
+A shared watch face composition across all Pebbles satisfies
 anchoring information to stable locations on screen.
 
 ```text
@@ -86,8 +86,9 @@ battery track, weather, and date are displayed.
 
 3. Color glyphs to show progress only when glanceability is enhanced.
 
-4. Product Direction to satisfy recognition and maintaining distinction:
--  Metrics glyphs are filled.
+4. Product direction to satisfy recognition and maintain distinction:
+
+- Metric glyphs are filled.
 - Climate glyphs are outlines, with recorded exceptions for contrast / separation.
 
 ## Icon Recognizability
@@ -161,7 +162,7 @@ battery track, weather, and date are displayed.
 ## Absence Language
 
 1. Out-of-range data uses a unique color and icon indicator that doesn't create alarm or demand attention.
-2. Do not use question marks or exclamation point or pause bars (play/pause) for out-of-range data.
+2. Do not use question marks, exclamation points, or pause bars (play/pause) for out-of-range data.
 3. Prefer bold slashes that start slightly above the canceled glyph and end slightly below it.
 
 ## Metric Icons And Glyphs

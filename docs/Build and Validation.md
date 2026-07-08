@@ -22,20 +22,20 @@ Use this document to understand:
 
 Build and validation tooling has been created to do six things well:
 
-1. build the watchface deterministically
+1. build the watch face deterministically
 2. prepare contributor tooling such as `compile_commands.json`
-3. install the watchface on emulators
-4. install the watchface on hardware through Developer Connection
+3. install the watch face on emulators
+4. install the watch face on hardware through Developer Connection
 5. run repeatable validation flows
 6. stay narrow enough that the tooling layer does not become a second project
 
-The watchface is the product. The tooling layer is supporting infrastructure.
+The watch face is the product. The tooling layer is supporting infrastructure.
 It must remain direct, auditable, and sustainable.
 
 ## Core Rules
 
 - Prefer one coherent tooling slice at a time.
-- Build and validation tooling must stay separate from watchface runtime logic.
+- Build and validation tooling must stay separate from watch face runtime logic.
 - Tooling must not redefine product semantics that belong in product or UI docs.
 - Add validation scripts when new tooling functionality is added.
 - Keep QA stage boundaries explicit.
@@ -151,7 +151,7 @@ from a fresh build rather than editing flags by hand.
 
 ## Runtime Messages And Generated Keys
 
-The QA harness depends on the same runtime-message contract as the watchface.
+The QA harness depends on the same runtime-message contract as the watch face.
 Use `Settings and Configuration.md` for the full settings catalog, Clay
 mapping, generated message-key contract, PKJS normalization, and persistence
 rules.
@@ -184,7 +184,17 @@ build succeeds
   -> pebble install --emulator <target>
 ```
 
-Current supported local targets are: `emery` | `flint` | `chalk` | `gabbro` | `aplite` | `diorite`
+Current supported local targets are:
+
+```text
+emery
+flint
+chalk
+gabbro
+aplite
+diorite
+basalt
+```
 
 ### Emulator Recovery
 
@@ -375,7 +385,7 @@ This is the practical current state, not the desired long-term final shape.
 ## Modular Direction
 
 Build and validation tooling uses the same modular shape as the
-watchface runtime and docs.
+watch face runtime and docs.
 
 ### Governing Principle: One File, One Function, One Responsibility
 

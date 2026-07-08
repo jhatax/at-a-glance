@@ -1,6 +1,6 @@
 # At A Glance Design
 
-At A Glance is a glance-first Pebble watchface. Its goal is to make complex
+At A Glance is a glance-first Pebble watch face. Its goal is to make complex
 information simple to absorb and act on with minimal cognitive load.
 
 ## Product Intent
@@ -46,7 +46,7 @@ Every supported device deserves an equally intentional experience within the cap
 
 ## Design Invariant
 
-Automatic perception of information is the singular design invariant for this watchface.
+Automatic perception of information is the singular design invariant for this watch face.
 
 - A user must be able to understand the display quickly, with minimal effort
   and minimal interpretation.

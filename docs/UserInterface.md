@@ -20,10 +20,8 @@ V
 
 Current device screenshots are checked in under `docs/assets/screenshots/`.
 Together with the coordinates, palettes, typography, and glyph realization
-tables below, they form the current visual evidence for the watchface surface.
-
-Screenshots document **evidence that satisfies visual invariants** for legibility, placements,
-and compatibility with all devices.
+tables below, they provide evidence to satisfy the watch face's visual invariants
+for legibility, placements, and compatibility with all devices.
 
 | Screenshot | Screenshot | Screenshot | Screenshot |
 | --- | --- | --- | --- |
@@ -348,7 +346,7 @@ is drawn from the 28x28 design-space diagonal with three line segments and a
 
 ## Further Reading
 
-- `SourceMap.md` for source-code navigation, high-level separation of duties, and inter-connections.
+- `SourceMap.md` for source-code navigation, high-level separation of duties, and interconnections.
 - `Settings and Configuration.md` for the settings catalog.
 - `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
 - `Contributing.md` for contributor workflow, validation, and review discipline.

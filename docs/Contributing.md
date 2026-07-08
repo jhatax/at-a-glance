@@ -22,18 +22,18 @@ documents.
 ## C-Coding Decisions
 
 - Use portable C within the Pebble SDK's constrained embedded runtime model.
-- Format code with `clang-format`, repo has a `.clang-format`.
+- Format code with `clang-format`; the repo has a `.clang-format`.
 - Use integer layout and drawing math only.
 - Avoid heap allocation unless required.
 - Match every acquired resource with a destroy path.
 - Use fixed-size buffers and `snprintf`.
 - Keep allocation, network, JSON, heavy formatting, and layout calculation
   out of layer update procs.
-- Prefer the use of Pebble platform provided capability guards, e.g., PBL_HEALTH.
-- Do not pass or return large watchface or layout structs by value.
+- Prefer Pebble platform-provided capability guards, e.g., `PBL_HEALTH`.
+- Do not pass or return large watch face or layout structs by value.
 - Keep module APIs narrow.
 - Prefer direct, auditable code.
-- Check `helper.c/.h, substratum_renderer.c/.h` before adding new helpers
+- Check `helper.c/.h` and `substratum_renderer.c/.h` before adding new helpers.
 
 ## C-Code Formatting and Clangd Integration
 
@@ -141,10 +141,10 @@ Recommended loop:
 2. Identify the real state variants used by the product.
 3. Create or update lab variants only for those states.
 4. Review color and black-and-white screenshots.
-5. Review at least `aplite` and `emery` before production porting.
-6. Pick one direction.
+5. Review at least `emery`, `flint`, `chalk`, and `gabbro` before production porting.
+6. Select final glyph design after visual confirmation.
 7. Port the selected drawing rules into production modules.
-8. Validate in the real watchface layout.
+8. Validate in the real watch face layout.
 
 Glyph validation is required whenever glyphs are modified or new glyphs are
 introduced. Treat screenshots as evidence; keep accepted visual evidence in
@@ -171,9 +171,9 @@ inspect code for basic understanding.
 
 ## Further Reading
 
-- `Settings and Configuration.md` for the settings catalog, Clay mapping, message-key contract,
-   persistence, and validation obligations
+- `Settings and Configuration.md` for the settings catalog, Clay mapping,
+  message-key contract, persistence, and validation obligations.
 - `Build and Validation.md` for build, install, editor-tooling, and validation architecture.
 - `ProductInvariants.md` for the invariants that preserve product identity across devices.
-- `VisualVocabulary` for the visual grammar that *can* satisfy visual invariants.
+- `VisualVocabulary.md` for the visual grammar that *can* satisfy visual invariants.
 - `../README.md` for a product introduction: screenshots, getting started, download links.

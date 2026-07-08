@@ -17,15 +17,15 @@ Use this document to understand:
 
 Key implementation details:
 
-- Settings flow to & from the Clay configuration page through PKJS.
+- Settings flow to and from the Clay configuration page through PKJS.
 - `ataglance.c` is responsible for settings persistence and lifecycle management.
-- Settings are transported using AppMessage, parse and interpreted in C.
+- Settings are transported using AppMessage, then parsed and interpreted in C.
 - Display is updated with information as long as it is within range.
 
 ## Required Reading
 
 - `ArchitectureLedger.md` for the runtime architecture.
-- `UserInterface.md`  for details on the full visual reference implementation.
+- `UserInterface.md` for details on the full visual reference implementation.
 
 ## Settings Catalog
 
@@ -37,7 +37,7 @@ runtime settings.
 | --- | --- | --- | --- | --- | --- | --- |
 | 1. Time format | `time_format` | `TIME_FORMAT` | `0` / `TIME_FMT_24` | `0` 24-hour, `1` 12-hour | Yes | Refreshes time text |
 | 2. Temperature unit | `temp_unit` | `TEMP_UNIT` | `0` / `TEMP_UNIT_F` | `0` Fahrenheit, `1` Celsius | Yes | Refreshes climate text |
-| 3. Display mode | `display_mode` | `DISPLAY_MODE` | `0` / `DISPLAY_MODE_LIGHT_MONOCHROME` | `0`, `1` on B/W; `0`, `1`, `2`, `3` on color | Yes | Repaints watchface palette |
+| 3. Display mode | `display_mode` | `DISPLAY_MODE` | `0` / `DISPLAY_MODE_LIGHT_MONOCHROME` | `0`, `1` on B/W; `0`, `1`, `2`, `3` on color | Yes | Repaints watch face |
 | 4. Weather cadence | `weather_update_minutes` | `WEATHER_UPDATE_MINUTES` | `15` | `15`, `30`, `45`, `60` | Yes | Updates PKJS weather schedule |
 | 5. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `15` | `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
 | 6. Steps goal | `steps_goal` | `STEPS_GOAL` | `10000` | `4000` through `32000` | Yes on `PBL_HEALTH` | Refreshes steps display |

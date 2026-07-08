@@ -34,7 +34,7 @@ these first-class concepts:
 | Product invariants | `ProductInvariants.md` | What must remain true regardless of implementation? | acceptance properties, commitments, implementation-independent rules |
 | Visual vocabulary | `VisualVocabulary.md` | What rules should you follow to satisfy visual product invariants? | visual rules, recognizability, glyph system, channels, silhouette |
 | Visual evidence | `UserInterface.md` | What does the current product look like? | visual details, information display, screenshots, geometry, fonts, palettes |
-| Runtime architecture | `ArchitectureLedger.md` | How is the current watchface implementation organized? | implementation, runtime, ownership, boundaries, lifecycle, modules |
+| Runtime architecture | `ArchitectureLedger.md` | How is the current watch face implementation organized? | implementation, runtime, ownership, boundaries, lifecycle, modules |
 | Source organization | `SourceMap.md` | Which source files exist, and how do they relate? | source map, headers, modules, QA tree, ownership edges |
 | Settings and configuration | `Settings and Configuration.md` | How do settings move from Clay through PKJS, AppMessage, C, persistence, and runtime effects? | settings, Clay, messageKeys, PKJS normalization, persistence, defaults, validation |
 | Tooling and validation implementation | `Build and Validation.md` | How is the project built, installed, and validated operationally? | build flow, compile database generation, install flow, validation flow, tooling ownership |

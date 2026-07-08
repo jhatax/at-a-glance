@@ -32,12 +32,12 @@ Layers have been implemented to satisfy visual display and runtime-architecture 
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
 
 ### Core Concepts
-- The watch face surface is organized as tiles (strata).
+- The watch face display is organized using tiles (strata).
   - Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
 - Information updates are relayed from Pebble OS (subscriptions, user-settings changes,
   major events, emulator messages).
 - Updates are scoped to new information only; multiple strata changes are batched.
-- Use of repaint is limited to maximize battery-life.
+- Use of repaint is limited to maximize battery life.
 
 ## Initialization and Runtime Flows
 
@@ -63,7 +63,7 @@ ataglance.c
                  -> layout_watchface_initialize_fonts(...)
                  -> layout_watchface_load_custom_fonts(...)
                  -> feature_module_create(root, prepared surface strata...)
-                 -> require date/time/battery strata to succeed
+                 -> require date/time/battery/climate strata to succeed
                  -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
   -> subscribe tick, battery, and health services
   -> register AppMessage callbacks
@@ -132,16 +132,16 @@ src/pkjs/index.js appmessage handler
 At A Glance is organized around a prepared `WatchfaceSurface` using `blueprints` customized for
 watch face geometry and shape. Two device categories have been defined:
 1. `full` [`gabbro`, `emery`]
-2. `compact` [`aplite`, `flint`, `diorite`, `chalk`]
+2. `compact` [`aplite`, `flint`, `diorite`, `chalk`, `basalt`]
 
 The surface is prepared as follows:
 
 1. Layout initialization clears and prepares the caller-owned surface from scratch.
 2. Layout placement is calculated based on platform-specific constants.
 3. Feature modules consume prepared substrata, frames, fonts, palettes, and layout policy.
-4. A watch face supplied renderer place components on screen based on layout policy.
+4. A renderer supplied by the watch face places components on screen based on layout policy.
 
-Current visual placement, palette, and typography evidence lives as screenshots in `UserInterface.md`.
+Current visual placement, palette, and typography are evidenced as screenshots in `UserInterface.md`.
 
 ## Architect
 
@@ -169,7 +169,7 @@ Current visual placement, palette, and typography evidence lives as screenshots 
 - Do not retain `WatchfaceSurface*` and global style.
 
 Two classes of strata have been defined:
-1. Required: [`time`, `date`, `weather`]
+1. Required: [`time`, `battery`, `date`, `climate`]
 2. Others
 `Required` strata have been selected based on shared capabilities for all devices.
 
@@ -178,7 +178,7 @@ Additionally,
 - Placement of text is not impacted if icons cannot be created, are disabled,
 or cannot be displayed.
 - If `Required` strata cannot be created, watch face initialization fails and control
-is returned back to the Pebble OS.
+is returned to the Pebble OS.
 
 This categorization satisfies the visual invariant of information hierarchy and display consistency
 for all supported devices.
@@ -236,7 +236,7 @@ watchface_destroy()
 - Transport-backed modules such as climate receive source state through a
   setter, then render temperature and glyph state during refresh.
 - QA-only one-shot health setters queue a single source-state override that is
-  consumed by the next health refresh and cleared during module or watchface
+  consumed by the next health refresh and cleared during module or watch face
   teardown.
 
 ### Module boundaries
@@ -338,12 +338,12 @@ The steps module demonstrates the intended boundary:
 - `settings.steps_goal` is passed as a narrow runtime input.
 - `steps.c` owns HealthService interpretation, threshold calculation, progress
   fill math, bitmap recoloring, unavailable rendering, and one-shot consumption.
-- `steps.c` does not know the full watchface surface or display-mode setting.
+- `steps.c` is only aware of its own placement settings and palette.
 
 ## Runtime resolution of palettes and icon colors
 
 - Palette selection is driven by user-preferences.
-- When the palette is changed, the watch face is repainted in layers, back to front.
+- When the palette is changed, the watch face is repainted in layers, back-to-front.
 - Bitmap palette mutation -- to convey status -- requires palettized PNG resources.
 
 ## Capability Guards
@@ -398,13 +398,13 @@ route.
 1. Evaluate architecture changes using embedded platform affordances and limits.
 2. Build for security, usability, performance, code readability, and future maintenance.
 3. Validate before confirming feature completion.
-4. Heap usage should be exception; release memory and initialize to NULL.
+4. Heap usage should be exceptional; release memory and initialize to NULL.
 5. Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes,
    buffer overflows, or hidden failure branches.
 
 ## Further Reading
 
-- `SourceMap.md` for source-code navigation, high-level separation of duties, and inter-connections.
+- `SourceMap.md` for source-code navigation, high-level separation of duties, and interconnections.
 - `Settings and Configuration.md` for the settings catalog, Clay mapping, message-key contract,
    persistence, and validation obligations
 - `Build and Validation.md` for build, install, editor-tooling, and validation architecture.

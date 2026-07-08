@@ -1,7 +1,7 @@
 # Product Invariants
 
 This document defines the product truths that must remain stable as the
-watchface evolves.
+watch face evolves.
 
 These are acceptance properties that must be satisfied by any implementation,
 so they have been written to be simple to understand and verifiable.
@@ -22,7 +22,7 @@ V
 
 ## Glanceability & Automatic Perception
 
-- The watchface must be immediately legible within a glance (sub-second
+- The watch face must be immediately legible within a glance (sub-second
   attention span).
 - The information should be understandable without the need to decode
   field by field.

@@ -107,7 +107,7 @@ watchface.c ──────────────────────�
         |                                           - color & text roles - palettes
         +───────────────+──────────────────────────+
                     |
-                    v watchface visual delegates
+                    v watch face visual delegates
         +───────────+──────────────────────────────+
         |                                          |
         v                                          v
