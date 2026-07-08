@@ -18,7 +18,7 @@ readonly QA_DIR="${SCRIPT_DIR}/qa"
 readonly DEFAULT_PLATFORM="emery"
 readonly BUILD_LOG_PATH="${SCRIPT_DIR}/build.log"
 readonly COMPILE_DB_PATH="${SCRIPT_DIR}/compile_commands.json"
-readonly COMPILE_DB_SCRIPT="${SCRIPT_DIR}/gen_compile_commands.py"
+readonly COMPILE_DB_SCRIPT="${SCRIPT_DIR}/tools/gen_compile_commands.py"
 
 source "${QA_DIR}/lib/common.sh"
 source "${QA_DIR}/lib/validate.sh"
