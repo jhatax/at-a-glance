@@ -173,6 +173,8 @@ static void apply_health_setting_data(
   }
 }
 
+// Applying this data is based on user message
+// Clearing runtime values is module responsibility
 static void apply_oneshot_health_data(
   const WatchfaceEventData* data,
   WatchfaceUpdateMask* refresh) {

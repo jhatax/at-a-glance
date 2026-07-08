@@ -3,6 +3,30 @@
 #include "watchface_components.h"
 #include "watchface_layout.h"
 
+/*
+ * File invariants:
+ *
+ * - geometry and prepared-surface ownership only
+ *   This file computes watchface geometry and writes the calculated frames into
+ *   a caller-owned WatchfaceSurface.
+ *
+ * - blueprint-driven layout calculation
+ *   Layout is derived from blueprint constants and display dimensions, not from
+ *   live runtime state, module behavior, or transport inputs.
+ *
+ * - must-have first, optional strata second
+ *   The file calculates required watchface layout first, then optional health
+ *   strata, then applies the computed result to the surface.
+ *
+ * - no style, runtime, or lifecycle ownership
+ *   Palette selection, font loading, service events, module creation, and
+ *   Pebble layer lifecycle belong elsewhere.
+ *
+ * - no feature behavior leakage
+ *   This file decides frames and alignments only. It must not interpret source
+ *   state or module refresh policy.
+ */
+
 // Blueprint support structures
 typedef struct {
   int16_t margin_x;
@@ -41,7 +65,7 @@ static const LayoutBlueprint c_blueprint = {
 };
 
 #ifdef PBL_HEALTH
-static void architect_prepare_health_display(
+static void architect_calculate_health_layout_from_blueprint(
   const LayoutBlueprint* blueprint,
   CalculatedLayout* computed,
   int16_t face_width,
@@ -99,7 +123,7 @@ static void architect_prepare_health_display(
 }
 #endif
 
-static void architect_get_layout_from_blueprint(
+static void architect_calculate_must_have_layout_from_blueprint(
   const LayoutBlueprint* blueprint,
   CalculatedLayout* computed,
   int16_t face_width,
@@ -208,13 +232,72 @@ static void architect_get_layout_from_blueprint(
   module_x = face_center;
   module_w = face_width - module_x - 1;  // last X - current x-coordinate yields available width
   computed->date = GRect(module_x, module_y, module_w, blueprint->date_text_height);
+}
+
+static void architect_apply_calculated_layout_to_watchface(
+  WatchfaceSurface* surface,
+  CalculatedLayout* computed) {
+  // Time
+  surface->time.text = (WatchfaceTextSubstratum){
+    .frame = computed->time,
+    .alignment = GTextAlignmentCenter,
+    .font_role = WATCHFACE_FONT_ROLE_TIME,
+    .color_role = WATCHFACE_COLOR_ROLE_TIME,
+  };
+
+  // Date
+  surface->date.text = (WatchfaceTextSubstratum){
+    .frame = computed->date,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_DATE,
+    .color_role = WATCHFACE_COLOR_ROLE_DATE,
+  };
+
+  // Battery
+  surface->battery = (WatchfaceBatteryStratum){
+    .fill = computed->battery.fill,
+    .track = computed->battery.track,
+    .bolt = computed->battery.bolt,
+  };
+
+  // Climate
+  surface->climate.icon = (WatchfaceIconSubstratum){
+    .frame = computed->climate.icon,
+  };
+
+  surface->climate.text = (WatchfaceTextSubstratum){
+    .frame = computed->climate.text,
+    .alignment = GTextAlignmentRight,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
 
 #ifdef PBL_HEALTH
-  architect_prepare_health_display(blueprint, computed, face_width, face_height);
+  // Steps
+  surface->steps.icon = (WatchfaceIconSubstratum){
+    .frame = computed->steps_layer.steps.icon,
+  };
+
+  surface->steps.text = (WatchfaceTextSubstratum){
+    .frame = computed->steps_layer.steps.text,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
+
+  surface->steps.progress = computed->steps_layer.progress;
+
+  // BPM
+  surface->bpm.icon = (WatchfaceIconSubstratum){
+    .frame = computed->bpm.icon,
+  };
+  surface->bpm.text = (WatchfaceTextSubstratum){
+    .frame = computed->bpm.text,
+    .alignment = GTextAlignmentLeft,
+    .font_role = WATCHFACE_FONT_ROLE_TEXT,
+  };
 #endif
 }
 
-bool layout_watchface_initialize(
+bool layout_watchface_prepare(
   int16_t face_width,
   int16_t face_height,
   WatchfaceSurface* surface) {
@@ -230,65 +313,16 @@ bool layout_watchface_initialize(
 
   const LayoutBlueprint* blueprint = &c_blueprint;
   CalculatedLayout computed = {0};
-  architect_get_layout_from_blueprint(blueprint, &computed, face_width, face_height);
-
-  // Time
-  surface->time.text = (WatchfaceTextSubstratum){
-    .frame = computed.time,
-    .alignment = GTextAlignmentCenter,
-    .font_role = WATCHFACE_FONT_ROLE_TIME,
-    .color_role = WATCHFACE_COLOR_ROLE_TIME,
-  };
-
-  // Date
-  surface->date.text = (WatchfaceTextSubstratum){
-    .frame = computed.date,
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_DATE,
-    .color_role = WATCHFACE_COLOR_ROLE_DATE,
-  };
-
-  // Battery
-  surface->battery = (WatchfaceBatteryStratum){
-    .fill = computed.battery.fill,
-    .track = computed.battery.track,
-    .bolt = computed.battery.bolt,
-  };
-
-  // Climate
-  surface->climate.icon = (WatchfaceIconSubstratum){
-    .frame = computed.climate.icon,
-  };
-
-  surface->climate.text = (WatchfaceTextSubstratum){
-    .frame = computed.climate.text,
-    .alignment = GTextAlignmentRight,
-    .font_role = WATCHFACE_FONT_ROLE_TEXT,
-  };
+  architect_calculate_must_have_layout_from_blueprint(blueprint,
+    &computed,
+    face_width,
+    face_height);
 
 #ifdef PBL_HEALTH
-  // Steps
-  surface->steps.icon = (WatchfaceIconSubstratum){
-    .frame = computed.steps_layer.steps.icon,
-  };
-
-  surface->steps.text = (WatchfaceTextSubstratum){
-    .frame = computed.steps_layer.steps.text,
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_TEXT,
-  };
-
-  surface->steps.progress = computed.steps_layer.progress;
-
-  // BPM
-  surface->bpm.icon = (WatchfaceIconSubstratum){
-    .frame = computed.bpm.icon,
-  };
-  surface->bpm.text = (WatchfaceTextSubstratum){
-    .frame = computed.bpm.text,
-    .alignment = GTextAlignmentLeft,
-    .font_role = WATCHFACE_FONT_ROLE_TEXT,
-  };
+  architect_calculate_health_layout_from_blueprint(blueprint, &computed, face_width, face_height);
 #endif
+
+  architect_apply_calculated_layout_to_watchface(surface, &computed);
+
   return true;
 }

@@ -11,9 +11,7 @@
 #endif
 
 // Architect
-bool layout_watchface_initialize(int16_t face_width,
-  int16_t face_height,
-  WatchfaceSurface* surface);
+bool layout_watchface_prepare(int16_t face_width, int16_t face_height, WatchfaceSurface* surface);
 
 // Stylist: Palette
 void layout_watchface_update_palette(WatchfaceSurfaceStyle* style, uint8_t display_mode);
