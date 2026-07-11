@@ -98,7 +98,8 @@ pebble emu-app-config
 ## Further Reading
 
 - [docs/Contributing.md](docs/Contributing.md) for contributor workflow, validation, and review discipline.
-- [docs/Build_and_Validation.md](docs/Build_and_Validation.md) for build, install, and validation details.
+- [docs/Build.md](docs/Build.md) for build, install, and editor-tooling details.
+- [docs/Validation.md](docs/Validation.md) for validation profiles, evidence, and QA flows.
 - [docs/UserInterface.md](docs/UserInterface.md) for the full visual reference implementation.
 
 ## License
