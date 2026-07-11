@@ -11,11 +11,11 @@
  *   This header exposes the AppMessage-facing adapter entry points used by
  *   ataglance.c and their bridge back into the watchface runtime.
  *
- * - app-facing, not module-facing
+ * - app-facing only
  *   This contract is private to src/c. Feature modules and watchface runtime
  *   code should not depend on it.
  *
- * - no tuple parsing declarations
+ * - inbox-outbox message handling APIs only
  *   Tuple parsing has its own header and implementation so that parsing and
  *   transport handling stay distinct.
  */
