@@ -348,5 +348,6 @@ is drawn from the 28x28 design-space diagonal with three line segments and a
 
 - [SourceMap.md](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
 - [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog.
-- [Build_and_Validation.md](Build_and_Validation.md) for build, install, editor-tooling, and validation architecture.
+- [Build.md](Build.md) for build, install, and editor-tooling support.
+- [Validation.md](Validation.md) for validation contract, scenarios, and visual review evidence.
 - [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.

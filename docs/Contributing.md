@@ -8,7 +8,9 @@ documents.
 
 ## Required Reading
 
-- [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.
+- [Build.md](Build.md) for build, install, and editor-tooling support.
+- [Validation.md](Validation.md) for validation contract, scenarios, and
+  evidence expectations.
 - [UserInterface.md](UserInterface.md) for the full visual reference implementation.
 - [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
 
@@ -54,7 +56,7 @@ toolchain driver:
 ```
 
 For how `compile_commands.json` is generated from Pebble's verbose build output,
-see [Build_and_Validation.md](Build_and_Validation.md).
+see [Build.md](Build.md).
 
 ## Repository Maintenance
 
@@ -68,13 +70,17 @@ source, manifest, resources, and documentation that produced it.
 
 ## Build And Validation
 
-For build, install, editor-tooling setup, harness behavior, and validation flow,
-see [Build_and_Validation.md](Build_and_Validation.md).
+Use:
+
+- [Build.md](Build.md) for build, install, compile database generation, and
+  editor-tooling setup
+- [Validation.md](Validation.md) for validation flow, scenarios, runtime
+  validation commands, and evidence expectations
 
 **Contributor rule**
 
-- If a code change needs build or runtime verification, run the relevant build and
-  validation flow from [Build_and_Validation.md](Build_and_Validation.md) or explicitly report the gap.
+- If a code change needs build or runtime verification, run relevant build and
+  validation flows from [Build.md](Build.md) and [Validation.md](Validation.md), respecitively, or explicitly report the gap.
 - If a change touches settings, Clay, PKJS normalization, AppMessage keys, or
   persistence, update [Settings_and_Configuration.md](Settings_and_Configuration.md) and run the relevant
   settings validation path.
@@ -99,18 +105,18 @@ Use the harness nuclear path when the emulator is not responding or persisted
 emulator state is interfering with validation:
 
 ```sh
-./ataglance_build_test_harness.sh -n
+./aag-build-qa.sh --nuclear
 ```
 
-The `-n` / `--nuclear` flag kills emulators, wipes emulator state, and forces a
+The `--nuclear` flag kills emulators, wipes emulator state, and forces a
 clean build. This is stronger than a normal rebuild because it clears stale
 emulator process and persistence state before rebuilding. Combine it with
-`--install` or `--test` when recovery should continue into emulator install or
-validation.
+`--install` when recovery should continue into emulator install.
 
-For emulator matrices, phone install, config-page validation, compile database
-generation, and QA command details, use [Build_and_Validation.md](Build_and_Validation.md). For the
-current QA helper, stage, test, and data layout, use [../qa/README.md](../qa/README.md).
+For compile database generation and install flows, use [Build.md](Build.md).
+For emulator matrices, config-page validation, validation scenarios, and QA
+command details, use [Validation.md](Validation.md). For the QA System
+implementation manual, use [../qa/README.md](../qa/README.md).
 
 ## Logs And Debugging
 
@@ -128,8 +134,8 @@ Use Pebble's built-in `APP_LOG` with restraint.
 
 For UI changes, one useful validation path is enabling `ATAGLANCE_DEBUG`,
 installing in the emulator, and inspecting the debug-rendered layer or glyph
-bounds. Build activation and emulator validation details live in
-[Build_and_Validation.md](Build_and_Validation.md).
+bounds. Build activation lives in [Build.md](Build.md); emulator validation
+flows live in [Validation.md](Validation.md).
 
 ## Glyph Validation
 
@@ -156,7 +162,7 @@ Before committing a change:
 
 - run `git diff --check`
 - run `pebble build` for code changes or explicitly report the gap
-- run **smoke** coverage across the areas touched by the change
+- run scenario smoke coverage across the areas touched by the change
 - use emulator screenshots for visual or layout changes when practical
 - review API, lifecycle, layout, and platform changes before coding
 - update relevant documentation
@@ -173,7 +179,9 @@ inspect code for basic understanding.
 
 - [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog, Clay mapping,
   message-key contract, persistence, and validation obligations.
-- [Build_and_Validation.md](Build_and_Validation.md) for build, install, editor-tooling, and validation architecture.
+- [Build.md](Build.md) for build, install, and editor-tooling support.
+- [Validation.md](Validation.md) for validation contract, scenarios, and
+  evidence expectations.
 - [ProductInvariants.md](ProductInvariants.md) for the invariants that preserve product identity across devices.
 - [VisualVocabulary.md](VisualVocabulary.md) for the visual grammar that *can* satisfy visual invariants.
 - [../README.md](../README.md) for a product introduction: screenshots, getting started, download links.

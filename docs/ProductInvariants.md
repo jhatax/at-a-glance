@@ -45,7 +45,7 @@ V
 ## Dominant Information
 
 - **Time** remains the dominant visual object.
-- Other information may add context, but it must not compete with time for first attention.
+- Other information may add context without competing with time for attention.
 
 ## Identifiable Visual Elements
 

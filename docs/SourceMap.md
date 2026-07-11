@@ -173,6 +173,7 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
 
 ## Future Reading
 
-- [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
+- [Build.md](Build.md) for build activation and editor-tooling support.
+- [Validation.md](Validation.md) for emulator validation and QA evidence.
 - [Contributing.md](Contributing.md) for contributor workflow, validation, logging, and review discipline.
 - [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.
