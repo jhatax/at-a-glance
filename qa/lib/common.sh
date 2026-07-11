@@ -4,11 +4,6 @@ log_info() {
   printf '%s\n' "$1"
 }
 
-die() {
-  printf 'Error: %s\n' "$1" >&2
-  exit 1
-}
-
 # Shell predicate convention:
 #   return 0  -> success / true
 #   return 1+ -> failure / false

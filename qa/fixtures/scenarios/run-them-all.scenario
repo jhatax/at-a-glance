@@ -1,0 +1,10 @@
+PREAMBLE
+  SCENARIO run-them-all
+  SCREENSHOTS no
+END
+
+EXECUTE
+  INCLUDE weather
+  INCLUDE battery
+  STEP health emulator=emery display=white bpm=121 steps=11000
+END

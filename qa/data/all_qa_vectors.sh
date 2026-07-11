@@ -3,7 +3,6 @@
 # CONFIG Constants
 typeset -gr -a QA_DEFAULT_EMULATORS=(gabbro emery chalk flint)
 typeset -gr -a QA_SUPPORTED_EMULATORS=(aplite basalt chalk diorite emery flint gabbro)
-typeset -gr -a QA_SUPPORTED_TESTS=(battery health smoke weather)
 
 # DISPLAYS
 typeset -gr -a QA_DISPLAY_MODES=(0 1 2 3)
@@ -21,3 +20,14 @@ typeset -gr -a QA_BATTERY_CHARGING_STATES=(1 0)
 # HEALTH
 typeset -gr -a QA_HEALTH_BPM_VALUES=(99 101 121 0)
 typeset -gr -a QA_HEALTH_STEPS_VALUES=(1000 8000 11000 0)
+
+# Active execution vectors. Public test entrypoints and scenario execution set
+# these on entry; test loops read them directly.
+typeset -ga emulators_to_test=()
+typeset -ga display_modes_to_test=()
+typeset -ga day_states_to_test=()
+typeset -ga weather_codes_to_test=()
+typeset -ga battery_levels_to_test=()
+typeset -ga battery_charging_states_to_test=()
+typeset -ga health_bpm_values_to_test=()
+typeset -ga health_steps_values_to_test=()

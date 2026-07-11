@@ -1,23 +1,15 @@
 #!/usr/bin/env zsh
 
-qa_test_battery_run() {
-  log_info "Starting battery automation."
-
-  local emulator
-  local mode
-  local charging_state
-  local level
-
-  for emulator in $EMULATORS; do
-    for mode in $QA_DISPLAY_MODES; do
-      qa_send_display_mode "${emulator}" "${mode}"
-      sleep 3
-      for charging_state in $QA_BATTERY_CHARGING_STATES; do
-        for level in $QA_BATTERY_LEVELS; do
-          qa_pebble_set_battery_state "${emulator}" "${level}" "${charging_state}"
-          sleep 2
-        done
-      done
-    done
-  done
+qa_test_battery_step_run() {
+  qa_send_display_mode "${STEP_EMULATOR}" "${STEP_DISPLAY}"
+  sleep 3
+  qa_pebble_set_battery_state "${STEP_EMULATOR}" "${STEP_BATTERY_LEVEL}" "${STEP_BATTERY_CHARGING}"
+  qa_maybe_capture_screenshot \
+    "battery" \
+    "${STEP_ARTIFACT_IDENTITY}" \
+    "${STEP_EMULATOR}" \
+    "display-${STEP_DISPLAY}" \
+    "level-${STEP_BATTERY_LEVEL}" \
+    "charging-${STEP_BATTERY_CHARGING}"
+  sleep 2
 }

@@ -12,8 +12,10 @@ qa_send_display_mode() {
   local emulator="$1"
   local mode="$2"
 
-  pebble send-app-message --emulator "${emulator}" --int \
-    ${QA_MSG_DISPLAY_MODE}="${mode}" 2>/dev/null
+  qa_run_command \
+    "display-mode-${emulator}-${mode}" \
+    pebble send-app-message --emulator "${emulator}" --int \
+    ${QA_MSG_DISPLAY_MODE}="${mode}"
 }
 
 qa_send_weather_message() {
@@ -23,11 +25,13 @@ qa_send_weather_message() {
   local is_day="$4"
   local mode="$5"
 
-  pebble send-app-message --emulator "${emulator}" --int \
+  qa_run_command \
+    "weather-${emulator}-${weather_code}-${is_day}-${mode}" \
+    pebble send-app-message --emulator "${emulator}" --int \
     ${QA_MSG_TEMPERATURE}="${temperature}" \
     ${QA_MSG_WEATHER_CONDITION}="${weather_code}" \
     ${QA_MSG_IS_DAY}="${is_day}" \
-    ${QA_MSG_DISPLAY_MODE}="${mode}" 2>/dev/null
+    ${QA_MSG_DISPLAY_MODE}="${mode}"
 }
 
 qa_send_health_override() {
@@ -35,7 +39,9 @@ qa_send_health_override() {
   local bpm="$2"
   local steps="$3"
 
-  pebble send-app-message --emulator "${emulator}" --int \
+  qa_run_command \
+    "health-override-${emulator}-${bpm}-${steps}" \
+    pebble send-app-message --emulator "${emulator}" --int \
     ${QA_MSG_ONESHOT_BPM}="${bpm}" \
-    ${QA_MSG_ONESHOT_STEPS}="${steps}" 2>/dev/null
+    ${QA_MSG_ONESHOT_STEPS}="${steps}"
 }

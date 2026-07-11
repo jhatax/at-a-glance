@@ -1,0 +1,8 @@
+PREAMBLE
+  SCENARIO battery
+  SCREENSHOTS yes
+END
+
+EXECUTE
+  STEP battery emulator=chalk display=black level=25 charging=0
+END
