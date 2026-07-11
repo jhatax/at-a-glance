@@ -37,7 +37,8 @@ these first-class concepts:
 | Runtime architecture | [ArchitectureLedger.md](ArchitectureLedger.md) | How is the current watch face implementation organized? | implementation, runtime, ownership, boundaries, lifecycle, modules |
 | Source organization | [SourceMap.md](SourceMap.md) | Which source files exist, and how do they relate? | source map, headers, modules, QA tree, ownership edges |
 | Settings and configuration | [Settings_and_Configuration.md](Settings_and_Configuration.md) | How do settings move from Clay through PKJS, AppMessage, C, persistence, and runtime effects? | settings, Clay, messageKeys, PKJS normalization, persistence, defaults, validation |
-| Tooling and validation implementation | [Build_and_Validation.md](Build_and_Validation.md) | How is the project built, installed, and validated operationally? | build flow, compile database generation, install flow, validation flow, tooling ownership |
+| Build system | [Build.md](Build.md) | How is the project built, installed, and wired for editor tooling? | build flow, compile database generation, install flow, editor tooling, build-stage ownership |
+| Validation system | [Validation.md](Validation.md) | How is the project validated operationally, and what evidence should a run produce? | validation flow, scenarios, runtime validation, artifacts, reports, visual review |
 | Contributor workflow | [Contributing.md](Contributing.md) | How should contributors change the project safely? | contributor workflow, review discipline, C-coding decisions, documentation QA |
 
 ## Prescriptive vs. Evidentiary Documents
@@ -64,8 +65,9 @@ visual rules. They leave implementation details to the following
 2. [ArchitectureLedger.md](ArchitectureLedger.md)
 3. [SourceMap.md](SourceMap.md)
 4. [Settings_and_Configuration.md](Settings_and_Configuration.md)
-5. [Build_and_Validation.md](Build_and_Validation.md)
-6. [Contributing.md](Contributing.md)
+5. [Build.md](Build.md)
+6. [Validation.md](Validation.md)
+7. [Contributing.md](Contributing.md)
 
 These documents demonstrate, implement, build, validate, and govern the current
 product.

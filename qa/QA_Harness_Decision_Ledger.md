@@ -404,9 +404,199 @@ The agreed end state is:
 - Source documents:
   - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
 
+### QA-017
+
+- Decision: Scenario validation is exposed through the harness ABI.
+- Status: accepted
+- Date: 2026-07-10
+- Why: operators should not need to know or call the Python implementation
+  entrypoint directly to validate scenario grammar and composition.
+- Consequences:
+  - the public harness owns a scenario-validation command
+  - validation reports whether the scenario parses, includes resolve, and
+    concrete steps are valid
+  - include cycles are validation failures
+  - invalid `STEP` fields are validation failures
+  - parser-validation fixtures remain focused on accepted and rejected grammar
+    behavior
+  - direct `python3 qa/runner.py ...` calls are implementation details, not the
+    operator contract
+- Replaces: treating parser validation as a Python-only maintainer command.
+- Source documents:
+  - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
+  - [../qa/README.md](../qa/README.md)
+
+### QA-018
+
+- Decision: Classify harness commands as read-only or run-producing before
+  bootstrap.
+- Status: accepted
+- Date: 2026-07-10
+- Why: commands that inspect existing state must not create new run artifacts,
+  while commands that execute validation must enter the run lifecycle
+  deliberately.
+- Consequences:
+  - read-only commands exit before run bootstrap
+  - read-only commands include help, run listing, report viewing, comparison,
+    scenario validation, and dry-run plan printing
+  - run-producing commands are the only commands that create `qa/qa-runs/<run-id>/`
+  - `--runs` and `--compare` do not bootstrap merely because they touch run
+    artifacts
+  - command classification is explicit state, not incidental shell flow
+- Replaces: implicit bootstrap behavior scattered across command branches.
+- Source documents:
+  - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
+  - [Build.md](Build.md)
+
+### QA-019
+
+- Decision: Every run-producing command that bootstraps must finish with
+  operator-visible report closeout.
+- Status: accepted
+- Date: 2026-07-10
+- Why: a validation run is not useful if the operator has to hunt for the
+  summary after success or failure.
+- Consequences:
+  - summary generation belongs to run closeout
+  - finalizer output must not be silently swallowed by shell redirection
+  - successful and failed runs both surface the resulting summary
+  - the operator should either see the summary or receive a friendly next-step
+    command such as `open qa/qa-runs/<run-id>/report.md`
+  - read-only commands that do not bootstrap do not generate new summaries
+  - comparison and view commands remain read-only report consumers
+- Replaces: creating `report.md` as a hidden artifact with no end-of-run
+  operator guidance.
+- Source documents:
+  - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
+  - [../qa/README.md](../qa/README.md)
+
+### QA-020
+
+- Decision: Artifact identity is owned by the individual concrete step.
+- Status: accepted
+- Date: 2026-07-10
+- Why: the revised grammar makes a concrete `STEP` the smallest executable
+  validation unit. Screenshots, logs, indexes, summaries, and comparisons must
+  attach to that unit rather than to scenario names, profiles, families, or
+  checkpoint ids.
+- Consequences:
+  - artifact identity is generated from normalized concrete `STEP` values
+  - included scenarios contribute their concrete steps without preserving a
+    separate composite identity layer
+  - scenario names may organize execution but do not identify screenshots
+  - checkpoint ids, families, profiles, aliases, and matrix expansions are not
+    artifact keys
+  - report and comparison code must be updated where it still joins artifacts
+    through old checkpoint or matrix fields
+  - summaries should help the operator inspect step-level outcomes without
+    exposing harness-internal jargon
+- Replaces: artifact organization by scenario/checkpoint/family/profile-shaped
+  keys.
+- Source documents:
+  - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
+
+### QA-021
+
+- Decision: The zsh harness is a sourced script family with explicit shared
+  state, not a chain of long argument-passing functions.
+- Status: accepted
+- Date: 2026-07-10
+- Why: the harness is intentionally implemented as zsh modules sourced into one
+  execution context. Passing many repeated arrays and state values through
+  every function obscures ownership and works against that design.
+- Consequences:
+  - CLI parse state lives in explicit globals
+  - shared mutable state should be declared up front in one state owner
+  - functions receive arguments only for values that genuinely differ from the
+    established shared state
+  - empty-safe behavior preserves defaults when user input is omitted
+  - zsh shorthand and idioms should be used consistently across shell modules
+  - maintainability means a new maintainer can find state ownership without
+    tracing argument trains through the whole harness
+- Replaces: over-parameterized shell function chains and scattered global
+  declarations.
+- Source documents:
+  - [Build.md](Build.md)
+  - [../qa/README.md](../qa/README.md)
+
+### QA-022
+
+- Decision: Shell/Python connectivity must use a structured, explicit bridge
+  with no shell `eval`.
+- Status: accepted
+- Date: 2026-07-10
+- Why: Python should own structured data creation, but zsh should not execute
+  Python-emitted shell assignment text. The bridge must be readable,
+  allowlisted, and safe to maintain.
+- Consequences:
+  - Python bootstrap output stops being shell code
+  - JSON is sufficient as the Python-side structured representation
+  - zsh does not hand-parse JSON and does not require an external dependency
+    such as `jq`
+  - Python may convert JSON to a strict allowlisted stream for zsh consumption
+  - zsh applies known keys through explicit `case` handling
+  - unknown bridge keys are rejected
+  - empty array values preserve previously established default globals
+  - shell `eval` is forbidden in the harness bridge
+- Replaces: `eval` of Python-emitted shell assignments and ad hoc CSV array
+  reconstruction.
+- Source documents:
+  - [Build.md](Build.md)
+  - [../qa/QASystemDesign.md](../qa/QASystemDesign.md)
+
+### QA-023
+
+- Decision: Maintainability documentation must grow by narrow ownership, not by
+  expanding a single giant build document.
+- Status: accepted
+- Date: 2026-07-10
+- Why: implementation decisions are only maintainable when a future maintainer
+  can find the contract, the state owner, and the execution handoff without
+  reverse-engineering shell and Python code.
+- Consequences:
+  - the decision ledger owns accepted architecture decisions
+  - the tortoise implementation plan owns ordered implementation slices and
+    handoff criteria
+  - code should use expressive names and short invariant comments where the
+    ownership rule is not obvious from the function body
+  - `QABuildSystem.md` or equivalent build documentation should not absorb all
+    harness design detail
+  - new maintainer guidance should be concise and linked to the canonical owner
+    rather than duplicated across documents
+- Replaces: relying on undocumented Python and shell implementation detail as
+  the maintainer guide.
+- Source documents:
+  - [Build.md](Build.md)
+  - [../qa/README.md](../qa/README.md)
+  - [../qa/QA_Tortoise_Implementation_Plan.md](../qa/QA_Tortoise_Implementation_Plan.md)
+
+### QA-024
+
+- Decision: Collapse the public QA design document into the QA subsystem
+  manual and the scenario grammar guide.
+- Status: accepted
+- Date: 2026-07-10
+- Why: `qa/README.md` and `qa/QASystemDesign.md` were converging on the same
+  job. Keeping both would create duplicate implementation guidance and make the
+  validation docs harder to maintain.
+- Consequences:
+  - `docs/Validation.md` becomes the contributor-facing validation front door
+  - `qa/README.md` owns QA System architecture, lifecycle, command classes,
+    artifact flow, report flow, and implementation layout
+  - `qa/QAScenarioGrammar.md` owns scenario grammar, concrete step shape,
+    artifact identity, and scenario-authoring guidance
+  - old decision entries are preserved as historical records rather than
+    rewritten as current navigation
+- Replaces: `qa/QASystemDesign.md` as a separate public implementation document.
+- Source documents:
+  - [../docs/Validation.md](../docs/Validation.md)
+  - [../qa/README.md](../qa/README.md)
+  - [../qa/QAScenarioGrammar.md](../qa/QAScenarioGrammar.md)
+
 ## Open Follow-On Decisions
 
 - Whether the shell wrapper remains permanent or is later removed.
-- How to update the parser and fixtures to conform to the block-structured
-  grammar.
+- How to retire remaining old matrix/checkpoint/profile code as each narrow
+  slice reaches it.
+- How to reshape reports after artifact identity is fully step-owned.
 - How far CI hardening should go beyond the current local-first contract.

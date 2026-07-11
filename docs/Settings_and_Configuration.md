@@ -163,7 +163,7 @@ The current one-shot health keys are runtime-only constants:
 These are not Clay settings, not manifest-backed keys, and not persisted. They
 exist for focused QA and are consumed once by the health refresh path.
 
-[Build_and_Validation.md](Build_and_Validation.md) owns the operational command examples for these keys.
+[Validation.md](Validation.md) owns the operational command examples for these keys.
 This document references them only to keep the settings, data, and QA payloads
 separate.
 
@@ -235,7 +235,8 @@ Minimum checks:
 - The runtime refresh or repaint effect matches the setting's intended scope.
 - Manual QA commands and harness helpers use the current numeric mapping.
 
-Read [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
+Read [Build.md](Build.md) for build activation and [Validation.md](Validation.md)
+for emulator validation.
 
 ## Change Checklist
 
@@ -252,12 +253,13 @@ For any settings change:
 - Update `src/modules/watchface_runtime_boundary.c` for runtime validation,
   mutation, repaint, or refresh behavior.
 - Update [docs/Settings_and_Configuration.md](Settings_and_Configuration.md).
-- Update [Build_and_Validation.md](Build_and_Validation.md) only when validation flow changes.
+- Update [Validation.md](Validation.md) only when validation flow changes.
 - Update [UserInterface.md](UserInterface.md) only when visible settings evidence or visual
   consequences change.
 - Run the relevant build and validation path, or record the validation gap.
 
 ## Further Reading
 
-- [Build_and_Validation.md](Build_and_Validation.md) for build activation and emulator validation.
+- [Build.md](Build.md) for build activation.
+- [Validation.md](Validation.md) for emulator validation and QA evidence.
 - [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.

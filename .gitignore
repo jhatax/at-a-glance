@@ -22,3 +22,5 @@ qa/data/display_modes.sh
 qa/data/health_vectors.sh
 qa/data/targets.sh
 agents_atb.md
+qa/ReportGeneration.md
+qa/clean-up-the-mess.md
