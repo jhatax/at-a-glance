@@ -1,6 +1,6 @@
 #include <pebble.h>
 
-#include "ataglance_pebble_messages_adapter.h"
+#include "ataglance_messages_adapter.h"
 #include "modules/watchface.h"
 
 /*
