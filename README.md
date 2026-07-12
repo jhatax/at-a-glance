@@ -6,7 +6,7 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 ## Screenshots
 
-| <center><b>Color rectangular</b></center> | <center><b>Round monochrome</b></center> |
+| <center><b>Rectangular</b></center> | <center><b>Round</b></center> |
 | :---: | :---: |
 | <center><b><img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br>Gabbro: White on Black</b></center> |
 
