@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO diorite-battery
+  SCREENSHOTS yes
+  EMULATORS diorite
+END
+
+EXECUTE
+  STEP battery display=black level=70 charging=1
+END

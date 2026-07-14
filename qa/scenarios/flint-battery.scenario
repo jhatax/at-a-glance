@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO flint-battery
+  SCREENSHOTS yes
+  EMULATORS flint
+END
+
+EXECUTE
+  STEP battery display=black level=90 charging=1
+END

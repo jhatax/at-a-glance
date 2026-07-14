@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO flint-weather
+  SCREENSHOTS yes
+  EMULATORS flint
+END
+
+EXECUTE
+  STEP weather display=black temp=539 code=82 is_day=0
+END

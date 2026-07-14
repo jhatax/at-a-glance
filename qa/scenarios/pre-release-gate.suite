@@ -1,0 +1,13 @@
+PREAMBLE
+  SUITE pre-release-gate
+END
+
+MEMBERS
+  INCLUDE SUITE qa-aplite
+  INCLUDE SUITE qa-basalt
+  INCLUDE SUITE qa-chalk
+  INCLUDE SUITE qa-diorite
+  INCLUDE SUITE qa-emery
+  INCLUDE SUITE qa-flint
+  INCLUDE SUITE qa-gabbro
+END

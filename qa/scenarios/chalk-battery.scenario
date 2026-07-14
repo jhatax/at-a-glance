@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO chalk-battery
+  SCREENSHOTS yes
+  EMULATORS chalk
+END
+
+EXECUTE
+  STEP battery display=white level=50 charging=0
+END

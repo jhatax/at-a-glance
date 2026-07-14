@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO basalt-health
+  SCREENSHOTS yes
+  EMULATORS basalt
+END
+
+EXECUTE
+  STEP health display=black bpm=101 steps=8000
+END

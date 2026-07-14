@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO gabbro-battery
+  SCREENSHOTS yes
+  EMULATORS gabbro
+END
+
+EXECUTE
+  STEP battery display=white level=100 charging=0
+END

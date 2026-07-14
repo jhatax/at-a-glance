@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO chalk-weather
+  SCREENSHOTS yes
+  EMULATORS chalk
+END
+
+EXECUTE
+  STEP weather display=white temp=539 code=80 is_day=1
+END

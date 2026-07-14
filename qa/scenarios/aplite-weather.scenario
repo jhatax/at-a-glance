@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO aplite-weather
+  SCREENSHOTS yes
+  EMULATORS aplite
+END
+
+EXECUTE
+  STEP weather display=white temp=539 code=0 is_day=1
+END

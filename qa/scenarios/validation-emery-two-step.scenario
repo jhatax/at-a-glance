@@ -1,9 +1,10 @@
 PREAMBLE
-  SCENARIO canary
+  SCENARIO validation-emery-two-step
   SCREENSHOTS no
   EMULATORS emery
 END
 
 EXECUTE
   STEP weather display=white temp=539 code=65 is_day=1
+  STEP battery display=black level=80 charging=0
 END

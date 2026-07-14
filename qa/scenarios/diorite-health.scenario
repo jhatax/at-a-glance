@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO diorite-health
+  SCREENSHOTS yes
+  EMULATORS diorite
+END
+
+EXECUTE
+  STEP health display=black bpm=0 steps=0
+END

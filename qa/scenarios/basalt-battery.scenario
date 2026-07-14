@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO basalt-battery
+  SCREENSHOTS yes
+  EMULATORS basalt
+END
+
+EXECUTE
+  STEP battery display=black level=25 charging=1
+END

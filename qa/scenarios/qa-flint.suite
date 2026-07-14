@@ -1,0 +1,9 @@
+PREAMBLE
+  SUITE qa-flint
+END
+
+MEMBERS
+  INCLUDE SCENARIO flint-weather
+  INCLUDE SCENARIO flint-battery
+  INCLUDE SCENARIO flint-health
+END

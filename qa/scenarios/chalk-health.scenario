@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO chalk-health
+  SCREENSHOTS yes
+  EMULATORS chalk
+END
+
+EXECUTE
+  STEP health display=white bpm=121 steps=11000
+END

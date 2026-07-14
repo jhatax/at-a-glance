@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO diorite-weather
+  SCREENSHOTS yes
+  EMULATORS diorite
+END
+
+EXECUTE
+  STEP weather display=black temp=539 code=95 is_day=0
+END

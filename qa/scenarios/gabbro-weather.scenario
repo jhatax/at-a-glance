@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO gabbro-weather
+  SCREENSHOTS yes
+  EMULATORS gabbro
+END
+
+EXECUTE
+  STEP weather display=white temp=539 code=3 is_day=1
+END

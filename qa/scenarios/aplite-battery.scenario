@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO aplite-battery
+  SCREENSHOTS yes
+  EMULATORS aplite
+END
+
+EXECUTE
+  STEP battery display=white level=10 charging=0
+END

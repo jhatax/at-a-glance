@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO aplite-health
+  SCREENSHOTS yes
+  EMULATORS aplite
+END
+
+EXECUTE
+  STEP health display=white bpm=99 steps=1000
+END
