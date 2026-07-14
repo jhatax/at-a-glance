@@ -1,8 +1,9 @@
 PREAMBLE
   SCENARIO invalid-unknown-option
   SCREENSHOTS no
+  EMULATORS emery
 END
 
 EXECUTE
-  STEP weather emulator=emery display=white temp=539 code=65 is_day=1 bogus=clear
+  STEP weather display=white temp=539 code=65 is_day=1 bogus=clear
 END

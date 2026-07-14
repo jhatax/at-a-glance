@@ -1,8 +1,0 @@
-PREAMBLE
-  SCENARIO include-cycle-b
-  SCREENSHOTS no
-END
-
-EXECUTE
-  INCLUDE include-cycle-a
-END

@@ -1,0 +1,7 @@
+PREAMBLE
+  SUITE include-cycle-b
+END
+
+MEMBERS
+  INCLUDE SUITE include-cycle-a
+END
