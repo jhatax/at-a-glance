@@ -3,12 +3,15 @@ var Clay = require("@rebble/clay");
 var clayConfig = require("./config.json");
 var messageKeys = require("message_keys");
 
-var STEPS_GOAL_MIN = 4000;
-var STEPS_GOAL_DEFAULT = 10000;
-var STEPS_GOAL_MAX = 32000;
-var WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+const STEPS_GOAL_MIN = 4000;
+const STEPS_GOAL_DEFAULT = 10000;
+const STEPS_GOAL_MAX = 32000;
+
+const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+const WEATHER_UPDATE_INTERVAL_MAX = WEATHER_UPDATE_MINUTES_DEFAULT << 4; // (15 * 16: 4-hours max)
 var s_weatherIntervalHandle = null;
 var s_weatherUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
+var s_startingUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -36,6 +39,13 @@ function parseStepsGoal(rawSettings) {
   return goal;
 }
 
+function updateWeatherInterval(newInterval) {
+  s_weatherUpdateInterval = newInterval;
+  // Weather Update Interval is going to backoff on timeout,
+  // so save user-pref to reset interval to user's preference.
+  s_startingUpdateInterval = newInterval;
+}
+
 // Return the default value if setting is invalid or irretrievable
 function parseWeatherUpdateMinutes(rawSettings) {
   var toreturn = (rawSettings) ?
@@ -44,46 +54,47 @@ function parseWeatherUpdateMinutes(rawSettings) {
   return (isNaN(toreturn)) ? WEATHER_UPDATE_MINUTES_DEFAULT : toreturn;
 }
 
-function applyWeatherUpdateMinutes(minutes, shouldRefreshWeather) {
+function applyWeatherUpdateMinutes(minutes) {
   var shouldUpdateRefreshSchedule = false;
   if (isNaN(minutes)) {
-    // If the current s_weatherUpdateInterval is not the same as the default
-    // to which the interval is going to be set, let's update refresh schedule.
+    // Reset only if needed.
     if (s_weatherUpdateInterval != WEATHER_UPDATE_MINUTES_DEFAULT) {
       shouldUpdateRefreshSchedule = true;
+      updateWeatherInterval(WEATHER_UPDATE_MINUTES_DEFAULT);
     }
-    s_weatherUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
   } else {
     // If the current s_weatherUpdateInterval is not the same as the input
     // to which the interval is going to be set, let's update the refresh schedule.
     if (s_weatherUpdateInterval != minutes) {
-      shouldUpdateRefreshSchedule = true;
+      // Is the input from user within the accepted range?
+      if (minutes > 0 && minutes <= WEATHER_UPDATE_INTERVAL_MAX) {
+        shouldUpdateRefreshSchedule = true;
+        updateWeatherInterval(minutes);
+      }
     }
-    s_weatherUpdateInterval = minutes;
   }
 
-  if (shouldRefreshWeather) { updateWeather(); }
-
+  updateWeather();
   if (shouldUpdateRefreshSchedule) { scheduleWeatherUpdates(); }
 }
 
 var clay = new Clay(clayConfig);
 
-Pebble.addEventListener("showConfiguration", function() {
+Pebble.addEventListener("showConfiguration", function () {
   Pebble.openURL(clay.generateUrl());
 });
 
-Pebble.addEventListener("appmessage", function(e) {
+Pebble.addEventListener("appmessage", function (e) {
   if (!e || !e.payload) {
     return;
   }
 
   if (typeof e.payload[messageKeys.WEATHER_UPDATE_MINUTES] === "number") {
-    applyWeatherUpdateMinutes(e.payload[messageKeys.WEATHER_UPDATE_MINUTES], true);
+    applyWeatherUpdateMinutes(e.payload[messageKeys.WEATHER_UPDATE_MINUTES]);
   }
 });
 
-Pebble.addEventListener("webviewclosed", function(e) {
+Pebble.addEventListener("webviewclosed", function (e) {
   if (!e || !e.response) {
     return;
   }
@@ -93,10 +104,10 @@ Pebble.addEventListener("webviewclosed", function(e) {
   dict[messageKeys.STEPS_GOAL] = parseStepsGoal(rawSettings);
   delete dict[messageKeys.STEPS_GOAL_PRESET];
   delete dict[messageKeys.STEPS_GOAL_CUSTOM];
-  applyWeatherUpdateMinutes(parseWeatherUpdateMinutes(rawSettings), true);
-  Pebble.sendAppMessage(dict, function() {
+  applyWeatherUpdateMinutes(parseWeatherUpdateMinutes(rawSettings));
+  Pebble.sendAppMessage(dict, function () {
     console.log("Sent config data to Pebble");
-  }, function(err) {
+  }, function (err) {
     console.log("Failed to send config data!");
     console.log(JSON.stringify(err));
   });
@@ -111,7 +122,6 @@ var WEATHER_CONDITION_UNKNOWN = -1;
 var OAK_WEATHER_LATITUDE = 37.85626;
 var OAK_WEATHER_LONGITUDE = -122.21383;
 
-var s_weatherRequestId = 0;
 // Define custom function that manipulates the DOM elements inside index.js
 function sendWeather(celsius, weatherCode, isDay) {
   Pebble.sendAppMessage(
@@ -147,7 +157,7 @@ function weatherIntervalMs() {
   return s_weatherUpdateInterval * 60 * 1000;
 }
 
-function fetchWeather(lat, lon, requestId) {
+function fetchWeather(lat, lon) {
   var url =
     "https://api.open-meteo.com/v1/forecast?latitude=" +
     lat +
@@ -159,10 +169,6 @@ function fetchWeather(lat, lon, requestId) {
   xhr.open("GET", url, true);
   xhr.timeout = weatherIntervalMs();
   xhr.onload = function () {
-    if (requestId !== s_weatherRequestId) {
-      return;
-    }
-
     if (xhr.readyState === 4 && xhr.status === 200) {
       try {
         var data = JSON.parse(xhr.responseText);
@@ -173,8 +179,8 @@ function fetchWeather(lat, lon, requestId) {
           typeof data.current.is_day === "number"
         ) {
           sendWeather(data.current.temperature_2m,
-                      data.current.weather_code,
-                      data.current.is_day === 1);
+            data.current.weather_code,
+            data.current.is_day === 1);
         } else {
           sendWeatherUnavailable("malformed response");
         }
@@ -186,45 +192,36 @@ function fetchWeather(lat, lon, requestId) {
     }
   };
   xhr.onerror = function () {
-    if (requestId !== s_weatherRequestId) {
-      return;
-    }
-
     sendWeatherUnavailable("request failed");
   };
   xhr.ontimeout = function () {
-    if (requestId !== s_weatherRequestId) {
-      return;
+    // exponentially back-off
+    // if the value is the max, you need to back-off to the original value
+    s_weatherUpdateInterval = (s_weatherUpdateInterval < WEATHER_UPDATE_INTERVAL_MAX) ?
+      s_weatherUpdateInterval * 2 : s_startingUpdateInterval;
+    if (s_weatherUpdateInterval >= WEATHER_UPDATE_INTERVAL_MAX) {
+      // Clamp the update interval to WEATHER_UPDATE_INTERVAL_MAX
+      s_weatherUpdateInterval = Math.min(s_weatherUpdateInterval, WEATHER_UPDATE_INTERVAL_MAX);
+      sendWeatherUnavailable("request timed out");
     }
-
-    sendWeatherUnavailable("request timed out");
+    scheduleWeatherUpdates();
   };
   xhr.send(null);
 }
 
 function updateWeather() {
-  var requestId = ++s_weatherRequestId;
-
   if (typeof navigator !== "undefined" && navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       function (pos) {
-        if (requestId !== s_weatherRequestId) {
-          return;
-        }
-
-        fetchWeather(pos.coords.latitude, pos.coords.longitude, requestId);
+        fetchWeather(pos.coords.latitude, pos.coords.longitude);
       },
       function () {
-        if (requestId !== s_weatherRequestId) {
-          return;
-        }
-
-        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE, requestId);
+        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
       },
       { timeout: weatherIntervalMs(), maximumAge: weatherIntervalMs() }
     );
   } else {
-    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE, requestId);
+    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
   }
 }
 
