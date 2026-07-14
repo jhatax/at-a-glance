@@ -206,11 +206,10 @@ This satisfies the invariant that choices are available on all devices.
 
 ### Realization of Shared Visual Identity
 
-1. On Color hardware, time remains orange.
-2. On Monochrome hardware, light and dark palettes are mirror images of one another.
-3. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have
-   {date text, background} in one swapped with their opposite metric in the other.
-4. Module displays define `normal` and `unknown` that mirror values from the active
+1. On Monochrome hardware, light and dark palettes are mirror images of one another.
+2. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have
+   {time+date text, background} in one swapped with their opposite metric in the other.
+3. Module displays define `normal` and `unknown` that mirror values from the active
    primary display palette.
 
 ### Consolidated Color Palettes for Display Modes
@@ -235,7 +234,7 @@ Columns:
 | Primary text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
 | Date | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
-| Time | `GColorBlack` | `GColorWhite` | `GColorOrange` | `GColorOrange` | `GColorOrange` | `GColorOrange` |
+| Time | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
 | **BATTERY** |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
