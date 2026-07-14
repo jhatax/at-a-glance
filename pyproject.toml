@@ -1,0 +1,10 @@
+[tool.ruff]
+# Sets target line length and basic rules
+line-length = 88
+
+[tool.ruff.format]
+# Overrides standard 4-space indent with 2-space tabs
+indent-style = "space"
+line-ending = "lf"
+# Custom override to force 2 spaces instead of standard Python 4
+quote-style = "double"

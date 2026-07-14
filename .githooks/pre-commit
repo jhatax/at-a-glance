@@ -1,0 +1,28 @@
+#!/usr/bin/env zsh
+
+# 1. Grab all currently staged files as a Zsh array
+local -a staged_files
+staged_files=(${(f)"$(git diff --cached --name-only --diff-filter=ACMR)"})
+
+# Exit early if there are no staged files to process
+(( ${#staged_files} )) || exit 0
+
+# 2. Use Zsh array filtering to group files by extension
+local -a sh_files py_files c_files
+sh_files=(${(M)staged_files:#*.(sh|zsh)})
+py_files=(${(M)staged_files:#*.py})
+c_files=(${(M)staged_files:#*.(c|h)})
+
+# 3. Format and automatically re-stage modified files
+if (( ${#sh_files} )); then
+  shfmt -i 2 -sr -ci -w $sh_files 2>/dev/null && git add $sh_files
+fi
+
+if (( ${#py_files} )); then
+  ruff format $py_files 2>/dev/null && git add $py_files
+fi
+
+if (( ${#c_files} )); then
+  clang-format -i $c_files 2>/dev/null && git add $c_files
+fi
+

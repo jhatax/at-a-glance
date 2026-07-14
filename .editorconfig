@@ -1,0 +1,12 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.py]
+# Note: PEP 8 technically prefers 4 spaces, but this forces 2 if desired
+indent_size = 2
