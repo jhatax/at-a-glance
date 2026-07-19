@@ -318,11 +318,16 @@ void substratum_renderer_update_text_layer(
   GColor switched = gcolor_legible_over(text_color);
   text_layer_set_background_color(layer, text_color);
   text_layer_set_text_color(layer, switched);
+  text_layer_set_text(layer, text);
 #else
   text_layer_set_background_color(layer, GColorClear);
-  text_layer_set_text_color(layer, text_color);
-#endif
+  // Write the text twice, once in the clear color, then in the text color
+  // Will this increase contrast?
+  text_layer_set_text_color(layer, GColorClear);
   text_layer_set_text(layer, text);
+  text_layer_set_text_color(layer, text_color);
+  text_layer_set_text(layer, text);
+#endif
 }
 
 GColor substratum_renderer_color_for_role(
