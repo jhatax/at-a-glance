@@ -20,8 +20,7 @@ pebble_build() {
 }
 
 pebble_build_verbose() {
-  local build_log_path
-  run_command_with_log "pebble-build-verbose" "${DIRECT_BUILD_LOG_PATH}" pebble build -v || return
+  run_command_with_log "${DIRECT_BUILD_LOG_PATH}" pebble build -v || return
   execute_next_pebble_action generate_compile_commands_db
 }
 

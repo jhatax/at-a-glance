@@ -47,5 +47,5 @@ handle_qa_inspections() {
 # Execute the selected QA plan
 handle_qa_plan_execution() {
   command_is_scenario_exec || return 0
-  python3 "${QA_DIR}/runner.py" scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS"
+  python3 "${QA_DIR}/runner.py" scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS[1]"
 }

@@ -1,9 +1,8 @@
 #!/usr/bin/env zsh
 
 run_command_with_log() {
-  local label="$1"
-  local output_path="$2"
-  shift 2
+  local output_path="$1"
+  shift
 
   local output_dir="${output_path:h}"
 
@@ -59,7 +58,7 @@ execute_failure_mode() {
   for mode in $COMMAND_ARGS; do
     if [[ "${mode}" == "build-typo" ]]; then
       printf "Injecting deliberate build failure: pebble bulid -v.\n"
-      run_command_with_log "pebble-build-verbose" "${DIRECT_BUILD_LOG_PATH}" pebble bulid -v
+      run_command_with_log "${DIRECT_BUILD_LOG_PATH}" pebble bulid -v
       return $?
     fi
   done

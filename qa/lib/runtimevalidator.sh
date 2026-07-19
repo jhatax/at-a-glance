@@ -37,7 +37,7 @@ validate_config() {
   }
 
   # an action is specified
-  (( ${#COMMAND_ACTION} )) || {
+  ((${#COMMAND_ACTION})) || {
     validate_fail "no action specified"
     return
   }
@@ -55,7 +55,7 @@ validate_config() {
       return
     fi
 
-    if (( ! ${#COMMAND_ARGS[@]} )); then
+    if ((!${#COMMAND_ARGS[@]})); then
       validate_fail "no scenario specified to execute"
       return
     fi
@@ -66,7 +66,7 @@ validate_config() {
   fi
 
   if command_is_env_prep; then
-    if [[ "${COMMAND_ACTION}" == "phone" ]] && (( ! ${#COMMAND_ARGS[@]} )); then
+    if [[ "${COMMAND_ACTION}" == "phone" ]] && ((!${#COMMAND_ARGS[@]})); then
       validate_fail "no usable LAN Developer Connection IP specified for phone-install"
       return
     fi
@@ -78,24 +78,24 @@ validate_config() {
       return
     fi
 
-    if [[ "${COMMAND_ACTION}" == "validate" ]] && (( ! ${#COMMAND_ARGS[@]} )); then
+    if [[ "${COMMAND_ACTION}" == "validate" ]] && ((!${#COMMAND_ARGS[@]})); then
       validate_fail "no QA plan specified to validate"
       return
     fi
 
-    if [[ "${COMMAND_ACTION}" == "dryrun" ]] && (( ! ${#COMMAND_ARGS[@]} )); then
+    if [[ "${COMMAND_ACTION}" == "dryrun" ]] && ((!${#COMMAND_ARGS[@]})); then
       validate_fail "no scenario specified for dryrun"
       return
     fi
 
-    if [[ "${COMMAND_ACTION}" == "view-run" ]] && (( ${#COMMAND_ARGS[@]} != 1 )); then
+    if [[ "${COMMAND_ACTION}" == "view-run" ]] && ((${#COMMAND_ARGS[@]} != 1)); then
       validate_fail "view-run requires exactly one run selector"
       return
     fi
 
-    if [[ "${COMMAND_ACTION}" == "compare" ]] && \
-      (( ${#COMMAND_ARGS[@]} < 1 || ${#COMMAND_ARGS[@]} > 3 )); then
-      validate_fail "compare requires one, two, or three run selectors"
+    if [[ "${COMMAND_ACTION}" == "compare" ]] &&
+      ((${#COMMAND_ARGS[@]} < 1 || ${#COMMAND_ARGS[@]} > 5)); then
+      validate_fail "compare requires one to five run selectors"
       return
     fi
   fi
