@@ -18,7 +18,7 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, TypeGuard
 
 LOGGER = logging.getLogger("gen_compile_commands")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
@@ -56,9 +56,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     """Parse CLI arguments."""
 
     parser = argparse.ArgumentParser(
-        description=(
-            "Generate compile_commands.json from `pebble build -v` output."
-        )
+        description=("Generate compile_commands.json from `pebble build -v` output.")
     )
     parser.add_argument(
         "--log-path",
@@ -75,10 +73,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--platform",
         default=DEFAULT_PLATFORM,
-        help=(
-            "Pebble platform to extract, for example `emery` or `gabbro`. "
-            "Default: %(default)s"
-        ),
+        help=("Pebble platform to extract, for example `emery` or `gabbro`. Default: %(default)s"),
     )
     parser.add_argument(
         "--compiler",
@@ -121,9 +116,7 @@ def validate_inputs(log_path: Path, output_path: Path) -> None:
 
     output_parent = output_path.parent
     if output_parent and not output_parent.exists():
-        raise FileNotFoundError(
-            f"Output directory does not exist: {output_parent}"
-        )
+        raise FileNotFoundError(f"Output directory does not exist: {output_parent}")
     if output_parent and not output_parent.is_dir():
         raise ValueError(f"Output parent is not a directory: {output_parent}")
 
@@ -175,18 +168,19 @@ def resolve_compiler_path(compiler: str, sdk_root: Path | None) -> str:
         return resolved
 
     if sdk_root is not None:
-        sdk_candidate = (
-            sdk_root / "toolchain" / "arm-none-eabi" / "bin" / Path(compiler).name
-        )
+        sdk_candidate = sdk_root / "toolchain" / "arm-none-eabi" / "bin" / Path(compiler).name
         if sdk_candidate.exists():
             return str(sdk_candidate.resolve())
 
     LOGGER.warning(
-        "Could not resolve `%s` from PATH or Pebble SDK root; keeping compiler "
-        "token unchanged",
+        "Could not resolve `%s` from PATH or Pebble SDK root; keeping compiler token unchanged",
         compiler,
     )
     return compiler
+
+
+def _is_str_list(value: object) -> TypeGuard[list[str]]:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
 
 
 def extract_runner_args(line: str) -> list[str] | None:
@@ -197,17 +191,16 @@ def extract_runner_args(line: str) -> list[str] | None:
 
     payload = line[line.index(RUNNER_TOKEN) + len(RUNNER_TOKEN) :].strip()
     try:
-        parsed = ast.literal_eval(payload)
+        parsed: object = ast.literal_eval(payload)
+        if not _is_str_list(parsed):
+            LOGGER.debug("Skipping non-string runner payload: %r", parsed)
+            return None
+
+        return parsed
+
     except (SyntaxError, ValueError):
         LOGGER.debug("Skipping unparsable runner payload: %s", payload)
         return None
-
-    if not isinstance(parsed, list) or not all(
-        isinstance(item, str) for item in parsed
-    ):
-        LOGGER.debug("Skipping non-string runner payload: %r", parsed)
-        return None
-    return parsed
 
 
 def compiler_matches(args: Sequence[str], compiler_name: str) -> bool:
@@ -218,9 +211,7 @@ def compiler_matches(args: Sequence[str], compiler_name: str) -> bool:
     return Path(args[0]).name == Path(compiler_name).name
 
 
-def extract_build_directory(
-    output_arg: str, project_root: Path
-) -> Path | None:
+def extract_build_directory(output_arg: str, project_root: Path) -> Path | None:
     """Infer the Waf build directory from one output-object path."""
 
     candidate = Path(output_arg)
@@ -309,14 +300,10 @@ def iter_compile_commands(
             continue
 
         try:
-            cleaned_args, build_dir = normalize_compile_arguments(
-                args, compiler_path, project_root
-            )
+            cleaned_args, build_dir = normalize_compile_arguments(args, compiler_path, project_root)
             source_file = resolve_source_file(build_dir, cleaned_args)
         except ValueError as exc:
-            raise ValueError(
-                f"Invalid compiler command at log line {line_number}: {exc}"
-            ) from exc
+            raise ValueError(f"Invalid compiler command at log line {line_number}: {exc}") from exc
 
         yield CompileCommand(
             directory=str(build_dir),
@@ -325,9 +312,7 @@ def iter_compile_commands(
         )
 
 
-def write_compile_database(
-    commands: Sequence[CompileCommand], output_path: Path
-) -> None:
+def write_compile_database(commands: Sequence[CompileCommand], output_path: Path) -> None:
     """Write the compile database to disk."""
 
     payload = [command.to_json() for command in commands]
@@ -372,9 +357,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return EXIT_PARSE_ERROR
 
-        sorted_entries = [
-            entries_by_file[key] for key in sorted(entries_by_file.keys())
-        ]
+        sorted_entries = [entries_by_file[key] for key in sorted(entries_by_file.keys())]
         write_compile_database(sorted_entries, args.output)
 
     except argparse.ArgumentError as exc:
