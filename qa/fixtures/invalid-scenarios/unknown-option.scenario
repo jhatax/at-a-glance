@@ -1,5 +1,5 @@
 PREAMBLE
-  SCENARIO invalid-unknown-option
+  SCENARIO unknown-option
   SCREENSHOTS no
   EMULATORS emery
 END
