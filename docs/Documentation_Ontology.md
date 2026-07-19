@@ -27,50 +27,72 @@ One document, one concept, one responsibility, many references.
 Translation of guardrails: Before placing content, classify the knowledge using
 these first-class concepts:
 
-| Concept | Canonical Home | Core Question | Keywords |
+| Concept | Canonical Home | One-line blurb | Keywords |
 |---|---|---|---|---|
-| Product entry point | [README.md](../README.md) | What is this product, what does it look like, and how does someone get started? | product, screenshots, features, platforms, configuration, quickstart install and build |
-| Product intent | [Design.md](Design.md) | Why is the product designed this way? | intent, motivations, design prescriptions, influences |
-| Product invariants | [ProductInvariants.md](ProductInvariants.md) | What must remain true regardless of implementation? | acceptance properties, commitments, implementation-independent rules |
-| Visual vocabulary | [VisualVocabulary.md](VisualVocabulary.md) | What rules should you follow to satisfy visual product invariants? | visual rules, recognizability, glyph system, channels, silhouette |
-| Visual evidence | [UserInterface.md](UserInterface.md) | What does the current product look like? | visual details, information display, screenshots, geometry, fonts, palettes |
-| Runtime architecture | [ArchitectureLedger.md](ArchitectureLedger.md) | How is the current watch face implementation organized? | implementation, runtime, ownership, boundaries, lifecycle, modules |
-| Source organization | [SourceMap.md](SourceMap.md) | Which source files exist, and how do they relate? | source map, headers, modules, QA tree, ownership edges |
-| Settings and configuration | [Settings_and_Configuration.md](Settings_and_Configuration.md) | How do settings move from Clay through PKJS, AppMessage, C, persistence, and runtime effects? | settings, Clay, messageKeys, PKJS normalization, persistence, defaults, validation |
-| Build system | [Build.md](Build.md) | How is the project built, installed, and wired for editor tooling? | build flow, compile database generation, install flow, editor tooling, build-stage ownership |
-| Validation system | [Validation.md](Validation.md) | How is the project validated operationally, and what evidence should a run produce? | validation flow, scenarios, runtime validation, artifacts, reports, visual review |
-| Contributor workflow | [Contributing.md](Contributing.md) | How should contributors change the project safely? | contributor workflow, review discipline, C-coding decisions, documentation QA |
+| Product entry point | [Watchface_Readme](../README.md) | Introduces the watch face and gets a new user started. | product, screenshots, features, platforms, configuration, quickstart install and build |
+| Product intent | [Design](Design.md) | Explains the design intent behind the product. | intent, motivations, design prescriptions, influences |
+| Product invariants | [ProductInvariants](ProductInvariants.md) | Defines the product properties that must remain true. | acceptance properties, commitments, implementation-independent rules |
+| Visual vocabulary | [VisualVocabulary](VisualVocabulary.md) | Defines the visual rules that make those properties recognizable. | visual rules, recognizability, glyph system, channels, silhouette |
+| Source organization | [SourceMap](SourceMap.md) | Maps source files to their responsibilities and relationships. | source map, headers, modules, QA tree, ownership edges |
+| Visual evidence | [UserInterface](UserInterface.md) | Records the current visual realization of the product. | visual details, information display, screenshots, geometry, fonts, palettes |
+| Runtime architecture | [ArchitectureLedger](ArchitectureLedger.md) | Describes the current runtime structure and ownership boundaries. | implementation, runtime, ownership, boundaries, lifecycle, modules |
+| Settings and configuration | [SettingsandConfiguration](SettingsandConfiguration.md) | Describes the settings path from configuration to runtime behavior. | settings, Clay, messageKeys, PKJS normalization, persistence, defaults, validation |
+| Build system | [Build](BuildandInstall.md) | Describes build, install, and editor-tooling operations. | build flow, compile database generation, install flow, editor tooling, build-stage ownership |
+| Validation system | [Validation](Validation.md) | Describes validation paths and the evidence each path produces. | validation flow, scenarios, runtime validation, artifacts, reports, visual review |
+| Contributor workflow | [Contributing](Contributing.md) | Guides contributors through changes, validation, and review. | contributor workflow, review discipline, C-coding decisions, documentation QA |
+| QA system architecture | [QA_Readme](../qa/README.md) | Explains how to operate the QA harness and inspect its artifacts. | harness flow, commands, artifacts, Python ownership, shell boundary |
+| QA test cases and plans | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) | Shows how to write scenarios, suites, steps, and fixtures. | suites, scenarios, steps, grammar, fixtures |
+| QA implementation flow | [QA_Harness_Implementation_Flow](../qa/docs/QA_Harness_Implementation_Flow.md) | Maps the live harness execution, inspection, and reporting flow. | functions, ownership, execution flow, inspection flow, validation gates |
+| Documentation governance | [Documentation_Ontology](Documentation_Ontology.md) | Defines document ownership, relationships, and publishing rules. | ontology, canonical homes, document relationships, publishing |
 
 ## Prescriptive vs. Evidentiary Documents
 
 The documentation intentionally separates product specification from
 implementation.
 
-[README.md](../README.md) is the one audience exception. It is written for a casual user who
+[Watchface_Readme](../README.md) is the one audience exception. It is written for a casual user who
 may never read another file in the repository, so it may lightly summarize
 product behavior and include a small number of screenshots even when the
 canonical details live elsewhere.
 
-Prescriptive documents:
-
-1. [Design.md](Design.md)
-2. [ProductInvariants.md](ProductInvariants.md)
-3. [VisualVocabulary.md](VisualVocabulary.md)
-
+**Prescriptive documents**
 These documents explain intent, define acceptance properties, and specify
-visual rules. They leave implementation details to the following
-**Evidentiary / implementation** documents:
+visual rules.
 
-1. [UserInterface.md](UserInterface.md)
-2. [ArchitectureLedger.md](ArchitectureLedger.md)
-3. [SourceMap.md](SourceMap.md)
-4. [Settings_and_Configuration.md](Settings_and_Configuration.md)
-5. [Build.md](Build.md)
-6. [Validation.md](Validation.md)
-7. [Contributing.md](Contributing.md)
+1. [Design](Design.md)
+2. [ProductInvariants](ProductInvariants.md)
+3. [VisualVocabulary](VisualVocabulary.md)
 
+**Evidentiary / implementation documents**
 These documents demonstrate, implement, build, validate, and govern the current
-product.
+product and its QA system.
+
+1. [UserInterface](UserInterface.md)
+2. [ArchitectureLedger](ArchitectureLedger.md)
+3. [SourceMap](SourceMap.md)
+4. [SettingsandConfiguration](SettingsandConfiguration.md)
+5. [Build](BuildandInstall.md)
+6. [Validation](Validation.md)
+7. [Contributing](Contributing.md)
+8. [QA_Readme](../qa/README.md)
+9. [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md)
+10. [QA_Harness_Implementation_Flow](../qa/docs/QA_Harness_Implementation_Flow.md)
+
+## QA Documentation Connections
+
+The QA documents form one connected subsystem with separate ownership:
+
+- `docs/Validation.md` tells contributors which validation path to run.
+- `docs/Contributing.md` tells contributors how to apply the validation and
+  documentation workflow while changing the repository.
+- `qa/README.md` explains the harness structure and public commands.
+- `qa/docs/WritingTestCasesAndPlans.md` defines test-plan anatomy, grammar, and fixtures.
+- `qa/QA_Harness_Implementation_Flow.md` maps live functions and execution flow.
+- report payload and rendering rules belong in the implementation-flow section
+  that documents the live reporting path.
+
+Generated run artifacts under `qa/qa-runs/` are evidence, not documentation,
+and are not part of the checked-in documentation corpus.
 
 ## Emergent Properties
 

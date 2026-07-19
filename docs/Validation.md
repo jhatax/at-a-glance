@@ -1,42 +1,46 @@
 # Validation
 
-This document is the contributor-facing entry point for validating At A Glance.
-It explains what validation is for, which validation path to use, and what
-evidence a change should produce.
+This document is the contributor-facing entry point for validating *At A Glance*. It explains what validation is for, which validation path to use, and what evidence a change should produce.
 
-Use [../qa/README.md](../qa/README.md) for how the validation system has been architected.
-Use [../qa/QAScenarioGrammar.md](../qa/QAScenarioGrammar.md) for how validation steps and scenarios can be defined.
+**Key document relationships**
+
+```text
+`Contributing` covers the contributor flow at a high-level
+|
+V
+`Build` describes the build flow
+|
+V
+`this` describes validation and introduces the QA harness
+|
+V
+[QA_Readme](../qa/README.md) dives into executing and creating QA plans for the watch face
+  |_ [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) for scenario and suite authoring
+```
 
 ## Required Reading
 
-- [Build.md](Build.md) for build, install, and editor-tooling support.
-- [ArchitectureLedger.md](ArchitectureLedger.md) for runtime ownership and
-  lifecycle boundaries.
-- [UserInterface.md](UserInterface.md) for visual implementation evidence.
-- [Settings_and_Configuration.md](Settings_and_Configuration.md) for settings,
-  message-key, transport, and persistence contracts.
+- [Build](BuildandInstall.md) for build, install, and editor-tooling support.
+- [ArchitectureLedger](ArchitectureLedger.md) for runtime ownership and lifecycle boundaries.
+- [UserInterface](UserInterface.md) for visual implementation evidence.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for settings, message-key, transport, and persistence contracts.
 
-## Validation Purpose
+## Validation Goals
 
-The validation layer helps you confirm that watch face changes continue to satisfy architecture and visual invariants.
+The validation layer helps you confirm that watch face changes continue to satisfy architecture and visual invariants. Core capabilities:
 
-Validation exists to:
-
-1. prove that the product still builds
-2. exercise runtime paths affected by a change
-3. capture evidence for inspection
-4. make release checks repeatable
-5. keep visual signoff explicit and human-owned
-
-Validation makes evidence visible to exercise product judgment.
+1. exercise runtime paths affected by a change
+2. capture evidence for inspection
+3. make release checks repeatable
+4. keep visual signoff explicit and human-owned
 
 ## Validation Invariants
 
-- Maintain clean separation between its runtime and that of the watch face.
+- Maintain clean separation between QA and watch face runtimes.
 - Exercise the same runtime-message contract as the watch face.
 - Scenario evidence must be repeatable and comparable across runs.
-- Validation tooling doesn't attempt to interpret test reports, leaving confirmation & sign-off to the operator.
 - Generated validation artifacts are not saved to the repository.
+- The operator reviews evidence and owns signoff.
 
 ## Choose A Validation Path
 
@@ -48,7 +52,7 @@ Use the narrowest path that proves the change.
 | Build tooling | Run the affected build or compile-database path. |
 | Runtime C change | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
 | Settings, AppMessage, or persistence | Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
-| UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. |
+| UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, double-tap and confirm the mode changes and the watch repaints. |
 | Release candidate | Run the release scenario path and complete manual signoff. |
 
 If a validation path cannot be run, state the gap explicitly in the closeout.
@@ -70,57 +74,48 @@ Before release, validation should cover:
 - successful build
 - supported emulator behavior
 - settings defaults and applied values
+- double-tap display-mode changes and repaint behavior
 - weather, battery, health, and display-mode behavior
 - screenshot evidence for visual review
 - manual config-page review
 - manual hardware-install check when release confidence requires it
 - known limitations or unchecked items
 
-`release-core` is the normal pre-release scenario. Use `release-full` when the
-change or release risk justifies broader supported-emulator coverage.
+`pre-release-gate` is the canonical pre-release QA plan that comprehensively validates watch face code paths.
 
 ```sh
-#exercise validation scenarios
-./aag-build-qa.sh --scenario release-core
-./aag-build-qa.sh --scenario release-full
+#exercise validation targets
+./aag-build-qa.sh --qaplan pre-release-gate
 ```
 
-## Diving deeper into Validation Options
+## Validation of Watch Face Functionality
 
-### 1. Validation using QA Scenarios
+### 1. Using QA Scenarios and Suites
 
-Out-of-the-box scenarios:
+Out-of-the-box targets:
 
 - `canary`: Minimal proof that scenario loading and step execution work.
-- `dev-smoke`: Fast daily confidence on `emery`.
-- `release-core`: Representative pre-release validation with screenshot
-  evidence and manual signoff.
-- `release-full`: Broad supported-emulator validation with screenshot evidence
-  and manual signoff.
+- `dev-smoke`: Fast daily confidence on the `qa-emery` suite.
+- `pre-release-gate`: Representative pre-release validation with screenshot
+  evidence and manual signoff across the emulator QA suites.
 
-Scenario grammar, concrete step fields, include behavior, and authoring rules
-live in [../qa/QAScenarioGrammar.md](../qa/QAScenarioGrammar.md).
-
-Use the `aag-build-qa.sh` entry point to validate scenarios.
+Use the `aag-build-qa.sh` entry point to execute scenarios, review and compare past qa runs, and validate qa plans for correctness.
 
 ```sh
-#exercise validation scenarios
-./aag-build-qa.sh --scenario canary
-./aag-build-qa.sh --scenario dev-smoke
-./aag-build-qa.sh --scenario release-core
+./aag-build-qa.sh --qaplan canary
+./aag-build-qa.sh --qaplan dev-smoke
+./aag-build-qa.sh --qaplan pre-release-gate
 
-#view validation reports and outputs, starting with the last-10 runs
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
-./aag-build-qa.sh --compare <run-a> [run-b] [run-c]
-./aag-build-qa.sh --validate-scenario <name-or-path>
+./aag-build-qa.sh --compare <run-a> [run-b ...]
+./aag-build-qa.sh --validate <name-or-path>
 ```
 
-Use `--dry-run` with a scenario to inspect the resolved execution plan without
-creating a run:
+Use `--dry-run` with a scenario to inspect the resolved execution plan without creating a run:
 
 ```sh
-./aag-build-qa.sh --scenario dev-smoke --dry-run
+./aag-build-qa.sh --qaplan dev-smoke --dry-run
 ```
 
 Use `--force` only after reviewing the resolved execution plan.
@@ -129,7 +124,7 @@ Scenario runs write evidence under: `qa/qa-runs/<run-id>/`
 
 Typical evidence includes:
 
-- `report.md`
+- `summary.md`
 - `report.json`
 - `run.json`
 - `commands.log`
@@ -142,11 +137,10 @@ To view evidence after a scenario run:
 ```sh
 # to view a summary of the last 10-runs
 ./aag-build-qa.sh --runs
-# to view evidence generated during a specific scenario
-`./aag-build-qa.sh --view <run-id>` to locate a run report after execution.
+./aag-build-qa.sh --view <run-id>
 ```
 
-### 2. Validation using the `pebble` emulator
+### 2. Using the `pebble` emulator
 
 Use manual emulator commands for focused diagnosis or when a scenario would be
 too broad for the change under review.
@@ -173,7 +167,7 @@ pebble send-app-message --emulator emery --int 10006=0
 pebble send-app-message --emulator emery --int 10006=2
 ```
 
-Use [Settings_and_Configuration.md](Settings_and_Configuration.md) for the
+Use [SettingsandConfiguration](SettingsandConfiguration.md) for the
 message-key catalog and transport contract.
 
 #### One-Shot Health
@@ -194,7 +188,7 @@ pebble send-app-message --emulator emery --int 10021=0
 pebble emu-app-config
 ```
 
-### 3. Visual Validation using Debug Builds
+### 3. Visually using Debug Builds
 
 `ATAGLANCE_DEBUG` is an optional build-time gate for visual and runtime
 diagnosis.
@@ -212,11 +206,8 @@ builds unless the debug behavior is intentionally being inspected.
 
 ## Further Reading
 
-- [../qa/README.md](../qa/README.md) for QA System implementation details.
-- [../qa/QAScenarioGrammar.md](../qa/QAScenarioGrammar.md) for scenario and step
-  authoring.
-- [Build.md](Build.md) for build, install, and editor-tooling support.
-- [Contributing.md](Contributing.md) for contributor workflow and review
-  discipline.
-- [Settings_and_Configuration.md](Settings_and_Configuration.md) for settings,
-  message-key, and transport obligations.
+- [QA_Readme](../qa/README.md) for QA System implementation details.
+- [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) for test-plan anatomy, grammar, and step authoring.
+- [Build](BuildandInstall.md) for build, install, and editor-tooling support.
+- [Contributing](Contributing.md) for contributor workflow and review discipline.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for settings, message-key, and transport obligations.

@@ -14,13 +14,20 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 - [Pebble App Store: At A Glance](https://apps.repebble.com/7727666da5c84c259b3a70b3)
 
+To build from source:
+
+```sh
+git clone https://github.com/jhatax/at-a-glance.git
+cd at-a-glance
+```
+
 - If you've built it locally:
 
 ```sh
 pebble install --phone YOUR_PHONE_IP
 ```
 
-`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app. If the app reports a `169.254.x.x` address, reconnect Wi-Fi, confirm Local Network permission, and restart Developer Connection until it reports a LAN address such as `192.168.x.x` or `10.x.x.x`.
+`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app, which must be `192.168.x.x` or `10.x.x.x`.
 
 ## Features
 
@@ -31,6 +38,7 @@ pebble install --phone YOUR_PHONE_IP
 - Steps, progress, and configurable daily goal (if Pebble Health is available)
 - Heart rate (if Pebble Health is available)
 - Display modes for monochrome and color devices
+- Double-tap to cycle display modes
 - Settings page on the connected phone
 
 ## Personalization options:
@@ -48,14 +56,6 @@ Settings are persisted on the watch.
 ## Supported Platforms
 
 This watch face is compatible with all Pebble smartwatch models.
-
-- `aplite` - Pebble / Pebble Steel, black and white
-- `basalt` - Pebble Time / Pebble Time Steel, color
-- `diorite` - Pebble 2, black and white
-- `emery` - Pebble Time 2, color
-- `flint` - Pebble 2 Duo, black and white
-- `chalk` - Pebble Time Round
-- `gabbro` - Pebble Round 2
 
 ## Build
 
@@ -97,10 +97,15 @@ pebble emu-app-config
 
 ## Further Reading
 
-- [docs/Contributing.md](docs/Contributing.md) for contributor workflow, validation, and review discipline.
-- [docs/Build.md](docs/Build.md) for build, install, and editor-tooling details.
-- [docs/Validation.md](docs/Validation.md) for validation profiles, evidence, and QA flows.
-- [docs/UserInterface.md](docs/UserInterface.md) for the full visual reference implementation.
+- [Contributing](docs/Contributing.md) for contributor workflow, validation, and review discipline.
+- [Build](docs/BuildandInstall.md) for build, install, and editor-tooling details.
+- [Validation](docs/Validation.md) for validation profiles, evidence, and QA flows.
+- [UserInterface](docs/UserInterface.md) for the full visual reference implementation.
+- [QA_Readme](qa/README.md) for the QA harness commands, ownership, and artifacts.
+- [WritingTestCasesAndPlans](qa/docs/WritingTestCasesAndPlans.md) for scenario and suite authoring.
+
+The repository includes `qa/` for the harness, `qa/scenarios/` for named plans,
+and `qa/qa-runs/` for local validation evidence.
 
 ## License
 

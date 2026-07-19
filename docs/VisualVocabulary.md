@@ -1,16 +1,14 @@
 # Visual Vocabulary
 
-This document defines rules for how the watch face can satisfy legibility
-and automatic perception invariants visually.
+This document defines **rules** for how the watch face can satisfy legibility and automatic perception invariants visually.
 
-Rules and ideas should apply to shared watch face composition, channel
-responsibilities, glyph selection, color selection, display-mode behavior,
-and representing out-of-range information.
+- Rules and ideas should apply to shared watch face composition, channel responsibilities, glyph selection, color selection, display-mode behavior, and representing out-of-range information.
 
-These rules must stay relevant across implementations.
+- These rules must stay relevant across implementations.
 
 **Key document relationships**
 
+```text
 `Design` establishes the motivation, foundational concepts, and overarching usability outcomes
 for the watch face.
 |
@@ -18,7 +16,8 @@ V
 `ProductInvariants` states **what** must be true to achieve usability outcomes across devices.
 |
 V
-`VisualVocabulary`, i.e. `this`, defines the visual grammar that *can* satisfy visual invariants.
+`this` defines the visual grammar that *can* satisfy visual invariants.
+```
 
 ## Visual Channels & Responsibilities
 
@@ -31,8 +30,7 @@ V
 
 2. Nothing on screen interprets the data when direct presentation is enough.
 
-3. Text is the primary glance surface. Icons support recognition, but they do
-   not carry the product alone.
+3. Text is the primary glance surface. Icons support recognition, but they do not carry the product alone.
 
 ## Immediate Identifiability
 
@@ -41,48 +39,32 @@ Immediate identifiability satisfies automatic perception.
 - Text is primary and carries exact values.
 - Icons identify information and support recognition.
 - Numbers quantify values.
-- Text-only metrics are acceptable when an icon cannot be created or does not
-  fit the platform.
+- Text-only metrics are acceptable when an icon cannot be created or does not fit the platform.
 - Icon-only metrics are not acceptable.
 - Every icon and glyph must work in black and white.
-- Identifiability matters at watch scale, not only in enlarged mockups or
-  editor views.
+- Identifiability matters at watch scale, not only in enlarged mockups or editor views.
 
 ## Surface Composition
 
-A shared watch face composition across all Pebbles satisfies
-anchoring information to stable locations on screen.
-
-```text
-top steps layer with progress and state
-dominant bold and centered time
-centered battery track and plugged-in bolt
-weather/date context
-bottom heart-rate layer with state
-```
+A shared watch face **stack** across all Pebbles satisfies anchors information to stable locations on screen.
 
 - This stack is part of the product's visual DNA.
-- All devices (different sizes and geometries) implement the same information
-  hierarchy and stack.
-- Text conveys information precisely and independent of supporting visual
-  channels.
+- All devices (different sizes and geometries) implement the same information hierarchy and stack.
+- Text conveys information precisely and independent of supporting visual channels.
 - Icons and progress bars support text in glanceability but can be hidden.
 - Negative space is used to serve glanceability.
 
-**Display hierarchy invariant** is the location and order in which time,
-battery track, weather, and date are displayed.
+**Display hierarchy invariant** is the location and order in which time, battery track, weather, and date are displayed.
 
 ## Glyph and Icon Selection
 
-1. All icons and glyphs satisfy the principal design invariant of automatic
-   recognition on all supported Pebble devices:
+1. All icons and glyphs satisfy the principal design invariant of automatic recognition on all supported Pebble devices:
 
 - Color, Monochrome
 - Compact, Full
 - Rectangular, Round
 
-2. Use custom glyphs when the product needs stronger recognition
-   than borrowed icon sets can provide.
+2. Use custom glyphs when the product needs stronger recognition than borrowed icon sets can provide.
 
 3. Color glyphs to show progress only when glanceability is enhanced.
 
@@ -151,13 +133,10 @@ battery track, weather, and date are displayed.
 ### Palettes
 
 - Organize color decisions using hierarchical palettes.
-- Select colors in each palette as a whole; do not convey different
-  states or information with the same color.
+- Select colors in each palette as a whole; do not convey different states or information with the same color.
 - Each palette uses consistent vocabulary for current metric state.
-- State changes remain visible on monochrome devices or when richer
-  palettes are unavailable.
-- If palette resolution fails, the display must degrade to a simple
-  black-and-white presentation rather than hiding data.
+- State changes remain visible on monochrome devices or when richer palettes are unavailable.
+- If palette resolution fails, the display must degrade to a simple black-and-white presentation rather than hiding data.
 
 ## Absence Language
 
@@ -172,21 +151,15 @@ state, and weather conditions.
 
 - Text carries values; icons identify the metric.
 - Progress and state cues support the metric, but they do not replace text.
-- Metric marks should use familiar metaphors that read immediately at watch
-  scale.
-- Weather glyphs should be condition-first and use clouds only when they
-  improve recognition.
-- Battery and power state must remain identifiable without relying on color
-  alone.
-- Color may reinforce state, but shape, silhouette, and placement carry the
-  primary recognition burden.
+- Metric marks should use familiar metaphors that read immediately at watch scale.
+- Weather glyphs should be condition-first and use clouds only when they improve recognition.
+- Battery and power state must remain identifiable without relying on color alone.
+- Color may reinforce state, but shape, silhouette, and placement carry the primary recognition burden.
 
 ## Visual Validation
 
-Visual validation is critical evidence for Product Invariants. A rule is not
-confirmed until the product remains immediately identifiable, glanceable, and
-semantically stable on the supported display capabilities it affects.
+Visual validation is critical evidence for Product Invariants. A rule is not confirmed until the product is immediately identifiable, glanceable, and semantically stable on the supported display capabilities it affects.
 
 ## Further Reading
 
-- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
+- [UserInterface](UserInterface.md) for the full visual reference implementation.

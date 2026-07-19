@@ -11,14 +11,16 @@ satisfy these properties.
 
 **Key document relationships**
 
+```text
 `Design` establishes the motivation, foundational concepts, and overarching usability outcomes
 for *At A Glance*, the entire watch face.
 |
 V
-`ProductInvariants`, i.e. `this`, states **what** must be true to achieve usability outcomes across devices.
+`this` states **what** must be true to achieve usability outcomes across devices.
 |
 V
 `VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
+```
 
 ## Glanceability & Automatic Perception
 

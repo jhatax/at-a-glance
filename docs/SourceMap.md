@@ -7,21 +7,22 @@ runtime behavior, product rules, visual rules, and build/validation policy.
 
 ## Required Reading
 
-- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
-- [UserInterface.md](UserInterface.md) for the full visual reference implementation.
+- [ArchitectureLedger](ArchitectureLedger.md) for the runtime architecture.
+- [UserInterface](UserInterface.md) for the full visual reference implementation.
 
 ## Feature, QA, and Docs Organization
 
-Four major folders:
+Five major folders:
 
 1. ./src: Watch face features, modules, surfaces, and adapters
 2. ./resources: Fonts, icons, and images
-3. ./qa: Build and test harness modules
+3. ./qa: Build and test harness module, test plans, output
 4. ./docs: Watch face documentation
+5. ./qa/docs: QA documentation for test plans, automation harness flow
+
+All paths in sub-sections are relative to repository home.
 
 ### Feature Source
-
-All paths relative to repository home.
 
 ```text
 resources/
@@ -36,10 +37,11 @@ wscript
 
 ```text
 qa/
-qa/data
 qa/lib
-qa/stages
-qa/tests
+qa/python
+qa/fixtures
+qa/scenarios
+qa/qa-runs
 ```
 
 ### Documentation
@@ -48,9 +50,10 @@ qa/tests
 README.md
 docs/
 qa/README.md
+qa/docs/
 ```
 
-## Relationship Map
+## Watch Face Product Implementation Map
 
 ```text
 ────────────────────────────────────────────────────────────────────────────
@@ -163,9 +166,27 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
   -> feature modules own their Pebble layers and source state
 ```
 
+## QA Relationship Map
+
+```text
+./aag-build-qa.sh
+  -> qa/lib/*.sh
+       -> parse, validate, reset, route, and clean up
+  -> qa/runner.py
+       -> qa/python/scenarios.py -> load plans and resolve steps
+       -> qa/python/execution.py -> execute steps and capture evidence
+       -> qa/python/runtime.py -> finalize report.json and summary.md
+       -> qa/python/comparison.py -> view and compare canonical payloads
+       -> qa/python/report.py -> render operator reports
+
+qa/fixtures/  -> parser and harness correctness inputs
+qa/qa-runs/   -> local validation evidence
+qa/scenarios/ -> test plans
+```
+
 ## Debug Source Placement
 
-`ATAGLANCE_DEBUG` source placement:
+Setting `ATAGLANCE_DEBUG` to 1/0 and flipping/unflipping the comment in `wscript` enables and disables `DEBUG` mode for the watch face:
 
 - `src/modules/watchface_debug.h` **owns debug-gate normalization only**, with `wscript`
   as the build-time enable point.
@@ -173,7 +194,7 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
 
 ## Future Reading
 
-- [Build.md](Build.md) for build activation and editor-tooling support.
-- [Validation.md](Validation.md) for emulator validation and QA evidence.
-- [Contributing.md](Contributing.md) for contributor workflow, validation, logging, and review discipline.
-- [../qa/README.md](../qa/README.md) for Build & QA harness source navigation.
+- [Build](BuildandInstall.md) for build activation and editor-tooling support.
+- [Validation](Validation.md) for emulator validation and QA evidence.
+- [Contributing](Contributing.md) for contributor workflow, validation, logging, and review discipline.
+- [QA_Readme](../qa/README.md) for Build & QA harness source navigation.

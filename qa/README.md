@@ -1,159 +1,80 @@
-# QA System
+# QA Harness
 
-This directory contains the implementation of the At A Glance QA System used by
-`../aag-build-qa.sh`.
+The QA harness validates *At A Glance* based on steps defined in named scenarios and suites. The public entrypoint is `../aag-build-qa.sh`.
 
-Use this document to understand how the harness is built. Use
-[../docs/Validation.md](../docs/Validation.md) to decide which validation path a
-contributor should run and what evidence a change needs.
+## Command Flow
 
-## Public Entrypoint
+The shell entrypoint parses and validates the request, performs wrapper-owned reset and cleanup, and invokes Python. Python owns plan loading, step execution, screenshots, logs, JSON reports, Markdown reports, and exit status.
 
-The public entrypoint is:
+```text
+aag-build-qa.sh
+  -> parse and validate the request
+  -> reset the selected emulator state
+  -> runner.py scenario-exec ...
+       -> load the scenario or suite
+       -> expand ordered concrete steps
+       -> execute each step
+       -> finalize report.json and summary.md
+  -> clean up wrapper-owned state
+```
+
+## Commands
 
 ```sh
-./aag-build-qa.sh
+./aag-build-qa.sh --qaplan <name>
+./aag-build-qa.sh --qaplan <name> --dry-run
+./aag-build-qa.sh --qaplan <name> --force
+./aag-build-qa.sh --validate <name-or-path>
+./aag-build-qa.sh --runs
+./aag-build-qa.sh --view <run-id-or-path>
+./aag-build-qa.sh --compare <run-a> [run-b ...]
 ```
 
-The entrypoint owns CLI parsing and top-level orchestration. It delegates
-scenario parsing, run bootstrap, report generation, stage execution, Pebble CLI
-interaction, and capability dispatch to the implementation files in `qa/`.
+Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for scenario and suite authoring. Use [Validation](../docs/Validation.md) to select the right validation path for a product change.
 
-## Core Boundary
+## Ownership
 
-Shell owns:
+`aag-build-qa.sh` owns the public shell boundary and wrapper lifecycle.
 
-- CLI argument parsing in `../aag-build-qa.sh`
-- request validation through `lib/validate.sh`
-- stage execution through `stages/`
-- Pebble CLI calls through `lib/pebble.sh`
-- AppMessage helpers through `lib/appmessage.sh`
-- scenario-step dispatch through `tests/`
-- run closeout through `lib/runtime.sh`
+`runner.py` owns Python command dispatch.
 
-Python owns:
+`python/scenarios.py` owns grammar parsing, policy validation, include resolution, concrete steps, and artifact identity.
 
-- scenario parsing and include expansion
-- artifact identity generation
-- run bootstrap state
-- report generation
-- run listing
-- report lookup
-- run comparison
+`python/execution.py` owns Pebble commands, step execution, screenshots, and command output.
 
-Each layer has distinct responsibilities, and any overlap between layers has been recorded as an explicit exception / decision.
+`python/runtime.py` owns run context, final facts, canonical JSON, and run closeout.
 
-## Command Classes
+`python/report.py` owns the shared Markdown renderer.
 
-### 1. Read-only coomands
-These do not create a new `qa/qa-runs/<run-id>/` directory.
+`python/comparison.py` owns run lookup, one-run summary lookup, and multi-run comparison orchestration.
 
-- `--help`
-- `--runs`
-- `--view <run-id-or-path>`
-- `--compare <run-id-or-path> [run-id-or-path ...]`
-- `--validate-scenario <name-or-path>`
-- `--dry-run` with `--scenario <name>`
+## Run Artifacts
 
-### 2. Direct commands
-These do not bootstrap a run, do not create `qa/qa-runs/<run-id>/`, do not
-emit a report, and write command output directly to stdout.
+Each run is stored under `qa/qa-runs/<run-id>/`:
 
-- `--build`
-- `--build-clean`
-- `--install`
-- `--phone <ip>`
-- `--wipe`
-- `--nuclear`
+- `report.json`: canonical finalized payload
+- `summary.md`: operator summary rendered from `report.json`
+- `commands.log`: aggregate command output
+- `logs/`: command logs retained by the execution flow
+- `screenshots/`: captured screenshots when enabled
 
-### 3. Scenario-run commands
-These bootstrap a run, create artifacts, execute selected stages, and emit closeout evidence.
+Comparison artifacts are stored under `qa/comparisons/`. Reports link to local artifacts and place screenshots beside their corresponding step rows.
 
-- `--scenario <name>`
+## Automation Unit Tests
 
-## Scenario Execution
+Run the harness correctness tests from the repository root:
 
-Scenario files live in `scenarios/`.
-
-Scenario execution uses this flow:
-
-```text
-aag-build-qa.sh --scenario <name>
-  -> Python loads and validates qa/scenarios/<name>.scenario
-  -> Python expands INCLUDE entries into a flat ordered STEP list
-  -> harness prints the resolved execution plan
-  -> operator confirms execution unless --force is present
-  -> Python bootstraps run state and writes scenario_steps.json
-  -> shell reads one concrete step at a time
-  -> shell dispatches to qa/tests/<capability>.sh
-  -> shell records stage, step, assertion, command, and screenshot evidence
-  -> Python finalizes report.json and report.md
+```sh
+python3 -m unittest discover -s qa/tests -p 'test_*.py'
 ```
 
-Read [QAScenarioGrammar.md](QAScenarioGrammar.md) for the scenario grammar, step
-shape, artifact identity rules, and scenario-authoring guide.
-
-## Artifact Model
-
-Run artifacts live under ./qa so validation evidence survives clean builds
-and remains comparable across runs:
-
-```text
-qa/qa-runs/<run-id>/
-```
-
-Typical run artifacts are:
-
-- `run.json`: requested and resolved run state
-- `scenario_steps.json`: concrete steps after scenario expansion
-- `commands.log`: commands executed by the harness
-- `report.json`: machine-readable report
-- `report.md`: human-readable report
-- `screenshots/index.tsv`: screenshot index
-- `screenshots/*.png`: captured screenshots when enabled
-- `logs/*.log`: command output logs
-
-Comparison artifacts are written under `qa/comparisons/`.
-
-## Report Model
-
-Summary reports are generated during finalization. to facilitate evidence inspction, include screenshots, and validation activities.
-
-## Implementation Layout
-
-- `runner.py`: Python CLI used by the shell entrypoint.
-- `python/scenarios.py`: Scenario parsing, include expansion, validation, and
-  artifact identity generation.
-- `python/state.py`: Bootstrap state intake from the shell entrypoint.
-- `python/runtime.py`: Run bootstrap, finalization, report emission, run listing,
-  report lookup, and comparison output.
-- `lib/common.sh`: Shared shell helpers.
-- `lib/state.sh`: Shell-side global state defaults and step-state loading.
-- `lib/runtime.sh`: Shell-side lifecycle, artifact paths, command logging,
-  screenshot indexing, assertion recording, scenario dispatch, and closeout.
-- `lib/validate.sh`: Request validation.
-- `lib/pebble.sh`: Pebble CLI wrappers.
-- `lib/appmessage.sh`: AppMessage transport helpers.
-- `stages/reset.sh`: Emulator reset and cleanup actions.
-- `stages/build.sh`: Pebble build stage.
-- `stages/compile_db.sh`: Compile database generation.
-- `stages/install.sh`: Emulator and phone install stage.
-- `tests/weather.sh`: Weather step dispatcher.
-- `tests/battery.sh`: Battery step dispatcher.
-- `tests/health.sh`: Health step dispatcher.
-- `data/all_qa_vectors.sh`: Static supported emulator and vector data.
-- `scenarios/`: Named scenario files.
-- `fixtures/`: Invalid scenario inputs used to prove grammar rejection.
-- `qa-runs/`: Run artifacts.
-- `comparisons/`: Comparison reports.
+The repo contains grammar fixtures used by unit tests under `qa/fixtures/`.
 
 ## Further Reading
 
-- [QAScenarioGrammar.md](QAScenarioGrammar.md) for scenario grammar, step shape,
-  artifact identity, and authoring guidance.
-- [../docs/Validation.md](../docs/Validation.md) for the contributor-facing
-  validation contract.
-- [../docs/Build.md](../docs/Build.md) for build, install, and editor-tooling
-  support.
-- [../docs/Contributing.md](../docs/Contributing.md) for contributor workflow and
-  review discipline.
+- [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for authoring and fixtures.
+- [QA_Harness_Implementation_Flow](docs/QA_Harness_Implementation_Flow.md) for
+  function ownership and execution flow.
+- [Validation](../docs/Validation.md) for contributor validation
+  choices and evidence review.
+- [Contributing](../docs/Contributing.md) for repository workflow.

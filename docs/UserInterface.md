@@ -6,13 +6,15 @@ realization, and screenshot status.
 
 **Key document relationships**
 
+```text
 `ProductInvariants` states **what** must be true for the entire watch face.
 |
 V
 `VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
 |
 V
-`UserInterface`, i.e. `this`, describes the UI that satisfies visual invariants.
+`this` describes the UI that satisfies visual invariants.
+```
 
 ## Visual Evidence
 
@@ -30,14 +32,14 @@ for legibility, placements, and compatibility with all devices.
 | <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint Black on White screenshot" width="130"><br>Flint: White on Black</b></center> | | |
 | | | |
 
-Glyph validation is covered in [Contributing.md](Contributing.md). It should be treated as a
+Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a
 priority when glyphs are modified or new glyphs are introduced.
 
 ### Settings
 
 The current Clay settings page is captured here as interface evidence only. The
 settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization,
-and persistence rules live in [Settings_and_Configuration.md](Settings_and_Configuration.md).
+and persistence rules live in [SettingsandConfiguration](SettingsandConfiguration.md).
 
 <img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page"/>
 
@@ -190,13 +192,16 @@ Font sizes: Customized for display sizes.
 - On color-capable watches, four modes are available.
 - On monochrome-capable watches, two monochrome-specific modes are available.
 - Each mode uses a defined palette to render text, icons, and convey state.
+- Double-tap the watch to cycle display modes.
+- The watch repaints immediately when the mode changes.
 
 This satisfies the invariant that choices are available on all devices.
 
 ### Display Mode Palette Characteristics
 
-- Each palette is composed of five mutually exclusive and collectively exhaustive sets of colors.
-- The combined palette for each mode satisfies the design invariant of perceptual fluency.
+The combined palette for each mode satisfies the design invariant of perceptual fluency. Colors within each palette are mutually exclusive to satisfy, "one visual channel, one responsibility", visual invariant.
+
+There are five sub-palettes that harmonize together to maximize contrast and convey state.
 
 1. Primary Display
 2. Module: Battery
@@ -318,7 +323,7 @@ into the current icon families:
 | `83-86` | Snow showers |
 | `87-99` | Thunderstorm |
 
-Current climate glyph realization:
+**Current climate glyph realization**
 
 - Day clear weather uses a sun glyph.
 - Night clear weather uses a filled/ringed clear glyph.
@@ -345,8 +350,8 @@ is drawn from the 28x28 design-space diagonal with three line segments and a
 
 ## Further Reading
 
-- [SourceMap.md](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
-- [Settings_and_Configuration.md](Settings_and_Configuration.md) for the settings catalog.
-- [Build.md](Build.md) for build, install, and editor-tooling support.
-- [Validation.md](Validation.md) for validation contract, scenarios, and visual review evidence.
-- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.
+- [SourceMap](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog.
+- [Build](BuildandInstall.md) for build, install, and editor-tooling support.
+- [Validation](Validation.md) for validation contract, scenarios, and visual review evidence.
+- [Contributing](Contributing.md) for contributor workflow, validation, and review discipline.

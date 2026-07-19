@@ -23,26 +23,26 @@ information simple to absorb and act on with minimal cognitive load.
   would compromise function, recognition, or glanceability.
 - Anchor information in stable display locations to reduce cognitive load.
 
-## Restraint And Negative Space
+## "Calm" And Negative Space
 
 Maintain clarity of information hierarchy on a calm screen,
 even when several metrics are present.
 
 - Keep the display ordered, not crowded.
 - Negative space is part of the design.
-- Visual restraint is part of the product, not leftover space.
 
 ## Intentional Experience Across Devices
 
-Every supported device deserves an equally intentional experience within the capabilities it supports.
+All supported devices deserves an equally intentional experience within the capabilities it supports.
 
 - Differences in shape, color capability, and screen class may change the layout, spacing, and treatment.
 - Those differences must not make any supported platform feel like a scaled copy or an afterthought.
+- Visual composure is core to the watch face's DNA.
 
 ## Shared Visual DNA
 
 - Define the information hierarchy and rules that establish shared visual DNA across all devices.
-- Shared visual DNA is about recognition, not about reusing the same coordinates on every device.
+- Shared visual DNA is about recognition; geometry dictates information placement on screen.
 
 ## Design Invariant
 

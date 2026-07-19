@@ -15,7 +15,7 @@ Use this document to understand:
 - runtime side effects
 - validation obligations when a setting changes
 
-Key implementation details:
+**Key implementation details**
 
 - Settings flow to and from the Clay configuration page through PKJS.
 - `ataglance.c` is responsible for settings persistence and lifecycle management.
@@ -24,8 +24,8 @@ Key implementation details:
 
 ## Required Reading
 
-- [ArchitectureLedger.md](ArchitectureLedger.md) for the runtime architecture.
-- [UserInterface.md](UserInterface.md) for details on the full visual reference implementation.
+- [ArchitectureLedger](ArchitectureLedger.md) for the runtime architecture.
+- [UserInterface](UserInterface.md) for details on the full visual reference implementation.
 
 ## Settings Catalog
 
@@ -67,7 +67,7 @@ keys. Those are AppMessage payloads, not persisted user settings.
 | `src/c/ataglance.c` | AppMessage tuple parsing, settings-save trigger, and HealthService side effects |
 | `src/modules/watchface_runtime_boundary.c` | Runtime setting validation, mutation, repaint/refresh decisions |
 | `src/modules/watchface.c` | Settings consumption during repaint and module refresh |
-| [docs/Settings_and_Configuration.md](Settings_and_Configuration.md) | Human-readable settings contract |
+| [SettingsandConfiguration](SettingsandConfiguration.md) | Human-readable settings contract |
 
 ## Clay And PKJS Flow
 
@@ -163,7 +163,7 @@ The current one-shot health keys are runtime-only constants:
 These are not Clay settings, not manifest-backed keys, and not persisted. They
 exist for focused QA and are consumed once by the health refresh path.
 
-[Validation.md](Validation.md) owns the operational command examples for these keys.
+[Validation](Validation.md) owns the operational command examples for these keys.
 This document references them only to keep the settings, data, and QA payloads
 separate.
 
@@ -235,8 +235,8 @@ Minimum checks:
 - The runtime refresh or repaint effect matches the setting's intended scope.
 - Manual QA commands and harness helpers use the current numeric mapping.
 
-Read [Build.md](Build.md) for build activation and [Validation.md](Validation.md)
-for emulator validation.
+Read [Build](BuildandInstall.md) for build activation, [Validation](Validation.md)
+for emulator validation (using `pebble` commands or the watch face's QA harness).
 
 ## Change Checklist
 
@@ -252,14 +252,14 @@ For any settings change:
   side effects.
 - Update `src/modules/watchface_runtime_boundary.c` for runtime validation,
   mutation, repaint, or refresh behavior.
-- Update [docs/Settings_and_Configuration.md](Settings_and_Configuration.md).
-- Update [Validation.md](Validation.md) only when validation flow changes.
-- Update [UserInterface.md](UserInterface.md) only when visible settings evidence or visual
+- Update [SettingsandConfiguration](SettingsandConfiguration.md).
+- Update [Validation](Validation.md) only when validation flow changes.
+- Update [UserInterface](UserInterface.md) only when visible settings evidence or visual
   consequences change.
 - Run the relevant build and validation path, or record the validation gap.
 
 ## Further Reading
 
-- [Build.md](Build.md) for build activation.
-- [Validation.md](Validation.md) for emulator validation and QA evidence.
-- [Contributing.md](Contributing.md) for contributor workflow, validation, and review discipline.
+- [Build](BuildandInstall.md) for build activation.
+- [Validation](Validation.md) for emulator validation and QA evidence.
+- [Contributing](Contributing.md) for contributor workflow, validation, and review discipline.
