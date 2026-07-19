@@ -30,8 +30,9 @@ static void apply_setting_data(
 
   if (data->parsed & WATCHFACE_DATA_DISPLAY_MODE) {
     if (DISPLAY_MODE_VALID(data->display_mode)) {
-      if (settings->display_mode != (uint8_t)data->display_mode) {
-        settings->display_mode = (uint8_t)data->display_mode;
+      SupportedDisplayModes mode = (SupportedDisplayModes)data->display_mode;
+      if (settings->display_mode != mode) {
+        settings->display_mode = mode;
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
       }
     } else {

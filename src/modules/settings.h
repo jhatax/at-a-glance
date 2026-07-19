@@ -20,7 +20,7 @@ enum {
   TIME_FMT_DEFAULT = TIME_FMT_24,
 };
 
-enum {
+typedef enum {
   DISPLAY_MODE_LIGHT_MONOCHROME = 0,
   DISPLAY_MODE_MIN = DISPLAY_MODE_LIGHT_MONOCHROME,
   DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT_MONOCHROME,
@@ -32,9 +32,10 @@ enum {
 #else
   DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_MONOCHROME,
 #endif
-};
+  DISPLAY_MODE_COUNT = DISPLAY_MODE_MAX + 1,
+} SupportedDisplayModes;
 
-typedef enum {
+enum {
   HR_SAMPLE_MINUTES_10 = 10,
   HR_SAMPLE_MINUTES_15 = 15,
   HR_SAMPLE_MINUTES_30 = 30,
@@ -43,7 +44,7 @@ typedef enum {
   HR_SAMPLE_MINUTES_DEFAULT = HR_SAMPLE_MINUTES_15,
   HR_SAMPLE_MINUTES_MIN = HR_SAMPLE_MINUTES_10,
   HR_SAMPLE_MINUTES_MAX = HR_SAMPLE_MINUTES_120,
-} HrSampleMinutes;
+};
 
 typedef enum {
   WEATHER_UPDATE_MINUTES_15 = 15,
@@ -75,7 +76,7 @@ typedef struct {
   // Add persisted fields at the bottom
   uint8_t temp_unit;
   uint8_t time_format;
-  uint8_t display_mode;
+  SupportedDisplayModes display_mode;
   uint8_t weather_update_minutes;
 #ifdef PBL_HEALTH
   uint8_t hr_sample_minutes;

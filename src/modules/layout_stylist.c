@@ -246,7 +246,7 @@ static const ColorPalette mono_light_palette = {
 // one of two static-constant structs with module-scope.
 void layout_watchface_update_palette(
   WatchfaceSurfaceStyle* style,
-  uint8_t display_mode) {
+  SupportedDisplayModes display_mode) {
   if (!style) {
     return;
   }

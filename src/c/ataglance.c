@@ -1,6 +1,7 @@
 #include <pebble.h>
 
 #include "ataglance_messages_adapter.h"
+#include "modules/settings.h"
 #include "modules/watchface.h"
 
 /*
@@ -51,6 +52,11 @@ static void tick_handler(struct tm* tick_time, TimeUnits units_changed);
 static void health_handler(HealthEventType event, void* context);
 #endif
 
+// Double-tap
+static AppTimer* s_tap_debounce_timer = NULL;
+static bool s_first_tap_seen = false;
+#define DOUBLE_TAP_TIMEOUT_MS 500
+
 static void battery_handler(
   BatteryChargeState state) {
   (void)state;
@@ -96,6 +102,35 @@ static void health_handler(
 }
 #endif
 
+static void tap_debounce_timer_callback(
+  void* data) {
+  s_first_tap_seen = false;
+}
+
+static void accel_tap_handler(
+  AccelAxisType axis,
+  int32_t direction) {
+  if (!s_first_tap_seen) {
+    s_first_tap_seen = true;
+    s_tap_debounce_timer =
+      app_timer_register(DOUBLE_TAP_TIMEOUT_MS, tap_debounce_timer_callback, NULL);
+  } else {
+    app_timer_cancel(s_tap_debounce_timer);
+    s_first_tap_seen = false;
+
+    WatchfaceEventData data = {0};
+    // It is sufficient to set these values because they trigger a health refresh
+    data.received = WATCHFACE_DATA_DISPLAY_MODE;
+    data.parsed = WATCHFACE_DATA_DISPLAY_MODE;
+    data.display_mode = (s_settings.display_mode + 1) % DISPLAY_MODE_COUNT;
+    APP_LOG(APP_LOG_LEVEL_WARNING,
+      "Received double-tap. Changing mode from %d to %d",
+      s_settings.display_mode,
+      data.display_mode);
+    watchface_apply_received_data(&data, &s_settings);
+  }
+}
+
 static void main_window_load(
   Window* window) {
   if (!window) {
@@ -138,6 +173,7 @@ static void init() {
   // Subscribe to services
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
+
 #ifdef PBL_HEALTH
   bool health_available = health_service_events_subscribe(health_handler, NULL);
   if (!health_available) {
@@ -147,6 +183,7 @@ static void init() {
     health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
   }
 #endif
+  accel_tap_service_subscribe(accel_tap_handler);
 
   app_message_register_inbox_received(inbox_received_callback);
   app_message_register_inbox_dropped(inbox_dropped_callback);
@@ -170,6 +207,7 @@ static void deinit() {
     s_health_events_subscribed = false;
   }
 #endif
+  accel_tap_service_unsubscribe();
   settings_save(&s_settings);
   window_destroy(s_window);
   s_window = NULL;
