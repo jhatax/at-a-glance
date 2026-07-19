@@ -2,7 +2,7 @@
   "name": "AtAGlance",
   "author": "Manoj Mehta",
   "description": "Get all the info you need, with a glance at your Pebble.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "keywords": [
     "pebble",
     "watchface"
