@@ -29,7 +29,6 @@ typeset -ga COMMAND_ARGS=()
 typeset -g PARSE_ERROR_MESSAGE=""
 typeset -ga EMULATORS=(${REPRESENTATIVE_EMULATORS[@]})
 
-
 source "${QA_DIR}/lib/argumentparser.sh"
 source "${QA_DIR}/lib/commandhandler.sh"
 source "${QA_DIR}/lib/pebbleadapter.sh"
@@ -37,7 +36,7 @@ source "${QA_DIR}/lib/runtimehelper.sh"
 source "${QA_DIR}/lib/runtimevalidator.sh"
 
 print_help() {
-  cat <<'EOF'
+  cat << 'EOF'
 Usage: ./aag-build-qa.sh [options]
 
 Options:
@@ -47,7 +46,7 @@ Options:
   -i,  --install          Install on selected emulators
   -r,  --runs             List the most recent QA runs
   -v,  --view RUN         Show the existing summary report for one run
-  -c,  --compare RUN...   Compare one, two, or three runs
+  -c,  --compare RUN...   Compare one to five runs
   --validate QA-PLAN      Validate a QA plan by name
   -p,  --phone IP         Install through Pebble mobile-app Developer Connection
   --qaplan QA-PLAN        Validate and run a named QA plan
@@ -98,7 +97,7 @@ command_is_scenario_exec || exit $HARNESS_EXIT_STATUS
 
 cleanup_actions || CLEANUP_EXIT_STATUS=$?
 
-if (( HARNESS_EXIT_STATUS == 0 && CLEANUP_EXIT_STATUS != 0 )); then
+if ((HARNESS_EXIT_STATUS == 0 && CLEANUP_EXIT_STATUS != 0)); then
   HARNESS_EXIT_STATUS=${CLEANUP_EXIT_STATUS}
 fi
 
