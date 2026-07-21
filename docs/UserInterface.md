@@ -18,7 +18,6 @@ Current device screenshots are checked in under `docs/assets/screenshots/`. Toge
 | <center><b><img src="assets/screenshots/at-a-glance-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-clearasceleste.png" alt="Emery Clear as Celeste screenshot" width="160"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-nightinoxford.png" alt="Emery Night in Oxford screenshot" width="160"><br>Emery: Night in Oxford</b></center> |
 | <center><b><img src="assets/screenshots/at-a-glance-chalk-blackonwhite.png" alt="Chalk Black on White screenshot" width="130"><br>Chalk: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="Gabbro White on Black screenshot" width="160"><br>Gabbro: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-chalk-clearasceleste.png" alt="Chalk Clear as Celeste screenshot" width="130"><br>Chalk: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford</b></center> |
 | <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black screenshot" width="130"><br>Flint: White on Black</b></center> | | |
-| | | |
 
 Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a priority when glyphs are modified or new glyphs are introduced.
 
@@ -26,7 +25,7 @@ Glyph validation is covered in [Contributing](Contributing.md). It should be tre
 
 The current Clay settings page is captured here as interface evidence only. The settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization, and persistence rules live in [SettingsandConfiguration](SettingsandConfiguration.md).
 
-<img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page"/>
+<img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page" width="320"/>
 
 ## Current Visual Stack
 
@@ -57,7 +56,7 @@ Coordinates are `x,y,w,h`.
 - Classification: full
 
 | Element | Frame |
-| --- | --- |
+| :--- | :--- |
 | Steps icon | `69,10,28,28` |
 | Steps text | `100,10,56,28` |
 | Steps progress | `69,38,87,4` |
@@ -78,7 +77,7 @@ Coordinates are `x,y,w,h`.
 - Classification: full
 
 | Element | Frame |
-| --- | --- |
+| :--- | :--- |
 | Steps icon | `99,10,28,28` |
 | Steps text | `130,10,56,28` |
 | Steps progress | `99,38,87,4` |
@@ -99,7 +98,7 @@ Coordinates are `x,y,w,h`.
 - Classification: compact
 
 | Element | Frame |
-| --- | --- |
+| :--- | :--- |
 | Steps icon | `69,10,18,18` |
 | Steps text | `90,10,40,18` |
 | Steps progress | `69,28,61,4` |
@@ -120,7 +119,7 @@ Coordinates are `x,y,w,h`.
 - Classification: compact
 
 | Element | Frame |
-| --- | --- |
+| :--- | :--- |
 | Steps icon | `51,6,18,18` |
 | Steps text | `72,6,40,18` |
 | Steps progress | `51,24,61,4` |
@@ -142,7 +141,7 @@ Coordinates are `x,y,w,h`.
 - Health: not present
 
 | Element | Frame |
-| --- | --- |
+| :--- | :--- |
 | Time text | `2,40,140,50` |
 | Battery track | `18,95,108,8` |
 | Battery fill | `19,96,106,6` |
@@ -158,10 +157,10 @@ The `layout_stylist` selects fonts by display class (compact or full) and font r
 Custom fonts: **Cabin** for time, **Barlow Condensed** for date and metrics. Font sizes: Customized for display sizes.
 
 | Role | Compact system font | Compact custom font | Full system font | Full custom font |
-| --- | --- | --- | --- | --- |
-| Time | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_42` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60` (Emery)<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (other full displays) |
-| Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
-| Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| :--- | :--- | :--- | :--- | :--- |
+| <b>Time</b> | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_42` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60` (Emery)<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (other full displays) |
+| <b>Date</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
 
 - Text metrics, coordinates, height, width, are defined per field.
 - Font selection depends on role, display class, and platform.
@@ -207,28 +206,27 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 - `Clear as Celeste`: `DISPLAY_MODE_LIGHT_COLOR` (on color)
 - `Night in Oxford`: `DISPLAY_MODE_DARK_COLOR` (on color)
 
-
 | Color role | Mono-Light BW | Mono-Dark BW | Mono-Light C | Mono-Dark C | Clear as Celeste | Night in Oxford |
-| --- | --- | --- | --- | --- | --- | --- |
-| **PRIMARY** |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **PRIMARY** | | | | | | |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Primary text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
 | Date | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
 | Time | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
-| **BATTERY** |
+| **BATTERY** | | | | | | |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
 | Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
 | Plugged In | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
-| **STEPS** |
+| **STEPS** | | | | | | |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
 | Approaching (`>70%` of goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
 | Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
-| **CLIMATE** |
+| **CLIMATE** | | | | | | |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
@@ -237,7 +235,7 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | Cloud | `GColorBlack` | `GColorWhite` | `GColorBlue` | `GColorElectricBlue` | `GColorBlue` | `GColorElectricBlue` |
 | Clear Ring (night) | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
 | Clear Fill | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
-| **BPM** |
+| **Heart-rate** | | | | | | |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
