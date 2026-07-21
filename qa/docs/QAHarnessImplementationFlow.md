@@ -2,10 +2,20 @@
 
 This document is the function-level implementation map for the QA harness.
 
+## Adjacent
+
+- [QA_Readme](../README.md) for public harness commands and artifacts.
+- [WritingTestCasesAndPlans](WritingTestCasesAndPlans.md) for plan grammar and fixtures.
+- [Validation](../../docs/Validation.md) for contributor validation paths and evidence.
+
+## Read Next
+
+- [WatchfaceImplementationFlow](../../docs/WatchfaceImplementationFlow.md) for the watch face implementation map.
+
 ## Architectural Goals
 
 1. Every function has a documented place in the execution flow.
-2. Every function has one responsibility and one clear handoff.s
+2. Every function has one responsibility and one clear handoff.
 3. Every function is in-use; no dead-code.
 
 ## Ownership Boundary
@@ -15,22 +25,33 @@ aag-build-qa.sh
   -> parse and validate the public request
   -> route one command family
 
-runner.py
+Build requests
+  -> tools/harness_shell/pebbleadapter.sh
+       -> tools/harness_py/runner.py build
+            -> PebbleAdapter.build()
+                 -> Pebble Tool SDK/Waf configure and build
+                 -> optional compile_commands.json generation for emery
+
+tools/harness_py/runner.py
   -> dispatch one Python command
 
-scenarios.py
+tools/harness_py/plans.py
   -> parse grammar and resolve concrete steps
 
-execution.py
+tools/harness_py/execution.py
   -> execute concrete steps and record execution facts
 
-runtime.py
+tools/harness_py/runtime.py
   -> create run context, finalize facts, build canonical payload
 
-report.py
+tools/harness_py/pebble.py
+  -> use Pebble Tool SDK/Waf for Python-owned builds
+  -> use libpebble2 for Python-owned emulator operations
+
+tools/harness_py/report.py
   -> render one or many canonical payloads as summary/comparison Markdown
 
-comparison.py
+tools/harness_py/comparison.py
   -> load canonical JSON, resolve runs, and orchestrate report output
 ```
 
@@ -45,10 +66,11 @@ aag-build-qa.sh
   -> parse_args()
   -> validate_config()
   -> handle_qa_plan_execution()
-       -> runner.py scenario-exec run-scenario|force-scenario
+       -> tools/harness_py/runner.py scenario-exec run-scenario|force-scenario
             -> load_plan()
             -> create_execution_context()
             -> run_plan_execution()
+                 -> load PebbleAdapter through libpebble2
                  -> _run_step()
                       -> execute capability-specific command
                       -> gather command and screenshot evidence
@@ -80,7 +102,7 @@ aag-build-qa.sh --view <run>
 aag-build-qa.sh --compare <run> ...
   -> parse_args()
   -> handle_qa_inspections()
-  -> runner.py qa-inspection compare <runs>
+  -> tools/harness_py/runner.py qa-inspection compare <runs>
     -> compare_runs()
       |-> return existing comparison.md, or
       |-> render new comparison.md
@@ -119,10 +141,34 @@ aag-build-qa.sh --compare <run> ...
 | `create_execution_context()` | Create run paths and the screenshot directory | `ExecutionContext` |
 | `run_plan_execution()` | Execute each resolved concrete step | Execution status |
 | `_run_step()` | Select the executor for one concrete capability | Step result or failure |
-| `_run_logged_command()` | Execute one external command and record its log | Command result and log |
+| `PebbleAdapter` | Send Python-owned Pebble protocol messages, logs, battery updates, and screenshots through libpebble2 | Pebble operation result and evidence |
 | `_capture_screenshot()` | Capture one screenshot for one step | Screenshot path and step result |
 | `finalize()` | Resolve final facts and emit run artifacts | `report.json`, `summary.md` |
 | `_print_closeout()` | Print finalized run facts for the terminal | Plain-text closeout |
+
+### Pebble Python Dependency
+
+Python-owned QA execution uses `libpebble2` through the installed Pebble Tool environment. It does not construct Pebble CLI commands or launch a Pebble CLI process. `pebble.py` owns the transport and protocol details; `execution.py` owns the order of QA operations.
+
+The adapter loads only when a scenario is about to execute. Plan parsing, validation, and inspection do not require the emulator library.
+
+If the library or its Pebble Tool environment cannot be loaded, execution stops before any QA step runs and prints:
+
+```text
+Error: Pebble QA adapter unavailable: install or repair the Pebble Tool/libpebble2 environment.
+```
+
+Repair the Pebble Tool installation and confirm that its environment contains `libpebble2`, then run the scenario again. This startup failure produces no QA report because no test step executed.
+
+### Build and Compile Database
+
+The shell routes build requests to `runner.py build`. `PebbleAdapter.build()`
+uses Pebble Tool's SDK/Waf path directly, so the harness does not invoke the
+Pebble build CLI or npm for this operation. A verbose build writes `build.log`
+and attempts to generate `compile_commands.json` from that log. The generator
+targets `emery`, as specified in `tools/harness_py/pebble.py`; a missing compile
+database is reported to the contributor while the build result remains
+independent of this optional editor artifact.
 
 ### Canonical report flow
 
@@ -130,11 +176,12 @@ aag-build-qa.sh --compare <run> ...
 | --- | --- | --- |
 | `StepArtifact` | Name one concrete step’s execution facts | Emulator, display, inputs, status, and screenshot facts stay together |
 | `ScreenshotsInfo` | Name one step’s screenshot facts | Expected, captured, and path stay together |
-| `QARunPayload` | Name the canonical run payload | Payload has `runs` and `step_rows` |
-| `QARunPayload.from_dict()` | Rebuild a typed payload when a caller needs one | JSON is read; Markdown is never parsed |
+| `QARunContext` | Name one finalized run’s facts | One payload contains one run context |
+| `QAStepContext` | Name one finalized step’s facts | One context contains one artifact identity and its step artifact |
+| `QARunPayload` | Name the canonical run payload | Payload has one `run` and a list of `steps` |
 | `QARunPayload.as_dict()` | Convert the typed payload to JSON/renderer data | Only plain dictionaries and lists cross the output boundary |
 | `finalize()` | Build and serialize one finalized run payload | Writes `report.json` and `summary.md` |
-| `load_qarun_payload()` | Read and check one canonical `report.json` | Returns a canonical dictionary |
+| `load_qarun_payload()` | Read and check one canonical `report.json` | Returns a validated `QARunPayload` |
 | `render_report()` | Render one or many canonical payloads | One table model serves summary and comparison |
 | `view_run()` | Return an existing `summary.md` or render it from `report.json` | Never creates a comparison directory |
 | `compare_runs()` | Return cached comparison or render selected payloads | Never reads Markdown as input |
@@ -168,12 +215,12 @@ Payload construction, Markdown rendering, and file writing have separate respons
 
 ### Harness Correctness Tests
 
-The executable harness-correctness tests live under `qa/harness-unit-tests/`. They exercise the public Python validation path against named and direct scenario/suite inputs, plus the rejection fixtures. They consume grammar fixtures to validate the harness's capabilities and grammar.
+The executable harness-correctness tests live under `tools/harness_py/`. They exercise the public Python validation path against named and direct plan inputs, plus the rejection fixtures. They consume grammar fixtures to validate the harness's capabilities and grammar.
 
 From the repository root, run the complete set in one command:
 
 ```sh
-python3 -m unittest discover -s qa/harness-unit-tests -p 'test_*.py'
+PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
 ```
 
 The calling convention is:
@@ -185,7 +232,7 @@ python3 -m unittest discover -s <test-directory> -p '<test-file-pattern>'
 Run the focused module when iterating on this harness path:
 
 ```sh
-python3 -m unittest -v qa/harness-unit-tests/test_harness_correctness.py
+PYTHONPATH=tools/harness_py python3 -m unittest -v tools/harness_py/test_harness_correctness.py
 ```
 
 The test command must be run from the repository root so the test imports and fixture paths resolve consistently.

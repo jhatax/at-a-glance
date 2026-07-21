@@ -1,7 +1,6 @@
 # At A Glance Design
 
-At A Glance is a glance-first Pebble watch face. Its goal is to make complex
-information simple to absorb and act on with minimal cognitive load.
+This is a glance-first Pebble watch face that strives to make complex information simple to absorb and act on with minimal cognitive load.
 
 ## Product Intent
 
@@ -10,23 +9,19 @@ information simple to absorb and act on with minimal cognitive load.
 
 ## Design Influences
 
-- Cockpit instrumentation and transit signage: Clear information hierarchy,
-  strong alignment, restrained color, and direct labeling.
+- Cockpit instrumentation and transit signage: Clear information hierarchy, strong alignment, restrained color, and direct labeling.
 
 ## Glance-First Philosophy
 
 *The information takes center stage. The watch face fades into the background.*
 
-- Reward a quick glance with maximum information capture. A user must not need to
-  stop and decode the layout.
-- Use irreducible simplicity: reduce each element until any further reduction
-  would compromise function, recognition, or glanceability.
+- Reward a quick glance with maximum information capture. A user must not need to stop and decode the layout.
+- Use irreducible simplicity: reduce each element until any further reduction would compromise function, recognition, or glanceability.
 - Anchor information in stable display locations to reduce cognitive load.
 
 ## "Calm" And Negative Space
 
-Maintain clarity of information hierarchy on a calm screen,
-even when several metrics are present.
+Maintain clarity of information hierarchy on a calm screen, even when several metrics are present.
 
 - Keep the display ordered, not crowded.
 - Negative space is part of the design.
@@ -48,11 +43,10 @@ All supported devices deserves an equally intentional experience within the capa
 
 Automatic perception of information is the singular design invariant for this watch face.
 
-- A user must be able to understand the display quickly, with minimal effort
-  and minimal interpretation.
-- If a change improves implementation neatness but makes the display slower to read,
-  it fails the design invariant.
+- A user must be able to understand the display quickly, with minimal effort and minimal interpretation.
+- If a change improves implementation neatness but makes the display slower to read, it fails the design invariant.
 
-## Further Reading
+## Read Next
 
-- [Product Invariants](ProductInvariants.md) defines the functional and semantic rules that preserve product identity across devices, layouts, and feature configurations.
+- [ProductInvariants](ProductInvariants.md) defines the functional and semantic rules that preserve product identity across devices, layouts, and feature configurations.
+- [VisualVocabulary](VisualVocabulary.md) defines the visual rules that make those properties recognizable.

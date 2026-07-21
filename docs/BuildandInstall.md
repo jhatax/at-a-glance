@@ -11,25 +11,10 @@ Use this document to understand:
 - editor-tooling contract
 - build-stage ownership
 
-**Key document relationships**
+## Adjacent
 
-```text
-`Contributing` covers the contributor flow at a high-level
-|
-V
-`this` describes the build and install flow
-|
-V
-`Validation` describes validation and introduces the QA harness
-|
-V
-`qa/README` dives into executing and creating QA plans for the watch face
-```
-
-## Required Reading
-
-- [ArchitectureLedger](ArchitectureLedger.md) for the runtime architecture.
 - [Contributing](Contributing.md) for contributor flows.
+- [Validation](Validation.md) for validation paths and evidence.
 
 ## Build Automation
 
@@ -42,8 +27,7 @@ Build tooling has been created to:
 4. install the watch face on a Pebble through Developer Connection
 5. stay narrow enough that the tooling layer does not become a second project
 
-The watch face is the product. The build layer is supporting infrastructure. It
-must remain direct, auditable, and sustainable.
+The watch face is the product. The build layer is supporting infrastructure. It must remain direct, auditable, and sustainable.
 
 ### Core Rules
 
@@ -62,8 +46,7 @@ The current build layer is made up of:
 - `build.log`
 - `compile_commands.json`
 
-Use [QA_Readme](../qa/README.md) for QA harness implementation details.
-This document owns the build contract only.
+Use [QA_Readme](../qa/README.md) for QA harness implementation details. This document owns the build contract only.
 
 ## Current Build Flow
 
@@ -93,7 +76,7 @@ Automation harness:
 
 ```sh
 ./aag-build-qa.sh -b
-./aag-buid-qa.sh -i -e <target>
+./aag-build-qa.sh -i -e <target>
 ```
 
 ### Emulator Recovery
@@ -108,7 +91,7 @@ pebble wipe
 Automation harness:
 
 ```text
-./aag-build-qa.sh -nuclear
+./aag-build-qa.sh --nuclear
 ```
 
 ### Watch / device Install
@@ -124,14 +107,5 @@ Automation harness:
 
 ```text
 ./aag-build-qa.sh -bc
-./aag-buid-qa.sh -p <Developer Connection Server IP>
+./aag-build-qa.sh -p <Developer Connection Server IP>
 ```
-
-## Further Reading
-
-- [Validation](Validation.md) for validation scenarios, artifact expectations,
-  and release evidence.
-- [Contributing](Contributing.md) for contributor workflow and review
-  discipline.
-- [SettingsandConfiguration](SettingsandConfiguration.md) for settings,
-  message-key, and transport obligations that validation must exercise.

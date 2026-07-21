@@ -1,7 +1,6 @@
 # Settings and Configuration
 
-This document covers settings, configuration transport, message-key mapping,
-persistence, and validation for *At A Glance*.
+This document covers settings, configuration transport, message-key mapping, persistence, and validation for *At A Glance*.
 
 Use this document to understand:
 
@@ -22,16 +21,14 @@ Use this document to understand:
 - Settings are transported using AppMessage, then parsed and interpreted in C.
 - Display is updated with information as long as it is within range.
 
-## Required Reading
+## Adjacent
 
-- [ArchitectureLedger](ArchitectureLedger.md) for the runtime architecture.
-- [UserInterface](UserInterface.md) for details on the full visual reference implementation.
+- [ProductInvariants](ProductInvariants.md) for the product properties settings must preserve.
+- [VisualVocabulary](VisualVocabulary.md) for the visual rules affected by display settings.
 
 ## Settings Catalog
 
-The runtime setting source of truth is `WatchfaceSettings` in
-`src/modules/settings.h`. On health-capable builds, there are six persisted
-runtime settings.
+The runtime setting source of truth is `WatchfaceSettings` in `src/modules/settings.h`. On health-capable builds, there are six persisted runtime settings.
 
 | Setting | C field | Canonical key | Default | Valid values | Persisted | Runtime effect |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -49,11 +46,9 @@ Clay also exposes two settings-page inputs that are not canonical runtime settin
 | Steps goal preset | `STEPS_GOAL_PRESET` | Preset candidate for steps goal | No |
 | Custom steps goal | `STEPS_GOAL_CUSTOM` | Optional custom override for steps goal | No |
 
-PKJS collapses these two Clay inputs into the canonical `STEPS_GOAL` value
-before sending settings to C.
+PKJS collapses these two Clay inputs into the canonical `STEPS_GOAL` value before sending settings to C.
 
-The settings catalog does not include weather data or one-shot health override
-keys. Those are AppMessage payloads, not persisted user settings.
+The settings catalog does not include weather data or one-shot health override keys. Those are AppMessage payloads, not persisted user settings.
 
 ## Source Of Truth Map
 
@@ -83,8 +78,7 @@ Pebble showConfiguration event
   -> Pebble.sendAppMessage(dict)
 ```
 
-The current settings page is shown here as evidence of the configuration
-surface, not as the visual specification:
+The current settings page is shown here as evidence of the configuration surface, not as the visual specification:
 
 ![At A Glance settings page](assets/screenshots/at-a-glance-settings.png)
 
@@ -107,13 +101,9 @@ else
   -> send STEPS_GOAL_DEFAULT
 ```
 
-After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and
-`STEPS_GOAL_CUSTOM` from the outbound dictionary. C should not budget AppMessage
-inbox space for those two Clay-only inputs.
+After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` from the outbound dictionary. C should not budget AppMessage inbox space for those two Clay-only inputs.
 
-Weather cadence is also applied in PKJS. When Clay returns
-`WEATHER_UPDATE_MINUTES`, PKJS updates the weather schedule and asks for a
-weather refresh.
+Weather cadence is also applied in PKJS. When Clay returns `WEATHER_UPDATE_MINUTES`, PKJS updates the weather schedule and asks for a weather refresh.
 
 ## AppMessage And Message-Key Contract
 
@@ -135,20 +125,15 @@ Current manifest-backed keys:
 | 10 | `STEPS_GOAL_PRESET` | `10009` | Clay-only input |
 | 11 | `STEPS_GOAL_CUSTOM` | `10010` | Clay-only input |
 
-Pebble assigns manifest-backed numeric message IDs from the `package.json`
-`messageKeys` order.
+Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
 
-Generated C and JS artifacts may list keys in sorted-name order. That listing
-order is not the numeric assignment rule. Manual QA commands, harness helpers,
-PKJS, and C must follow the generated numeric mapping.
+Generated C and JS artifacts may list keys in sorted-name order. That listing order is not the numeric assignment rule. Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
 
 Rules:
 
-- Add new manifest-backed keys at the end unless a deliberate renumbering is
-  being performed.
+- Add new manifest-backed keys at the end unless a deliberate renumbering is being performed.
 - Recheck generated key output after any `messageKeys` change.
-- Update JS, C parsing, inbox sizing, harness helpers, manual QA commands, and
-  docs in the same change.
+- Update JS, C parsing, inbox sizing, harness helpers, manual QA commands, and docs in the same change.
 - Do not assume generated file order is the same as numeric order.
 
 ### QA-Only One-Shot Keys
@@ -160,12 +145,9 @@ The current one-shot health keys are runtime-only constants:
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_BPM` | `10020` | One-shot BPM override |
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS` | `10021` | One-shot steps override |
 
-These are not Clay settings, not manifest-backed keys, and not persisted. They
-exist for focused QA and are consumed once by the health refresh path.
+These are not Clay settings, not manifest-backed keys, and not persisted. They exist for focused QA and are consumed once by the health refresh path.
 
-[Validation](Validation.md) owns the operational command examples for these keys.
-This document references them only to keep the settings, data, and QA payloads
-separate.
+[Validation](Validation.md) owns the operational command examples for these keys. This document references them only to keep the settings, data, and QA payloads separate.
 
 ## Watch Runtime And Persistence Flow
 
@@ -216,8 +198,7 @@ Refresh effects:
 | `HR_SAMPLE_MINUTES` | Persisted in C; HealthService sample period updated in `ataglance.c` |
 | `STEPS_GOAL` | `WATCHFACE_UPDATE_HEALTH` |
 
-Persistence uses Pebble persistent storage key `2` and writes the full
-`WatchfaceSettings` struct. Stored settings are sanitized on load.
+Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct. Stored settings are sanitized on load.
 
 ## Validation Requirements
 
@@ -235,8 +216,7 @@ Minimum checks:
 - The runtime refresh or repaint effect matches the setting's intended scope.
 - Manual QA commands and harness helpers use the current numeric mapping.
 
-Read [Build](BuildandInstall.md) for build activation, [Validation](Validation.md)
-for emulator validation (using `pebble` commands or the watch face's QA harness).
+Read [BuildandInstall](BuildandInstall.md) for build and install flows and associated commands, and [Validation](Validation.md) for emulator validation (using `pebble` commands or the watch face's QA harness).
 
 ## Change Checklist
 
@@ -246,20 +226,17 @@ For any settings change:
 - Regenerate and inspect generated message-key output after key changes.
 - Update `src/pkjs/config.json` for settings-page shape changes.
 - Update `src/pkjs/index.js` for Clay normalization or scheduling changes.
-- Update `src/modules/settings.h` and `src/modules/settings.c` for defaults,
-  validation, persisted shape, or sanitization changes.
-- Update `src/c/ataglance.c` for tuple parsing, inbox sizing, save triggers, or
-  side effects.
-- Update `src/modules/watchface_runtime_boundary.c` for runtime validation,
-  mutation, repaint, or refresh behavior.
+- Update `src/modules/settings.h` and `src/modules/settings.c` for defaults, validation, persisted shape, or sanitization changes.
+- Update `src/c/ataglance.c` for tuple parsing, inbox sizing, save triggers, or side effects.
+- Update `src/modules/watchface_runtime_boundary.c` for runtime validation, mutation, repaint, or refresh behavior.
 - Update [SettingsandConfiguration](SettingsandConfiguration.md).
 - Update [Validation](Validation.md) only when validation flow changes.
-- Update [UserInterface](UserInterface.md) only when visible settings evidence or visual
-  consequences change.
+- Update [UserInterface](UserInterface.md) only when visible settings evidence or visual consequences change.
 - Run the relevant build and validation path, or record the validation gap.
 
-## Further Reading
+## Read Next
 
-- [Build](BuildandInstall.md) for build activation.
+- [RuntimeArchitecture](RuntimeArchitecture.md) for the runtime architecture.
+- [UserInterface](UserInterface.md) for the visual consequences of settings.
+- [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
 - [Validation](Validation.md) for emulator validation and QA evidence.
-- [Contributing](Contributing.md) for contributor workflow, validation, and review discipline.

@@ -2,16 +2,14 @@
 
 This document is the operator guide for writing QA test cases and plans.
 
-**Key document relationships**
+## Adjacent
 
-```text
-`Validation` describes validation and introduces the QA harness
-|
-V
-`qa/README` dives into executing and creating QA plans for the watch face
-  |_ `this` covers QA plan authoring, including a constrained grammar for composing steps and plans into larger suites
-  |_ `QA_Harness_Implementation_Flow` details the QA harness's flow and capabilities
-```
+- [QA_Readme](../README.md) for harness commands and artifacts.
+- [Validation](../../docs/Validation.md) for validation paths and evidence.
+
+## Read Next
+
+- [QAHarnessImplementationFlow](QAHarnessImplementationFlow.md) for harness execution and reporting flow.
 
 ## Example Test Plans
 
@@ -76,7 +74,7 @@ This is a good step because it is concrete. It identifies one display mode, one 
 
 To create a scenario:
 
-1. Create `qa/scenarios/<name>.scenario`.
+1. Create `qa/plans/<name>.scenario`.
 2. Add a `PREAMBLE` block.
 3. Set `SCENARIO <name>` to match the filename without `.scenario`.
 4. Set `SCREENSHOTS yes` when screenshot evidence is required.
@@ -99,7 +97,7 @@ To create a scenario:
 
 To create a suite:
 
-1. Create `qa/scenarios/<name>.suite`.
+1. Create `qa/plans/<name>.suite`.
 2. Add a `PREAMBLE` block.
 3. Set `SUITE <name>` to match the filename without `.suite`.
 4. Add a `MEMBERS` block.
@@ -115,7 +113,7 @@ The following `suites and scenarios` will accelerate your development and releas
 - `qa-<emulator>` suites: one suite per emulator, composed from capability scenarios.
 - `pre-release-gate`: top-level pre-release suite composed from the emulator QA suites.
 
-Refer to `qa/scenarios/` for all qa plan specifications.
+Refer to `qa/plans/` for all QA plan specifications.
 
 ## Grammar to specify & govern QA plans
 
@@ -225,11 +223,7 @@ Fields:
 
 Changing the grammar requires updating all affected owners in one slice:
 
-  - `python/scenarios.py`
-  - `WritingTestCasesAndPlans.md`
-  - scenario and suite files under `scenarios/`, when existing targets need new fields
-  - capability implementation under `tests/`, when a new capability is added
-  - report expectations in `python/runtime.py`, when artifact shape changes
+  - `python/scenarios.py` - `WritingTestCasesAndPlans.md` - scenario and suite files under `plans/`, when existing targets need new fields - capability implementation under `python/execution.py`, when a new capability is added - report expectations in `python/runtime.py`, when artifact shape changes
 
 ## Grammar Fixtures
 
@@ -241,5 +235,5 @@ Fixtures provide accepted and rejected plan files for parser checks:
 Run the executable fixture checks from the repository root:
 
 ```sh
-python3 -m unittest discover -s qa/tests -p 'test_*.py'
+python3 -m unittest discover -s qa/harness-unit-tests -p 'test_*.py'
 ```

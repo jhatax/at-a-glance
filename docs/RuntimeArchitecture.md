@@ -1,23 +1,10 @@
-# Architecture Ledger
+# Runtime Architecture
 
-This ledger is the current source of truth for At A Glance's architecture:
-runtime flow, ownership, boundaries, lifecycle, and source organization.
+This is the current source of truth for *At A Glance's* runtime architecture: execution flow, ownership, boundaries, lifecycle, and source organization.
 
-**Key document relationships**
+## Adjacent
 
-```text
-`ProductInvariants` states **what** must be true for *At A Glance*, the entire watch face.
-|
-V
-`this` describes **how** architectural invariants are satisfied.
-```
-
-## Required Reading
-
-- [Watchface_Readme](../README.md) for a product introduction: screenshots, getting started, download links.
 - [ProductInvariants](ProductInvariants.md) states invariants to achieve goals across devices.
-- `VisualVocabulary` for the visual grammar that can satisfy visual invariants.
-- [UserInterface](UserInterface.md) for the full visual reference implementation.
 
 ## Watch face conceptual layers
 
@@ -27,24 +14,20 @@ Layers have been implemented to satisfy visual display and runtime-architecture 
 
 1. Pebble OS adapter: `ataglance.c` => main window & persisted settings lifecycle owner
 2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events
-   into watch face vocabulary
+into watch face vocabulary
 3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules
-  - `layout_architect.c` => Prepares the surface
-  - `layout_stylist.c` => Associates styles and fonts with visual channels
+  - `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
 
 ### Core Concepts
-- The watch face display is organized using tiles (strata).
-  - Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
-- Information updates are relayed from Pebble OS (subscriptions, user-settings changes,
-  major events, emulator messages).
+- The watch face display is organized using tiles (strata). Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
+- Information updates are relayed from Pebble OS (subscriptions, user-settings changes, major events, emulator messages).
 - Updates are scoped to new information only; multiple strata changes are batched.
 - Use of repaint is limited to maximize battery life.
 
 ## Initialization and Runtime Flows
 
-These **four flows are the same** for supported capabilities of all Pebble devices, thereby
-satisfying the **invariant of architectural parity** for and compatibility with all devices.
+These **four flows are the same** for supported capabilities of all Pebble devices, thereby satisfying the **invariant of architectural parity** for and compatibility with all devices.
 
 ### 1. Initialization flow
 
@@ -131,8 +114,7 @@ src/pkjs/index.js appmessage handler
 
 ## Prepared Surface
 
-At A Glance is organized around a prepared `WatchfaceSurface` using `blueprints` customized for
-watch face geometry and shape. Two device categories have been defined:
+The watch face is organized around a prepared `WatchfaceSurface` using `blueprints` customized for watch face geometry and shape. Two device categories have been defined:
 1. `full` [`gabbro`, `emery`]
 2. `compact` [`aplite`, `flint`, `diorite`, `chalk`, `basalt`]
 
@@ -182,13 +164,11 @@ or cannot be displayed.
 - If `Required` strata cannot be created, watch face initialization fails and control
 is returned to the Pebble OS.
 
-This categorization satisfies the visual invariant of information hierarchy and display consistency
-for all supported devices.
+This categorization satisfies the visual invariant of information hierarchy and display consistency for all supported devices.
 
 ## Reference Architecture Of A Module
 
-Feature modules follow the same lifecycle shape, though their rendering details
-can differ based on what they display.
+Feature modules follow the same lifecycle shape, though their rendering details can differ based on what they display.
 
 ### Module creation flow
 
@@ -230,32 +210,22 @@ watchface_destroy()
 
 ### Current module variants
 
-- Text-only modules such as date and time own a text layer and refresh text
-  from time/date state plus the active palette.
-- Service-backed modules such as battery, BPM, and steps read Pebble service
-  state during refresh, then map that source state to text, progress, icon, or
-  live colors.
-- Transport-backed modules such as climate receive source state through a
-  setter, then render temperature and glyph state during refresh.
-- QA-only one-shot health setters queue a single source-state override that is
-  consumed by the next health refresh and cleared during module or watch face
-  teardown.
+- Text-only modules such as date and time own a text layer and refresh text from time/date state plus the active palette.
+- Service-backed modules such as battery, BPM, and steps read Pebble service state during refresh, then map that source state to text, progress, icon, or live colors.
+- Transport-backed modules such as climate receive source state through a setter, then render temperature and glyph state during refresh.
+- QA-only one-shot health setters queue a single source-state override that is consumed by the next health refresh and cleared during module or watch face teardown.
 
 ### Module boundaries
 
-- Modules own their layers, update procs, source state, dynamic color policy,
-  and destroy path.
+- Modules own their layers, update procs, source state, dynamic color policy, and destroy path.
 - Modules consume prepared substrata; they do not recalculate layout policy.
 - Modules consume the active palette; they do not choose display mode.
 - Modules accept narrow runtime inputs; they do not accept `WatchfaceSurface`.
-- Modules may expose a setter only when runtime ingress needs to update
-  module-owned source state before refresh.
+- Modules may expose a setter only when runtime ingress needs to update module-owned source state before refresh.
 
 ### Reference Example: Steps Module
 
-`steps.c` is the most complex current feature-module example because it owns
-text, bitmap icon rendering, progress rendering, HealthService reads, a
-settings-driven goal, and a QA-only one-shot override.
+`steps.c` is the most complex current feature-module example because it owns text, bitmap icon rendering, progress rendering, HealthService reads, a settings-driven goal, and a QA-only one-shot override.
 
 **Steps creation flow**
 
@@ -338,8 +308,7 @@ The steps module demonstrates the intended boundary:
 
 - `watchface.c` decides when health refreshes happen.
 - `settings.steps_goal` is passed as a narrow runtime input.
-- `steps.c` owns HealthService interpretation, threshold calculation, progress
-  fill math, bitmap recoloring, unavailable rendering, and one-shot consumption.
+- `steps.c` owns HealthService interpretation, threshold calculation, progress fill math, bitmap recoloring, unavailable rendering, and one-shot consumption.
 - `steps.c` is only aware of its own placement settings and palette.
 
 ## Runtime resolution of palettes and icon colors
@@ -350,50 +319,32 @@ The steps module demonstrates the intended boundary:
 
 ## Capability Guards
 
-- Treat platform and runtime capabilities as conditional. Gate color, health,
-  shape-specific layout, loaded resources, and phone-provided data through the
-  Pebble SDK macros, manifest capabilities, or runtime validation before relying
-  on them.
+- Treat platform and runtime capabilities as conditional. Gate color, health, shape-specific layout, loaded resources, and phone-provided data through the Pebble SDK macros, manifest capabilities, or runtime validation before relying on them.
 - Prefer `PBL_COLOR`, `PBL_BW`, `PBL_HEALTH`, `PBL_RECT`, `PBL_ROUND`, and `PBL_API_EXISTS()`.
 - Do not assume that a supported target has every capability that a neighboring target has.
 
 ## AppMessage Runtime Coverage
 
-`ataglance.c` is the Pebble container and transport/service adapter. It parses
-raw AppMessage tuples (using a helper function) into `WatchfaceEventData`,
-tracks whether each tuple was received and parsed, and then delegates
-runtime interpretation to `watchface_apply_received_data()`.
+`ataglance.c` is the Pebble container and transport/service adapter. It parses raw AppMessage tuples (using a helper function) into `WatchfaceEventData`, tracks whether each tuple was received and parsed, and then delegates runtime interpretation to `watchface_apply_received_data()`.
 
 ### Inbound AppMessage coverage
 
-- Settings tuples: time format, temperature unit, display mode, weather cadence,
-  heart-rate cadence, and steps goal.
+- Settings tuples: time format, temperature unit, display mode, weather cadence, heart-rate cadence, and steps goal.
 - Weather tuples: temperature, weather condition, and `is_day`.
 - QA-only one-shot health tuples: BPM and steps overrides.
 
 ### Outbound AppMessage coverage
 
-- On startup, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back
-  to PKJS so the phone-side weather polling schedule resumes from watch storage.
+- On startup, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back to PKJS so the phone-side weather polling schedule resumes from watch storage.
 
-Settings, Clay field mapping, generated message-key numbering, PKJS
-normalization, and persistence rules are owned by `Settings and
-Configuration.md`. This section owns only the architecture-level transport
-route.
+Settings, Clay field mapping, generated message-key numbering, PKJS normalization, and persistence rules are owned by [SettingsandConfiguration](SettingsandConfiguration.md). This section owns only the architecture-level transport route.
 
 ### Climate-specific transport behavior
 
-- The phone companion requests current weather from Open-Meteo on the
-  configured cadence, uses phone geolocation when available, and falls back to
-  Oakland, CA when location is unavailable.
-- Temperature is sent to the watch in Celsius tenths and rendered according to
-  settings.
+- The phone companion requests current weather from Open-Meteo on the configured cadence, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable.
+- Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.
-- Any received weather tuple triggers a climate refresh. The runtime applies
-  weather as complete climate state only when temperature, condition, and
-  `is_day` are all parsed. `climate.c` then validates the parsed domain values;
-  incomplete or invalid packets clear prior weather state and render the
-  unavailable vocabulary.
+- Any received weather tuple triggers a climate refresh. The runtime applies weather as complete climate state only when temperature, condition, and `is_day` are all parsed. `climate.c` then validates the parsed domain values; incomplete or invalid packets clear prior weather state and render the unavailable vocabulary.
 
 ## Lifecycle Priorities
 
@@ -402,13 +353,10 @@ route.
 3. Validate before confirming feature completion.
 4. Heap usage should be exceptional; release memory and initialize to NULL.
 5. Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes,
-   buffer overflows, or hidden failure branches.
+buffer overflows, or hidden failure branches.
 
-## Further Reading
+## Read Next
 
-- [SourceMap](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
-- [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog, Clay mapping, message-key contract,
-   persistence, and validation obligations
-- [Build](BuildandInstall.md) for build, install, and editor-tooling support.
+- [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) for implementation flow, source responsibilities, and interconnections.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog, Clay mapping, message-key contract, persistence, and validation obligations
 - [Validation](Validation.md) for validation contract, evidence, and release profiles.
-- [Contributing](Contributing.md) for contributor workflow, validation, and review discipline.

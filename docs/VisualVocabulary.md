@@ -6,18 +6,13 @@ This document defines **rules** for how the watch face can satisfy legibility an
 
 - These rules must stay relevant across implementations.
 
-**Key document relationships**
+## Adjacent
 
-```text
-`Design` establishes the motivation, foundational concepts, and overarching usability outcomes
-for the watch face.
-|
-V
-`ProductInvariants` states **what** must be true to achieve usability outcomes across devices.
-|
-V
-`this` defines the visual grammar that *can* satisfy visual invariants.
-```
+- [ProductInvariants](ProductInvariants.md) defines the product properties this visual grammar must satisfy.
+
+## Read Next
+
+- [UserInterface](UserInterface.md) records the current visual realization.
 
 ## Visual Channels & Responsibilities
 
@@ -30,7 +25,7 @@ V
 
 2. Nothing on screen interprets the data when direct presentation is enough.
 
-3. Text is the primary glance surface. Icons support recognition, but they do not carry the product alone.
+3. Text is the primary glance surface. Icons support recognition and work with text to identify the metric.
 
 ## Immediate Identifiability
 
@@ -46,7 +41,7 @@ Immediate identifiability satisfies automatic perception.
 
 ## Surface Composition
 
-A shared watch face **stack** across all Pebbles satisfies anchors information to stable locations on screen.
+A shared watch face **stack** anchors information to stable locations across all Pebbles.
 
 - This stack is part of the product's visual DNA.
 - All devices (different sizes and geometries) implement the same information hierarchy and stack.
@@ -87,8 +82,7 @@ A shared watch face **stack** across all Pebbles satisfies anchors information t
 
 ### Climate glyphs
 
-- Use silhouettes over filled glyphs, except when filling the glyph
-  improves perception or creates visual contrast.
+- Use silhouettes over filled glyphs, except when filling the glyph improves perception or creates visual contrast.
 - Keep condition marks sparse and strong.
 - Prefer condition-first icons over cloud-first icons.
 - Use a cloud only when it helps read the condition faster.
@@ -99,9 +93,7 @@ A shared watch face **stack** across all Pebbles satisfies anchors information t
 
 2. Use a fixed design grid for procedural glyphs.
 
-3. Keep visual footprint stable when state changes.
-
-4. Scale glyphs and icons to fit compact grid sizes.
+3. Scale glyphs and icons to fit compact grid sizes.
 
 5. For layered same-color shapes:
 
@@ -146,8 +138,7 @@ A shared watch face **stack** across all Pebbles satisfies anchors information t
 
 ## Metric Icons And Glyphs
 
-Icons identify every metric: heart rate, walking steps, battery or power
-state, and weather conditions.
+Icons identify every metric: heart rate, walking steps, battery or power state, and weather conditions.
 
 - Text carries values; icons identify the metric.
 - Progress and state cues support the metric, but they do not replace text.
@@ -159,7 +150,3 @@ state, and weather conditions.
 ## Visual Validation
 
 Visual validation is critical evidence for Product Invariants. A rule is not confirmed until the product is immediately identifiable, glanceable, and semantically stable on the supported display capabilities it affects.
-
-## Further Reading
-
-- [UserInterface](UserInterface.md) for the full visual reference implementation.

@@ -1,8 +1,12 @@
 # At A Glance
 
-At A Glance is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers quantify. Lines show progress. Color communicates state.
+This is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers quantify. Lines show progress. Color communicates state.
 
 The goal is a display that feels *precise, neutral, obvious, and available at a glance*.
+
+## Adjacent
+
+- [UserInterface](docs/UserInterface.md) for the current visual realization.
 
 ## Screenshots
 
@@ -38,7 +42,6 @@ pebble install --phone YOUR_PHONE_IP
 - Steps, progress, and configurable daily goal (if Pebble Health is available)
 - Heart rate (if Pebble Health is available)
 - Display modes for monochrome and color devices
-- Double-tap to cycle display modes
 - Settings page on the connected phone
 
 ## Personalization options:
@@ -50,8 +53,7 @@ pebble install --phone YOUR_PHONE_IP
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 - Steps goal: presets from `4,000` to `20,000`, with custom override support from `4,000` to `32,000`
 
-Configuration is powered by Rebble Clay and opens from the Pebble mobile app.
-Settings are persisted on the watch.
+Configuration is powered by Rebble Clay and opens from the Pebble mobile app. Settings are persisted on the watch.
 
 ## Supported Platforms
 
@@ -95,17 +97,12 @@ To test the config page in an emulator:
 pebble emu-app-config
 ```
 
-## Further Reading
+## Read Next
 
-- [Contributing](docs/Contributing.md) for contributor workflow, validation, and review discipline.
-- [Build](docs/BuildandInstall.md) for build, install, and editor-tooling details.
-- [Validation](docs/Validation.md) for validation profiles, evidence, and QA flows.
-- [UserInterface](docs/UserInterface.md) for the full visual reference implementation.
-- [QA_Readme](qa/README.md) for the QA harness commands, ownership, and artifacts.
-- [WritingTestCasesAndPlans](qa/docs/WritingTestCasesAndPlans.md) for scenario and suite authoring.
+- [BuildandInstall](docs/BuildandInstall.md) for build, install, and editor-tooling details.
+- [Contributing](docs/Contributing.md) for the contributor workflow.
 
-The repository includes `qa/` for the harness, `qa/scenarios/` for named plans,
-and `qa/qa-runs/` for local validation evidence.
+The repository includes `qa/` for the harness, `qa/plans/` for named plans, and `qa/qa-runs/` for local validation evidence.
 
 ## License
 

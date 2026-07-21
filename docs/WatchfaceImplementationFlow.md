@@ -1,24 +1,24 @@
-# Source Map
+# Watchface Implementation Flow
 
-This document is the current source of truth for At A Glance source-code
-navigation. It maps implementation files, shared headers, QA tooling, and their
-relationships. Use the dedicated product, architecture, and build documents for
-runtime behavior, product rules, visual rules, and build/validation policy.
+This document is the current source of truth for the watch face implementation flow. It maps implementation files, shared headers, and their relationships. Use the dedicated product, architecture, and build documents for runtime behavior, product rules, visual rules, and build/validation policy.
 
-## Required Reading
+## Adjacent
 
-- [ArchitectureLedger](ArchitectureLedger.md) for the runtime architecture.
-- [UserInterface](UserInterface.md) for the full visual reference implementation.
+- [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and boundaries.
+- [UserInterface](UserInterface.md) for the implemented visual reference.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for settings transport and persistence.
 
-## Feature, QA, and Docs Organization
+## Read Next
 
-Five major folders:
+- [Contributing](Contributing.md) for the contributor workflow around implementation changes.
+
+## Feature and Documentation Organization
+
+Three major folders:
 
 1. ./src: Watch face features, modules, surfaces, and adapters
 2. ./resources: Fonts, icons, and images
-3. ./qa: Build and test harness module, test plans, output
-4. ./docs: Watch face documentation
-5. ./qa/docs: QA documentation for test plans, automation harness flow
+3. ./docs: Watch face documentation
 
 All paths in sub-sections are relative to repository home.
 
@@ -33,24 +33,11 @@ package.json
 wscript
 ```
 
-### QA Source
-
-```text
-qa/
-qa/lib
-qa/python
-qa/fixtures
-qa/scenarios
-qa/qa-runs
-```
-
 ### Documentation
 
 ```text
 README.md
 docs/
-qa/README.md
-qa/docs/
 ```
 
 ## Watch Face Product Implementation Map
@@ -165,36 +152,9 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
   -> layout delegates prepare geometry and style
   -> feature modules own their Pebble layers and source state
 ```
-
-## QA Relationship Map
-
-```text
-./aag-build-qa.sh
-  -> qa/lib/*.sh
-       -> parse, validate, reset, route, and clean up
-  -> qa/runner.py
-       -> qa/python/scenarios.py -> load plans and resolve steps
-       -> qa/python/execution.py -> execute steps and capture evidence
-       -> qa/python/runtime.py -> finalize report.json and summary.md
-       -> qa/python/comparison.py -> view and compare canonical payloads
-       -> qa/python/report.py -> render operator reports
-
-qa/fixtures/  -> parser and harness correctness inputs
-qa/qa-runs/   -> local validation evidence
-qa/scenarios/ -> test plans
-```
-
 ## Debug Source Placement
 
 Setting `ATAGLANCE_DEBUG` to 1/0 and flipping/unflipping the comment in `wscript` enables and disables `DEBUG` mode for the watch face:
 
-- `src/modules/watchface_debug.h` **owns debug-gate normalization only**, with `wscript`
-  as the build-time enable point.
+- `src/modules/watchface_debug.h` **owns debug-gate normalization only**, with `wscript` as the build-time enable point.
 - `wscript` owns the optional build-time define.
-
-## Future Reading
-
-- [Build](BuildandInstall.md) for build activation and editor-tooling support.
-- [Validation](Validation.md) for emulator validation and QA evidence.
-- [Contributing](Contributing.md) for contributor workflow, validation, logging, and review discipline.
-- [QA_Readme](../qa/README.md) for Build & QA harness source navigation.

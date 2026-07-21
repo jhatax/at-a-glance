@@ -1,48 +1,37 @@
 # Product Invariants
 
-This document defines the product truths that must remain stable as the
-watch face evolves.
+This document defines the product truths that must remain stable as the watch face evolves.
 
-These are acceptance properties that must be satisfied by any implementation,
-so they have been written to be simple to understand and verifiable.
+These are acceptance properties that every implementation must satisfy. They
+are written to be simple to understand and verify.
 
-It is the task of implementation documentation to cover decisions made to
-satisfy these properties.
+## Adjacent
 
-**Key document relationships**
+- [Design](Design.md) establishes product motivation and usability outcomes.
+- [VisualVocabulary](VisualVocabulary.md) defines the visual grammar for these invariants.
 
-```text
-`Design` establishes the motivation, foundational concepts, and overarching usability outcomes
-for *At A Glance*, the entire watch face.
-|
-V
-`this` states **what** must be true to achieve usability outcomes across devices.
-|
-V
-`VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
-```
+## Read Next
+
+- [RuntimeArchitecture](RuntimeArchitecture.md) describes the runtime structure that satisfies these invariants.
+- [UserInterface](UserInterface.md) records the current visual realization.
 
 ## Glanceability & Automatic Perception
 
-- The watch face must be immediately legible within a glance (sub-second
-  attention span).
-- The information should be understandable without the need to decode
-  field by field.
+- The watch face must be immediately legible within a glance (sub-second attention span).
+- The information must be understandable without decoding it field by field.
 - The product hierarchy is stable across display families.
 - Values and state changes do not shift the visual footprint.
-- The user should gain perceptual fluency with the display over time.
+- The user must gain perceptual fluency with the display over time.
 
 ## First-Class Device Support
 
-- Every supported device receives an equally intentional experience within
-  supported capabilities.
+- Every supported device receives an equally intentional experience within supported capabilities.
 
 ## Recognizable Information Hierarchy
 
 - Information hierarchy remains recognizable across display families.
 - Time, battery, weather, and date form the always-present core.
-- Layout changes may rebalance spacing, but they must not change which
-  information reads first, second, and third.
+- Layout changes may rebalance spacing, but they must not change which information reads first, second, and third.
 
 ## Dominant Information
 
@@ -55,26 +44,16 @@ V
 
 ## Stable Semantic Meaning
 
-1. Every visual channel has one responsibility:
-
-- Text = Exact values.
-- Icons = Metric identification.
-- Bars = Progress.
-- Color = State.
-
-2. Color an icon or glyph vs. text to maximize glanceability.
-
-3. Users must not have to relearn the meaning of a channel within the same glance surface.
+- Every visual channel has one responsibility.
+- Color, icon, glyph, and text choices must maximize glanceability within their assigned channel responsibilities.
+- Users must retain the meaning of each channel within the same glance surface.
 
 ## Stable Color Meaning
 
-- When different colors are used for the same metric, color should merely
-  convey state change without alarm or seeking attention.
+- When different colors are used for the same metric, color should merely convey state change without alarm or seeking attention.
 - Status meaning must stay consistent across the product.
-- Color may add speed, confidence, and state meaning, but the display
-  must remain interpretable when color is absent, muted, or unavailable.
+- Color may add speed, confidence, and state meaning, but the display must remain interpretable when color is absent, muted, or unavailable.
 
 ## Out of Range Perception
 
-- Out of range information is recognizable immediately without causing alarm or
-  demanding attention.
+- Out of range information is recognizable immediately without causing alarm or demanding attention.

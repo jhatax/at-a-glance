@@ -1,52 +1,36 @@
 # User Interface
 
-This document records the current UI of At A Glance. It is the reference for
-the implemented stack, geometry, fonts, palettes, icon sizes, glyph
-realization, and screenshot status.
+This document records the current UI of *At A Glance*. It is the reference for the implemented stack, geometry, fonts, palettes, icon sizes, glyph realization, and screenshot status.
 
-**Key document relationships**
+## Adjacent
 
-```text
-`ProductInvariants` states **what** must be true for the entire watch face.
-|
-V
-`VisualVocabulary` defines the visual grammar that *can* satisfy visual invariants.
-|
-V
-`this` describes the UI that satisfies visual invariants.
-```
+- [ProductInvariants](ProductInvariants.md) defines the properties this implementation must satisfy.
+- [VisualVocabulary](VisualVocabulary.md) defines the visual rules represented here.
 
 ## Visual Evidence
 
 ### On Device
 
-Current device screenshots are checked in under `docs/assets/screenshots/`.
-Together with the coordinates, palettes, typography, and glyph realization
-tables below, they provide evidence to satisfy the watch face's visual invariants
-for legibility, placements, and compatibility with all devices.
+Current device screenshots are checked in under `docs/assets/screenshots/`. Together with the coordinates, palettes, typography, and glyph realization tables below, they provide evidence to satisfy the watch face's visual invariants for legibility, placements, and compatibility with all devices.
 
 | | | | |
 | :---: | :---: | :---: | :---: |
 | <center><b><img src="assets/screenshots/at-a-glance-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-clearasceleste.png" alt="Emery Clear as Celeste screenshot" width="160"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-nightinoxford.png" alt="Emery Night in Oxford screenshot" width="160"><br>Emery: Night in Oxford</b></center> |
 | <center><b><img src="assets/screenshots/at-a-glance-chalk-blackonwhite.png" alt="Chalk Black on White screenshot" width="130"><br>Chalk: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="Gabbro White on Black screenshot" width="160"><br>Gabbro: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-chalk-clearasceleste.png" alt="Chalk Clear as Celeste screenshot" width="130"><br>Chalk: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford</b></center> |
-| <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint Black on White screenshot" width="130"><br>Flint: White on Black</b></center> | | |
+| <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black screenshot" width="130"><br>Flint: White on Black</b></center> | | |
 | | | |
 
-Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a
-priority when glyphs are modified or new glyphs are introduced.
+Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a priority when glyphs are modified or new glyphs are introduced.
 
 ### Settings
 
-The current Clay settings page is captured here as interface evidence only. The
-settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization,
-and persistence rules live in [SettingsandConfiguration](SettingsandConfiguration.md).
+The current Clay settings page is captured here as interface evidence only. The settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization, and persistence rules live in [SettingsandConfiguration](SettingsandConfiguration.md).
 
 <img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page"/>
 
 ## Current Visual Stack
 
-The current stack and information hierarchy is shared across display families
-and geometries:
+The current stack and information hierarchy is shared across display families and geometries:
 
 ```text
 top steps context
@@ -59,8 +43,7 @@ bottom heart-rate context
 ## Current Information Placement
 
 - Platform-specific and integer-based.
-- Resolved from defined layout constants for the active platform rather than
-  scaling one master layout across every device.
+- Resolved from defined layout constants for the active platform rather than scaling one master layout across every device.
 - Health rows are present only on `PBL_HEALTH` builds.
 
 ## Current Coordinates
@@ -170,19 +153,15 @@ Coordinates are `x,y,w,h`.
 
 ### Typography
 
-The `layout_stylist` selects fonts by display class (compact or full) and font role.
-The `Text` role is shared by all non-time, non-date fields (for example, climate, BPM,
-and steps). System fonts are selected first and replaced by the corresponding custom font
-when it loads successfully.
+The `layout_stylist` selects fonts by display class (compact or full) and font role. The `Text` role is shared by all non-time, non-date fields (for example, climate, BPM, and steps). System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
 
-Custom fonts: **Cabin** for time, **Barlow Condensed** for date and metrics.
-Font sizes: Customized for display sizes.
+Custom fonts: **Cabin** for time, **Barlow Condensed** for date and metrics. Font sizes: Customized for display sizes.
 
 | Role | Compact system font | Compact custom font | Full system font | Full custom font |
 | --- | --- | --- | --- | --- |
-| Time | `FONT_KEY_BITHAM_34_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_48` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60`<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (Gabbro) |
-| Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
-| Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_28_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| Time | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_42` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60` (Emery)<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (other full displays) |
+| Date | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| Text (Climate, BPM, Steps, etc.) | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
 
 - Text metrics, coordinates, height, width, are defined per field.
 - Font selection depends on role, display class, and platform.
@@ -192,7 +171,7 @@ Font sizes: Customized for display sizes.
 - On color-capable watches, four modes are available.
 - On monochrome-capable watches, two monochrome-specific modes are available.
 - Each mode uses a defined palette to render text, icons, and convey state.
-- Double-tap the watch to cycle display modes.
+- Click the Back button three times to cycle display modes.
 - The watch repaints immediately when the mode changes.
 
 This satisfies the invariant that choices are available on all devices.
@@ -213,14 +192,13 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 
 1. On Monochrome hardware, light and dark palettes are mirror images of one another.
 2. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have
-   {time+date text, background} in one swapped with their opposite metric in the other.
+{time+date text, background} in one swapped with their opposite metric in the other.
 3. Module displays define `normal` and `unknown` that mirror values from the active
-   primary display palette.
+primary display palette.
 
 ### Consolidated Color Palettes for Display Modes
 
-Source of truth: Current palette code in `layout_stylist.c`, `climate.c`,
-`bpm.c`, `steps.c`, `battery.c`.
+Source of truth: Current palette code in `layout_stylist.c`, `climate.c`, `bpm.c`, `steps.c`, `battery.c`.
 
 Columns:
 - Color's primary role
@@ -277,17 +255,14 @@ Current icon sizes are stable within the compact and full layout classes:
 
 ## Current Glyph Realization
 
-The current glyph system uses familiar heart-and-waveform, weather, walking,
-battery, and power marks that read at watch scale.
+The current glyph system uses familiar heart-and-waveform, weather, walking, battery, and power marks that read at watch scale.
 
 ### Health Glyphs
 
 - Steps use a walking bitmap asset.
 - BPM uses an ECG bitmap asset.
-- Walking and ECG bitmap foreground pixels are recolored from the metric's live
-  state color.
-- Health text uses normal text color when available and out-of-range text color
-  when unavailable.
+- Walking and ECG bitmap foreground pixels are recolored from the metric's live state color.
+- Health text uses normal text color when available and out-of-range text color when unavailable.
 - Out-of-range steps and BPM draw the shared absence slash over the icon.
 
 ### Battery Glyphs
@@ -296,14 +271,11 @@ battery, and power marks that read at watch scale.
 - The track outline and fill use the live battery state color.
 - The fill width is proportional to charge percentage.
 - A filled bolt appears only when the watch is plugged in.
-- On color displays, plugged-in state also shifts the battery color to the
-  plugged-in palette color.
+- On color displays, plugged-in state also shifts the battery color to the plugged-in palette color.
 
 ### Climate Glyphs
 
-Climate glyphs are procedural and drawn in the climate icon frame. The current
-procedural glyph reference grid is `28x28`. Weather condition codes are grouped
-into the current icon families:
+Climate glyphs are procedural and drawn in the climate icon frame. The current procedural glyph reference grid is `28x28`. Weather condition codes are grouped into the current icon families:
 
 | Weather code range | Current icon family |
 | --- | --- |
@@ -328,30 +300,23 @@ into the current icon families:
 - Day clear weather uses a sun glyph.
 - Night clear weather uses a filled/ringed clear glyph.
 - Partly cloudy draws a reduced clear glyph behind a cloud.
-- Cloud uses three lobes plus a shared body fill so the silhouette reads as one
-  cloud.
+- Cloud uses three lobes plus a shared body fill so the silhouette reads as one cloud.
 - Fog uses three horizontal bars.
 - Drizzle uses three heavier staggered marks.
 - Rain uses slanted rain marks; heavy rain uses longer marks.
 - Snow uses a procedural snowflake with six spokes, chevrons, and a center dot.
 - Sleet combines cloud, snowflake, and rain marks.
-- Showers combine a cloud with rain marks while keeping precipitation separate
-  from the cloud baseline.
-- Snow showers combine a cloud with a snowflake while keeping precipitation
-  visually separate from the cloud shape.
+- Showers combine a cloud with rain marks while keeping precipitation separate from the cloud baseline.
+- Snow showers combine a cloud with a snowflake while keeping precipitation visually separate from the cloud shape.
 - Thunderstorm uses the shared filled bolt primitive.
 - Out-of-range weather draws a cloud with the shared absence slash.
 
 ### Out-of-range Visual Identification: Left-to-Right Diagonal Slash
 
-Out-of-range metric and weather states use a shared diagonal slash. The slash
-is drawn from the 28x28 design-space diagonal with three line segments and a
-2px stroke, then scaled to the active icon frame.
+Out-of-range metric and weather states use a shared diagonal slash. The slash is drawn from the 28x28 design-space diagonal with three line segments and a 2px stroke, then scaled to the active icon frame.
 
-## Further Reading
+## Read Next
 
-- [SourceMap](SourceMap.md) for source-code navigation, high-level separation of duties, and interconnections.
+- [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) for implementation flow, source responsibilities, and interconnections.
 - [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog.
-- [Build](BuildandInstall.md) for build, install, and editor-tooling support.
 - [Validation](Validation.md) for validation contract, scenarios, and visual review evidence.
-- [Contributing](Contributing.md) for contributor workflow, validation, and review discipline.
