@@ -18,3 +18,7 @@ compile-commands.json
 uv.lock
 qa/harness-unit-tests/__init__.py
 qa/qa-runs/README.md
+qa/comparisons/
+qa/docs/QAHarnessImplementationLedger.md
+qa/qa-runs/
+tools/__pycache__
