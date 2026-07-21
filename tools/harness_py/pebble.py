@@ -7,12 +7,11 @@ import shutil
 from pathlib import Path
 from typing import Callable, Final
 
-REPO_ROOT: Final = Path(__file__).resolve().parents[2]
+from config import REPO_ROOT
+
 APP_MESSAGE_TIMEOUT_SECONDS: Final[float] = 2.0
 PEBBLE_SETTLE_DELAY_SECONDS: Final[int] = 2
 APP_READY_DELAY_SECONDS: Final[int] = 4
-if str(REPO_ROOT) not in sys.path:
-  sys.path.insert(0, str(REPO_ROOT))
 
 
 def _load_pebble_tool() -> None:

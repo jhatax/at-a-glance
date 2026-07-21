@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import sys
 import unittest
-from pathlib import Path
+from config import QA_ROOT
 from runner import validate_plan # noqa: E402
-
-QA_ROOT = Path(__file__).resolve().parents[2] / "qa"
-if QA_ROOT not in sys.path:
-  sys.path.insert(0, str(QA_ROOT))
 
 
 class HarnessCorrectnessTests(unittest.TestCase):
@@ -26,10 +21,10 @@ class HarnessCorrectnessTests(unittest.TestCase):
   def test_named_suite_loads_and_expands(self) -> None:
     plan = validate_plan("dev-smoke")
     self.assertEqual(plan.name, "dev-smoke")
-    self.assertEqual(len(plan.steps), 3)
+    self.assertEqual(len(plan.steps), 8)
     self.assertEqual(
         [step.capability for step in plan.steps.values()],
-        ["weather", "battery", "health"],
+        ["weather", "battery", "battery", "battery", "battery", "battery", "battery", "health"],
     )
 
   def test_direct_suite_path_loads(self) -> None:

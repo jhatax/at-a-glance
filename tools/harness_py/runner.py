@@ -5,20 +5,12 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Final
 
+from config import PLANS_ROOT, QA_ROOT, REPO_ROOT
 from comparison import compare_runs, view_run
 from execution import run_plan_execution
 from runtime import create_execution_context
 from plans import PlanDefinition, load_plan
-
-REPO_ROOT: Final = Path(__file__).resolve().parents[2]
-QA_ROOT: Final = REPO_ROOT / "qa"
-PLANS_ROOT: Final = QA_ROOT / "plans"
-if REPO_ROOT not in sys.path:
-  sys.path.insert(0, str(REPO_ROOT))
-if QA_ROOT not in sys.path:
-  sys.path.insert(1, str(QA_ROOT))
 
 
 def _print_plan_maybe_confirm(plan: PlanDefinition, confirm: bool = False) -> bool:

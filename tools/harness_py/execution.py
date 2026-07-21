@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Final
 
 from runtime import ExecutionContext, StepResult, finalize
 from plans import DISPLAY_MODE_VALUES, PlanDefinition, PlanStep
-from pebble import PEBBLE_SETTLE_DELAY_SECONDS
 
 if TYPE_CHECKING:
   from pebble import PebbleAdapter

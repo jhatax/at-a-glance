@@ -4,10 +4,10 @@ import json
 from pathlib import Path
 from typing import Final
 
+from config import QA_ROOT
 from report import render_report
 from runtime import QARunPayload
 
-QA_ROOT: Final = Path(__file__).resolve().parents[2] / "qa"
 COMPARISONS_ROOT: Final = QA_ROOT / "comparisons"
 RUNS_ROOT: Final = QA_ROOT / "qa-runs"
 MAX_COMPARISON_RUNS: Final = 5
