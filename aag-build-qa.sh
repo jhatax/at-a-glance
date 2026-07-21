@@ -17,23 +17,22 @@ typeset -gr -a REPRESENTATIVE_EMULATORS=(gabbro emery chalk flint)
 typeset -gr -a ALL_EMULATORS=(aplite basalt chalk diorite emery flint gabbro)
 
 typeset -gr SCRIPT_DIR="${0:A:h}"
-typeset -gr QA_DIR="${SCRIPT_DIR}/qa"
+typeset -gr HELPERS="${SCRIPT_DIR}/tools/"
 typeset -gr DEFAULT_PLATFORM="emery"
 typeset -gr DIRECT_BUILD_LOG_PATH="${SCRIPT_DIR}/build.log"
-typeset -gr COMPILE_DB_PATH="${SCRIPT_DIR}/compile_commands.json"
-typeset -gr COMPILE_DB_SCRIPT="${SCRIPT_DIR}/tools/gen_compile_commands.py"
 
 typeset -g COMMAND_TYPE=""
 typeset -g COMMAND_ACTION=""
 typeset -ga COMMAND_ARGS=()
 typeset -g PARSE_ERROR_MESSAGE=""
 typeset -ga EMULATORS=(${REPRESENTATIVE_EMULATORS[@]})
+typeset -gr PYTHON_RUNNER="${HELPERS}/harness_py/runner.py"
 
-source "${QA_DIR}/lib/argumentparser.sh"
-source "${QA_DIR}/lib/commandhandler.sh"
-source "${QA_DIR}/lib/pebbleadapter.sh"
-source "${QA_DIR}/lib/runtimehelper.sh"
-source "${QA_DIR}/lib/runtimevalidator.sh"
+source "${HELPERS}/harness_shell/argumentparser.sh"
+source "${HELPERS}/harness_shell/commandhandler.sh"
+source "${HELPERS}/harness_shell/pebbleadapter.sh"
+source "${HELPERS}/harness_shell/runtimehelper.sh"
+source "${HELPERS}/harness_shell/runtimevalidator.sh"
 
 print_help() {
   cat << 'EOF'
@@ -43,18 +42,16 @@ Options:
   -b,  --build            Build the project
   -bc, --build-clean      Clean first, then build
   -bv, --build-verbose    Build verbose, also generates compile-commands; use with -bc for most effect
-  -i,  --install          Install on selected emulators
   -r,  --runs             List the most recent QA runs
   -v,  --view RUN         Show the existing summary report for one run
   -c,  --compare RUN...   Compare one to five runs
   --validate QA-PLAN      Validate a QA plan by name
-  -p,  --phone IP         Install through Pebble mobile-app Developer Connection
+  -p,  --phone IP         Install on phone using Pebble mobile-app Developer Connection
   --qaplan QA-PLAN        Validate and run a named QA plan
   -n,  --dry-run          Print the resolved scenario execution plan and exit
   --force                 Skip scenario execution confirmation
-  --failure MODE          Inject a deliberate failure mode: build-typo
-  -e,  --emulators LIST   Comma-separated emulators: emery, flint, chalk, gabbro,
-                          aplite, basalt, diorite
+  -e,  --emulators LIST   Install on specified csv list of emulators.
+                          Supported: emery, flint, chalk, gabbro, aplite, basalt, diorite
   -w,  --wipe             Wipe emulator data
   --nuclear               Kill emulators, wipe, and force a clean build
   -h,  --help             Show this help menu

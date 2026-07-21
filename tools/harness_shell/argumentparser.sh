@@ -7,12 +7,12 @@ parse_args() {
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      -r|--runs)
+      -r | --runs)
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="runs"
         shift
         ;;
-      -v|--view)
+      -v | --view)
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="view-run"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
@@ -22,7 +22,7 @@ parse_args() {
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      -c|--compare)
+      -c | --compare)
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="compare"
         shift
@@ -44,41 +44,38 @@ parse_args() {
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      -bc|--build-clean)
+      -bc | --build-clean)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="build-clean"
         shift
         ;;
-      -bv|--build-verbose)
+      -bv | --build-verbose)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="build-verbose"
         shift
         ;;
-      -b|--build)
+      -b | --build)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="build"
         shift
         ;;
-      -i|--install)
-        COMMAND_TYPE="env-prep"
-        COMMAND_ACTION="install"
-        shift
-        ;;
-      -p|--phone)
+      -p | --phone)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
           PARSE_ERROR_MESSAGE="-p/--phone requires a Pebble app Server IP"
           return 1
         fi
         COMMAND_TYPE="env-prep"
-        COMMAND_ACTION="phone"
+        COMMAND_ACTION="install-phone"
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      -e|--emulators)
+      -e | --emulators)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
           PARSE_ERROR_MESSAGE="-e/--emulators requires a comma-separated emulator list"
           return 1
         fi
+        COMMAND_TYPE="env-prep"
+        COMMAND_ACTION="install-emulators"
         EMULATORS=(${(s:,:)2})
         shift 2
         ;;
@@ -92,7 +89,7 @@ parse_args() {
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      -n|--dry-run)
+      -n | --dry-run)
         if [[ "${FORCE}" == true ]]; then
           PARSE_ERROR_MESSAGE="--force cannot be combined with -n/--dry-run"
           return 1
@@ -108,17 +105,7 @@ parse_args() {
         FORCE=true
         shift
         ;;
-      --failure)
-        if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="--failure requires a failure mode, supported: {build-typo}"
-          return 1
-        fi
-        COMMAND_TYPE="env-prep"
-        COMMAND_ACTION="failure"
-        COMMAND_ARGS=("$2")
-        shift 2
-        ;;
-      -w|--wipe)
+      -w | --wipe)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="wipe"
         shift
@@ -128,7 +115,7 @@ parse_args() {
         COMMAND_ACTION="nuke"
         shift
         ;;
-      -h|--help)
+      -h | --help)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="help"
         shift

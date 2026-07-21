@@ -16,28 +16,18 @@ pebble_clean() {
 }
 
 pebble_build() {
-  run_command "pebble-build" pebble build
+  printf "Building the project.\n"
+  run_command "pebble-build" python3 $PYTHON_RUNNER build
 }
 
 pebble_build_verbose() {
-  run_command_with_log "${DIRECT_BUILD_LOG_PATH}" pebble build -v || return
-  execute_next_pebble_action generate_compile_commands_db
-}
-
-pebble_install_emulator() {
-  local emulator="$1"
-  sleep 4
-  run_command "install-emulator-${emulator}" pebble install --emulator "${emulator}"
+  printf "Running a verbose build for the project.\n"
+  run_command "pebble-build-verbose" python3 $PYTHON_RUNNER build \
+    --verbose --log-path "${DIRECT_BUILD_LOG_PATH}" || return
 }
 
 pebble_install_phone() {
   local phone_ip="$1"
+  printf "Installing on phone with IP $phone_ip.\n"
   run_command "install-phone" pebble install --phone "${phone_ip}"
-}
-
-execute_next_pebble_action() {
-  printf 'Running Command: %q\n' "$@"
-  if command_is_env_prep; then
-    "$@"
-  fi
 }

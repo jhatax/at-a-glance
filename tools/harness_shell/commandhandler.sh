@@ -6,22 +6,19 @@ handle_env_prep() {
     help)
       print_help
       ;;
-    failure)
-      execute_failure_mode
-      ;;
     nuke)
       printf "Running nuclear reset: wipe emulator state and force a clean rebuild.\n"
       pebble_kill || return
-      execute_next_pebble_action pebble_wipe || return
-      execute_next_pebble_action pebble_clean || return
-      execute_next_pebble_action pebble_build_verbose || return
+      pebble_wipe || return
+      pebble_clean || return
+      pebble_build_verbose || return
       ;;
     wipe)
       pebble_wipe
       ;;
     build-clean)
       pebble_clean || return
-      execute_next_pebble_action pebble_build_verbose
+      pebble_build_verbose
       ;;
     build)
       pebble_build
@@ -29,10 +26,10 @@ handle_env_prep() {
     build-verbose)
       pebble_build_verbose
       ;;
-    install)
-      install_on_emulators
+    install-emulators)
+      python3 $PYTHON_RUNNER install --emulators "${EMULATORS[@]}"
       ;;
-    phone)
+    install-phone)
       install_on_phone
       ;;
   esac
@@ -41,11 +38,11 @@ handle_env_prep() {
 # Confirm qa plans, view details about test runs
 handle_qa_inspections() {
   command_is_qa_inspection || return 0
-  python3 "${QA_DIR}/runner.py" qa-inspection "${COMMAND_ACTION}" "${COMMAND_ARGS[@]}"
+  python3 $PYTHON_RUNNER qa-inspection "${COMMAND_ACTION}" "${COMMAND_ARGS[@]}"
 }
 
 # Execute the selected QA plan
 handle_qa_plan_execution() {
   command_is_scenario_exec || return 0
-  python3 "${QA_DIR}/runner.py" scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS[1]"
+  python3 $PYTHON_RUNNER scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS[1]"
 }
