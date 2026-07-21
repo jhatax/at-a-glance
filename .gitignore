@@ -1,6 +1,7 @@
 .continue/
 .git/
-.vscode/
+.vscode/settings.json
+.vscode/tasks.json
 .prompts/
 .cache/
 .DS_Store
@@ -22,3 +23,4 @@ qa/comparisons/
 qa/docs/QAHarnessImplementationLedger.md
 qa/qa-runs/
 tools/__pycache__
+src/modules/.vscode/settings.json

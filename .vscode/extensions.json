@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "eeyore.yapf",
+    "foxundermoon.shell-format",
+    "llvm-vs-code-extensions.vscode-clangd"
+  ]
+}
