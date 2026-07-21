@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-#include "modules/settings.h"
+#include "settings.h"
 #include "watchface_components.h"
 
 #if (defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO))
