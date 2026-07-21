@@ -28,7 +28,11 @@
     "watchapp": {
       "watchface": true
     },
-    "capabilities": ["configurable", "location", "health"],
+    "capabilities": [
+      "configurable",
+      "location",
+      "health"
+    ],
     "messageKeys": [
       "TIME_FORMAT",
       "TEMP_UNIT",
@@ -53,7 +57,13 @@
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
           "file": "fonts/BarlowCondensed-SemiBold.ttf",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ],
           "name": "FONT_TEXT_SEMIBOLD_16",
           "type": "font",
           "compatibility": "2.7"
@@ -61,7 +71,10 @@
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
           "file": "fonts/BarlowCondensed-SemiBold.ttf",
-          "targetPlatforms": ["emery", "gabbro"],
+          "targetPlatforms": [
+            "emery",
+            "gabbro"
+          ],
           "name": "FONT_TEXT_SEMIBOLD_22",
           "type": "font",
           "compatibility": "2.7"
@@ -69,15 +82,23 @@
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"],
-          "name": "FONT_CABIN_SEMIBOLD_48",
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ],
+          "name": "FONT_CABIN_SEMIBOLD_42",
           "type": "font",
           "compatibility": "2.7"
         },
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": ["emery"],
+          "targetPlatforms": [
+            "emery"
+          ],
           "name": "FONT_CABIN_SEMIBOLD_60",
           "type": "font",
           "compatibility": "2.7"
@@ -85,7 +106,9 @@
         {
           "characterRegex": "[0-9:]",
           "file": "fonts/cabin-semibold-600-time-subset.ttf",
-          "targetPlatforms": ["gabbro"],
+          "targetPlatforms": [
+            "gabbro"
+          ],
           "name": "FONT_CABIN_SEMIBOLD_72",
           "type": "font",
           "compatibility": "2.7"
@@ -94,25 +117,43 @@
           "file": "images/walk_18.png",
           "name": "WALK",
           "type": "bitmap",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"]
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ]
         },
         {
           "file": "images/walk_28.png",
           "name": "WALK",
           "type": "bitmap",
-          "targetPlatforms": ["emery", "gabbro"]
+          "targetPlatforms": [
+            "emery",
+            "gabbro"
+          ]
         },
         {
           "file": "images/ecg_18.png",
           "name": "ECG",
           "type": "bitmap",
-          "targetPlatforms": ["aplite", "chalk", "flint", "basalt", "diorite"]
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ]
         },
         {
           "file": "images/ecg_28.png",
           "name": "ECG",
           "type": "bitmap",
-          "targetPlatforms": ["emery","gabbro"]
+          "targetPlatforms": [
+            "emery",
+            "gabbro"
+          ]
         }
       ]
     }
