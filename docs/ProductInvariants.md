@@ -2,8 +2,7 @@
 
 This document defines the product truths that must remain stable as the watch face evolves.
 
-These are acceptance properties that every implementation must satisfy. They
-are written to be simple to understand and verify.
+These are acceptance properties that every implementation must satisfy. They are written to be simple to understand and verify.
 
 ## Adjacent
 

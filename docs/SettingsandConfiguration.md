@@ -1,8 +1,6 @@
 # Settings and Configuration
 
-This document covers settings, configuration transport, message-key mapping, persistence, and validation for *At A Glance*.
-
-Use this document to understand:
+This document covers settings, configuration transport, message-key mapping, persistence, and validation for *At A Glance*. Use this document to understand:
 
 - the canonical setting catalog
 - settings defaults
@@ -129,7 +127,7 @@ Pebble assigns manifest-backed numeric message IDs from the `package.json` `mess
 
 Generated C and JS artifacts may list keys in sorted-name order. That listing order is not the numeric assignment rule. Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
 
-Rules:
+**Rules**
 
 - Add new manifest-backed keys at the end unless a deliberate renumbering is being performed.
 - Recheck generated key output after any `messageKeys` change.

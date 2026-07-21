@@ -3,10 +3,10 @@
 This document explains how to extend and modify *At A Glance*.
 
 - Use it as the workflow and review guide for contributors. Keep product rules, visual vocabulary, and runtime architecture decisions in their dedicated documents.
-- Contributing to a project involves a cycle that spans: Setup Repo -> Configure IDE environment -> Build -> Validate -> Repeat.
+- Contributing to a project involves a cycle that spans:
+  - Setup Repo -> Configure IDE environment -> Build -> Validate -> Repeat.
 
-The repository provides configuration for formatting, Git commits, IDE
-integration, and build and validation automation.
+The repository provides configuration for formatting, Git commits, IDE integration, and build and validation automation.
 
 ## Adjacent
 
@@ -38,9 +38,7 @@ Install the local tools used by the build, QA, and formatting flows:
 brew install node python pre-commit yapf shfmt clang-format
 ```
 
-Install the Pebble SDK and `pebble` CLI using the official Pebble SDK
-instructions. The repository uses the SDK toolchain to build, install, and
-exercise the watch face on supported emulators.
+Install the Pebble SDK and `pebble` CLI using the official Pebble SDK instructions. The repository uses the SDK toolchain to build, install, and exercise the watch face on supported emulators.
 
 Verify the environment:
 
@@ -85,21 +83,19 @@ The following are in the repo to facilitate development and QA activities:
 
 If editor diagnostics look stale or incorrect, regenerate the compile database from a fresh build rather than editing flags by hand.
 
-The verbose harness build generates `compile_commands.json` for the `emery`
-platform. The platform is passed in [qa/python/pebble.py](../qa/python/pebble.py)
-when it calls [tools/gen_compile_commands.py](../tools/gen_compile_commands.py).
-Change that argument when editor tooling should target a different platform.
+The verbose harness build generates `compile_commands.json` for the `emery` platform. The platform is passed in [tools/harness_py/pebble.py](../tools/harness_py/pebble.py) when it calls [tools/harness_py/gen_compile_commands.py](../tools/harness_py/gen_compile_commands.py).
+
+Change `emery` to the platform targeted by editor tooling for your configuration.
 
 ### Build, Install, and QA Automation
 
-The automation harness, `aag-build-qa.sh`, provides build, install, and QA
-commands. Make it executable if needed:
+The automation harness, `aag-build-qa.sh`, provides build, install, and QA commands. Make it executable if needed:
 
 ```sh
 chmod +x aag-build-qa.sh
 ```
 
-Features:
+**Features**
 
 1. Install the watch face on emulators and devices
 
@@ -193,9 +189,7 @@ Before committing a change:
 
 ### Formatting consistency: Clang-format, YAPF, shfmt
 
-The repository's pre-commit configuration runs YAPF for Python, `shfmt` for
-shell, and `clang-format` for C and headers. `.clang-format` and `.clangd`
-provide consistent formatting and Pebble-aware editor diagnostics from the
+The repository's pre-commit configuration runs YAPF for Python, `shfmt` for shell, and `clang-format` for C and headers. `.clang-format` and `.clangd` provide consistent formatting and Pebble-aware editor diagnostics from the
 repo root.
 
 Use `clang-format` before committing C changes:
@@ -214,8 +208,7 @@ For how `compile_commands.json` is generated from Pebble's verbose build output,
 
 ### Git check-in hook
 
-The checked-in hook delegates to `pre-commit`, which runs the configured
-formatters on staged files. Initialize it once with `zsh setup-git-hook.sh`.
+The checked-in hook delegates to `pre-commit`, which runs the configured formatters on staged files. Initialize it once with `zsh setup-git-hook.sh`.
 
 ## Documentation Management
 

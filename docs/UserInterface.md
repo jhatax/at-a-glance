@@ -191,16 +191,14 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 ### Realization of Shared Visual Identity
 
 1. On Monochrome hardware, light and dark palettes are mirror images of one another.
-2. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have
-{time+date text, background} in one swapped with their opposite metric in the other.
-3. Module displays define `normal` and `unknown` that mirror values from the active
-primary display palette.
+2. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have {time+date text, background} in one swapped with their opposite metric in the other.
+3. Module displays define `normal` and `unknown` that mirror values from the active primary display palette.
 
 ### Consolidated Color Palettes for Display Modes
 
-Source of truth: Current palette code in `layout_stylist.c`, `climate.c`, `bpm.c`, `steps.c`, `battery.c`.
+**Source of truth**: Current palette code in `layout_stylist.c`, `climate.c`, `bpm.c`, `steps.c`, `battery.c`.
 
-Columns:
+**Columns**
 - Color's primary role
 - `Mono-Light BW`: `DISPLAY_MODE_LIGHT_MONOCHROME` (on monochrome)
 - `Mono-Dark BW`: `DISPLAY_MODE_DARK_MONOCHROME` (on monochrome)
@@ -248,10 +246,8 @@ Columns:
 
 ## Current Icon Sizes
 
-Current icon sizes are stable within the compact and full layout classes:
-
-- Compact icon size: `18x18`
-- Full icon size: `28x28`
+- **Compact** icon size: `18x18`
+- **Full** icon size: `28x28`
 
 ## Current Glyph Realization
 

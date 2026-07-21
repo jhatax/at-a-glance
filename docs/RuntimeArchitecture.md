@@ -13,8 +13,7 @@ This is the current source of truth for *At A Glance's* runtime architecture: ex
 Layers have been implemented to satisfy visual display and runtime-architecture invariants.
 
 1. Pebble OS adapter: `ataglance.c` => main window & persisted settings lifecycle owner
-2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events
-into watch face vocabulary
+2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events into watch face vocabulary
 3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules
   - `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
@@ -159,10 +158,8 @@ Two classes of strata have been defined:
 
 Additionally,
 - **only text elements** are considered as required within each strata.
-- Placement of text is not impacted if icons cannot be created, are disabled,
-or cannot be displayed.
-- If `Required` strata cannot be created, watch face initialization fails and control
-is returned to the Pebble OS.
+- Placement of text is not impacted if icons cannot be created, are disabled, or cannot be displayed.
+- If `Required` strata cannot be created, watch face initialization fails and control is returned to the Pebble OS.
 
 This categorization satisfies the visual invariant of information hierarchy and display consistency for all supported devices.
 
@@ -325,13 +322,16 @@ The steps module demonstrates the intended boundary:
 
 ## AppMessage Runtime Coverage
 
-`ataglance.c` is the Pebble container and transport/service adapter. It parses raw AppMessage tuples (using a helper function) into `WatchfaceEventData`, tracks whether each tuple was received and parsed, and then delegates runtime interpretation to `watchface_apply_received_data()`.
+`ataglance.c` is the Pebble container and transport/service adapter. Responsibilities:
+1. parse raw AppMessage tuples (using a helper function) into `WatchfaceEventData`;
+2. track whether each tuple was received and parsed;
+3. delegate runtime interpretation to `watchface_apply_received_data()`.
 
 ### Inbound AppMessage coverage
 
-- Settings tuples: time format, temperature unit, display mode, weather cadence, heart-rate cadence, and steps goal.
-- Weather tuples: temperature, weather condition, and `is_day`.
-- QA-only one-shot health tuples: BPM and steps overrides.
+- **Settings tuples**: time format, temperature unit, display mode, weather cadence, heart-rate cadence, and steps goal.
+- **Weather tuples**: temperature, weather condition, and `is_day`.
+- **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
 ### Outbound AppMessage coverage
 

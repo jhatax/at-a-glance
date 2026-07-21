@@ -90,18 +90,13 @@ A shared watch face **stack** anchors information to stable locations across all
 ## Stroke And Simplification
 
 1. When using lines, use heavy strokes that survive watch scale.
-
 2. Use a fixed design grid for procedural glyphs.
-
 3. Scale glyphs and icons to fit compact grid sizes.
-
-5. For layered same-color shapes:
-
-- Draw the rear shape.
-- Separate it with a background halo.
-- Draw the foreground shape.
-
-6. Use simplification to preserve recognition, not to strip away meaning.
+4. For layered same-color shapes:
+  - Draw the rear shape.
+  - Separate it with a background halo.
+  - Draw the foreground shape.
+5. Use simplification to preserve recognition, not to strip away meaning.
 
 ## Stable Visual Footprint
 

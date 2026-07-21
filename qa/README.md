@@ -36,34 +36,26 @@ Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for QA Plan aut
 ## Ownership
 
 - `aag-build-qa.sh` owns the public shell boundary and wrapper lifecycle.
-- `qa/lib/pebbleadapter.sh` owns shell routing for build, clean, install, wipe,
-  kill, and phone operations.
+- `tools/harness_shell/pebbleadapter.sh` owns shell routing for build, clean, install, wipe, kill, and phone operations.
 - `runner.py` owns Python command dispatch.
-- `python/pebble.py` owns Python build execution through Pebble Tool's SDK/Waf
+- `tools/harness_py/pebble.py` owns Python build execution through Pebble Tool's SDK/Waf
   path and generates the optional `compile_commands.json` during verbose builds.
-- `python/scenarios.py` owns grammar parsing, policy validation, include resolution, concrete steps, and artifact identity.
-- `python/execution.py` owns Pebble commands, step execution, screenshots, and command output.
-- `python/runtime.py` owns run context, final facts, canonical JSON, and run closeout.
-- `python/report.py` owns the shared Markdown renderer.
-- `python/comparison.py` owns run lookup, one-run summary lookup, and multi-run comparison orchestration.
+- `tools/harness_py/plans.py` owns grammar parsing, policy validation, include resolution, concrete steps, and artifact identity.
+- `tools/harness_py/execution.py` owns Pebble commands, step execution, screenshots, and command output.
+- `tools/harness_py/runtime.py` owns run context, final facts, canonical JSON, and run closeout.
+- `tools/harness_py/report.py` owns the shared Markdown renderer.
+- `tools/harness_py/comparison.py` owns run lookup, one-run summary lookup, and multi-run comparison orchestration.
 
-The shell routes build requests. The Python adapter performs the build. A
-verbose build writes `build.log` and attempts to generate
-`compile_commands.json` for `emery`; the build remains usable when optional
-compile-database generation has no commands to write.
+The shell routes build requests. The Python adapter performs the build. A verbose build writes `build.log` and attempts to generate `compile_commands.json` for `emery`; the build remains usable when optional compile-database generation has no commands to write.
 
 ### Boundary Rationale
 
 The boundary follows the information each operation needs:
 
-- **zsh:** all command routing; environment management for clean, wipe, kill,
-  phone install, and help.
-- **Python:** silent and verbose build, emulator install, resolved `qaplan`
-  execution and evidence capture, plus `runs`, `view`, `compare`, and
-  `validate` inspection.
+- **zsh:** all command routing; environment management for clean, wipe, kill, phone install, and help.
+- **Python:** silent and verbose build, emulator install, resolved `qaplan` execution and evidence capture, plus `runs`, `view`, `compare`, and `validate` inspection.
 
-Shell lifecycle commands do not parse plans. Python execution does not rebuild
-environment state in shell.
+Shell lifecycle commands do not parse plans. Python execution does not rebuild environment state in shell.
 
 ## Run Artifacts
 
@@ -81,7 +73,7 @@ Comparison artifacts are stored under `qa/comparisons/`. Reports link to local a
 Run the harness correctness tests from the repository root:
 
 ```sh
-python3 -m unittest discover -s qa/harness-unit-tests -p 'test_*.py'
+PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
 ```
 
 The repo contains grammar fixtures used by unit tests under `qa/fixtures/`.

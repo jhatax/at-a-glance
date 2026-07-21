@@ -235,5 +235,5 @@ Fixtures provide accepted and rejected plan files for parser checks:
 Run the executable fixture checks from the repository root:
 
 ```sh
-python3 -m unittest discover -s qa/harness-unit-tests -p 'test_*.py'
+PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
 ```
