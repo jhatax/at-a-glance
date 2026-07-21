@@ -1,13 +1,14 @@
 repos:
-  # Route Python files through Ruff
-  - repo: https://github.com
-    rev: v0.9.0
+  # Route Python files through YAPF for two-space indentation
+  - repo: https://github.com/google/yapf
+    rev: v0.43.0
     hooks:
-      - id: ruff-format
+      - id: yapf
+        args: ["--style=.style.yapf", "--in-place"]
 
   # Route Shell files through shfmt
-  - repo: https://github.com
-    rev: v3.10.0
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.10.0-1
     hooks:
       - id: shfmt
         args: ["-i", "2", "-sr", "-ci", "-w"]

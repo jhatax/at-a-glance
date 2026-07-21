@@ -3,7 +3,6 @@
 .vscode/
 .prompts/
 .cache/
-.cursorrules
 .DS_Store
 .lock-waf_darwin_build
 .prompts
@@ -15,12 +14,7 @@ compile_flags.txt
 archive/
 build/
 node_modules/
-clangd_old
 compile-commands.json
-qa/data/battery_levels.sh
-qa/data/display_modes.sh
-qa/data/health_vectors.sh
-qa/data/targets.sh
-agents_atb.md
-qa/ReportGeneration.md
-qa/clean-up-the-mess.md
+uv.lock
+qa/harness-unit-tests/__init__.py
+qa/qa-runs/README.md

@@ -31,7 +31,7 @@ static void settings_sanitize(
     settings->temp_unit = TEMP_UNIT_DEFAULT;
   }
   if (!TIME_FORMAT_VALID(settings->time_format)) {
-    settings->time_format = TIME_FMT_DEFAULT;
+    settings->time_format = clock_is_24h_style() ? TIME_FMT_24 : TIME_FMT_12;
   }
 #ifdef PBL_HEALTH
   if (!HR_SAMPLE_MINUTES_VALID(settings->hr_sample_minutes)) {
