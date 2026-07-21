@@ -18,7 +18,7 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 - [Pebble App Store: At A Glance](https://apps.repebble.com/7727666da5c84c259b3a70b3)
 
-To build from source:
+- To build from source:
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
