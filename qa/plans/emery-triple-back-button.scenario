@@ -1,0 +1,9 @@
+PREAMBLE
+  SCENARIO emery-triple-back-button
+  SCREENSHOTS yes
+  EMULATORS emery
+END
+
+EXECUTE
+  STEP triple-back-button display=black
+END
