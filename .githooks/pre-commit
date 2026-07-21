@@ -19,10 +19,9 @@ if (( ${#sh_files} )); then
 fi
 
 if (( ${#py_files} )); then
-  ruff format $py_files 2>/dev/null && git add $py_files
+  yapf -i $py_files 2>/dev/null && git add $py_files
 fi
 
 if (( ${#c_files} )); then
   clang-format -i $c_files 2>/dev/null && git add $c_files
 fi
-
