@@ -12,16 +12,24 @@ local -a sh_files py_files c_files
 sh_files=(${(M)staged_files:#*.(sh|zsh)})
 py_files=(${(M)staged_files:#*.py})
 c_files=(${(M)staged_files:#*.(c|h)})
+js_files=(${(M)staged_files:#*.(js|jsx|ts|tsx|json|css|scss|md|yaml|yml)})
 
-# 3. Format and automatically re-stage modified files
+# 3. Format and automatically re-stage modified files safely
 if (( ${#sh_files} )); then
-  shfmt -i 2 -sr -ci -w $sh_files 2>/dev/null && git add $sh_files
+  # "${sh_files[@]}" ensures multi-file selections expand cleanly
+  shfmt -i 2 -sr -ci -w "${sh_files[@]}" 2>/dev/null && git add "${sh_files[@]}"
 fi
 
 if (( ${#py_files} )); then
-  yapf -i $py_files 2>/dev/null && git add $py_files
+  # Explicitly bind your .style.yapf file to guarantee the new layout applies
+  yapf --style=.style.yapf -i "${py_files[@]}" 2>/dev/null && git add "${py_files[@]}"
 fi
 
 if (( ${#c_files} )); then
-  clang-format -i $c_files 2>/dev/null && git add $c_files
+  clang-format -i "${c_files[@]}" 2>/dev/null && git add "${c_files[@]}"
 fi
+
+if (( ${#js_files} )); then
+  npx --no-install prettier --write "${js_files[@]}"
+fi
+git add "${staged_files[@]}"

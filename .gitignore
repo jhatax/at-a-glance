@@ -24,3 +24,5 @@ qa/docs/QAHarnessImplementationLedger.md
 qa/qa-runs/
 tools/__pycache__
 src/modules/.vscode/settings.json
+implementation_plans/
+tools/harness_py_refactor

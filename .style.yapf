@@ -3,3 +3,6 @@ based_on_style = pep8
 indent_width = 2
 column_limit = 100
 spaces_before_comment = 1
+split_before_first_argument = true
+dedent_closing_brackets = true
+blank_line_before_nested_class_or_def = true
