@@ -1,0 +1,29 @@
+{
+  "plan": "canary",
+  "started_at": "20260727T154241",
+  "output_folder": "/tmp/20260727T154241-pid1234",
+  "_run_id": "20260727T154241-pid1234",
+  "status": "passed",
+  "run_outputs": {
+    "root": "/tmp/20260727T154241-pid1234"
+  },
+  "step_count": 1,
+  "step_outputs": [
+    {
+      "step_id": "battery_emery_50_0",
+      "capability": "battery",
+      "status": "passed",
+      "emulator": "emery",
+      "step_args": {
+        "display": "white",
+        "level": 50,
+        "charging": 0
+      },
+      "screenshot_ctx": {
+        "expected": 0,
+        "captured": 0,
+        "paths": []
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 PREAMBLE
   SCENARIO validation-emery-two-step
-  SCREENSHOTS no
+  SCREENSHOTS yes
   EMULATORS emery
 END
 
