@@ -17,12 +17,12 @@ pebble_clean() {
 
 pebble_build() {
   printf "Building the project.\n"
-  run_command "pebble-build" python3 $PYTHON_RUNNER build
+  run_command "pebble-build" python3 "$PYTHON_HARNESS" build
 }
 
 pebble_build_verbose() {
   printf "Running a verbose build for the project.\n"
-  run_command "pebble-build-verbose" python3 $PYTHON_RUNNER build \
+  run_command "pebble-build-verbose" python3 "$PYTHON_HARNESS" build \
     --verbose --log-path "${DIRECT_BUILD_LOG_PATH}" || return
 }
 

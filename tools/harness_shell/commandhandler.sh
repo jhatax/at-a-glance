@@ -27,10 +27,16 @@ handle_env_prep() {
       pebble_build_verbose
       ;;
     install-emulators)
-      python3 $PYTHON_RUNNER install --emulators "${EMULATORS[@]}"
+      python3 "$PYTHON_HARNESS" install --emulators "${EMULATORS[@]}"
       ;;
     install-phone)
       install_on_phone
+      ;;
+    list-qaplans)
+      list_qa_plans
+      ;;
+    runs)
+      list_qa_runs
       ;;
   esac
 }
@@ -38,11 +44,11 @@ handle_env_prep() {
 # Confirm qa plans, view details about test runs
 handle_qa_inspections() {
   command_is_qa_inspection || return 0
-  python3 $PYTHON_RUNNER qa-inspection "${COMMAND_ACTION}" "${COMMAND_ARGS[@]}"
+  python3 "$PYTHON_HARNESS" qa-inspection "${COMMAND_ACTION}" "${COMMAND_ARGS[@]}"
 }
 
 # Execute the selected QA plan
 handle_qa_plan_execution() {
   command_is_scenario_exec || return 0
-  python3 $PYTHON_RUNNER scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS[1]"
+  python3 "$PYTHON_HARNESS" scenario-exec "$COMMAND_ACTION" --qaplan-name "$COMMAND_ARGS[1]"
 }

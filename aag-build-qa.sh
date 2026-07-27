@@ -17,7 +17,9 @@ typeset -gr -a REPRESENTATIVE_EMULATORS=(gabbro emery chalk flint)
 typeset -gr -a ALL_EMULATORS=(aplite basalt chalk diorite emery flint gabbro)
 
 typeset -gr SCRIPT_DIR="${0:A:h}"
-typeset -gr HELPERS="${SCRIPT_DIR}/tools/"
+typeset -gr QAPLANS_DIR="${SCRIPT_DIR}/qa/plans"
+typeset -gr QARUNS_DIR="${SCRIPT_DIR}/qa/qa-runs"
+typeset -gr HELPERS="${SCRIPT_DIR}/tools"
 typeset -gr DEFAULT_PLATFORM="emery"
 typeset -gr DIRECT_BUILD_LOG_PATH="${SCRIPT_DIR}/build.log"
 
@@ -26,7 +28,7 @@ typeset -g COMMAND_ACTION=""
 typeset -ga COMMAND_ARGS=()
 typeset -g PARSE_ERROR_MESSAGE=""
 typeset -ga EMULATORS=(${REPRESENTATIVE_EMULATORS[@]})
-typeset -gr PYTHON_RUNNER="${HELPERS}/harness_py/runner.py"
+typeset -gr PYTHON_HARNESS="${HELPERS}/harness_py/ataglanceharness.py"
 
 source "${HELPERS}/harness_shell/argumentparser.sh"
 source "${HELPERS}/harness_shell/commandhandler.sh"
@@ -48,6 +50,7 @@ Options:
   --validate QA-PLAN      Validate a QA plan by name
   -p,  --phone IP         Install on phone using Pebble mobile-app Developer Connection
   --qaplan QA-PLAN        Validate and run a named QA plan
+  --plans                 Get a list of available QA plans
   -n,  --dry-run          Print the resolved scenario execution plan and exit
   --force                 Skip scenario execution confirmation
   -e,  --emulators LIST   Install on specified csv list of emulators.

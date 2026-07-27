@@ -8,7 +8,7 @@ parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -r | --runs)
-        COMMAND_TYPE="qa-inspection"
+        COMMAND_TYPE="env-prep"
         COMMAND_ACTION="runs"
         shift
         ;;
@@ -88,6 +88,11 @@ parse_args() {
         COMMAND_ACTION="run-scenario"
         COMMAND_ARGS=("$2")
         shift 2
+        ;;
+      --plans)
+        COMMAND_TYPE="env-prep"
+        COMMAND_ACTION="list-qaplans"
+        shift
         ;;
       -n | --dry-run)
         if [[ "${FORCE}" == true ]]; then

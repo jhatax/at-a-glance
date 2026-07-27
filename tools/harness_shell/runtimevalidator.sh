@@ -30,7 +30,7 @@ validate_csv_values() {
 }
 
 validate_qa_inspection() {
-  if [[ "${COMMAND_ACTION}" != (runs|view-run|compare|validate|dryrun) ]]; then
+  if [[ "${COMMAND_ACTION}" != (view-run|compare|validate|dryrun) ]]; then
     validate_fail "unsupported qa-inspection action '${COMMAND_ACTION}'"
     return 1
   fi
