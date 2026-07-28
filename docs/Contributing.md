@@ -1,38 +1,29 @@
 # Contributing
 
-This document explains how to extend and modify *At A Glance*.
-
-- Use it as the workflow and review guide for contributors. Keep product rules, visual vocabulary, and runtime architecture decisions in their dedicated documents.
-- Contributing to a project involves a cycle that spans:
-  - Setup Repo -> Configure IDE environment -> Build -> Validate -> Repeat.
-
-The repository provides configuration for formatting, Git commits, IDE integration, and build and validation automation.
+Thanks for your interest. This document explains how to extend and modify *At A Glance* from cloning the repo, configuring your IDE, changing and validating code, and updating docs.
 
 ## Adjacent
-
+- [Watchface_Readme](Readme.md) gives an overview of the watch face with screenshots
 - [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
 - [Validation](Validation.md) for validation paths and evidence.
 
 ## Environment Setup
 
-### GitHub integration
+### Getting Started
 
 Clone the repository and enter its directory:
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
 cd at-a-glance
+npm install
+pebble build
 ```
-
-Update an existing checkout before starting work:
-
-```sh
-git pull --ff-only origin main
-```
+The build produces the PBW and platform artifacts under `build/`.
 
 ### Prerequisites
 
-Install the local tools used by the build, QA, and formatting flows:
+Install local tools used by the build, QA, and formatting flows:
 
 ```sh
 brew install node python pre-commit yapf shfmt clang-format
@@ -61,16 +52,17 @@ zsh setup-git-hook.sh
 
 The hook delegates each commit to the repository's pre-commit configuration.
 
-### First Build
-
-Install dependencies and build the watch face:
-
+### Making a Change
+1. Update local to main before starting work, create a branch, get to work:
 ```sh
-npm install
-pebble build
+git switch main
+git pull --ff-only origin main
+git switch -c my-fix
 ```
+2. Test your code; review documentation
+3. Submit a PR with a clear description of change(s): What, Why, How Validated
 
-The build produces the PBW and platform artifacts under `build/`.
+PRs get reviewed in the order of submission and as fast as possible.
 
 ### IDE Support
 
@@ -114,7 +106,7 @@ chmod +x aag-build-qa.sh
 
 4. More info: `./aag-build-qa.sh -h`
 
-## Change Guidelines
+## Repo Hygiene Guidelines
 
 - Treat every change as small embedded firmware work.
 - Review architecture before non-trivial edits.
@@ -201,12 +193,6 @@ If `clangd` cannot locate the Pebble compiler, configure your editor with the to
 --query-driver=/path/to/arm-none-eabi-gcc
 ```
 
-For how `compile_commands.json` is generated from Pebble's verbose build output, see [BuildandInstall](BuildandInstall.md).
-
-### Git check-in hook
-
-The checked-in hook delegates to `pre-commit`, which runs the configured formatters on staged files. Initialize it once with `zsh setup-git-hook.sh`.
-
 ## Documentation Management
 
 - Use [DocumentationContracts](DocumentationContracts.md) to define a document's purpose, sub-concepts, and navigation.
@@ -215,6 +201,7 @@ The checked-in hook delegates to `pre-commit`, which runs the configured formatt
 
 ## Read Next
 
+- [BuildandInstall](BuildandInstall.md) for build, install, and editor-tooling details.
+- [Validation](Validation.md) for validation contract, evidence, and release profiles.
 - [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and boundaries.
-- [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog, Clay mapping, message-key contract, persistence, and validation obligations.
 - [QA_Readme](../qa/README.md) for watch-face QA plan execution.
