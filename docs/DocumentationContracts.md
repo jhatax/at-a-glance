@@ -4,7 +4,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 ## Documentation Details and Connections
 
-### Watchface_Readme
+### 1. Watchface_Readme
 
 **Purpose:** Introduces *At A Glance* to a new user. It provides the shortest path to screenshots, features, installation, and source build.
 
@@ -12,7 +12,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** [UserInterface](UserInterface.md). Read next: [BuildandInstall](BuildandInstall.md), [Contributing.md](Contributing.md).
 
-### DocumentationOntology
+### 2. DocumentationOntology
 
 **Purpose:** Defines the canonical home for each knowledge domain. It keeps the corpus connected through ownership, document class, and navigation rules.
 
@@ -20,7 +20,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** [DocumentationOntology](DocumentationOntology.md) owns canonical-domain classification; this document owns the relationship map.
 
-### DocumentationContracts (this)
+### 3. DocumentationContracts (this)
 
 **Purpose:** Defines the purpose, sub-concepts, and navigation contract for every document. It gives contributors the durable procedure for adding a document without weakening the documentation system.
 
@@ -28,7 +28,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [DocumentationOntology](DocumentationOntology.md). Read next: [Contributing](Contributing.md).
 
-### Design
+### 4. Design
 
 **Purpose:** Defines why *At A Glance* looks and behaves as a glance-first watch face. It establishes the product motivation, visual calm, cross-device intent, and automatic-perception invariant.
 
@@ -36,7 +36,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: none. Read next: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md).
 
-### ProductInvariants
+### 5. ProductInvariants
 
 **Purpose:** Defines the product properties that every implementation must preserve. It turns design intent into observable acceptance properties across devices and display families.
 
@@ -44,7 +44,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [Design](Design.md), [VisualVocabulary](VisualVocabulary.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [UserInterface](UserInterface.md).
 
-### VisualVocabulary
+### 6. VisualVocabulary
 
 **Purpose:** Defines the visual rules used to satisfy the product invariants. It assigns responsibilities to channels and establishes recognition, composition, glyph, stroke, color, display-mode, and out-of-range rules.
 
@@ -52,7 +52,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md). Read next: [UserInterface](UserInterface.md).
 
-### UserInterface
+### 7. UserInterface
 
 **Purpose:** Records the current visual realization of the watch face. It provides the evidence layer for stack order, geometry, typography, palettes, icons, glyphs, and settings presentation.
 
@@ -60,7 +60,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 
-### RuntimeArchitecture
+### 8. RuntimeArchitecture
 
 **Purpose:** Describes the current runtime structure and ownership boundaries. It follows initialization, event, settings, module, palette, transport, capability, and lifecycle flows through the watch face.
 
@@ -68,7 +68,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 
-### WatchfaceImplementationFlow
+### 9. WatchfaceImplementationFlow
 
 **Purpose:** Maps implementation files and shared headers to their responsibilities. It gives a contributor a source-level route from manifest and build inputs through runtime ownership and feature modules.
 
@@ -76,7 +76,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [RuntimeArchitecture](RuntimeArchitecture.md), [UserInterface](UserInterface.md), [SettingsandConfiguration](SettingsandConfiguration.md). Read next: [Contributing](Contributing.md).
 
-### SettingsandConfiguration
+### 10. SettingsandConfiguration
 
 **Purpose:** Defines the settings contract from Clay and PKJS through AppMessage, C parsing, persistence, and runtime effects. It records defaults, valid values, message keys, and the validation obligations for changes.
 
@@ -84,7 +84,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [UserInterface](UserInterface.md), [BuildandInstall](BuildandInstall.md), [Validation](Validation.md).
 
-### Contributing
+### 11. Contributing
 
 **Purpose:** Guides contributors from repository setup through build, validation, review, formatting, and commit. It provides the working discipline that keeps product, source, and documentation changes traceable.
 
@@ -92,7 +92,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA_Readme](../qa/README.md).
 
-### BuildandInstall
+### 12. BuildandInstall
 
 **Purpose:** Describes build, compile-database, emulator-install, device-install, and recovery flows. It keeps build-stage ownership and editor tooling separate from product and QA semantics.
 
@@ -100,7 +100,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [Contributing](Contributing.md), [Validation](Validation.md). Read next: none.
 
-### Validation
+### 13. Validation
 
 **Purpose:** Defines how contributors choose a validation path and what evidence each path produces. It keeps signoff with the operator while making build, runtime, settings, visual, and release checks repeatable.
 
@@ -108,7 +108,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA_Readme](../qa/README.md).
 
-### QA_Readme
+### 14. QA_Readme
 
 **Purpose:** Explains how to operate the QA harness and inspect its artifacts. It presents the public command flow, shell/Python boundary, run outputs, and correctness-test command.
 
@@ -116,7 +116,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [Validation](Validation.md), [Contributing](Contributing.md). Read next: [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
-### WritingTestCasesAndPlans
+### 15. WritingTestCasesAndPlans
 
 **Purpose:** Shows operators how to write the narrow QA grammar. It explains plan anatomy, scenario steps, suite composition, supported fields, policy rules, and grammar fixtures.
 
@@ -124,7 +124,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
-### QAHarnessImplementationFlow
+### 16. QAHarnessImplementationFlow
 
 **Purpose:** Maps the live QA harness from shell handoff through Python dispatch, plan resolution, step execution, finalization, inspection, and comparison. It records function ownership and the canonical JSON-to-Markdown report boundary.
 
