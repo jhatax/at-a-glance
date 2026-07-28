@@ -90,7 +90,8 @@ Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and co
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
 ./aag-build-qa.sh --compare <run-a> [run-b ...]
-./aag-build-qa.sh --validate <name-or-path>
+./aag-build-qa.sh --plans
+./aag-build-qa.sh --validate <name-or-path of plan>
 ```
 
 Use `--dry-run` with a qa plan to inspect the resolved execution plan without creating a run:
@@ -112,7 +113,7 @@ Typical evidence includes:
 
 To view prior qa plan execution results:
 
-```s
+```sh
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id>
 ```

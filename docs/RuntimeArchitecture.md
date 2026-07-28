@@ -352,8 +352,7 @@ Settings, Clay field mapping, generated message-key numbering, PKJS normalizatio
 2. Build for security, usability, performance, code readability, and future maintenance.
 3. Validate before confirming feature completion.
 4. Heap usage should be exceptional; release memory and initialize to NULL.
-5. Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes,
-buffer overflows, or hidden failure branches.
+5. Do not leave stale pointers, partial layer ownership, unmatched resource lifetimes, buffer overflows, or hidden failure branches.
 
 ## Read Next
 

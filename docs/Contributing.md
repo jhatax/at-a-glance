@@ -83,9 +83,7 @@ The following are in the repo to facilitate development and QA activities:
 
 If editor diagnostics look stale or incorrect, regenerate the compile database from a fresh build rather than editing flags by hand.
 
-The verbose harness build generates `compile_commands.json` for the `emery` platform. The platform is passed in [tools/harness_py/pebble.py](../tools/harness_py/pebble.py) when it calls [tools/harness_py/gen_compile_commands.py](../tools/harness_py/gen_compile_commands.py).
-
-Change `emery` to the platform targeted by editor tooling for your configuration.
+The verbose harness build may generate `compile_commands.json` for the current compile-database target. `PebbleAdapter` supplies the active SDK compiler path to `compilerdbgenerator.py`; build and compile-database ownership is documented in [BuildandInstall](BuildandInstall.md).
 
 ### Build, Install, and QA Automation
 
@@ -100,8 +98,8 @@ chmod +x aag-build-qa.sh
 1. Install the watch face on emulators and devices
 
 ```sh
-./aag-build-qa.sh -i -e emery
-./aag-build-qa.sh -i -e chalk
+./aag-build-qa.sh --emulators emery
+./aag-build-qa.sh --emulators chalk
 ./aag-build-qa.sh -p <Developer Connection Server IP>
 ```
 
@@ -110,7 +108,7 @@ chmod +x aag-build-qa.sh
 - wipes emulator state
 - runs `pebble clean`
 - runs a verbose build and generates `compile_commands.json`
-- combine it with `--install` when recovery should continue into install
+- run `./aag-build-qa.sh --emulators <target>` separately when recovery should continue into emulator installation
 
 3. Execute a QA plan: `./aag-build-qa.sh --qaplan canary`
 
@@ -189,8 +187,7 @@ Before committing a change:
 
 ### Formatting consistency: Clang-format, YAPF, shfmt
 
-The repository's pre-commit configuration runs YAPF for Python, `shfmt` for shell, and `clang-format` for C and headers. `.clang-format` and `.clangd` provide consistent formatting and Pebble-aware editor diagnostics from the
-repo root.
+The repository's pre-commit configuration runs YAPF for Python, `shfmt` for shell, and `clang-format` for C and headers. `.clang-format` and `.clangd` provide consistent formatting and Pebble-aware editor diagnostics from the repo root.
 
 Use `clang-format` before committing C changes:
 

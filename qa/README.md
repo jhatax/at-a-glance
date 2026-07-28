@@ -1,23 +1,25 @@
 # QA Harness
 
-The QA harness validates *At A Glance* based on steps defined in named scenarios and suites. The public entrypoint is `../aag-build-qa.sh`.
+The QA harness validates At A Glance with named scenarios and suites. The public entrypoint is `../aag-build-qa.sh`.
 
-## Command Flow
+## Scenario execution flow
 
-The shell entrypoint parses and validates the request, performs wrapper-owned reset and cleanup, and invokes Python. Python owns plan loading, step execution, screenshots, logs, JSON reports, Markdown reports, and exit status.
+For scenario execution, the shell parses and validates the request, performs wrapper-owned emulator cleanup, and hands the plan name to Python. Python owns plan parsing, plan resolution, execution, screenshots, command logging, JSON reports, and Markdown reports. Build, install, validation, view, and compare commands use their own Python or shell handlers; they do not pass through every phase shown below.
 
 ```text
 aag-build-qa.sh
-  -> parse and validate the request
-  -> reset the selected emulator state
-  -> invoke Python for build and compile-database generation when requested
-  -> runner.py scenario-exec ...
-       -> load the scenario or suite
-       -> expand ordered concrete steps
-       -> execute each step
-       -> finalize report.json and summary.md
-  -> clean up wrapper-owned state
+  -> parse_args()
+  -> validate_config()
+  -> command handler
+       -> ataglanceharness.py
+            -> qaplanparser.py
+            -> qaplanresolver.py
+            -> qaplanexecutor.py
+            -> qaharnessruntime.py
+            -> qareportrenderer.py
 ```
+
+The shell-to-Python handoff is one-way. Structured plan and run state stays in Python after the handoff; it is not serialized back into zsh.
 
 ## Commands
 
@@ -31,59 +33,45 @@ aag-build-qa.sh
 ./aag-build-qa.sh --compare <run-a> [run-b ...]
 ```
 
-Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for QA Plan authoring. Use [Validation](../docs/Validation.md) to select the right validation path for a product change.
+Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) to author plans. Use [Validation](../docs/Validation.md) to choose contributor validation paths.
 
-## Ownership
+## Boundary
 
-- `aag-build-qa.sh` owns the public shell boundary and wrapper lifecycle.
-- `tools/harness_shell/pebbleadapter.sh` owns shell routing for build, clean, install, wipe, kill, and phone operations.
-- `runner.py` owns Python command dispatch.
-- `tools/harness_py/pebble.py` owns Python build execution through Pebble Tool's SDK/Waf
-  path and generates the optional `compile_commands.json` during verbose builds.
-- `tools/harness_py/plans.py` owns grammar parsing, policy validation, include resolution, concrete steps, and artifact identity.
-- `tools/harness_py/execution.py` owns Pebble commands, step execution, screenshots, and command output.
-- `tools/harness_py/runtime.py` owns run context, final facts, canonical JSON, and run closeout.
-- `tools/harness_py/report.py` owns the shared Markdown renderer.
-- `tools/harness_py/comparison.py` owns run lookup, one-run summary lookup, and multi-run comparison orchestration.
+The shell prepares the environment and hands one validated command to Python. Python then owns the selected QA operation from plan loading through execution or inspection and report output. The implementation-level ownership map, typed handoffs, and failure behavior are maintained in [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md).
 
-The shell routes build requests. The Python adapter performs the build. A verbose build writes `build.log` and attempts to generate `compile_commands.json` for `emery`; the build remains usable when optional compile-database generation has no commands to write.
-
-### Boundary Rationale
-
-The boundary follows the information each operation needs:
-
-- **zsh:** all command routing; environment management for clean, wipe, kill, phone install, and help.
-- **Python:** silent and verbose build, emulator install, resolved `qaplan` execution and evidence capture, plus `runs`, `view`, `compare`, and `validate` inspection.
-
-Shell lifecycle commands do not parse plans. Python execution does not rebuild environment state in shell.
-
-## Run Artifacts
+## Run artifacts
 
 Each run is stored under `qa/qa-runs/<run-id>/`:
 
-- `report.json`: canonical finalized payload
-- `summary.md`: operator summary rendered from `report.json`
-- `commands.log`: aggregate command output
-- `screenshots/`: captured screenshots when enabled
+- `report.json` is the canonical report.
+- `summary.md` is rendered from `report.json`.
+- `commands.log` contains operator-visible command and execution records.
+- `screenshots/` contains captured screenshots when the selected plan requests them.
 
-Comparison artifacts are stored under `qa/comparisons/`. Reports link to local artifacts and show screenshot paths beside their corresponding step rows.
+Comparisons are stored under `qa/comparisons/`. A comparison writes `comparison.json` and `comparison.md`; both are derived from the selected runs’ canonical `report.json` files.
 
-## Automation Unit Tests
+The run identity is derived from the run timestamp and process id. The output folder name is the run id, and deserialization checks that the stored timestamp, run id, and output folder still agree.
 
-Run the harness correctness tests from the repository root:
+## Build and compile database
+
+Use the build commands documented in [BuildandInstall](../docs/BuildandInstall.md). The harness routes build requests through the Pebble Tool environment; verbose builds may generate an optional `compile_commands.json`. Failure to produce compile-database entries does not change the build result.
+
+## Tests
+
+Run the harness tests from the repository root:
 
 ```sh
 PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
 ```
 
-The repo contains grammar fixtures used by unit tests under `qa/fixtures/`.
+Plan fixtures and invalid report fixtures live under `qa/fixtures/`. A changed execution path also requires Python compilation, shell syntax checks, `git diff --check`, and a real scenario run that exercises the path.
 
 ## Adjacent
 
 - [Validation](../docs/Validation.md) for contributor validation choices and evidence review.
-- [Contributing](../docs/Contributing.md) for repository workflow.
+- [Contributing](../docs/Contributing.md) for repository workflow and review discipline.
 
 ## Read Next
 
-- [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for authoring and fixtures.
-- [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) for function ownership and execution flow.
+- [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) for plan grammar and fixtures.
+- [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) for typed phase contracts and function ownership.

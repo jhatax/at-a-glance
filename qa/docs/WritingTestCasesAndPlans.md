@@ -1,19 +1,17 @@
 # Writing Test Cases And Plans
 
-This document is the operator guide for writing QA test cases and plans.
+This document describes the plan grammar used by the QA harness.
 
 ## Adjacent
 
-- [QA_Readme](../README.md) for harness commands and artifacts.
-- [Validation](../../docs/Validation.md) for validation paths and evidence.
+- [QA README](../README.md) for commands and artifacts.
+- [Validation](../../docs/Validation.md) for contributor validation paths.
 
 ## Read Next
 
-- [QAHarnessImplementationFlow](QAHarnessImplementationFlow.md) for harness execution and reporting flow.
+- [QAHarnessImplementationFlow](QAHarnessImplementationFlow.md) for runtime ownership and handoffs.
 
-## Example Test Plans
-
-### Scenario with a Single Step
+## Scenario
 
 ```text
 PREAMBLE
@@ -27,7 +25,9 @@ EXECUTE
 END
 ```
 
-### Suite that composes two scenarios
+A scenario declares one screenshot policy, one or more emulators, and ordered steps. The parser turns each `STEP` into a `ParsedStep`; the resolver expands it once per emulator into a `PlanStep`.
+
+## Suite
 
 ```text
 PREAMBLE
@@ -39,201 +39,83 @@ MEMBERS
   INCLUDE SCENARIO battery-charging
 END
 ```
-## Test-Plan Anatomy
 
-A QA plan can be visualized as a hierarchy:
+A suite is ordered composition. It has no screenshot policy, emulator list, or step entries. It includes scenarios or nested suites. The parser recursively resolves nested suites into an ordered list of `ParsedScenario` objects, preserving member order. Each included scenario keeps its own emulator and screenshot policy. The resolver then combines their expanded steps into the identity-keyed plan collection.
 
-- A `step` sends one concrete product state to one capability.
-- A `scenario` declares policy: emulators, screenshots, and composes `steps` in order.
-- A `suite` composes `scenarios` and `suites` in order.
+## Grammar rules
 
-The selected suite or scenario is the test plan. The `qa-release-gate` suite, by definition, is a composition of ordered suites and covers all watch face capabilities.
+- `#` starts a comment; the remainder of the line is ignored.
+- `PREAMBLE`, `EXECUTE`, and `MEMBERS` are blocks terminated by `END`.
+- `SCENARIO` and `SUITE` names use lowercase letters, digits, and hyphens.
+- `SCREENSHOTS` accepts `yes` or `no`.
+- `EMULATORS` accepts one or more supported emulator names.
+- `STEP` declares one capability and its fields.
+- `INCLUDE SCENARIO` and `INCLUDE SUITE` are legal only in `MEMBERS`.
+- Include cycles are rejected.
+- A scenario must have at least one step; a suite must have at least one member.
 
-## Build A Step
+## Steps and arguments
 
-1. Choose the capability {weather, battery, health} that matches the product behavior under validation.
-2. Provide every required field for that capability.
-3. Use concrete values only.
-4. Keep the field names exactly as defined in this document.
-5. Run scenario validation before running the scenario.
+Supported capabilities are `weather`, `battery`, and `health`.
 
-Example:
+Every supported field is required, unknown fields are rejected, duplicate fields are rejected, and values are kept as strings by the parser. Capability-specific construction converts the values to the types required by execution.
 
-```text
-STEP weather display=white temp=539 code=65 is_day=1
-```
-
-This is a good step because it is concrete. It identifies one display mode, one weather state, and one day/night state within the scenario's emulator set.
-
-## Build A Scenario
-
-**Invariants**
-
-- A scenario specifies `SCREENSHOTS`, `EMULATORS`, and `STEP`.
-- Unique `steps` are executed in order.
-
-To create a scenario:
-
-1. Create `qa/plans/<name>.scenario`.
-2. Add a `PREAMBLE` block.
-3. Set `SCENARIO <name>` to match the filename without `.scenario`.
-4. Set `SCREENSHOTS yes` when screenshot evidence is required.
-5. Declare the scenario emulator set with `EMULATORS`.
-6. Add an `EXECUTE` block.
-7. Add ordered `STEP` entries.
-8. Validate the scenario.
-
-## Build A Suite
-
-**Invariants**
-
-- A suite is ordered composition only.
-- A suite has no `SCREENSHOTS`, `EMULATORS`, or `STEP` entries.
-- `INCLUDE` is legal only inside `MEMBERS`.
-- A suite member must declare whether it includes a `SCENARIO` or a `SUITE`.
-- Suite expansion preserves member order.
-- Included scenarios keep their own emulator scope.
-- Included scenarios keep artifact identity based on their concrete values.
-
-To create a suite:
-
-1. Create `qa/plans/<name>.suite`.
-2. Add a `PREAMBLE` block.
-3. Set `SUITE <name>` to match the filename without `.suite`.
-4. Add a `MEMBERS` block.
-5. Add ordered `INCLUDE SCENARIO` and `INCLUDE SUITE` entries.
-6. Validate the suite.
-
-## Out-of-the-box Validation QA Plans
-
-The following `suites and scenarios` will accelerate your development and release work:
-
-- `canary`: minimal parser and harness proof.
-- `dev-smoke`: fast daily confidence on the `qa-emery` suite.
-- `qa-<emulator>` suites: one suite per emulator, composed from capability scenarios.
-- `pre-release-gate`: top-level pre-release suite composed from the emulator QA suites.
-
-Refer to `qa/plans/` for all QA plan specifications.
-
-## Grammar to specify & govern QA plans
-
-Scenarios are plain-text compositions of concrete steps. The grammar exists to make validation actions explicit, repeatable, and comparable across runs.
-
-### File Shapes
+The order of `field=value` arguments is not strict. These two steps are equivalent:
 
 ```text
-PREAMBLE
-  SCENARIO <name>
-  SCREENSHOTS <yes|no>
-  EMULATORS <target>...
-END
-
-EXECUTE
-  STEP <capability> <field=value>...
-END
+STEP battery display=white level=19 charging=0
+STEP battery charging=0 level=19 display=white
 ```
 
-```text
-PREAMBLE
-  SUITE <name>
-END
+Argument names, required-key membership, and values determine the step. The parser and report validation use the capability’s required field set; they do not require a particular argument order. The resolver reads the named fields when it constructs the typed step and computes its identity; no input ordering contract exists.
 
-MEMBERS
-  INCLUDE SCENARIO <scenario-name>
-  INCLUDE SUITE <suite-name>
-END
-```
-
-### Rules
-
-- `#` starts a comment anywhere in the file.
-- `PREAMBLE` owns metadata only.
-- `EXECUTE` owns ordered step work only.
-- `MEMBERS` owns ordered suite composition only.
-- `SCENARIO` names the scenario file.
-- `SUITE` names the suite file.
-- `SCREENSHOTS` records whether the scenario expects screenshots.
-- `EMULATORS` declares the emulator set for the whole scenario.
-- `STEP` declares one concrete validation action.
-- `INCLUDE SCENARIO` composes one scenario into a suite.
-- `INCLUDE SUITE` composes one suite into another suite.
-- `SUITE` and `SCENARIO` include cycles are invalid.
-- Scenario names are not part of step identity.
-- Scenario, suite names use lowercase letters, digits, and hyphens.
-- Emulator names, strictly lower-case, are compared against a fixed set of supported emulators (all pebbles).
-
-The grammar's explicit rules and implied hierarchy (Suite > Scenario > Step) are enforced by the parser.
-
-## Steps
-
-```text
-STEP <capability> <field=value>...
-```
-
-Supported capabilities: `weather` | `battery` | `health`
-
-## Rules
-
-- A step contains concrete execution values.
-- Field order is fixed per capability so the same step produces the same artifact identity across runs.
-- Scenario composition does not change the step's concrete values.
-- Every supported field is required.
-- Unknown, duplicate, empty fields are rejected.
-
-## Supported Capabilities
-
-### 1. Weather
+### Weather
 
 ```text
 STEP weather display=<mode> temp=<celsius-tenths> code=<weather-code> is_day=<0|1>
 ```
 
-Fields:
+Fields are `display`, `temp`, `code`, and `is_day`.
 
-- `display`: Display mode token used by the QA step.
-- `temp`: Temperature in Celsius tenths.
-- `code`: Weather condition code.
-- `is_day`: `1` for day glyph behavior, `0` for night glyph behavior.
-
-### 2. Battery
+### Battery
 
 ```text
 STEP battery display=<mode> level=<percent> charging=<0|1>
 ```
 
-Fields:
+Fields are `display`, `level`, and `charging`.
 
-- `display`: Display mode token used by the QA step.
-- `level`: Battery percentage.
-- `charging`: `1` when plugged in or charging, `0` when unplugged.
-
-### 3. Health
+### Health
 
 ```text
 STEP health display=<mode> bpm=<value> steps=<value>
 ```
 
-Fields:
+Fields are `display`, `bpm`, and `steps`.
 
-- `display`: Display mode token used by the QA step.
-- `bpm`: One-shot heart-rate value.
-- `steps`: One-shot steps value.
+## Screenshot policy
 
-## Change The Grammar
+`SCREENSHOTS yes` sets `capture_screenshots` on every expanded step and gives each such step an expected count of one. `SCREENSHOTS no` gives each step an expected count of zero. Captured counts start at zero and are incremented by execution when a screenshot is captured. Expected and captured counts are not part of identity; the stable `shots` marker is included only when screenshots are required.
 
-Changing the grammar requires updating all affected owners in one slice:
+## Identity and de-duplication
 
-  - `python/scenarios.py` - `WritingTestCasesAndPlans.md` - scenario and suite files under `plans/`, when existing targets need new fields - capability implementation under `python/execution.py`, when a new capability is added - report expectations in `python/runtime.py`, when artifact shape changes
+The resolver expands each scenario step for each selected emulator. The resulting `PlanDefinition.steps` is an insertion-ordered dictionary keyed by artifact identity. Equal identities are de-duplicated. Identity includes capability, concrete execution values, emulator, and the optional `shots` marker. Scenario names and screenshot counts are not identity inputs.
 
-## Grammar Fixtures
+## Authoring workflow
 
-Fixtures provide accepted and rejected plan files for parser checks:
+1. Create `qa/plans/<name>.scenario` or `qa/plans/<name>.suite`.
+2. Follow the block grammar and use supported names and fields.
+3. Validate it with `./aag-build-qa.sh --validate <name>`.
+4. Use `--dry-run` to inspect the resolved plan.
+5. Run the plan with `--qaplan <name>` or `--qaplan <name> --force`.
+6. Inspect the generated `report.json`, `summary.md`, `commands.log`, and screenshots.
 
-- `qa/fixtures/scenarios/` contains valid scenarios and suites.
-- `qa/fixtures/invalid-scenarios/` contains invalid plans.
+## Fixtures and tests
 
-Run the executable fixture checks from the repository root:
+Valid grammar fixtures live under `qa/fixtures/scenarios/`; rejected plans live under `qa/fixtures/invalid-scenarios/`; invalid report fixtures exercise deserialization boundaries under `qa/fixtures/invalid-reports/`. Run the harness tests from the repository root:
 
 ```sh
 PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
 ```
+
+The maintained plans under `qa/plans/` include `canary`, `dev-smoke`, emulator suites, and `pre-release-gate`.

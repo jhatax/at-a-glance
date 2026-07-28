@@ -1,248 +1,90 @@
 # QA Harness Implementation Flow
 
-This document is the function-level implementation map for the QA harness.
+This document records the live Python runtime flow. [QA README](../README.md) is the operator entry point; this document owns the implementation map. The phases are ordered and each handoff has one owner, one input contract, and one output contract. The phase table gives the conceptual flow, the command-handoff table names the live functions, and the report contract records the canonical output boundary.
 
 ## Adjacent
 
-- [QA_Readme](../README.md) for public harness commands and artifacts.
-- [WritingTestCasesAndPlans](WritingTestCasesAndPlans.md) for plan grammar and fixtures.
-- [Validation](../../docs/Validation.md) for contributor validation paths and evidence.
+- [QA README](../README.md) for public commands and run artifacts.
+- [WritingTestCasesAndPlans](WritingTestCasesAndPlans.md) for grammar and fixtures.
+- [Validation](../../docs/Validation.md) for contributor validation paths.
 
 ## Read Next
 
 - [WatchfaceImplementationFlow](../../docs/WatchfaceImplementationFlow.md) for the watch face implementation map.
 
-## Architectural Goals
+## Implementation and flow guardrails
 
-1. Every function has a documented place in the execution flow.
-2. Every function has one responsibility and one clear handoff.
-3. Every function is in-use; no dead-code.
+1. Every function has one responsibility and one clear handoff.
+2. Every handoff names its input, output, owner, and failure behavior.
+3. Every function in the execution path is live code; dead wrappers are removed.
+4. A layer does not reconstruct or own another layer’s state.
+5. A changed execution or artifact handoff has focused tests and a real lifecycle validation.
+6. New abstractions require a demonstrated ownership conflict or repeated duplication.
 
-## Ownership Boundary
+## Four runtime phases
 
-```text
-aag-build-qa.sh
-  -> parse and validate the public request
-  -> route one command family
+| Phase | Caller | Callee | Input | Output | Owner |
+| --- | --- | --- | --- | --- | --- |
+| Parse | `ataglanceharness.py` | `qaplanparser.py` | Resolved scenario or suite path | `ParsedScenario` or `ParsedSuite` | Parser grammar, document validation, recursive suite-member resolution, and source order |
+| Resolve | `ataglanceharness.py` | `qaplanresolver.py` | Parsed document | `PlanDefinition` with identity-keyed `PlanStep` objects | Resolver expansion, concrete fields, screenshot directives, expected counts, de-duplication |
+| Execute | `ataglanceharness.py` | `qaplanexecutor.py` and `pebbleadapter.py` | `PlanDefinition` and run context | Per-step results and captured screenshot paths | Executor iteration/dispatch; adapter transport and evidence |
+| Finalize | `qaplanexecutor.py` | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts and step results | `report.json`, `summary.md`, terminal closeout | Runtime aggregation/serialization; renderer Markdown |
 
-Build requests
-  -> tools/harness_shell/pebbleadapter.sh
-       -> tools/harness_py/runner.py build
-            -> PebbleAdapter.build()
-                 -> Pebble Tool SDK/Waf configure and build
-                 -> optional compile_commands.json generation for emery
+### Parse
 
-tools/harness_py/runner.py
-  -> dispatch one Python command
+`qaplanparser.py` parses scenario and suite files. `ParsedStep` contains a capability, a boolean screenshot directive, and string fields. `ParsedScenario` contains its name, screenshot policy, emulators, and ordered steps. `ParsedSuite` contains its name and an ordered list of parsed scenarios. The parser recursively resolves nested suite members into `ParsedScenario` objects and preserves their source order. `qaplanresolver.py` owns top-level name/path resolution, then receives those parsed scenarios and expands them into executable steps. The parser does not create `PlanStep` objects, access Pebble, execute commands, or write reports.
 
-tools/harness_py/plans.py
-  -> parse grammar and resolve concrete steps
+### Resolve
 
-tools/harness_py/execution.py
-  -> execute concrete steps and record execution facts
+`qaplanresolver.py` converts parsed documents into executable objects. `PlanDefinition.steps` is an insertion-ordered `dict[str, PlanStep]`; the key is the stable step identity and duplicate identities are de-duplicated. `PlanStep` carries capability inputs, emulator, display, `capture_screenshots`, `expected_screenshots`, and `captured_screenshots`. Expected counts are calculated when steps are created. Identity includes the stable step values and the optional `shots` marker, but never expected or captured counts.
 
-tools/harness_py/runtime.py
-  -> create run context, finalize facts, build canonical payload
+### Execute
 
-tools/harness_py/pebble.py
-  -> use Pebble Tool SDK/Waf for Python-owned builds
-  -> use libpebble2 for Python-owned emulator operations
+`qaplanexecutor.py` creates `ExecutionState`, installs the plan’s emulators, and iterates over `plan.steps.values()`. Each step is dispatched by concrete type to weather, battery, or health operations. A requested screenshot is captured through `PebbleAdapter`; successful capture appends its path to the step result and updates the step’s captured count. A failed step is recorded as failed and execution continues with the remaining steps. The executor closes the adapter before finalization.
 
-tools/harness_py/report.py
-  -> render one or many canonical payloads as summary/comparison Markdown
+`PebbleAdapter` owns libpebble2 transport, emulator installation, AppMessage operations, battery state, screenshots, build operations, and command logging. The executor owns operation order and step status; it does not construct shell command lines or launch a second Pebble process.
 
-tools/harness_py/comparison.py
-  -> load canonical JSON, resolve runs, and orchestrate report output
-```
+### Finalize
 
-The JSON report payload is the durable source of truth after finalization used by summary and comparison reports to surface information to the operator.
+`qaharnessruntime.py` sums step facts, builds `QAStepContext` rows and one `QARunContext`, writes canonical `report.json`, renders `summary.md`, and prints closeout information. `QARunContext` contains plan identity, run identity, output paths, resolved totals, and step outputs. `QAStepContext` contains one step identity, capability, emulator, step arguments, status, and screenshot context. `qareportrenderer.py` renders Markdown from those typed report objects. `qaresultinspector.py` loads `report.json` for view and compare operations and regenerates Markdown when the derived file is absent.
 
-## Public Command Flow
+## Command handoffs
 
-### Scenario execution
+| Function | Owns | Accepts | Returns or hands off |
+| --- | --- | --- | --- |
+| `parse_args()` | Shell syntax and command selection | User arguments | Validated shell command state or failure |
+| `validate_config()` | Shell cross-field and environment checks | Parsed shell state | Shell success or failure |
+| `handle_qa_plan_execution()` | One-way shell-to-Python execution handoff | Validated scenario-exec state | Python process status |
+| `main()` | Python CLI parsing and dispatch | Python `argv` | Selected handler’s integer status |
+| `handle_plan_exec()` | Scenario-exec action validation | Action and plan name | `resolve_and_execute_plan()` status |
+| `resolve_and_execute_plan()` | Confirmation policy and lifecycle call | Action and plan name | Execution status |
+| `load_and_validate_plan()` | Target resolution and plan construction | Name/path | `PlanDefinition` or `ValueError` |
+| `create_harness_context()` | Run folders and output paths | Capture-screenshots boolean | `HarnessRuntimeContext` |
+| `run_plan_execution()` | Installation, iteration, adapter close, finalization call | `PlanDefinition` | Final process status |
+| `_execute_step()` | One step’s dispatch, capture, and result record | `ExecutionState`, `PlanStep` | Appended `StepResult`; step capture facts |
+| `finalize()` | Aggregate status and report emission | Context, plan, exit status, step results | `report.json`, `summary.md`, integer status |
+| `handle_view_run()` | One-run inspection | Run selector | Existing or regenerated `summary.md` |
+| `handle_compare_runs()` | Multi-run inspection | One to five selectors | Existing or regenerated `comparison.md` |
 
-```text
-aag-build-qa.sh
-  -> parse_args()
-  -> validate_config()
-  -> handle_qa_plan_execution()
-       -> tools/harness_py/runner.py scenario-exec run-scenario|force-scenario
-            -> load_plan()
-            -> create_execution_context()
-            -> run_plan_execution()
-                 -> load PebbleAdapter through libpebble2
-                 -> _run_step()
-                      -> execute capability-specific command
-                      -> gather command and screenshot evidence
-                          -> finalize()
-                              -> build QARunPayload
-                              -> write report.json
-                              -> write summary.md
-                              -> _print_closeout()
-```
-
-### Inspections
+## Report contract
 
 ```text
-aag-build-qa.sh --view <run>
-  -> parse_args()
-  -> handle_qa_inspections()
-  -> runner.py qa-inspection view-run <run>
-      -> view_run()
-        -> resolve_run_root()
-        |-> return existing summary.md, or
-        |-> render new summary.md
-          -> load_qarun_payload()
-          -> render_report()
+PlanDefinition
+  -> qaplanexecutor.py records StepResult values
+  -> qaharnessruntime.py builds QARunContext and QAStepContext
+  -> report.json
+  -> qareportrenderer.py
+  -> summary.md or comparison.md
 ```
 
-### Run comparison
+`report.json` is the durable source of truth. Markdown is output-only and is never read to recover execution facts.
 
-```text
-aag-build-qa.sh --compare <run> ...
-  -> parse_args()
-  -> handle_qa_inspections()
-  -> tools/harness_py/runner.py qa-inspection compare <runs>
-    -> compare_runs()
-      |-> return existing comparison.md, or
-      |-> render new comparison.md
-        -> load_qarun_payload() for each run
-        -> write comparison.json
-        -> render_report() -> comparison.md
-```
+## Validation gates
 
-## Function Responsibility Map
+These are the evidence gates for a QA-harness change. Use [Validation](../../docs/Validation.md) for the repository-wide choice of validation path.
 
-### Entrypoint and dispatch
-
-| Function | Owns | Returns or hands off |
-| --- | --- | --- |
-| `main()` | Python command dispatch and argument parsing | One command handler result |
-| `handle_qa_inspection()` | Inspection subcommand dispatch | One inspection handler result |
-| `cmd_plan_exec()` | Load and execute one named plan | Process status |
-| `cmd_view_run()` | Resolve one run and print its summary path | Process status |
-| `cmd_compare_runs()` | Resolve selected runs and print comparison path | Process status |
-
-### Scenario resolution
-
-| Function | Owns | Must not own |
-| --- | --- | --- |
-| `load_plan()` | Resolve one named scenario or suite | Execution or artifact writes |
-| `_parse_scenario_source()` | Parse one scenario file | Pebble commands |
-| `_parse_suite_source()` | Parse one suite file | Step execution |
-| `_expand_step_template()` | Expand one template for the selected emulators | Report rendering or filesystem writes |
-| `_resolve_target_definition()` | Compose scenario or suite definitions into concrete steps | Pebble commands or report writes |
-| `_artifact_identity()` | Derive one concrete step identity | Report rendering or filesystem writes |
-
-### Run lifecycle
-
-| Function | Owns | Output |
-| --- | --- | --- |
-| `create_execution_context()` | Create run paths and the screenshot directory | `ExecutionContext` |
-| `run_plan_execution()` | Execute each resolved concrete step | Execution status |
-| `_run_step()` | Select the executor for one concrete capability | Step result or failure |
-| `PebbleAdapter` | Send Python-owned Pebble protocol messages, logs, battery updates, and screenshots through libpebble2 | Pebble operation result and evidence |
-| `_capture_screenshot()` | Capture one screenshot for one step | Screenshot path and step result |
-| `finalize()` | Resolve final facts and emit run artifacts | `report.json`, `summary.md` |
-| `_print_closeout()` | Print finalized run facts for the terminal | Plain-text closeout |
-
-### Pebble Python Dependency
-
-Python-owned QA execution uses `libpebble2` through the installed Pebble Tool environment. It does not construct Pebble CLI commands or launch a Pebble CLI process. `pebble.py` owns the transport and protocol details; `execution.py` owns the order of QA operations.
-
-The adapter loads only when a scenario is about to execute. Plan parsing, validation, and inspection do not require the emulator library.
-
-If the library or its Pebble Tool environment cannot be loaded, execution stops before any QA step runs and prints:
-
-```text
-Error: Pebble QA adapter unavailable: install or repair the Pebble Tool/libpebble2 environment.
-```
-
-Repair the Pebble Tool installation and confirm that its environment contains `libpebble2`, then run the scenario again. This startup failure produces no QA report because no test step executed.
-
-### Build and Compile Database
-
-The shell routes build requests to `runner.py build`. `PebbleAdapter.build()`
-uses Pebble Tool's SDK/Waf path directly, so the harness does not invoke the
-Pebble build CLI or npm for this operation. A verbose build writes `build.log`
-and attempts to generate `compile_commands.json` from that log. The generator
-targets `emery`, as specified in `tools/harness_py/pebble.py`; a missing compile
-database is reported to the contributor while the build result remains
-independent of this optional editor artifact.
-
-### Canonical report flow
-
-| Function | Owns | Invariant |
-| --- | --- | --- |
-| `StepArtifact` | Name one concrete step’s execution facts | Emulator, display, inputs, status, and screenshot facts stay together |
-| `ScreenshotsInfo` | Name one step’s screenshot facts | Expected, captured, and path stay together |
-| `QARunContext` | Name one finalized run’s facts | One payload contains one run context |
-| `QAStepContext` | Name one finalized step’s facts | One context contains one artifact identity and its step artifact |
-| `QARunPayload` | Name the canonical run payload | Payload has one `run` and a list of `steps` |
-| `QARunPayload.as_dict()` | Convert the typed payload to JSON/renderer data | Only plain dictionaries and lists cross the output boundary |
-| `finalize()` | Build and serialize one finalized run payload | Writes `report.json` and `summary.md` |
-| `load_qarun_payload()` | Read and check one canonical `report.json` | Returns a validated `QARunPayload` |
-| `render_report()` | Render one or many canonical payloads | One table model serves summary and comparison |
-| `view_run()` | Return an existing `summary.md` or render it from `report.json` | Never creates a comparison directory |
-| `compare_runs()` | Return cached comparison or render selected payloads | Never reads Markdown as input |
-
-## One Function, One Responsibility Review
-
-For every function touched during implementation, answer these questions before keeping it:
-
-- What single fact or transition does this function own?
-- What is its input contract?
-- What is its output contract?
-- Which layer owns the next transition?
-- Can its name be replaced by a direct call without losing clarity?
-- Does it both interpret data and write artifacts? If so, split it.
-- Does it both select a command and execute it? If so, split it.
-- Does it accept arguments that do not vary its responsibility? Remove them.
-
-The canonical QA Run report boundary is deliberately split into three operations:
-
-```text
-QARunPayload
-  -> as_dict()
-  -> write report.json
-  -> render_report()
-  -> write summary.md or comparison.md
-```
-
-Payload construction, Markdown rendering, and file writing have separate responsibilities. `report.json` is the read source for view and compare.
-
-## Validation Gates
-
-### Harness Correctness Tests
-
-The executable harness-correctness tests live under `tools/harness_py/`. They exercise the public Python validation path against named and direct plan inputs, plus the rejection fixtures. They consume grammar fixtures to validate the harness's capabilities and grammar.
-
-From the repository root, run the complete set in one command:
-
-```sh
-PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
-```
-
-The calling convention is:
-
-```sh
-python3 -m unittest discover -s <test-directory> -p '<test-file-pattern>'
-```
-
-Run the focused module when iterating on this harness path:
-
-```sh
-PYTHONPATH=tools/harness_py python3 -m unittest -v tools/harness_py/test_harness_correctness.py
-```
-
-The test command must be run from the repository root so the test imports and fixture paths resolve consistently.
-
-Each implementation slice is complete only when its ownership is documented and exercised:
-
-1. Static: compile Python and run shell syntax checks.
-2. Function: test the changed function with its narrow input contract.
-3. Artifact: verify expected files and canonical JSON shape.
-4. End to end: run a real screenshot-enabled scenario.
-5. Composition: compare two or more real canonical run payloads.
-
-The final evidence is the run directory and comparison directory.
+- Compile the Python harness and check shell syntax.
+- Run the harness unit tests and `git diff --check`.
+- For an execution change, run a real screenshot-enabled scenario and inspect its `report.json`, `summary.md`, and `commands.log`.
+- For a reporting change, remove or rename a derived Markdown file, run view or compare, and confirm the regenerated Markdown matches the canonical JSON facts.
+- For a parser or resolver change, validate accepted plans, rejected fixtures, include cycles, suite order, and identity de-duplication.

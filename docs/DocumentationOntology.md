@@ -29,7 +29,7 @@ Translation of guardrails: Before placing content, classify the knowledge using 
 | Build & Install system | [BuildandInstall](BuildandInstall.md) |
 | <b>Validation & QA Documents</b> | |
 | Validation system | [Validation](Validation.md) |
-| QA system architecture | [QA_Readme](../qa/README.md) |
+| QA harness operations | [QA_Readme](../qa/README.md) |
 | QA test cases and plans | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) |
 | QA implementation flow | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) |
 | <b>Governance Documents</b> | |
@@ -40,34 +40,44 @@ Translation of guardrails: Before placing content, classify the knowledge using 
 
 ```mermaid
 graph TD
-  L1 ~~~ L2 ~~~ L3 ~~~ L4 ~~~ L5
+  L1 ~~~ L2 ~~~ L3 ~~~ L4 ~~~ L5 ~~~ L6
 
   subgraph L1 ["<b>Design & Motivation</b>"]
     p1["Design"] ==> p2["Product Invariants"]
     p2 ==> p3["Visual Vocabulary"]
   end
 
-  subgraph L2 ["<b>Implementation</b>"]
-    p3 ==> i2["Runtime Architecture"]
-    i2 ==> i3["Watchface Flow"]
-    i3 ==> i4["User Interface"]
-    i3 ==> c2["Settings & Config"]
-    i4 ==> c2
+  subgraph L2 ["<b>User Adoption</b>"]
+    p3 ==> u1
+    p3 ==> u2
+    u1["User Interface"] ==> u3
+    u2["Settings & Config"] ==> u3
+    u3["README"]
   end
 
-  subgraph L3 ["<b>Contributor Workflows</b>"]
-    c2 ==> r1 ==> r2["Build & Install"] ==> r3["Validation"]
+  subgraph L3 ["<b>Implementation</b>"]
+    p2 ==> i1["Runtime Architecture"] ==> i2["Watchface Flow"]
   end
 
-  subgraph L4 ["<b>Validation & QA</b>"]
-    r3 ==> q2["QA Readme"] ==> q3["Test Cases & Plans"] ==> q4["QA Harness Flow"]
+
+  subgraph L4 ["<b>Contributor Workflows</b>"]
+    u3 ==> c1
+    i2 ==> c1
+    c1["Contributing"] ==> c2["Build & Install"] ==> c3["Validation"]
   end
 
-  subgraph L5 ["<b>Documentation Governance</b>"]
-    d1["Docs Ontology"] ==> d2["Docs Contracts"] ==> r1["Contributing"]
+  subgraph L5 ["<b>Validation & QA</b>"]
+    c3 ==> q1
+    q1["QA Readme"] ==> q2["Test Cases & Plans"] ==> q3["QA Harness Flow"]
+  end
+
+  subgraph L6 ["<b>Documentation Governance</b>"]
     p2 ==> d1
+    d1["Docs Ontology"] ==> d2["Docs Contracts"]
   end
 ```
+
+The graph shows the primary conceptual progression through the documentation set. It is not a complete rendering of every document link. Each document's `Adjacent` and `Read Next` sections remain the complete navigation and relationship contract; the graph selects the most meaningful directional connections and omits secondary links to keep the map readable.
 
 ## Emergent Properties
 

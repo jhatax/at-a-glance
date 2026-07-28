@@ -110,9 +110,9 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 ### QA_Readme
 
-**Purpose:** Explains how to operate the QA harness and inspect its artifacts. It presents the public command flow, ownership boundaries, run outputs, and correctness-test command.
+**Purpose:** Explains how to operate the QA harness and inspect its artifacts. It presents the public command flow, shell/Python boundary, run outputs, and correctness-test command.
 
-**Sub-concepts:** Public entrypoint; command flow; scenario execution; inspection commands; comparison; ownership by shell, runner, parser, execution, runtime, reporting, and comparison modules; run artifacts; correctness tests; fixtures.
+**Sub-concepts:** Public entrypoint; operator command flow; shell/Python boundary; scenario and suite operations; run artifacts; report inspection; comparison; build handoff; correctness tests; fixtures.
 
 **Connections:** Adjacent: [Validation](Validation.md), [Contributing](Contributing.md). Read next: [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
@@ -120,7 +120,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Shows operators how to write the narrow QA grammar. It explains plan anatomy, scenario steps, suite composition, supported fields, policy rules, and grammar fixtures.
 
-**Sub-concepts:** Scenario example; suite example; plan hierarchy; step construction; scenario construction; suite construction; validation plans; file shapes; grammar rules; capabilities; field rules; weather; battery; health; grammar changes; fixtures.
+**Sub-concepts:** Scenario example; suite example; plan hierarchy; step construction; scenario construction; suite construction; file shapes; grammar rules; capabilities; required fields; unordered field arguments; weather; battery; health; screenshot policy; identity and de-duplication; fixtures.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
@@ -128,7 +128,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Maps the live QA harness from shell handoff through Python dispatch, plan resolution, step execution, finalization, inspection, and comparison. It records function ownership and the canonical JSON-to-Markdown report boundary.
 
-**Sub-concepts:** Architectural goals; ownership boundary; scenario execution; view-run; comparison; dispatch functions; parser functions; run lifecycle; Pebble adapter; canonical payload; report rendering; one-function review; validation gates; unit tests; artifact checks; end-to-end checks; comparison checks.
+**Sub-concepts:** Implementation guardrails; four runtime phases; parser handoff; resolver handoff; executor handoff; finalization handoff; function ownership; Pebble adapter boundary; canonical JSON report; Markdown rendering; inspection and comparison; harness-specific validation gates.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [Validation](Validation.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md).
 
