@@ -275,7 +275,6 @@ def _resolve_target_path(target_name: str, root_dir: Path) -> tuple[Path, str]:
 
 
 def load_and_validate_plan(target: str, target_parent: Path = PLANS_ROOT) -> PlanDefinition:
-
   path = Path(target)
   # handle file-path
   if path.is_file():

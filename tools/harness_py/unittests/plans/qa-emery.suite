@@ -1,0 +1,9 @@
+PREAMBLE
+  SUITE qa-emery
+END
+
+MEMBERS
+  INCLUDE SCENARIO emery-weather
+  INCLUDE SCENARIO emery-battery
+  INCLUDE SCENARIO emery-health
+END
