@@ -60,6 +60,12 @@ git pull --ff-only origin main
 git switch -c my-fix
 ```
 2. Test your code; review documentation
+```sh
+./aag-build-qa.sh --plans
+./aag-build-qa.sh --list-steps canary
+./aag-build-qa.sh --list-steps dev-smoke
+./aag-build-qa.sh --exec-plan dev-smoke
+```
 3. Submit a PR with a clear description of change(s): What, Why, How Validated
 
 PRs get reviewed in the order of submission and as fast as possible.
@@ -102,7 +108,7 @@ chmod +x aag-build-qa.sh
 - runs a verbose build and generates `compile_commands.json`
 - run `./aag-build-qa.sh --emulators <target>` separately when recovery should continue into emulator installation
 
-3. Execute a QA plan: `./aag-build-qa.sh --qaplan canary`
+3. Execute a QA plan: `./aag-build-qa.sh --exec-plan canary`
 
 4. More info: `./aag-build-qa.sh -h`
 

@@ -34,7 +34,7 @@ parse_args() {
           shift
         done
         ;;
-      --validate)
+      --validate | --list-steps)
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="validate"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
@@ -79,7 +79,7 @@ parse_args() {
         EMULATORS=(${(s:,:)2})
         shift 2
         ;;
-      --qaplan)
+      --exec-plan)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
           PARSE_ERROR_MESSAGE="--qaplan requires a plan name to execute"
           return 1

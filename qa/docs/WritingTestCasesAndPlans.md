@@ -107,7 +107,7 @@ The resolver expands each scenario step for each selected emulator. The resultin
 2. Follow the block grammar and use supported names and fields.
 3. Validate it with `./aag-build-qa.sh --validate <name>`.
 4. Use `--dry-run` to inspect the resolved plan.
-5. Run the plan with `--qaplan <name>` or `--qaplan <name> --force`.
+5. Run the plan with `--exec-plan <name>` or `--exec-plan <name> --force`.
 6. Inspect the generated `report.json`, `summary.md`, `commands.log`, and screenshots.
 
 ## Fixtures and tests

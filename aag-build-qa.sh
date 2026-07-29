@@ -43,20 +43,25 @@ Usage: ./aag-build-qa.sh [options]
 Options:
   -b,  --build            Build the project
   -bc, --build-clean      Clean first, then build
-  -bv, --build-verbose    Build verbose, also generates compile-commands; use with -bc for most effect
+  -bv, --build-verbose    Build verbose, also generates compile-commands
+
+  -e,  --emulators LIST   Install on specified csv list of emulators.
+                          Supported: emery, flint, chalk, gabbro, aplite, basalt, diorite
+  -p,  --phone IP         Install on phone using Pebble mobile-app Developer Connection
+  -w,  --wipe             Wipe emulator data
+  --nuclear               Kill emulators, wipe, and force a clean build
+
   -r,  --runs             List the most recent QA runs
   -v,  --view RUN         Show the existing summary report for one run
   -c,  --compare RUN...   Compare one to five runs
-  --validate QA-PLAN      Validate a QA plan by name
-  -p,  --phone IP         Install on phone using Pebble mobile-app Developer Connection
-  --qaplan QA-PLAN        Validate and run a named QA plan
+
   --plans                 Get a list of available QA plans
+  --validate QA-PLAN      Validate a QA plan by name
+  --list-steps QA-PLAN    Validate a QA plan by name
+  --exec-plan QA-PLAN     Validate and execute a named QA plan
   -n,  --dry-run          Print the resolved scenario execution plan and exit
   --force                 Skip scenario execution confirmation
-  -e,  --emulators LIST   Install on specified csv list of emulators.
-                          Supported: emery, flint, chalk, gabbro, aplite, basalt, diorite
-  -w,  --wipe             Wipe emulator data
-  --nuclear               Kill emulators, wipe, and force a clean build
+
   -h,  --help             Show this help menu
 EOF
 }

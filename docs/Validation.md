@@ -67,7 +67,7 @@ Before release, validation should cover:
 `pre-release-gate` is the canonical pre-release QA plan that comprehensively validates watch face code paths.
 
 ```
-./aag-build-qa.sh --qaplan pre-release-gate
+./aag-build-qa.sh --exec-plan pre-release-gate
 ```
 
 ## Validation of Watch Face Functionality
@@ -83,21 +83,22 @@ Out-of-the-box targets:
 Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and compare past qa runs, and validate qa plans for correctness.
 
 ```sh
-./aag-build-qa.sh --qaplan canary
-./aag-build-qa.sh --qaplan dev-smoke
-./aag-build-qa.sh --qaplan pre-release-gate
+./aag-build-qa.sh --exec-plan canary
+./aag-build-qa.sh --exec-plan dev-smoke
+./aag-build-qa.sh --exec-plan pre-release-gate
 
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
 ./aag-build-qa.sh --compare <run-a> [run-b ...]
 ./aag-build-qa.sh --plans
 ./aag-build-qa.sh --validate <name-or-path of plan>
+./aag-build-qa.sh --list-steps <name-or-path of plan>
 ```
 
 Use `--dry-run` with a qa plan to inspect the resolved execution plan without creating a run:
 
 ```sh
-./aag-build-qa.sh --qaplan dev-smoke --dry-run
+./aag-build-qa.sh --exec-plan dev-smoke --dry-run
 ```
 
 Use `--force` only after reviewing the resolved execution plan.

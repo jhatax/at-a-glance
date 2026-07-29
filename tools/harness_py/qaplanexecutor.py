@@ -207,7 +207,7 @@ def resolve_and_execute_plan(action: str, plan_name: str) -> int:
     if action == "run-scenario":
       print("Execute this plan? [y/N] ", end="", flush=True)
       reply = input().strip().lower()
-      if reply in {"N", "No", "no", "NO"}:
+      if reply in {"n", "no"}:
         print("Plan execution cancelled.")
         return 1
 

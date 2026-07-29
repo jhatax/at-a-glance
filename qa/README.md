@@ -24,9 +24,9 @@ The shell-to-Python handoff is one-way. Structured plan and run state stays in P
 ## Commands
 
 ```sh
-./aag-build-qa.sh --qaplan <name>
-./aag-build-qa.sh --qaplan <name> --dry-run
-./aag-build-qa.sh --qaplan <name> --force
+./aag-build-qa.sh --exec-plan <name>
+./aag-build-qa.sh --exec-plan <name> --dry-run
+./aag-build-qa.sh --exec-plan <name> --force
 ./aag-build-qa.sh --validate <name-or-path>
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
