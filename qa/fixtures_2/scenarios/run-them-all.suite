@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE run-them-all
-END
-
-MEMBERS
-  INCLUDE SCENARIO weather
-  INCLUDE SCENARIO battery
-  INCLUDE SCENARIO health
-END

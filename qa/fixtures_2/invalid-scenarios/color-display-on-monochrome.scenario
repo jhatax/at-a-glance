@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO color-display-on-monochrome
-  SCREENSHOTS no
-  EMULATORS flint
-END
-
-EXECUTE
-  STEP battery display=celeste level=80 charging=0
-END

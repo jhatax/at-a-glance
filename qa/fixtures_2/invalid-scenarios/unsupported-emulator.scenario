@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO unsupported-emulator
-  SCREENSHOTS no
-  EMULATORS future-watch
-END
-
-EXECUTE
-  STEP weather display=white temp=539 code=65 is_day=1
-END
