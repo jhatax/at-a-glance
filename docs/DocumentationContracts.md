@@ -6,11 +6,11 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 ### 1. Watchface_Readme
 
-**Purpose:** Introduces *At A Glance* to a new user. It provides the shortest path to screenshots, features, installation, and source build.
+**Purpose:** Introduces _At A Glance_ to a new user. It provides the shortest path to screenshots, features, installation, and source build.
 
 **Sub-concepts:** Product identity; screenshots; installation; build prerequisites; emulator installation; phone installation; configuration; supported platforms; feature list; next reading.
 
-**Connections:** [UserInterface](UserInterface.md). Read next: [BuildandInstall](BuildandInstall.md), [Contributing.md](Contributing.md).
+**Connections:** [UserInterface](UserInterface.md). Read next: [BuildandInstall](BuildandInstall.md), [Contributing](Contributing.md).
 
 ### 2. DocumentationOntology
 
@@ -30,7 +30,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 ### 4. Design
 
-**Purpose:** Defines why *At A Glance* looks and behaves as a glance-first watch face. It establishes the product motivation, visual calm, cross-device intent, and automatic-perception invariant.
+**Purpose:** Defines why _At A Glance_ looks and behaves as a glance-first watch face. It establishes the product motivation, visual calm, cross-device intent, and automatic-perception invariant.
 
 **Sub-concepts:** Product intent; design influences; glance-first philosophy; calm and negative space; intentional device support; shared visual DNA; design invariant.
 
@@ -120,7 +120,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Shows operators how to write the narrow QA grammar. It explains plan anatomy, scenario steps, suite composition, supported fields, policy rules, and grammar fixtures.
 
-**Sub-concepts:** Scenario example; suite example; plan hierarchy; step construction; scenario construction; suite construction; file shapes; grammar rules; capabilities; required fields; unordered field arguments; weather; battery; health; screenshot policy; identity and de-duplication; fixtures.
+**Sub-concepts:** Scenario example; suite example; plan hierarchy; step construction; scenario construction; suite construction; file shapes; grammar rules; capabilities; required fields; value ranges; emulator support; unordered field arguments; weather; battery; health; all; screenshot policy; identity and de-duplication; fixtures.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 

@@ -1,8 +1,9 @@
 # Contributing
 
-Thanks for your interest. This document explains how to extend and modify *At A Glance* from cloning the repo, configuring your IDE, changing and validating code, and updating docs.
+Thanks for your interest. This document explains how to extend and modify _At A Glance_ from cloning the repo, configuring your IDE, changing and validating code, and updating docs.
 
 ## Adjacent
+
 - [Watchface_Readme](../README.md) gives an overview of the watch face with screenshots
 - [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
 - [Validation](Validation.md) for validation paths and evidence.
@@ -19,6 +20,7 @@ cd at-a-glance
 npm install
 pebble build
 ```
+
 The build produces the PBW and platform artifacts under `build/`.
 
 ### Prerequisites
@@ -53,19 +55,24 @@ zsh setup-git-hook.sh
 The hook delegates each commit to the repository's pre-commit configuration.
 
 ### Making a Change
+
 1. Update local to main before starting work, create a branch, get to work:
+
 ```sh
 git switch main
 git pull --ff-only origin main
 git switch -c my-fix
 ```
+
 2. Test your code; review documentation
+
 ```sh
 ./aag-build-qa.sh --plans
 ./aag-build-qa.sh --list-steps canary
 ./aag-build-qa.sh --list-steps dev-smoke
-./aag-build-qa.sh --exec-plan dev-smoke
+./aag-build-qa.sh --exec dev-smoke
 ```
+
 3. Submit a PR with a clear description of change(s): What, Why, How Validated
 
 PRs get reviewed in the order of submission and as fast as possible.
@@ -102,13 +109,14 @@ chmod +x aag-build-qa.sh
 ```
 
 2. Reset emulator and build state: `./aag-build-qa.sh --nuclear`
+
 - kills running emulators
 - wipes emulator state
 - runs `pebble clean`
 - runs a verbose build and generates `compile_commands.json`
 - run `./aag-build-qa.sh --emulators <target>` separately when recovery should continue into emulator installation
 
-3. Execute a QA plan: `./aag-build-qa.sh --exec-plan canary`
+3. Execute a QA plan: `./aag-build-qa.sh --exec canary`
 
 4. More info: `./aag-build-qa.sh -h`
 

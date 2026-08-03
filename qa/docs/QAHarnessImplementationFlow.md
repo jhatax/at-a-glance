@@ -23,12 +23,12 @@ This document records the live Python runtime flow. [QA README](../README.md) is
 
 ## Four runtime phases
 
-| Phase | Caller | Callee | Input | Output | Owner |
-| --- | --- | --- | --- | --- | --- |
-| Parse | `ataglanceharness.py` | `qaplanparser.py` | Resolved scenario or suite path | `ParsedScenario` or `ParsedSuite` | Parser grammar, document validation, recursive suite-member resolution, and source order |
-| Resolve | `ataglanceharness.py` | `qaplanresolver.py` | Parsed document | `PlanDefinition` with identity-keyed `PlanStep` objects | Resolver expansion, concrete fields, screenshot directives, expected counts, de-duplication |
-| Execute | `ataglanceharness.py` | `qaplanexecutor.py` and `pebbleadapter.py` | `PlanDefinition` and run context | Per-step results and captured screenshot paths | Executor iteration/dispatch; adapter transport and evidence |
-| Finalize | `qaplanexecutor.py` | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts and step results | `report.json`, `summary.md`, terminal closeout | Runtime aggregation/serialization; renderer Markdown |
+| Phase    | Caller                | Callee                                          | Input                            | Output                                                  | Owner                                                                                       |
+| -------- | --------------------- | ----------------------------------------------- | -------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Parse    | `ataglanceharness.py` | `qaplanparser.py`                               | Resolved scenario or suite path  | `ParsedScenario` or `ParsedSuite`                       | Parser grammar, document validation, recursive suite-member resolution, and source order    |
+| Resolve  | `ataglanceharness.py` | `qaplanresolver.py`                             | Parsed document                  | `PlanDefinition` with identity-keyed `PlanStep` objects | Resolver expansion, concrete fields, screenshot directives, expected counts, de-duplication |
+| Execute  | `ataglanceharness.py` | `qaplanexecutor.py` and `pebbleadapter.py`      | `PlanDefinition` and run context | Per-step results and captured screenshot paths          | Executor iteration/dispatch; adapter transport and evidence                                 |
+| Finalize | `qaplanexecutor.py`   | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts and step results      | `report.json`, `summary.md`, terminal closeout          | Runtime aggregation/serialization; renderer Markdown                                        |
 
 ### Parse
 
@@ -36,11 +36,11 @@ This document records the live Python runtime flow. [QA README](../README.md) is
 
 ### Resolve
 
-`qaplanresolver.py` converts parsed documents into executable objects. `PlanDefinition.steps` is an insertion-ordered `dict[str, PlanStep]`; the key is the stable step identity and duplicate identities are de-duplicated. `PlanStep` carries capability inputs, emulator, display, `capture_screenshots`, `expected_screenshots`, and `captured_screenshots`. Expected counts are calculated when steps are created. Identity includes the stable step values and the optional `shots` marker, but never expected or captured counts.
+`qaplanresolver.py` converts parsed documents into executable objects. `PlanDefinition.steps` is an insertion-ordered `dict[str, PlanStep]`; the key is the stable step identity and duplicate identities are de-duplicated. `PlanStep` carries capability inputs, emulator, display, `capture_screenshots`, `expected_screenshots`, and `captured_screenshots`. Expected counts are calculated when steps are created. Identity includes the stable step values and the optional `shots` marker, but never expected or captured counts. The resolver raises an error when a parsed step produces no executable expansion for the selected emulators.
 
 ### Execute
 
-`qaplanexecutor.py` creates `ExecutionState`, installs the plan’s emulators, and iterates over `plan.steps.values()`. Each step is dispatched by concrete type to weather, battery, or health operations. A requested screenshot is captured through `PebbleAdapter`; successful capture appends its path to the step result and updates the step’s captured count. A failed step is recorded as failed and execution continues with the remaining steps. The executor closes the adapter before finalization.
+`qaplanexecutor.py` creates `ExecutionState`, installs the plan’s emulators, and iterates over `plan.steps.values()`. Each step is dispatched by concrete type to weather, battery, health, or `all` operations. An `all` step sends weather and health values, applies battery state, and captures one requested screenshot through the same execution path. A requested screenshot is captured through `PebbleAdapter`; successful capture appends its path to the step result and updates the step’s captured count. A failed step is recorded as failed and execution continues with the remaining steps. The executor closes the adapter before finalization.
 
 `PebbleAdapter` owns libpebble2 transport, emulator installation, AppMessage operations, battery state, screenshots, build operations, and command logging. The executor owns operation order and step status; it does not construct shell command lines or launch a second Pebble process.
 
@@ -50,21 +50,21 @@ This document records the live Python runtime flow. [QA README](../README.md) is
 
 ## Command handoffs
 
-| Function | Owns | Accepts | Returns or hands off |
-| --- | --- | --- | --- |
-| `parse_args()` | Shell syntax and command selection | User arguments | Validated shell command state or failure |
-| `validate_config()` | Shell cross-field and environment checks | Parsed shell state | Shell success or failure |
-| `handle_qa_plan_execution()` | One-way shell-to-Python execution handoff | Validated scenario-exec state | Python process status |
-| `main()` | Python CLI parsing and dispatch | Python `argv` | Selected handler’s integer status |
-| `handle_plan_exec()` | Scenario-exec action validation | Action and plan name | `resolve_and_execute_plan()` status |
-| `resolve_and_execute_plan()` | Confirmation policy and lifecycle call | Action and plan name | Execution status |
-| `load_and_validate_plan()` | Target resolution and plan construction | Name/path | `PlanDefinition` or `ValueError` |
-| `create_harness_context()` | Run folders and output paths | Capture-screenshots boolean | `HarnessRuntimeContext` |
-| `run_plan_execution()` | Installation, iteration, adapter close, finalization call | `PlanDefinition` | Final process status |
-| `_execute_step()` | One step’s dispatch, capture, and result record | `ExecutionState`, `PlanStep` | Appended `StepResult`; step capture facts |
-| `finalize()` | Aggregate status and report emission | Context, plan, exit status, step results | `report.json`, `summary.md`, integer status |
-| `handle_view_run()` | One-run inspection | Run selector | Existing or regenerated `summary.md` |
-| `handle_compare_runs()` | Multi-run inspection | One to five selectors | Existing or regenerated `comparison.md` |
+| Function                     | Owns                                                      | Accepts                                  | Returns or hands off                        |
+| ---------------------------- | --------------------------------------------------------- | ---------------------------------------- | ------------------------------------------- |
+| `parse_args()`               | Shell syntax and command selection                        | User arguments                           | Validated shell command state or failure    |
+| `validate_config()`          | Shell cross-field and environment checks                  | Parsed shell state                       | Shell success or failure                    |
+| `handle_qa_plan_execution()` | One-way shell-to-Python execution handoff                 | Validated scenario-exec state            | Python process status                       |
+| `main()`                     | Python CLI parsing and dispatch                           | Python `argv`                            | Selected handler’s integer status           |
+| `handle_plan_exec()`         | Scenario-exec action validation                           | Action and plan name                     | `resolve_and_execute_plan()` status         |
+| `resolve_and_execute_plan()` | Confirmation policy and lifecycle call                    | Action and plan name                     | Execution status                            |
+| `load_and_validate_plan()`   | Target resolution and plan construction                   | Name/path                                | `PlanDefinition` or `ValueError`            |
+| `create_harness_context()`   | Run folders and output paths                              | Capture-screenshots boolean              | `HarnessRuntimeContext`                     |
+| `run_plan_execution()`       | Installation, iteration, adapter close, finalization call | `PlanDefinition`                         | Final process status                        |
+| `_execute_step()`            | One step’s dispatch, capture, and result record           | `ExecutionState`, `PlanStep`             | Appended `StepResult`; step capture facts   |
+| `finalize()`                 | Aggregate status and report emission                      | Context, plan, exit status, step results | `report.json`, `summary.md`, integer status |
+| `handle_view_run()`          | One-run inspection                                        | Run selector                             | Existing or regenerated `summary.md`        |
+| `handle_compare_runs()`      | Multi-run inspection                                      | One to five selectors                    | Existing or regenerated `comparison.md`     |
 
 ## Report contract
 

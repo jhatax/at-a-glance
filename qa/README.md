@@ -24,14 +24,16 @@ The shell-to-Python handoff is one-way. Structured plan and run state stays in P
 ## Commands
 
 ```sh
-./aag-build-qa.sh --exec-plan <name>
-./aag-build-qa.sh --exec-plan <name> --dry-run
-./aag-build-qa.sh --exec-plan <name> --force
+./aag-build-qa.sh --exec <name>
+./aag-build-qa.sh --exec <name> --dry-run
+./aag-build-qa.sh --exec <name> --force
 ./aag-build-qa.sh --validate <name-or-path>
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
 ./aag-build-qa.sh --compare <run-a> [run-b ...]
 ```
+
+`--exec-plan` remains an accepted alias for `--exec`.
 
 Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) to author plans. Use [Validation](../docs/Validation.md) to choose contributor validation paths.
 
@@ -61,10 +63,10 @@ Use the build commands documented in [BuildandInstall](../docs/BuildandInstall.m
 Run the harness tests from the repository root:
 
 ```sh
-PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py -p 'test_*.py'
+PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'
 ```
 
-Plan fixtures and invalid report fixtures live under `qa/fixtures/`. A changed execution path also requires Python compilation, shell syntax checks, `git diff --check`, and a real scenario run that exercises the path.
+Plan fixtures and invalid report fixtures live under `tools/harness_py/unittests/fixtures/`. A changed execution path also requires Python compilation, shell syntax checks, `git diff --check`, and a real scenario run that exercises the path.
 
 ## Adjacent
 

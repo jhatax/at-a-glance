@@ -1,6 +1,6 @@
 # Validation
 
-This document is the contributor-facing entry point for validating *At A Glance*. It explains what validation is for, which validation path to use, and what evidence a change should produce.
+This document is the contributor-facing entry point for validating _At A Glance_. It explains what validation is for, which validation path to use, and what evidence a change should produce.
 
 ## Adjacent
 
@@ -29,14 +29,14 @@ The validation layer helps you confirm that watch face changes continue to satis
 
 Use the narrowest path that proves the change.
 
-| Change type | Minimum validation |
-| --- | --- |
-| Documentation only | Read the touched docs for contradictions and run Markdown/link checks when practical. |
-| Build tooling | Run the affected build or compile-database path. |
-| Runtime C change | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
-| Settings, AppMessage, or persistence | Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
+| Change type                                | Minimum validation                                                                                                                                                      |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation only                         | Read the touched docs for contradictions and run Markdown/link checks when practical.                                                                                   |
+| Build tooling                              | Run the affected build or compile-database path.                                                                                                                        |
+| Runtime C change                           | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior.                                                                          |
+| Settings, AppMessage, or persistence       | Validate defaults, invalid values, applied behavior, and restart behavior where applicable.                                                                             |
 | UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, confirm the mode changes and the watch repaints. |
-| Release candidate | Run the release scenario path and complete manual signoff. |
+| Release candidate                          | Run the release scenario path and complete manual signoff.                                                                                                              |
 
 If a validation path cannot be run, state the gap explicitly in the closeout.
 
@@ -67,7 +67,7 @@ Before release, validation should cover:
 `pre-release-gate` is the canonical pre-release QA plan that comprehensively validates watch face code paths.
 
 ```
-./aag-build-qa.sh --exec-plan pre-release-gate
+./aag-build-qa.sh --exec pre-release-gate
 ```
 
 ## Validation of Watch Face Functionality
@@ -83,9 +83,9 @@ Out-of-the-box targets:
 Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and compare past qa runs, and validate qa plans for correctness.
 
 ```sh
-./aag-build-qa.sh --exec-plan canary
-./aag-build-qa.sh --exec-plan dev-smoke
-./aag-build-qa.sh --exec-plan pre-release-gate
+./aag-build-qa.sh --exec canary
+./aag-build-qa.sh --exec dev-smoke
+./aag-build-qa.sh --exec pre-release-gate
 
 ./aag-build-qa.sh --runs
 ./aag-build-qa.sh --view <run-id-or-path>
@@ -98,7 +98,7 @@ Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and co
 Use `--dry-run` with a qa plan to inspect the resolved execution plan without creating a run:
 
 ```sh
-./aag-build-qa.sh --exec-plan dev-smoke --dry-run
+./aag-build-qa.sh --exec dev-smoke --dry-run
 ```
 
 Use `--force` only after reviewing the resolved execution plan.
