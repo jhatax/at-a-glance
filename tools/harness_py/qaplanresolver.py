@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from textwrap import fill
 from typing import Final, Any
 from qaplangrammar import ParsedStep, ParsedScenario, QAPlanGrammar, validate_slug
 from qaplanparser import parse_scenario, parse_suite
@@ -86,8 +87,10 @@ class BatteryStep(PlanStep):
   capability: str = field(default="battery")
 
   def __post_init__(self) -> None:
-    if (self.level == INVALID_BATTERY_INPUT) or (self.charging - -INVALID_BATTERY_INPUT):
-      raise ValueError("Battery-level and charging-status must be greater than 0")
+    if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)):
+      raise ValueError(
+          f"Battery inputs are invalid, level: '{self.level}', charging: '{self.charging}'",
+      )
 
     self._step_id = "_".join(
         filter(
@@ -149,7 +152,7 @@ class AllForOneStep(PlanStep):
 
   def __post_init__(self) -> None:
     if (self.bpm == INVALID_HEALTH_METRIC) or (self.steps == INVALID_HEALTH_METRIC) or \
-    (self.level == INVALID_BATTERY_INPUT) or (self.charging == INVALID_BATTERY_INPUT) or \
+    not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)) or \
     (not all([self.capability, self.emulator])) or (self.temp == INVALID_TEMPERATURE) or \
     (self.code == INVALID_CLIMATE_VALUE) or (self.is_day == INVALID_CLIMATE_VALUE):
       raise ValueError(f"Invalid input for step: '{asdict(self)}'")
@@ -261,12 +264,25 @@ def _expand_step_template(
       print(
           f"Skipping step: Emulator '{emulator}' doesn't support capability '{template.capability}'\n"
       )
+      continue
+
     fields: dict[str, Any] = dict(template.fields)
     fields["emulator"] = emulator
     step: PlanStep = _create_step_for_capability(
         template.capability, template.needs_screenshot, **fields
     )
     steps[step.step_id] = step
+  if not len(steps):
+    raise ValueError(
+        fill(
+            (
+                f"No step could be created from template: '{asdict(template)}'"
+                f" for emulators: '{emulators}'"
+            ),
+            width=80,
+            subsequent_indent=" "
+        )
+    )
   return steps
 
 
