@@ -1,5 +1,5 @@
 [
-  {"type": "heading", "defaultValue": "Personalize every Pebble glance"},
+  { "type": "heading", "defaultValue": "Personalize every Pebble glance" },
   {
     "type": "section",
     "items": [
@@ -37,8 +37,8 @@
         "label": "How do you like to view time?",
         "defaultValue": "0",
         "options": [
-          {"value": "0", "label": "24-hour"},
-          {"value": "1", "label": "12-hour"}
+          { "value": "0", "label": "24-hour" },
+          { "value": "1", "label": "12-hour" }
         ]
       }
     ]
