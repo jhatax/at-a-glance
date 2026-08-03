@@ -59,7 +59,7 @@ def handle_qa_inspection(args: argparse.Namespace) -> int:
     case "compare":
       return handle_compare_runs(args.run_selectors)
     case "validate":
-      return 0 if handle_validate_plan(args.plan_name) else 1
+      return handle_validate_plan(args.plan_name)
     case "dryrun":
       return handle_plan_dryrun(args.plan_name)
     case _:
