@@ -10,30 +10,34 @@
 #define DESIGN_TIME_FONT_KEY FONT_KEY_ROBOTO_BOLD_SUBSET_49
 #define DESIGN_TEXT_FONT_KEY FONT_KEY_GOTHIC_24_BOLD
 #define DESIGN_DATE_FONT_KEY FONT_KEY_GOTHIC_24_BOLD
+#define DESIGN_LOCATION_FONT_KEY FONT_KEY_GOTHIC_18
 // Custom fonts
 #ifdef PBL_PLATFORM_EMERY
-#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_60
+#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_MEDIUM_58
 #else
-#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_72
+#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_MEDIUM_70
 #endif
-#define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_TEXT_SEMIBOLD_22
-#define CUSTOM_FONT_TEXT_RESOURCE RESOURCE_ID_FONT_TEXT_SEMIBOLD_22
+#define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_TEXT_SEMIBOLD_24
+#define CUSTOM_FONT_TEXT_RESOURCE CUSTOM_FONT_DATE_RESOURCE
+#define CUSTOM_FONT_LOCATION_RESOURCE RESOURCE_ID_FONT_LOCATION_16
 #else
 // Compact displays
 // System fonts
 #define DESIGN_TIME_FONT_KEY FONT_KEY_BITHAM_42_MEDIUM_NUMBERS
 #define DESIGN_TEXT_FONT_KEY FONT_KEY_GOTHIC_18_BOLD
-#define DESIGN_DATE_FONT_KEY FONT_KEY_GOTHIC_18_BOLD
+#define DESIGN_DATE_FONT_KEY DESIGN_TEXT_FONT_KEY
+#define DESIGN_DATE_LOCATION_KEY FONT_KEY_GOTHIC_14
 // Custom fonts
-#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_SEMIBOLD_42
+#define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_MEDIUM_42
 #define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_TEXT_SEMIBOLD_16
-#define CUSTOM_FONT_TEXT_RESOURCE RESOURCE_ID_FONT_TEXT_SEMIBOLD_16
+#define CUSTOM_FONT_TEXT_RESOURCE CUSTOM_FONT_DATE_RESOURCE
+#define CUSTOM_FONT_LOCATION_RESOURCE RESOURCE_ID_FONT_LOCATION_14
 #endif
 
 #define STYLIST_INVALID_FONT_RESOURCE_ID 0
 
 static const char* layout_font_key_for_role(
-  WatchfaceFontRole role) {
+    WatchfaceFontRole role) {
   switch (role) {
     case WATCHFACE_FONT_ROLE_TIME:
       return DESIGN_TIME_FONT_KEY;
@@ -47,7 +51,7 @@ static const char* layout_font_key_for_role(
 }
 
 static uint32_t layout_custom_font_resource_id_for_role(
-  WatchfaceFontRole role) {
+    WatchfaceFontRole role) {
   switch (role) {
     case WATCHFACE_FONT_ROLE_TIME:
       return CUSTOM_FONT_TIME_RESOURCE;
@@ -55,6 +59,8 @@ static uint32_t layout_custom_font_resource_id_for_role(
       return CUSTOM_FONT_DATE_RESOURCE;
     case WATCHFACE_FONT_ROLE_TEXT:
       return CUSTOM_FONT_TEXT_RESOURCE;
+    case WATCHFACE_FONT_ROLE_LOCATION:
+      return CUSTOM_FONT_LOCATION_RESOURCE;
     case WATCHFACE_FONT_ROLE_COUNT:
     default:
       return STYLIST_INVALID_FONT_RESOURCE_ID;
@@ -62,9 +68,9 @@ static uint32_t layout_custom_font_resource_id_for_role(
 }
 
 static GFont layout_find_loaded_custom_font(
-  FontBook* fontbook,
-  uint8_t max,
-  uint32_t id_to_match) {
+    FontBook* fontbook,
+    uint8_t max,
+    uint32_t id_to_match) {
   // Guard against NULL & out-of-bounds access
   if (max > WATCHFACE_FONT_ROLE_COUNT || fontbook == NULL) {
     return NULL;
@@ -103,7 +109,7 @@ static GFont layout_find_loaded_custom_font(
 }
 
 bool layout_watchface_initialize_fonts(
-  FontBook* fontbook) {
+    FontBook* fontbook) {
   if (!fontbook) {
     return false;
   }
@@ -111,17 +117,17 @@ bool layout_watchface_initialize_fonts(
   for (uint8_t i = 0; i < WATCHFACE_FONT_ROLE_COUNT; ++i) {
     // Start by selecting system fonts; custom fonts will replace these fonts
     fontbook->chosen_fonts[i] =
-      fonts_get_system_font(layout_font_key_for_role((WatchfaceFontRole)i));
+        fonts_get_system_font(layout_font_key_for_role((WatchfaceFontRole)i));
 
     fontbook->custom_font_resource_ids[i] =
-      layout_custom_font_resource_id_for_role((WatchfaceFontRole)i);
+        layout_custom_font_resource_id_for_role((WatchfaceFontRole)i);
   }
 
   return true;
 }
 
 bool layout_watchface_load_custom_fonts(
-  FontBook* fontbook) {
+    FontBook* fontbook) {
   if (fontbook == NULL) {
     return false;
   }
@@ -184,7 +190,7 @@ bool layout_watchface_load_custom_fonts(
 }
 
 void layout_watchface_unload_custom_fonts(
-  FontBook* fontbook) {
+    FontBook* fontbook) {
   if (!fontbook) {
     return;
   }
@@ -205,48 +211,48 @@ void layout_watchface_unload_custom_fonts(
 // Stylist: Color Palettes
 #ifdef PBL_COLOR
 static const ColorPalette color_dark_palette = {
-  .is_light_mode = false,
-  .background = GColorOxfordBlue,
-  .time_text = GColorCeleste,
-  .date_text = GColorCeleste,
-  .primary_text = GColorWhite,
-  .outofrange_text = GColorLightGray,
+    .is_light_mode = false,
+    .background = GColorOxfordBlue,
+    .time_text = GColorCeleste,
+    .date_text = GColorCeleste,
+    .primary_text = GColorWhite,
+    .outofrange_text = GColorLightGray,
 };
 
 static const ColorPalette color_light_palette = {
-  .is_light_mode = true,
-  .background = GColorCeleste,
-  .time_text = GColorOxfordBlue,
-  .date_text = GColorOxfordBlue,
-  .primary_text = GColorBlack,
-  .outofrange_text = GColorDarkGray,
+    .is_light_mode = true,
+    .background = GColorCeleste,
+    .time_text = GColorOxfordBlue,
+    .date_text = GColorOxfordBlue,
+    .primary_text = GColorBlack,
+    .outofrange_text = GColorDarkGray,
 };
 #endif
 
 static const ColorPalette mono_dark_palette = {
-  .is_light_mode = false,
-  .background = GColorBlack,
-  .time_text = GColorWhite,
-  .date_text = GColorWhite,
-  .primary_text = GColorWhite,
-  .outofrange_text = GColorWhite,
+    .is_light_mode = false,
+    .background = GColorBlack,
+    .time_text = GColorWhite,
+    .date_text = GColorWhite,
+    .primary_text = GColorWhite,
+    .outofrange_text = GColorWhite,
 };
 
 static const ColorPalette mono_light_palette = {
-  .is_light_mode = true,
-  .background = GColorWhite,
-  .time_text = GColorBlack,
-  .date_text = GColorBlack,
-  .primary_text = GColorBlack,
-  .outofrange_text = GColorBlack,
+    .is_light_mode = true,
+    .background = GColorWhite,
+    .time_text = GColorBlack,
+    .date_text = GColorBlack,
+    .primary_text = GColorBlack,
+    .outofrange_text = GColorBlack,
 };
 
 // API Contract: If style is a valid value, the palette will always be non-NULL
 // Invariant satisfied because the value assigned to palette is a pointer to
 // one of two static-constant structs with module-scope.
 void layout_watchface_update_palette(
-  WatchfaceSurfaceStyle* style,
-  SupportedDisplayModes display_mode) {
+    WatchfaceSurfaceStyle* style,
+    SupportedDisplayModes display_mode) {
   if (!style) {
     return;
   }

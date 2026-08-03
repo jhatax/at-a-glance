@@ -56,4 +56,5 @@ typedef struct {
 #endif
   WatchfaceBatteryStratum battery;
   WatchfaceTextWithIconStratum climate;
+  WatchfaceTextStratum location;
 } WatchfaceSurface;

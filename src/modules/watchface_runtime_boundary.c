@@ -6,24 +6,27 @@
 #include "bpm.h"
 #include "steps.h"
 
-static void apply_health_setting_data(const WatchfaceEventData* data, WatchfaceSettings* settings);
-static void apply_oneshot_health_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh);
+static void apply_health_setting_data(const WatchfaceEventData* data,
+    WatchfaceSettings* settings);
+static void apply_oneshot_health_data(const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh);
 #endif
 
 static void apply_setting_data(const WatchfaceEventData* data,
-  WatchfaceSettings* settings,
-  WatchfaceUpdateMask* refresh);
+    WatchfaceSettings* settings,
+    WatchfaceUpdateMask* refresh);
 
-static void apply_weather_data(const WatchfaceEventData* data, WatchfaceUpdateMask* refresh);
+static void apply_weather_or_location_data(const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh);
 
 static void apply_subscribed_service_updates(const WatchfaceEventData* data,
-  WatchfaceUpdateMask* refresh);
+    WatchfaceUpdateMask* refresh);
 
 // Function definitions
 static void apply_setting_data(
-  const WatchfaceEventData* data,
-  WatchfaceSettings* settings,
-  WatchfaceUpdateMask* refresh) {
+    const WatchfaceEventData* data,
+    WatchfaceSettings* settings,
+    WatchfaceUpdateMask* refresh) {
   if (!data || !settings || !refresh) {
     return;
   }
@@ -37,8 +40,8 @@ static void apply_setting_data(
       }
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid DISPLAY_MODE: value=%d",
-        data->display_mode);
+          "Runtime received invalid DISPLAY_MODE: value=%d",
+          data->display_mode);
     }
   }
 
@@ -50,8 +53,8 @@ static void apply_setting_data(
       }
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid TIME_FORMAT: value=%d",
-        data->time_format);
+          "Runtime received invalid TIME_FORMAT: value=%d",
+          data->time_format);
     }
   }
 
@@ -63,8 +66,8 @@ static void apply_setting_data(
       }
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid TEMP_UNIT: value=%d",
-        data->temp_unit);
+          "Runtime received invalid TEMP_UNIT: value=%d",
+          data->temp_unit);
     }
   }
 
@@ -73,8 +76,8 @@ static void apply_setting_data(
       settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
-        data->weather_update_minutes);
+          "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
+          data->weather_update_minutes);
     }
   }
 
@@ -85,8 +88,8 @@ static void apply_setting_data(
       // Set steps goal back to the default setting
       d_s_g = STEPS_GOAL_DEFAULT;
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime reset STEPS_GOAL to default. Received: %d",
-        data->steps_goal);
+          "Runtime reset STEPS_GOAL to default. Received: %d",
+          data->steps_goal);
     }
     if (settings->steps_goal != d_s_g) {
       settings->steps_goal = d_s_g;
@@ -96,21 +99,12 @@ static void apply_setting_data(
 #endif
 }
 
-static void apply_weather_data(
-  const WatchfaceEventData* data,
-  WatchfaceUpdateMask* refresh) {
-  if (!data || !refresh) {
-    return;
-  }
-
-  // Make this a function local const vs. a global const
+static void maybe_apply_weather_update(
+    const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh) {
+  // This a function local const vs. a global const
   static const WatchfaceDataMask c_weather_mask =
-    WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
-
-  WatchfaceDataMask weather_received = (WatchfaceDataMask)(data->received & c_weather_mask);
-  if (weather_received == WATCHFACE_DATA_NONE) {
-    return;
-  }
+      WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
   // Data was received; should be refreshed
   // If data couldn't be parsed, refresh will display "Unavailable state"
@@ -129,9 +123,47 @@ static void apply_weather_data(
   climate_module_set_weather(&climate);
 }
 
+static void apply_location_data(
+    const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh) {
+  if (!data || !refresh) {
+    return;
+  }
+
+  WatchfaceDataMask received = (WatchfaceDataMask)(data->received & WATCHFACE_DATA_LOCATION);
+  if (received == WATCHFACE_DATA_NONE) {
+    return;
+  }
+
+  // Data was received; should be refreshed
+  // If data couldn't be parsed, refresh will show blank location
+  *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_LOCATION);
+  climate_module_set_location((char*)data->location);
+}
+
+static void apply_weather_or_location_data(
+    const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh) {
+  if (!data || !refresh) {
+    return;
+  }
+
+  if (data->received & WATCHFACE_DATA_LOCATION) {
+    return apply_location_data(data, refresh);
+  }
+
+  // This a function local const vs. a global const
+  static const WatchfaceDataMask c_weather_mask =
+      WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
+
+  if (data->received & c_weather_mask) {
+    return maybe_apply_weather_update(data, refresh);
+  }
+}
+
 static void apply_subscribed_service_updates(
-  const WatchfaceEventData* data,
-  WatchfaceUpdateMask* refresh) {
+    const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
@@ -155,8 +187,8 @@ static void apply_subscribed_service_updates(
 
 #ifdef PBL_HEALTH
 static void apply_health_setting_data(
-  const WatchfaceEventData* data,
-  WatchfaceSettings* settings) {
+    const WatchfaceEventData* data,
+    WatchfaceSettings* settings) {
   if (!data || !settings) {
     return;
   }
@@ -168,8 +200,8 @@ static void apply_health_setting_data(
       }
     } else {
       APP_LOG(APP_LOG_LEVEL_WARNING,
-        "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
-        data->hr_sample_minutes);
+          "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
+          data->hr_sample_minutes);
     }
   }
 }
@@ -177,8 +209,8 @@ static void apply_health_setting_data(
 // Applying this data is based on user message
 // Clearing runtime values is module responsibility
 static void apply_oneshot_health_data(
-  const WatchfaceEventData* data,
-  WatchfaceUpdateMask* refresh) {
+    const WatchfaceEventData* data,
+    WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
@@ -196,8 +228,8 @@ static void apply_oneshot_health_data(
 #endif
 
 void watchface_apply_received_data(
-  const WatchfaceEventData* data,
-  WatchfaceSettings* settings) {
+    const WatchfaceEventData* data,
+    WatchfaceSettings* settings) {
   if (!data || !settings) {
     return;
   }
@@ -205,7 +237,8 @@ void watchface_apply_received_data(
   WatchfaceUpdateMask refresh = WATCHFACE_UPDATE_NONE;
 
   apply_setting_data(data, settings, &refresh);
-  apply_weather_data(data, &refresh);
+  apply_weather_or_location_data(data, &refresh);
+  apply_location_data(data, &refresh);
   apply_subscribed_service_updates(data, &refresh);
 
 #ifdef PBL_HEALTH

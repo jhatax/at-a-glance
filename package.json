@@ -2,7 +2,7 @@
   "name": "AtAGlance",
   "author": "Manoj Mehta",
   "description": "Get all the info you need, with a glance at your Pebble.",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "keywords": [
     "pebble",
     "watchface"
@@ -44,7 +44,8 @@
       "HR_SAMPLE_MINUTES",
       "STEPS_GOAL",
       "STEPS_GOAL_PRESET",
-      "STEPS_GOAL_CUSTOM"
+      "STEPS_GOAL_CUSTOM",
+      "MAYBE_CURRENT_LOCATION"
     ],
     "resources": {
       "media": [
@@ -65,8 +66,20 @@
             "diorite"
           ],
           "name": "FONT_TEXT_SEMIBOLD_16",
-          "type": "font",
-          "compatibility": "2.7"
+          "type": "font"
+        },
+        {
+          "characterRegex": "[A-Z ]",
+          "file": "fonts/CabinCondensed-SemiBold.ttf",
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ],
+          "name": "FONT_LOCATION_14",
+          "type": "font"
         },
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
@@ -75,13 +88,22 @@
             "emery",
             "gabbro"
           ],
-          "name": "FONT_TEXT_SEMIBOLD_22",
-          "type": "font",
-          "compatibility": "2.7"
+          "name": "FONT_TEXT_SEMIBOLD_24",
+          "type": "font"
+        },
+        {
+          "characterRegex": "[A-Z ]",
+          "file": "fonts/CabinCondensed-SemiBold.ttf",
+          "targetPlatforms": [
+            "emery",
+            "gabbro"
+          ],
+          "name": "FONT_LOCATION_16",
+          "type": "font"
         },
         {
           "characterRegex": "[0-9:]",
-          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "file": "fonts/Cabin-Medium.ttf",
           "targetPlatforms": [
             "aplite",
             "chalk",
@@ -89,29 +111,26 @@
             "basalt",
             "diorite"
           ],
-          "name": "FONT_CABIN_SEMIBOLD_42",
-          "type": "font",
-          "compatibility": "2.7"
+          "name": "FONT_CABIN_MEDIUM_42",
+          "type": "font"
         },
         {
           "characterRegex": "[0-9:]",
-          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "file": "fonts/Cabin-Medium.ttf",
           "targetPlatforms": [
             "emery"
           ],
-          "name": "FONT_CABIN_SEMIBOLD_60",
-          "type": "font",
-          "compatibility": "2.7"
+          "name": "FONT_CABIN_MEDIUM_58",
+          "type": "font"
         },
         {
           "characterRegex": "[0-9:]",
-          "file": "fonts/cabin-semibold-600-time-subset.ttf",
+          "file": "fonts/Cabin-Medium.ttf",
           "targetPlatforms": [
             "gabbro"
           ],
-          "name": "FONT_CABIN_SEMIBOLD_72",
-          "type": "font",
-          "compatibility": "2.7"
+          "name": "FONT_CABIN_MEDIUM_70",
+          "type": "font"
         },
         {
           "file": "images/walk_18.png",

@@ -2,15 +2,15 @@
 
 #include "substratum_renderer.h"
 
-#define MAX_STR_LEN 16
+#define MAX_STR_LEN 18
 static char s_date_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_date_layer = NULL;
 static WatchfaceColorRole s_date_color_role = WATCHFACE_COLOR_ROLE_DATE;
 
 bool date_module_create(
-  Layer* root,
-  const WatchfaceTextSubstratum* text,
-  GFont font) {
+    Layer* root,
+    const WatchfaceTextSubstratum* text,
+    GFont font) {
   if (!root || !text || !font) {
     return false;
   }
@@ -37,7 +37,7 @@ void date_module_destroy() {
 }
 
 void date_module_refresh(
-  const ColorPalette* palette) {
+    const ColorPalette* palette) {
   // Every weekday is a constant char*
   // The array of these weekdays is also a static constant
   // Only this function needs to have visibility into this array
@@ -58,6 +58,6 @@ void date_module_refresh(
 
   // uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(s_date_layer,
-    s_date_buffer,
-    substratum_renderer_color_for_role(palette, s_date_color_role));
+      s_date_buffer,
+      substratum_renderer_color_for_role(palette, s_date_color_role));
 }

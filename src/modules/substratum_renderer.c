@@ -1,36 +1,37 @@
 #include "substratum_renderer.h"
 
+#include "modules/layout_surface.h"
 #include "watchface_debug.h"
 
 // Scale icon's X relative to the current frame vs. the reference design
 int16_t substratum_renderer_scale_icon_x(
-  const GSize* size,
-  int16_t coord) {
+    const GSize* size,
+    int16_t coord) {
   if (!size || !HELPER_VALID_DESIGN_X(coord)) {
     return 0;
   }
 
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->w, WATCHFACE_ICON_GRID_WIDTH),
-    (size->w - 1));
+      (size->w - 1));
 }
 
 // Scale icon's Y relative to the current frame vs. the reference design
 int16_t substratum_renderer_scale_icon_y(
-  const GSize* size,
-  int16_t coord) {
+    const GSize* size,
+    int16_t coord) {
   if (!size || !HELPER_VALID_DESIGN_Y(coord)) {
     return 0;
   }
 
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->h, WATCHFACE_ICON_GRID_HEIGHT),
-    (size->h - 1));
+      (size->h - 1));
 }
 
 int16_t substratum_renderer_scale_icon_coord(
-  const GSize* size,
-  int16_t coord) {
+    const GSize* size,
+    int16_t coord) {
   if (!size) {
     return 0;
   }
@@ -41,16 +42,16 @@ int16_t substratum_renderer_scale_icon_coord(
 
   int16_t chosen_dimension = HELPER_MIN(size->w, size->h);
   int16_t design_dimension =
-    (chosen_dimension == size->w) ? WATCHFACE_ICON_GRID_WIDTH : WATCHFACE_ICON_GRID_HEIGHT;
+      (chosen_dimension == size->w) ? WATCHFACE_ICON_GRID_WIDTH : WATCHFACE_ICON_GRID_HEIGHT;
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension),
-    (chosen_dimension - 1));
+      (chosen_dimension - 1));
 }
 
 GPoint substratum_renderer_scale_icon_point(
-  const GSize* size,
-  int16_t x,
-  int16_t y) {
+    const GSize* size,
+    int16_t x,
+    int16_t y) {
   if (!(HELPER_VALID_DESIGN_X(x) && HELPER_VALID_DESIGN_Y(y))) {
     // Return the origin of the frame; at least something will get drawn
     return GPoint(0, 0);
@@ -58,58 +59,58 @@ GPoint substratum_renderer_scale_icon_point(
 
   if (size) {
     return GPoint(substratum_renderer_scale_icon_x(size, x),
-      substratum_renderer_scale_icon_y(size, y));
+        substratum_renderer_scale_icon_y(size, y));
   }
 
   return GPoint(x, y);
 }
 
 int16_t substratum_renderer_scale_icon_x_in_frame(
-  const GRect* frame,
-  int16_t coord) {
+    const GRect* frame,
+    int16_t coord) {
   if (!frame) {
     return 0;
   }
 
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(frame->origin.x + substratum_renderer_scale_icon_x(&frame->size, coord),
-    (frame->origin.x + frame->size.w - 1));
+      (frame->origin.x + frame->size.w - 1));
 }
 
 int16_t substratum_renderer_scale_icon_y_in_frame(
-  const GRect* frame,
-  int16_t coord) {
+    const GRect* frame,
+    int16_t coord) {
   if (!frame) {
     return 0;
   }
 
   // Clamp so coords go from 0..total-1
   return HELPER_CLAMP_MAX(frame->origin.y + substratum_renderer_scale_icon_y(&frame->size, coord),
-    (frame->origin.y + frame->size.h - 1));
+      (frame->origin.y + frame->size.h - 1));
 }
 
 void substratum_renderer_scale_icon_point_in_frame(
-  const GRect* frame,
-  GPoint* input) {
+    const GRect* frame,
+    GPoint* input) {
   input->x = substratum_renderer_scale_icon_x_in_frame(frame, input->x);
   input->y = substratum_renderer_scale_icon_y_in_frame(frame, input->y);
 }
 
 GPoint substratum_renderer_scale_icon_x_y_in_frame(
-  const GRect* frame,
-  int16_t x,
-  int16_t y) {
+    const GRect* frame,
+    int16_t x,
+    int16_t y) {
   return GPoint(substratum_renderer_scale_icon_x_in_frame(frame, x),
-    substratum_renderer_scale_icon_y_in_frame(frame, y));
+      substratum_renderer_scale_icon_y_in_frame(frame, y));
 }
 
 void substratum_renderer_create_subframe(
-  const GRect* frame,
-  GRect* out,
-  int16_t x,
-  int16_t y,
-  int16_t w,
-  int16_t h) {
+    const GRect* frame,
+    GRect* out,
+    int16_t x,
+    int16_t y,
+    int16_t w,
+    int16_t h) {
   if (!frame || !out) {
     return;
   }
@@ -125,44 +126,44 @@ void substratum_renderer_create_subframe(
 }
 
 void substratum_renderer_draw_scaled_line(
-  GContext* ctx,
-  const GSize* size,
-  int16_t x0,
-  int16_t y0,
-  int16_t x1,
-  int16_t y1) {
+    GContext* ctx,
+    const GSize* size,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
   if (!ctx || !size) {
     return;
   }
 
   graphics_draw_line(ctx,
-    substratum_renderer_scale_icon_point(size, x0, y0),
-    substratum_renderer_scale_icon_point(size, x1, y1));
+      substratum_renderer_scale_icon_point(size, x0, y0),
+      substratum_renderer_scale_icon_point(size, x1, y1));
 }
 
 void substratum_renderer_draw_scaled_line_in_frame(
-  GContext* ctx,
-  const GRect* frame,
-  int16_t x0,
-  int16_t y0,
-  int16_t x1,
-  int16_t y1) {
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
   if (!ctx || !frame) {
     return;
   }
 
   graphics_draw_line(ctx,
-    substratum_renderer_scale_icon_x_y_in_frame(frame, x0, y0),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, x1, y1));
+      substratum_renderer_scale_icon_x_y_in_frame(frame, x0, y0),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, x1, y1));
 }
 
 void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
-  GContext* ctx,
-  const GRect* frame,
-  int16_t x0,
-  int16_t y0,
-  int16_t x1,
-  int16_t y1) {
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x0,
+    int16_t y0,
+    int16_t x1,
+    int16_t y1) {
   if (!ctx || !frame) {
     return;
   }
@@ -170,19 +171,19 @@ void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
   int16_t scaled_w = substratum_renderer_scale_icon_x_in_frame(frame, (x1 - x0));
   int16_t scaled_h = substratum_renderer_scale_icon_y_in_frame(frame, (y1 - y0));
   GRect rect = GRect(substratum_renderer_scale_icon_x_in_frame(frame, x0),
-    substratum_renderer_scale_icon_y_in_frame(frame, y0),
-    scaled_w,
-    scaled_h);
+      substratum_renderer_scale_icon_y_in_frame(frame, y0),
+      scaled_w,
+      scaled_h);
 
   graphics_fill_rect(ctx, rect, 0, GCornerNone);
 }
 
 void substratum_renderer_fill_scaled_circle_in_frame(
-  GContext* ctx,
-  const GRect* frame,
-  int16_t x,
-  int16_t y,
-  int16_t r) {
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
   if (!ctx || !frame) {
     return;
   }
@@ -193,11 +194,11 @@ void substratum_renderer_fill_scaled_circle_in_frame(
 }
 
 void substratum_renderer_draw_scaled_circle_in_frame(
-  GContext* ctx,
-  const GRect* frame,
-  int16_t x,
-  int16_t y,
-  int16_t r) {
+    GContext* ctx,
+    const GRect* frame,
+    int16_t x,
+    int16_t y,
+    int16_t r) {
   if (!ctx || !frame) {
     return;
   }
@@ -207,27 +208,39 @@ void substratum_renderer_draw_scaled_circle_in_frame(
 }
 
 void substratum_renderer_draw_filled_bolt_in_frame(
-  GContext* ctx,
-  const GRect* frame,
-  GColor fill_color) {
+    GContext* ctx,
+    const GRect* frame,
+    GColor fill_color) {
   if (!ctx || !frame) {
     return;
   }
 
+  uint8_t grid_mid_x = (WATCHFACE_ICON_GRID_WIDTH >> 1) - 1;
+  uint8_t grid_mid_y = (WATCHFACE_ICON_GRID_HEIGHT >> 1) - 1;
+  uint8_t stroke_width =
+      SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 2);
+  uint8_t x_y_offset = stroke_width;
+  uint8_t arm = HELPER_MIN((grid_mid_x >> 1), (grid_mid_y >> 1));
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 8, 1),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 4, 14),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 8, 14),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 6, 24),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 24, 8),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 16, 8),
-    substratum_renderer_scale_icon_x_y_in_frame(frame, 20, 1),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, arm, grid_mid_y + x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, grid_mid_y + x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          grid_mid_x,
+          WATCHFACE_ICON_GRID_HEIGHT - x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_GRID_WIDTH - x_y_offset,
+          grid_mid_y - x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_GRID_WIDTH - x_y_offset - arm - arm,
+          grid_mid_y - x_y_offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, x_y_offset),
   };
 
   GPathInfo path_info = (GPathInfo){
-    .num_points = ARRAY_LENGTH(bolt_points),
-    .points = bolt_points,
+      .num_points = ARRAY_LENGTH(bolt_points),
+      .points = bolt_points,
   };
   GPath* path = gpath_create(&path_info);
 
@@ -235,8 +248,6 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     graphics_context_set_fill_color(ctx, fill_color);
     gpath_draw_filled(ctx, path);
     graphics_context_set_stroke_color(ctx, fill_color);
-    uint8_t stroke_width =
-      SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 2);
     graphics_context_set_stroke_width(ctx, stroke_width);
     // Add a 2-pt offset to draw a halo outside the currently filled path
     gpath_move_to(path, GPoint(-stroke_width, stroke_width));
@@ -247,9 +258,9 @@ void substratum_renderer_draw_filled_bolt_in_frame(
 }
 
 void substratum_renderer_draw_unavailable_slash(
-  GContext* ctx,
-  const GSize* size,
-  GColor color) {
+    GContext* ctx,
+    const GSize* size,
+    GColor color) {
   if (!ctx || !size) {
     return;
   }
@@ -266,9 +277,9 @@ void substratum_renderer_draw_unavailable_slash(
 
 // Module creation and lookup-helpers
 TextLayer* substratum_renderer_create_text_layer(
-  Layer* parent,
-  const WatchfaceTextSubstratum* text,
-  GFont font) {
+    Layer* parent,
+    const WatchfaceTextSubstratum* text,
+    GFont font) {
   if (!parent || !text) {
     return NULL;
   }
@@ -286,9 +297,9 @@ TextLayer* substratum_renderer_create_text_layer(
 }
 
 Layer* substratum_renderer_create_icon_layer(
-  Layer* parent,
-  const WatchfaceIconSubstratum* icon,
-  LayerUpdateProc update_proc) {
+    Layer* parent,
+    const WatchfaceIconSubstratum* icon,
+    LayerUpdateProc update_proc) {
   if (!parent || !icon) {
     return NULL;
   }
@@ -306,9 +317,9 @@ Layer* substratum_renderer_create_icon_layer(
 }
 
 void substratum_renderer_update_text_layer(
-  TextLayer* layer,
-  const char* text,
-  GColor text_color) {
+    TextLayer* layer,
+    const char* text,
+    GColor text_color) {
   if (!layer || !text) {
     return;
   }
@@ -331,8 +342,8 @@ void substratum_renderer_update_text_layer(
 }
 
 GColor substratum_renderer_color_for_role(
-  const ColorPalette* palette,
-  WatchfaceColorRole role) {
+    const ColorPalette* palette,
+    WatchfaceColorRole role) {
   if (!palette) {
     return GColorWhite;
   }

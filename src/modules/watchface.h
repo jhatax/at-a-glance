@@ -4,6 +4,8 @@
 #include "settings.h"
 #include "watchface_debug.h"
 
+#define MAX_LOCATION_LEN 18
+
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
   WATCHFACE_REPAINT = 1 << 0,
@@ -11,8 +13,9 @@ typedef enum {
   WATCHFACE_UPDATE_DATE = 1 << 2,
   WATCHFACE_UPDATE_BATTERY = 1 << 3,
   WATCHFACE_UPDATE_CLIMATE = 1 << 4,
+  WATCHFACE_UPDATE_LOCATION = 1 << 5,
 #ifdef PBL_HEALTH
-  WATCHFACE_UPDATE_HEALTH = 1 << 5,
+  WATCHFACE_UPDATE_HEALTH = 1 << 6,
 #endif
 } WatchfaceUpdateMask;
 
@@ -29,11 +32,12 @@ typedef enum {
   WATCHFACE_DATA_TIME_TICK = 1 << 8,
   WATCHFACE_DATA_DATE_TICK = 1 << 9,
   WATCHFACE_DATA_BATTERY_EVENT = 1 << 10,
+  WATCHFACE_DATA_LOCATION = 1 << 11,
 #ifdef PBL_HEALTH
-  WATCHFACE_DATA_HEALTH_EVENT = 1 << 11,
-  WATCHFACE_DATA_STEPS_GOAL = 1 << 12,
-  WATCHFACE_DATA_ONESHOT_BPM = 1 << 13,
-  WATCHFACE_DATA_ONESHOT_STEPS = 1 << 14,
+  WATCHFACE_DATA_HEALTH_EVENT = 1 << 12,
+  WATCHFACE_DATA_STEPS_GOAL = 1 << 13,
+  WATCHFACE_DATA_ONESHOT_BPM = 1 << 14,
+  WATCHFACE_DATA_ONESHOT_STEPS = 1 << 15,
 #endif
 } WatchfaceDataMask;
 
@@ -57,6 +61,8 @@ typedef struct {
   int weather_condition;
   int is_day;
 
+  char location[MAX_LOCATION_LEN];
+
 #if defined(PBL_HEALTH)
   int oneshot_bpm;
   int oneshot_steps;
@@ -69,8 +75,10 @@ typedef struct {
 // create returns false, because a failed create may leave partial module state
 // that must be unwound. Calling create after a successful create is idempotent
 // and returns true without rebuilding the active surface.
-bool watchface_create(Window* window, const WatchfaceSettings* settings);
+bool watchface_create(Window* window,
+    const WatchfaceSettings* settings);
 void watchface_destroy();
 void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
-void watchface_apply_received_data(const WatchfaceEventData* data, WatchfaceSettings* settings);
+void watchface_apply_received_data(const WatchfaceEventData* data,
+    WatchfaceSettings* settings);

@@ -3,6 +3,7 @@
 #include "battery.h"
 #include "climate.h"
 #include "date.h"
+#include "modules/helper.h"
 #include "time.h"
 #include "watchface_layout.h"
 
@@ -55,12 +56,9 @@ static Window* s_wf_window = NULL;
 static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
-  WATCHFACE_UPDATE_TIME | WATCHFACE_UPDATE_DATE | WATCHFACE_UPDATE_BATTERY |
-  WATCHFACE_UPDATE_CLIMATE
-#ifdef PBL_HEALTH
-  | WATCHFACE_UPDATE_HEALTH
-#endif
-  ;
+    WATCHFACE_UPDATE_TIME | WATCHFACE_UPDATE_DATE | WATCHFACE_UPDATE_BATTERY |
+    WATCHFACE_UPDATE_CLIMATE | WATCHFACE_UPDATE_LOCATION |
+    PBL_IF_HEALTH_ELSE(WATCHFACE_UPDATE_HEALTH, WATCHFACE_UPDATE_NONE);
 
 typedef enum {
   NO_STRATA_MASK = 0,
@@ -73,7 +71,7 @@ typedef enum {
   STEPS_STRATUM_MASK = 32,
 #endif
   MUST_HAVE_STRATA_MASK =
-    DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
+      DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
 } WatchfaceStratumMask;
 
 static WatchfaceStratumMask s_strata_created_mask = NO_STRATA_MASK;
@@ -104,8 +102,8 @@ static void watchface_load_and_apply_fonts() {
 
 // Lifecycle Ownership responsibility
 bool watchface_create(
-  Window* window,
-  const WatchfaceSettings* settings) {
+    Window* window,
+    const WatchfaceSettings* settings) {
   if (s_watchface_initialized) {
     return true;
   }
@@ -150,22 +148,24 @@ bool watchface_create(
     watchface_load_and_apply_fonts();
 
     created = date_module_create(root,
-      &s_surface.date.text,
-      s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role]);
+        &s_surface.date.text,
+        s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role]);
     s_strata_created_mask |= (created) ? DATE_STRATUM_MASK : 0;
 
     created = time_module_create(root,
-      &s_surface.time.text,
-      s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role]);
+        &s_surface.time.text,
+        s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role]);
     s_strata_created_mask |= created ? TIME_STRATUM_MASK : 0;
 
     created = battery_module_create(root, &s_surface.battery);
     s_strata_created_mask |= (created) ? BATTERY_STRATUM_MASK : 0;
 
     created = climate_module_create(root,
-      &s_surface.climate.text,
-      &s_surface.climate.icon,
-      s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role]);
+        &s_surface.climate.text,
+        &s_surface.location.text,
+        &s_surface.climate.icon,
+        s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role],
+        s_surface.style.fontbook.chosen_fonts[s_surface.location.text.font_role]);
     s_strata_created_mask |= created ? CLIMATE_STRATUM_MASK : 0;
 
     if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
@@ -179,16 +179,16 @@ bool watchface_create(
 #ifdef PBL_HEALTH
   if (s_watchface_initialized) {
     created = bpm_module_create(root,
-      &s_surface.bpm.text,
-      &s_surface.bpm.icon,
-      s_surface.style.fontbook.chosen_fonts[s_surface.bpm.text.font_role]);
+        &s_surface.bpm.text,
+        &s_surface.bpm.icon,
+        s_surface.style.fontbook.chosen_fonts[s_surface.bpm.text.font_role]);
     s_strata_created_mask |= (created) ? BPM_STRATUM_MASK : 0;
 
     created = steps_module_create(root,
-      &s_surface.steps.text,
-      &s_surface.steps.icon,
-      &s_surface.steps.progress,
-      s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role]);
+        &s_surface.steps.text,
+        &s_surface.steps.icon,
+        &s_surface.steps.progress,
+        s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role]);
     s_strata_created_mask |= (created) ? STEPS_STRATUM_MASK : 0;
   }
 #endif
@@ -261,7 +261,7 @@ void watchface_repaint() {
 }
 
 void watchface_refresh(
-  WatchfaceUpdateMask updates) {
+    WatchfaceUpdateMask updates) {
   if (!s_wf_window || !s_wf_settings || updates == WATCHFACE_UPDATE_NONE) {
     return;
   }
@@ -283,7 +283,14 @@ void watchface_refresh(
     battery_module_refresh(s_surface.style.palette);
   }
   if ((updates & WATCHFACE_UPDATE_CLIMATE) && (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
-    climate_module_refresh(s_surface.style.palette, s_wf_settings->temp_unit);
+    climate_module_refresh(s_surface.style.palette,
+        WATCHFACE_UPDATE_CLIMATE,
+        s_wf_settings->temp_unit);
+  }
+  if ((updates & WATCHFACE_UPDATE_LOCATION) && (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
+    climate_module_refresh(s_surface.style.palette,
+        WATCHFACE_UPDATE_LOCATION,
+        s_wf_settings->temp_unit);
   }
 
 #ifdef PBL_HEALTH

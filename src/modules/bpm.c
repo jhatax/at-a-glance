@@ -39,23 +39,24 @@ static bool s_oneshot_bpm_is_set = false;
 static int s_oneshot_bpm = BPM_INVALID;
 
 static const BpmPalette c_dark_bpm_palette = {
-  .elevated = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
-  .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorWhite),
+    .elevated = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
+    .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorWhite),
 };
 
 static const BpmPalette c_light_bpm_palette = {
-  .elevated = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-  .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
+    .elevated = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+    .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
 };
 
 static void bpm_update_palette(const ColorPalette* palette);
 static GColor calculate_bpm_color(int bpm);
-static void bpm_icon_update_proc(Layer* layer, GContext* ctx);
+static void bpm_icon_update_proc(Layer* layer,
+    GContext* ctx);
 static void update_bpm();
 static void bpm_module_oneshot_clear_bpm();
 
 static void bpm_update_palette(
-  const ColorPalette* palette) {
+    const ColorPalette* palette) {
   const BpmPalette* template = palette->is_light_mode ? &c_light_bpm_palette : &c_dark_bpm_palette;
 
   if (MODULE_PALETTE_LOADED(s_bpm_palette)) {
@@ -75,7 +76,7 @@ static void bpm_update_palette(
 }
 
 static GColor calculate_bpm_color(
-  int bpm) {
+    int bpm) {
   if (!MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
@@ -93,8 +94,8 @@ static GColor calculate_bpm_color(
 }
 
 static void bpm_icon_update_proc(
-  Layer* layer,
-  GContext* ctx) {
+    Layer* layer,
+    GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_bpm_palette)) {
     return;
   }
@@ -133,7 +134,7 @@ static void update_bpm() {
 
   time_t now = time(NULL);
   HealthServiceAccessibilityMask hr_mask =
-    health_service_metric_accessible(HealthMetricHeartRateBPM, now, now);
+      health_service_metric_accessible(HealthMetricHeartRateBPM, now, now);
 
   if (hr_mask & HealthServiceAccessibilityMaskAvailable) {
     bpm_to_render = (int)health_service_peek_current_value(HealthMetricHeartRateBPM);
@@ -166,10 +167,10 @@ static void update_bpm() {
 }
 
 bool bpm_module_create(
-  Layer* root,
-  const WatchfaceTextSubstratum* text,
-  const WatchfaceIconSubstratum* icon,
-  GFont font) {
+    Layer* root,
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font) {
   if (!root || !text || !font) {
     return false;
   }
@@ -233,7 +234,7 @@ void bpm_module_destroy() {
 }
 
 void bpm_module_refresh(
-  const ColorPalette* palette) {
+    const ColorPalette* palette) {
   if (!palette) {
     return;
   }
@@ -243,7 +244,7 @@ void bpm_module_refresh(
 }
 
 void bpm_module_oneshot_set_bpm(
-  int bpm) {
+    int bpm) {
   if (BPM_IN_RANGE(bpm)) {
     s_oneshot_bpm = bpm;
     s_oneshot_bpm_is_set = true;

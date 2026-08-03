@@ -2,6 +2,7 @@
 
 #include <pebble.h>
 
+#include "watchface.h"
 #include "watchface_components.h"
 
 // Weather AppMessage wire sentinels. PebbleKit JS mirrors these values when
@@ -29,9 +30,14 @@ typedef struct {
 } ClimateUpdate;
 
 bool climate_module_create(Layer* root,
-  const WatchfaceTextSubstratum* text,
-  const WatchfaceIconSubstratum* icon,
-  GFont font);
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceTextSubstratum* loc,
+    const WatchfaceIconSubstratum* condition,
+    GFont text_font,
+    GFont location_font);
 void climate_module_destroy();
-void climate_module_refresh(const ColorPalette* palette, uint8_t temp_unit);
+void climate_module_refresh(const ColorPalette* palette,
+    const WatchfaceUpdateMask refreshed,
+    uint8_t temp_unit);
 void climate_module_set_weather(ClimateUpdate* update);
+void climate_module_set_location(char* location);

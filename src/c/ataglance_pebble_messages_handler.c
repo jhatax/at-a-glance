@@ -24,7 +24,7 @@
 #define APP_MESSAGE_OUTBOX_SIZE 64
 
 void send_loaded_weather_update_minutes(
-  uint8_t minutes) {
+    uint8_t minutes) {
   DictionaryIterator* out_iter = NULL;
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if (result != APP_MSG_OK || !out_iter) {
@@ -33,7 +33,7 @@ void send_loaded_weather_update_minutes(
   }
 
   DictionaryResult dict_result =
-    dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES, minutes);
+      dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES, minutes);
   if (dict_result != DICT_OK) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
     return;
@@ -46,8 +46,8 @@ void send_loaded_weather_update_minutes(
 }
 
 void inbox_received_callback(
-  DictionaryIterator* iter,
-  void* context) {
+    DictionaryIterator* iter,
+    void* context) {
   (void)context;
 
   if (!iter) {
@@ -59,6 +59,7 @@ void inbox_received_callback(
 
   parse_settings_data(iter, &data);
   parse_weather_data(iter, &data);
+  parse_location_data(iter, &data);
 
 #ifdef PBL_HEALTH
   parse_health_settings_data(iter, &data);
@@ -69,24 +70,24 @@ void inbox_received_callback(
 }
 
 void inbox_dropped_callback(
-  AppMessageResult reason,
-  void* context) {
+    AppMessageResult reason,
+    void* context) {
   (void)context;
   APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox dropped: reason=%d", reason);
 }
 
 void outbox_failed_callback(
-  DictionaryIterator* iterator,
-  AppMessageResult reason,
-  void* context) {
+    DictionaryIterator* iterator,
+    AppMessageResult reason,
+    void* context) {
   (void)iterator;
   (void)context;
   APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
 }
 
 void outbox_sent_callback(
-  DictionaryIterator* iterator,
-  void* context) {
+    DictionaryIterator* iterator,
+    void* context) {
   (void)iterator;
   (void)context;
 }
@@ -112,28 +113,28 @@ uint32_t app_message_inbox_size() {
   // 11. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
   return dict_calc_buffer_size(11,  // tuples
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    sizeof(int32_t),
-    sizeof(int32_t),
-    sizeof(int32_t),
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    sizeof(int32_t),
-    sizeof(int32_t),
-    sizeof(int32_t));
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t),
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t),
+      sizeof(int32_t));
 #else
   return dict_calc_buffer_size(9,  // tuples
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    sizeof(int32_t),
-    sizeof(int32_t),
-    sizeof(int32_t),
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    APP_MESSAGE_CONFIG_VALUE_SIZE,
-    sizeof(int32_t));
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t),
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t));
 #endif
 }
 
@@ -147,16 +148,16 @@ AppMessageResult initialize_inbox_outbox() {
 
   APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu", result, inbox_size);
   APP_LOG(APP_LOG_LEVEL_WARNING,
-    "AppMessage sizes: outbox=%d kit=%d",
-    APP_MESSAGE_OUTBOX_SIZE,
-    pebblekit_connected);
+      "AppMessage sizes: outbox=%d kit=%d",
+      APP_MESSAGE_OUTBOX_SIZE,
+      pebblekit_connected);
 
   result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
     APP_LOG(APP_LOG_LEVEL_ERROR,
-      "AppMessage retry failed: result=%d kit=%d",
-      result,
-      pebblekit_connected);
+        "AppMessage retry failed: result=%d kit=%d",
+        result,
+        pebblekit_connected);
   }
 
   return result;
