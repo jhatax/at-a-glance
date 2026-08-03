@@ -3,7 +3,7 @@
 Thanks for your interest. This document explains how to extend and modify *At A Glance* from cloning the repo, configuring your IDE, changing and validating code, and updating docs.
 
 ## Adjacent
-- [Watchface_Readme](Readme.md) gives an overview of the watch face with screenshots
+- [Watchface_Readme](../README.md) gives an overview of the watch face with screenshots
 - [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
 - [Validation](Validation.md) for validation paths and evidence.
 

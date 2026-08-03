@@ -53,7 +53,7 @@ package.json
 |               |
 |               src/pkjs/index.js ──────────────────> package.json message keys
 |               - Clay bootstrap                    - generated message key symbols
-|               - geolocation and Oakland fallback
+|               - geolocation, location text, and Oakland fallback
 |               - weather refresh requests, appmessage packaging
 V               ────────────────────────────────────────────────────────────────────
 wscript
@@ -74,7 +74,7 @@ src/c/ataglance.c ────────────────────�
 watchface_runtime_boundary.c ─────────────────────> settings.h
 - runtime event & message adapter                  - settings defaults
 - settings mutation                                - persisted settings shape
-- weather ingress application                      - validation vocabulary
+- weather and optional location ingress application - validation vocabulary
 - one-shot health ingress application
 - repaint-versus-refresh decision
         |
@@ -114,6 +114,7 @@ feature modules ─────────────────────�
      3. battery.c                                  battery.h
      4. climate.c                                  climate.h
         - climate_glyphs.c                         - climate_glyphs.h
+        - optional location text and source buffer
      5. steps.c                                    steps.h
      6. bpm.c                                      bpm.h
         +─────────────────────────────────────────+

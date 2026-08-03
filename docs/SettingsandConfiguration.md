@@ -46,7 +46,7 @@ Clay also exposes two settings-page inputs that are not canonical runtime settin
 
 PKJS collapses these two Clay inputs into the canonical `STEPS_GOAL` value before sending settings to C.
 
-The settings catalog does not include weather data or one-shot health override keys. Those are AppMessage payloads, not persisted user settings.
+The settings catalog does not include weather data, location data, or one-shot health override keys. Those are AppMessage payloads, not persisted user settings.
 
 ## Source Of Truth Map
 
@@ -122,6 +122,7 @@ Current manifest-backed keys:
 | 9 | `STEPS_GOAL` | `10008` | Runtime setting on `PBL_HEALTH` |
 | 10 | `STEPS_GOAL_PRESET` | `10009` | Clay-only input |
 | 11 | `STEPS_GOAL_CUSTOM` | `10010` | Clay-only input |
+| 12 | `MAYBE_CURRENT_LOCATION` | `10011` | Optional location data |
 
 Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
 

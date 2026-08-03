@@ -12,7 +12,11 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 | <center><b>Color rectangular</b></center> | <center><b>Round monochrome</b></center> |
 | :---: | :---: |
-| <center><b><img src="docs/assets/screenshots/at-a-glance-clearasceleste.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br>Gabbro: White on Black</b></center> |
+| <center><b><img src="docs/assets/screenshots/at-a-glance-emery-celeste-qa.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack-qa.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br>Gabbro: White on Black</b></center> |
+
+| <center><b>Health-capable rectangular</b></center> | <center><b>Health-capable round</b></center> |
+| :---: | :---: |
+| <center><b><img src="docs/assets/screenshots/at-a-glance-emery-health.png" alt="At A Glance on Emery showing steps and heart rate" width="200"><br>Emery: Steps and heart rate</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-health.png" alt="At A Glance on Gabbro showing steps and heart rate" width="220"><br>Gabbro: Steps and heart rate</b></center> |
 
 ## Installation
 

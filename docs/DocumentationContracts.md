@@ -56,7 +56,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Records the current visual realization of the watch face. It provides the evidence layer for stack order, geometry, typography, palettes, icons, glyphs, and settings presentation.
 
-**Sub-concepts:** Device screenshots; settings screenshot; visual stack; information placement; typography; color and palettes; progress tracks; icon frames; glyph inventory; weather glyphs; out-of-range slash.
+**Sub-concepts:** Device screenshots; settings screenshot; visual stack; information placement; typography; color and palettes; progress tracks; icon frames; glyph inventory; weather glyphs; location text; out-of-range slash.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 

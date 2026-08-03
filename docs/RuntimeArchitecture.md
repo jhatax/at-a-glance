@@ -17,6 +17,7 @@ Layers have been implemented to satisfy visual display and runtime-architecture 
 3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules
   - `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
+   - `climate` also owns the optional centered location text and its source buffer.
 
 ### Core Concepts
 - The watch face display is organized using tiles (strata). Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
@@ -68,6 +69,9 @@ service callback, accelerometer tap callback, or AppMessage callback in ataglanc
        -> apply_weather_data(...)
             -> push complete or unavailable climate state
             -> request climate refresh when any weather field was received
+       -> apply_location_data(...)
+            -> copy the bounded location payload into climate source state
+            -> request the location text refresh
        -> apply_subscribed_service_updates(...)
             -> translate tick, battery, and health callbacks into refresh masks
        -> apply_health_setting_data(...)
@@ -209,7 +213,7 @@ watchface_destroy()
 
 - Text-only modules such as date and time own a text layer and refresh text from time/date state plus the active palette.
 - Service-backed modules such as battery, BPM, and steps read Pebble service state during refresh, then map that source state to text, progress, icon, or live colors.
-- Transport-backed modules such as climate receive source state through a setter, then render temperature and glyph state during refresh.
+- Transport-backed modules such as climate receive weather and optional location source state through setters, then render temperature, glyph, and location text during refresh.
 - QA-only one-shot health setters queue a single source-state override that is consumed by the next health refresh and cleared during module or watch face teardown.
 
 ### Module boundaries
@@ -331,6 +335,7 @@ The steps module demonstrates the intended boundary:
 
 - **Settings tuples**: time format, temperature unit, display mode, weather cadence, heart-rate cadence, and steps goal.
 - **Weather tuples**: temperature, weather condition, and `is_day`.
+- **Location tuple**: optional current-location text from PKJS; an empty value clears the location text.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
 ### Outbound AppMessage coverage
@@ -342,6 +347,7 @@ Settings, Clay field mapping, generated message-key numbering, PKJS normalizatio
 ### Climate-specific transport behavior
 
 - The phone companion requests current weather from Open-Meteo on the configured cadence, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable.
+- PKJS sends the resolved location text through `MAYBE_CURRENT_LOCATION`; the runtime passes it to `climate.c`, which owns the location buffer and text layer.
 - Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.
 - Any received weather tuple triggers a climate refresh. The runtime applies weather as complete climate state only when temperature, condition, and `is_day` are all parsed. `climate.c` then validates the parsed domain values; incomplete or invalid packets clear prior weather state and render the unavailable vocabulary.

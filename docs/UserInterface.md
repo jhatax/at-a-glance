@@ -1,6 +1,6 @@
 # User Interface
 
-This document records the current UI of *At A Glance*. It is the reference for the implemented stack, geometry, fonts, palettes, icon sizes, glyph realization, and screenshot status.
+This document records the current UI of _At A Glance_. It is the reference for the implemented stack, geometry, fonts, palettes, icon sizes, glyph realization, and screenshot status.
 
 ## Adjacent
 
@@ -13,11 +13,10 @@ This document records the current UI of *At A Glance*. It is the reference for t
 
 Current device screenshots are checked in under `docs/assets/screenshots/`. Together with the coordinates, palettes, typography, and glyph realization tables below, they provide evidence to satisfy the watch face's visual invariants for legibility, placements, and compatibility with all devices.
 
-| | | | |
-| :---: | :---: | :---: | :---: |
-| <center><b><img src="assets/screenshots/at-a-glance-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-clearasceleste.png" alt="Emery Clear as Celeste screenshot" width="160"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-nightinoxford.png" alt="Emery Night in Oxford screenshot" width="160"><br>Emery: Night in Oxford</b></center> |
-| <center><b><img src="assets/screenshots/at-a-glance-chalk-blackonwhite.png" alt="Chalk Black on White screenshot" width="130"><br>Chalk: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-whiteonblack.png" alt="Gabbro White on Black screenshot" width="160"><br>Gabbro: White on Black</b></center> | <center><b><img src="assets/screenshots/at-a-glance-chalk-clearasceleste.png" alt="Chalk Clear as Celeste screenshot" width="130"><br>Chalk: Clear as Celeste</b></center> | <center><b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford</b></center> |
-| <center><b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b></center> | <center><b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black screenshot" width="130"><br>Flint: White on Black</b></center> | | |
+|                                                                                                                                                        |                                                                                                                                                     |                                                                                                                                                                    |                                                                                                                                                                  |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  <b><img src="assets/screenshots/at-a-glance-emery-blackonwhite.png" alt="Emery Black on White screenshot" width="160"><br>Emery: Black on White</b>   | <b><img src="assets/screenshots/at-a-glance-emery-whiteonblack.png" alt="Emery White on Black screenshot" width="160"><br>Emery: White on Black</b> |         <b><img src="assets/screenshots/at-a-glance-chalk-celeste.png" alt="Chalk Clear as Celeste screenshot" width="160"><br>Chalk: Clear as Celeste</b>         |    <b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford screenshot" width="160"><br>Gabbro: Night in Oxford</b>     |
+| <b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White screenshot" width="130"><br>Aplite: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on BLack screenshot" width="130"><br>Flint: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-emery-celeste-all.png" alt="Emery Clear as Celeste _all_ screenshot" width="160"><br>Emery: Clear as Celeste _all_</b> | <b><img src="assets/screenshots/at-a-glance-emery-oxford-all.png" alt="Emery Night in Oxford _all_ screenshot" width="160"><br>Gabbro: Night in Oxford _all_</b> |
 
 Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a priority when glyphs are modified or new glyphs are introduced.
 
@@ -36,6 +35,7 @@ top steps context
 dominant centered time
 centered battery track and plugged-in bolt
 weather/date context
+centered location
 bottom heart-rate context
 ```
 
@@ -55,20 +55,21 @@ Coordinates are `x,y,w,h`.
 - Face: `200x228`
 - Classification: full
 
-| Element | Frame |
-| :--- | :--- |
-| Steps icon | `69,10,28,28` |
-| Steps text | `100,10,56,28` |
-| Steps progress | `69,38,87,4` |
-| Time text | `4,62,192,60` |
-| Battery track | `25,127,150,8` |
-| Battery fill | `26,128,148,6` |
-| Battery bolt | `178,122,18,18` |
-| Climate text | `4,140,62,28` |
-| Climate icon | `69,140,28,28` |
-| Date text | `100,140,99,28` |
-| BPM icon | `69,190,28,28` |
-| BPM text | `100,190,36,28` |
+| Element        | Frame           |
+| :------------- | :-------------- |
+| Steps icon     | `69,10,28,28`   |
+| Steps text     | `100,10,56,28`  |
+| Steps progress | `69,38,87,4`    |
+| Time text      | `4,50,192,60`   |
+| Battery track  | `25,115,150,6`  |
+| Battery fill   | `26,116,148,4`  |
+| Battery bolt   | `178,109,18,18` |
+| Climate text   | `4,126,64,28`   |
+| Climate icon   | `70,126,28,28`  |
+| Date text      | `100,126,99,28` |
+| Location text  | `25,152,150,16` |
+| BPM icon       | `69,190,28,28`  |
+| BPM text       | `100,190,36,28` |
 
 ### Gabbro
 
@@ -76,20 +77,21 @@ Coordinates are `x,y,w,h`.
 - Face: `260x260`
 - Classification: full
 
-| Element | Frame |
-| :--- | :--- |
-| Steps icon | `99,10,28,28` |
-| Steps text | `130,10,56,28` |
-| Steps progress | `99,38,87,4` |
-| Time text | `4,70,252,72` |
-| Battery track | `32,147,195,8` |
-| Battery fill | `33,148,193,6` |
-| Battery bolt | `230,142,18,18` |
-| Climate text | `4,160,92,28` |
-| Climate icon | `99,160,28,28` |
-| Date text | `130,160,129,28` |
-| BPM icon | `99,222,28,28` |
-| BPM text | `130,222,36,28` |
+| Element        | Frame            |
+| :------------- | :--------------- |
+| Steps icon     | `99,10,28,28`    |
+| Steps text     | `130,10,56,28`   |
+| Steps progress | `99,38,87,4`     |
+| Time text      | `4,57,252,72`    |
+| Battery track  | `32,134,195,6`   |
+| Battery fill   | `33,135,193,4`   |
+| Battery bolt   | `230,128,18,18`  |
+| Climate text   | `4,145,94,28`    |
+| Climate icon   | `100,145,28,28`  |
+| Date text      | `130,145,129,28` |
+| Location text  | `32,171,195,16`  |
+| BPM icon       | `99,222,28,28`   |
+| BPM text       | `130,222,36,28`  |
 
 ### Chalk
 
@@ -97,20 +99,21 @@ Coordinates are `x,y,w,h`.
 - Face: `180x180`
 - Classification: compact
 
-| Element | Frame |
-| :--- | :--- |
-| Steps icon | `69,10,18,18` |
-| Steps text | `90,10,40,18` |
-| Steps progress | `69,28,61,4` |
-| Time text | `2,43,176,50` |
-| Battery track | `22,98,135,8` |
-| Battery fill | `23,99,133,6` |
-| Battery bolt | `160,93,18,18` |
-| Climate text | `2,111,64,18` |
-| Climate icon | `69,111,18,18` |
-| Date text | `90,111,89,18` |
-| BPM icon | `69,152,18,18` |
-| BPM text | `90,152,30,18` |
+| Element        | Frame           |
+| :------------- | :-------------- |
+| Steps icon     | `69,10,18,18`   |
+| Steps text     | `90,10,40,18`   |
+| Steps progress | `69,28,61,4`    |
+| Time text      | `2,43,176,50`   |
+| Battery track  | `22,98,135,6`   |
+| Battery fill   | `23,99,133,4`   |
+| Battery bolt   | `160,92,18,18`  |
+| Climate text   | `2,109,66,18`   |
+| Climate icon   | `70,109,18,18`  |
+| Date text      | `90,109,89,18`  |
+| Location text  | `22,125,135,14` |
+| BPM icon       | `69,152,18,18`  |
+| BPM text       | `90,152,30,18`  |
 
 ### Flint
 
@@ -118,20 +121,21 @@ Coordinates are `x,y,w,h`.
 - Face: `144x168`
 - Classification: compact
 
-| Element | Frame |
-| :--- | :--- |
-| Steps icon | `51,6,18,18` |
-| Steps text | `72,6,40,18` |
-| Steps progress | `51,24,61,4` |
-| Time text | `2,40,140,50` |
-| Battery track | `18,95,108,8` |
-| Battery fill | `19,96,106,6` |
-| Battery bolt | `129,90,18,18` |
-| Climate text | `2,108,46,18` |
-| Climate icon | `51,108,18,18` |
-| Date text | `72,108,71,18` |
-| BPM icon | `51,144,18,18` |
-| BPM text | `72,144,30,18` |
+| Element        | Frame           |
+| :------------- | :-------------- |
+| Steps icon     | `51,6,18,18`    |
+| Steps text     | `72,6,40,18`    |
+| Steps progress | `51,24,61,4`    |
+| Time text      | `2,40,140,50`   |
+| Battery track  | `18,95,108,6`   |
+| Battery fill   | `19,96,106,4`   |
+| Battery bolt   | `129,89,18,18`  |
+| Climate text   | `2,106,48,18`   |
+| Climate icon   | `52,106,18,18`  |
+| Date text      | `72,106,71,18`  |
+| Location text  | `18,122,108,14` |
+| BPM icon       | `51,144,18,18`  |
+| BPM text       | `72,144,30,18`  |
 
 ### Aplite
 
@@ -140,27 +144,29 @@ Coordinates are `x,y,w,h`.
 - Classification: compact
 - Health: not present
 
-| Element | Frame |
-| :--- | :--- |
-| Time text | `2,40,140,50` |
-| Battery track | `18,95,108,8` |
-| Battery fill | `19,96,106,6` |
-| Battery bolt | `129,90,18,18` |
-| Climate text | `2,108,46,18` |
-| Climate icon | `51,108,18,18` |
-| Date text | `72,108,71,18` |
+| Element       | Frame           |
+| :------------ | :-------------- |
+| Time text     | `2,40,140,50`   |
+| Battery track | `18,95,108,6`   |
+| Battery fill  | `19,96,106,4`   |
+| Battery bolt  | `129,89,18,18`  |
+| Climate text  | `2,106,48,18`   |
+| Climate icon  | `52,106,18,18`  |
+| Date text     | `72,106,71,18`  |
+| Location text | `18,122,108,14` |
 
 ### Typography
 
-The `layout_stylist` selects fonts by display class (compact or full) and font role. The `Text` role is shared by all non-time, non-date fields (for example, climate, BPM, and steps). System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
+The `layout_stylist` selects fonts by display class (compact or full) and font role. The `Text` role is shared by climate, BPM, and steps; location has its own font role. System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
 
-Custom fonts: **Cabin** for time, **Barlow Condensed** for date and metrics. Font sizes: Customized for display sizes.
+Custom fonts: **Cabin** for time and location, **Barlow Condensed** for date and metrics. Font sizes are customized for compact and full displays.
 
-| Role | Compact system font | Compact custom font | Full system font | Full custom font |
-| :--- | :--- | :--- | :--- | :--- |
-| <b>Time</b> | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_42` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_SEMIBOLD_60` (Emery)<br>`RESOURCE_ID_FONT_CABIN_SEMIBOLD_72` (other full displays) |
-| <b>Date</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
-| <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_22` |
+| Role                             | Compact system font                 | Compact custom font                 | Full system font                 | Full custom font                                                                          |
+| :------------------------------- | :---------------------------------- | :---------------------------------- | :------------------------------- | :---------------------------------------------------------------------------------------- |
+| <b>Time</b>                      | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_MEDIUM_42`  | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_MEDIUM_58` (Emery)<br>`RESOURCE_ID_FONT_CABIN_MEDIUM_70` (Gabbro) |
+| <b>Date</b>                      | `FONT_KEY_GOTHIC_18_BOLD`           | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD`        | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_24`                                                       |
+| <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD`           | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_16` | `FONT_KEY_GOTHIC_24_BOLD`        | `RESOURCE_ID_FONT_TEXT_SEMIBOLD_24`                                                       |
+| <b>Location</b>                  | `FONT_KEY_GOTHIC_18_BOLD`           | `RESOURCE_ID_FONT_LOCATION_14`      | `FONT_KEY_GOTHIC_24_BOLD`        | `RESOURCE_ID_FONT_LOCATION_16`                                                            |
 
 - Text metrics, coordinates, height, width, are defined per field.
 - Font selection depends on role, display class, and platform.
@@ -198,6 +204,7 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 **Source of truth**: Current palette code in `layout_stylist.c`, `climate.c`, `bpm.c`, `steps.c`, `battery.c`.
 
 **Columns**
+
 - Color's primary role
 - `Mono-Light BW`: `DISPLAY_MODE_LIGHT_MONOCHROME` (on monochrome)
 - `Mono-Dark BW`: `DISPLAY_MODE_DARK_MONOCHROME` (on monochrome)
@@ -206,41 +213,41 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 - `Clear as Celeste`: `DISPLAY_MODE_LIGHT_COLOR` (on color)
 - `Night in Oxford`: `DISPLAY_MODE_DARK_COLOR` (on color)
 
-| Color role | Mono-Light BW | Mono-Dark BW | Mono-Light C | Mono-Dark C | Clear as Celeste | Night in Oxford |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **PRIMARY** | | | | | | |
-| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
-| Primary text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Date | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
-| Time | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
-| **BATTERY** | | | | | | |
-| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
-| Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
-| Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
-| Plugged In | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
-| **STEPS** | | | | | | |
-| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
-| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Approaching (`>70%` of goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
-| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
-| **CLIMATE** | | | | | | |
-| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
-| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Sun | `GColorBlack` | `GColorWhite` | `GColorWindsorTan` | `GColorChromeYellow` | `GColorWindsorTan` | `GColorChromeYellow` |
-| Cold | `GColorBlack` | `GColorWhite` | `GColorCobaltBlue` | `GColorMintGreen` | `GColorCobaltBlue` | `GColorMintGreen` |
-| Cloud | `GColorBlack` | `GColorWhite` | `GColorBlue` | `GColorElectricBlue` | `GColorBlue` | `GColorElectricBlue` |
-| Clear Ring (night) | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
-| Clear Fill | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
-| **Heart-rate** | | | | | | |
-| Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
-| Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Elevated (`>=100`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
-| Critical (`>=120`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
+| Color role                   |  Mono-Light BW   |   Mono-Dark BW    |    Mono-Light C     |     Mono-Dark C      |  Clear as Celeste   |   Night in Oxford    |
+| :--------------------------- | :--------------: | :---------------: | :-----------------: | :------------------: | :-----------------: | :------------------: |
+| **PRIMARY**                  |                  |                   |                     |                      |                     |                      |
+| Background                   |  `GColorWhite`   |   `GColorBlack`   |    `GColorWhite`    |    `GColorBlack`     |   `GColorCeleste`   |  `GColorOxfordBlue`  |
+| Primary text                 |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |    `GColorBlack`    |    `GColorWhite`     |
+| Out-of-Range text            |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |  `GColorDarkGray`   |  `GColorLightGray`   |
+| Date                         |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     | `GColorOxfordBlue`  |   `GColorCeleste`    |
+| Time                         |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     | `GColorOxfordBlue`  |   `GColorCeleste`    |
+| **BATTERY**                  |                  |                   |                     |                      |                     |                      |
+| Background                   |  `GColorWhite`   |   `GColorBlack`   |    `GColorWhite`    |    `GColorBlack`     |   `GColorCeleste`   |  `GColorOxfordBlue`  |
+| Normal (`>50`)               |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |    `GColorBlack`    |    `GColorWhite`     |
+| Medium (`21-50`)             |  `GColorBlack`   |   `GColorWhite`   | `GColorVividViolet` |   `GColorIcterine`   | `GColorVividViolet` |   `GColorIcterine`   |
+| Critical (`<=20`)            |  `GColorBlack`   |   `GColorWhite`   |     `GColorRed`     |     `GColorRed`      |     `GColorRed`     |     `GColorRed`      |
+| Plugged In                   |  `GColorBlack`   |   `GColorWhite`   | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| **STEPS**                    |                  |                   |                     |                      |                     |                      |
+| Background                   |  `GColorWhite`   |   `GColorBlack`   |    `GColorWhite`    |    `GColorBlack`     |   `GColorCeleste`   |  `GColorOxfordBlue`  |
+| Normal                       |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |    `GColorBlack`    |    `GColorWhite`     |
+| Out-of-Range                 |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |  `GColorDarkGray`   |  `GColorLightGray`   |
+| Approaching (`>70%` of goal) |  `GColorBlack`   |   `GColorWhite`   | `GColorVividViolet` |   `GColorIcterine`   | `GColorVividViolet` |   `GColorIcterine`   |
+| Achieved (`>= goal`)         |  `GColorBlack`   |   `GColorWhite`   | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| **CLIMATE**                  |                  |                   |                     |                      |                     |                      |
+| Background                   |  `GColorWhite`   |   `GColorBlack`   |    `GColorWhite`    |    `GColorBlack`     |   `GColorCeleste`   |  `GColorOxfordBlue`  |
+| Normal                       |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |    `GColorBlack`    |    `GColorWhite`     |
+| Out-of-Range                 |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |  `GColorDarkGray`   |  `GColorLightGray`   |
+| Sun                          |  `GColorBlack`   |   `GColorWhite`   | `GColorWindsorTan`  | `GColorChromeYellow` | `GColorWindsorTan`  | `GColorChromeYellow` |
+| Cold                         |  `GColorBlack`   |   `GColorWhite`   | `GColorCobaltBlue`  |  `GColorMintGreen`   | `GColorCobaltBlue`  |  `GColorMintGreen`   |
+| Cloud                        |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlue`     | `GColorElectricBlue` |    `GColorBlue`     | `GColorElectricBlue` |
+| Clear Ring (night)           | `GColorDarkGray` |   `GColorWhite`   |  `GColorDarkGray`   | `GColorBabyBlueEyes` |  `GColorDarkGray`   | `GColorBabyBlueEyes` |
+| Clear Fill                   | `GColorDarkGray` | `GColorLightGray` |  `GColorDarkGray`   | `GColorBabyBlueEyes` |  `GColorDarkGray`   | `GColorBabyBlueEyes` |
+| **Heart-rate**               |                  |                   |                     |                      |                     |                      |
+| Background                   |  `GColorWhite`   |   `GColorBlack`   |    `GColorWhite`    |    `GColorBlack`     |   `GColorCeleste`   |  `GColorOxfordBlue`  |
+| Normal                       |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |    `GColorBlack`    |    `GColorWhite`     |
+| Out-of-Range                 |  `GColorBlack`   |   `GColorWhite`   |    `GColorBlack`    |    `GColorWhite`     |  `GColorDarkGray`   |  `GColorLightGray`   |
+| Elevated (`>=100`)           |  `GColorBlack`   |   `GColorWhite`   | `GColorVividViolet` |   `GColorIcterine`   | `GColorVividViolet` |   `GColorIcterine`   |
+| Critical (`>=120`)           |  `GColorBlack`   |   `GColorWhite`   |     `GColorRed`     |     `GColorRed`      |     `GColorRed`     |     `GColorRed`      |
 
 ## Current Icon Sizes
 
@@ -272,22 +279,22 @@ The current glyph system uses familiar heart-and-waveform, weather, walking, bat
 Climate glyphs are procedural and drawn in the climate icon frame. The current procedural glyph reference grid is `28x28`. Weather condition codes are grouped into the current icon families:
 
 | Weather code range | Current icon family |
-| --- | --- |
-| `<0` or `>99` | Out-of-range |
-| `0-1` | Clear |
-| `2` | Partly cloudy |
-| `3` | Cloud |
-| `4-48` | Fog |
-| `49-55` | Drizzle |
-| `56-57` | Sleet drizzle |
-| `58-63` | Rain |
-| `64-65` | Heavy rain |
-| `66-67` | Heavy sleet |
-| `68-77` | Snow |
-| `78-81` | Showers |
-| `82` | Heavy showers |
-| `83-86` | Snow showers |
-| `87-99` | Thunderstorm |
+| ------------------ | ------------------- |
+| `<0` or `>99`      | Out-of-range        |
+| `0-1`              | Clear               |
+| `2`                | Partly cloudy       |
+| `3`                | Cloud               |
+| `4-48`             | Fog                 |
+| `49-55`            | Drizzle             |
+| `56-57`            | Sleet drizzle       |
+| `58-63`            | Rain                |
+| `64-65`            | Heavy rain          |
+| `66-67`            | Heavy sleet         |
+| `68-77`            | Snow                |
+| `78-81`            | Showers             |
+| `82`               | Heavy showers       |
+| `83-86`            | Snow showers        |
+| `87-99`            | Thunderstorm        |
 
 **Current climate glyph realization**
 
