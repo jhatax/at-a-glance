@@ -52,17 +52,30 @@ class QAPlanGrammar:
 
   CAPABILITY_FIELDS: Final = MappingProxyType(
       {
-          "weather": {"display", "temp", "code", "is_day"},
-          "battery": {"display", "level", "charging"},
-          "health": {"display", "bpm", "steps"},
-          "all": {"display", "bpm", "steps", "temp", "code", "is_day", "level", "charging"},
+          "weather":
+          frozenset({"display", "temp", "code", "is_day"}),
+          "battery":
+          frozenset({"display", "level", "charging"}),
+          "health":
+          frozenset({"display", "bpm", "steps"}),
+          "all":
+          frozenset({
+              "display",
+              "bpm",
+              "steps",
+              "temp",
+              "code",
+              "is_day",
+              "level",
+              "charging",
+          }),
       }
   )
 
   @classmethod
   def does_step_have_needed_attributes(cls, capability: str, args: dict[str, Any]) -> bool:
     if not capability or capability not in cls.SUPPORTED_CAPABILITIES:
-      raise ValueError("Unsupported capability '{capability}'")
+      raise ValueError(f"Unsupported capability '{capability}'")
     return cls.CAPABILITY_FIELDS[capability].issubset(set(args.keys()))
 
   @classmethod
