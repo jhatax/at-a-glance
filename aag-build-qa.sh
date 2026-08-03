@@ -58,7 +58,8 @@ Options:
   --plans                 Get a list of available QA plans
   --validate QA-PLAN      Validate a QA plan by name
   --list-steps QA-PLAN    Validate a QA plan by name
-  --exec-plan QA-PLAN     Validate and execute a named QA plan
+  --exec-plan --exec QA-PLAN     
+                          Validate and execute a named QA plan
   -n,  --dry-run          Print the resolved scenario execution plan and exit
   --force                 Skip scenario execution confirmation
 
