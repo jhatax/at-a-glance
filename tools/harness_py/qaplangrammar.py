@@ -6,7 +6,7 @@ from qaharnessconfig import DISPLAY_MODE_VALUES
 
 @dataclass(frozen=True)
 class QAPlanGrammar:
-  SUPPORTED_CAPABILITIES: Final = frozenset({"weather", "battery", "health"})
+  SUPPORTED_CAPABILITIES: Final = frozenset({"weather", "battery", "health", "all"})
   SCREENSHOTS_POLICIES: Final = frozenset({"yes", "no"})
   SUPPORTED_EMULATORS: Final = frozenset(
       {
@@ -19,6 +19,17 @@ class QAPlanGrammar:
           "gabbro",
       }
   )
+  EMULATORS_SUPPORTING_HEALTH: Final = frozenset(
+      {
+          "basalt",
+          "chalk",
+          "diorite",
+          "emery",
+          "flint",
+          "gabbro",
+      }
+  )
+
   COLOR_EMULATORS: Final = frozenset({"chalk", "emery", "gabbro"})
   ACCEPTED_PLAN_TYPES: Final = MappingProxyType({
       ".scenario": "scenario",
@@ -30,11 +41,21 @@ class QAPlanGrammar:
           "monochrome": frozenset({"white", "black"}),
       }
   )
-  CAPABILITY_FIELD_ORDER: Final = MappingProxyType(
+  EMULATOR_SUPPORT_BY_CAPABILITY: Final = MappingProxyType(
+      {
+          "health": frozenset(EMULATORS_SUPPORTING_HEALTH),
+          "all": frozenset(EMULATORS_SUPPORTING_HEALTH),
+          "battery": frozenset(SUPPORTED_EMULATORS),
+          "weather": frozenset(SUPPORTED_EMULATORS),
+      }
+  )
+
+  CAPABILITY_FIELDS: Final = MappingProxyType(
       {
           "weather": {"display", "temp", "code", "is_day"},
           "battery": {"display", "level", "charging"},
           "health": {"display", "bpm", "steps"},
+          "all": {"display", "bpm", "steps", "temp", "code", "is_day", "level", "charging"},
       }
   )
 
@@ -42,7 +63,7 @@ class QAPlanGrammar:
   def does_step_have_needed_attributes(cls, capability: str, args: dict[str, Any]) -> bool:
     if not capability or capability not in cls.SUPPORTED_CAPABILITIES:
       raise ValueError("Unsupported capability '{capability}'")
-    return cls.CAPABILITY_FIELD_ORDER[capability].issubset(set(args.keys()))
+    return cls.CAPABILITY_FIELDS[capability].issubset(set(args.keys()))
 
   @classmethod
   def is_valid_capability(cls, capability: str) -> bool:
@@ -53,13 +74,17 @@ class QAPlanGrammar:
     return emulator in cls.SUPPORTED_EMULATORS
 
   @classmethod
+  def is_capability_supported_by_emulator(cls, capability: str, emulator: str) -> bool:
+    return emulator in cls.EMULATOR_SUPPORT_BY_CAPABILITY[capability]
+
+  @classmethod
   def are_valid_emulators(cls, emulators: list[str]) -> bool:
     return set(emulators).issubset(cls.SUPPORTED_EMULATORS)
 
   @classmethod
   def is_valid_display_for_emulator(cls, display: str, emulator: str) -> bool:
-    return display in QAPlanGrammar.DISPLAY_MODES_BY_EMULATOR["color" if emulator in QAPlanGrammar.
-                                                              COLOR_EMULATORS else "monochrome"]
+    return display in cls.DISPLAY_MODES_BY_EMULATOR["color" if emulator in
+                                                    cls.COLOR_EMULATORS else "monochrome"]
 
 
 @dataclass
@@ -87,6 +112,6 @@ def validate_slug(value: str, label: str) -> None:
   if not value or not value[0].isalnum():
     raise ValueError(f"Invalid {label} '{value}'")
   for char in value:
-    if char.islower() or char.isdigit() or char == "-":
+    if char.islower() or char.isdigit() or char == "_" or char == "-":
       continue
     raise ValueError(f"Invalid {label} '{value}'")

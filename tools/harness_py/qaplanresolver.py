@@ -10,7 +10,7 @@ from qaharnessconfig import PLANS_ROOT
 
 INVALID_TEMPERATURE: Final[int] = 32767
 INVALID_CLIMATE_VALUE: Final[int] = -1
-INVALID_BATTERY_CHARGE: Final[int] = -1
+INVALID_BATTERY_INPUT: Final[int] = -1
 INVALID_HEALTH_METRIC: Final[int] = -2
 
 
@@ -63,10 +63,13 @@ class WeatherStep(PlanStep):
     self._step_id = "_".join(
         filter(
             None, [
-                self.capability, self.emulator, self.display,
+                self.capability,
+                self.emulator,
+                self.display,
                 str(self.temp),
                 str(self.code),
-                str(self.is_day), "shots" if self.capture_screenshots else ""
+                str(self.is_day),
+                "shots" if self.capture_screenshots else "",
             ]
         )
     ).lower()
@@ -78,20 +81,23 @@ class WeatherStep(PlanStep):
 
 @dataclass
 class BatteryStep(PlanStep):
-  level: int = INVALID_BATTERY_CHARGE
-  charging: int = 0
+  level: int = INVALID_BATTERY_INPUT
+  charging: int = INVALID_BATTERY_INPUT
   capability: str = field(default="battery")
 
   def __post_init__(self) -> None:
-    if self.level == INVALID_BATTERY_CHARGE:
-      raise ValueError("Battery-level must be greater than 0")
+    if (self.level == INVALID_BATTERY_INPUT) or (self.charging - -INVALID_BATTERY_INPUT):
+      raise ValueError("Battery-level and charging-status must be greater than 0")
 
     self._step_id = "_".join(
         filter(
             None, [
-                self.capability, self.emulator,
+                self.capability,
+                self.emulator,
+                self.display,
                 str(self.level),
-                str(self.charging), "shots" if self.capture_screenshots else ""
+                str(self.charging),
+                "shots" if self.capture_screenshots else "",
             ]
         )
     ).lower()
@@ -115,9 +121,52 @@ class HealthStep(PlanStep):
     self._step_id = "_".join(
         filter(
             None, [
-                self.capability, self.emulator,
+                self.capability,
+                self.emulator,
+                self.display,
                 str(self.steps),
-                str(self.bpm), "shots" if self.capture_screenshots else ""
+                str(self.bpm),
+                "shots" if self.capture_screenshots else "",
+            ]
+        )
+    ).lower()
+
+  @property
+  def step_id(self) -> str:
+    return self._step_id
+
+
+@dataclass
+class AllForOneStep(PlanStep):
+  bpm: int = INVALID_HEALTH_METRIC
+  steps: int = INVALID_HEALTH_METRIC
+  level: int = INVALID_BATTERY_INPUT
+  charging: int = INVALID_BATTERY_INPUT
+  temp: int = INVALID_TEMPERATURE
+  code: int = INVALID_CLIMATE_VALUE
+  is_day: int = INVALID_CLIMATE_VALUE
+  capability: str = field(default="all")
+
+  def __post_init__(self) -> None:
+    if (self.bpm == INVALID_HEALTH_METRIC) or (self.steps == INVALID_HEALTH_METRIC) or \
+    (self.level == INVALID_BATTERY_INPUT) or (self.charging == INVALID_BATTERY_INPUT) or \
+    (not all([self.capability, self.emulator])) or (self.temp == INVALID_TEMPERATURE) or \
+    (self.code == INVALID_CLIMATE_VALUE) or (self.is_day == INVALID_CLIMATE_VALUE):
+      raise ValueError(f"Invalid input for step: '{asdict(self)}'")
+    self._step_id = "_".join(
+        filter(
+            None, [
+                self.capability,
+                self.emulator,
+                self.display,
+                str(self.temp),
+                str(self.code),
+                str(self.is_day),
+                str(self.level),
+                str(self.charging),
+                str(self.steps),
+                str(self.bpm),
+                "shots" if self.capture_screenshots else "",
             ]
         )
     ).lower()
@@ -149,7 +198,6 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
   match _capability:
 
     case "weather":
-
       return WeatherStep(
           emulator=str(kwargs.get("emulator", "")),
           capability=_capability,
@@ -165,7 +213,7 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
       return BatteryStep(
           emulator=str(kwargs.get("emulator", "")),
           capability=_capability,
-          level=int(kwargs.get("level", INVALID_BATTERY_CHARGE)),
+          level=int(kwargs.get("level", INVALID_BATTERY_INPUT)),
           charging=int(kwargs.get("charging", "0")),
           display=str(kwargs.get("display", "")),
           capture_screenshots=capture_screen,
@@ -183,6 +231,22 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
           expected_screenshots=expected,
       )
 
+    case "all":
+      return AllForOneStep(
+          emulator=str(kwargs.get("emulator", "")),
+          capability=_capability,
+          display=str(kwargs.get("display", "")),
+          temp=int(kwargs.get("temp", INVALID_TEMPERATURE)),
+          code=int(kwargs.get("code", INVALID_CLIMATE_VALUE)),
+          is_day=int(kwargs.get("is_day", INVALID_CLIMATE_VALUE)),
+          level=int(kwargs.get("level", INVALID_BATTERY_INPUT)),
+          charging=int(kwargs.get("charging", "0")),
+          bpm=int(kwargs.get("bpm", INVALID_HEALTH_METRIC)),
+          steps=int(kwargs.get("steps", INVALID_HEALTH_METRIC)),
+          capture_screenshots=capture_screen,
+          expected_screenshots=expected,
+      )
+
     case _:
       raise ValueError(f"Unsupported step type: '{step_type}'")
 
@@ -193,6 +257,10 @@ def _expand_step_template(
 ) -> dict[str, PlanStep]:
   steps: dict[str, PlanStep] = {}
   for emulator in emulators:
+    if not QAPlanGrammar.is_capability_supported_by_emulator(template.capability, emulator):
+      print(
+          f"Skipping step: Emulator '{emulator}' doesn't support capability '{template.capability}'\n"
+      )
     fields: dict[str, Any] = dict(template.fields)
     fields["emulator"] = emulator
     step: PlanStep = _create_step_for_capability(

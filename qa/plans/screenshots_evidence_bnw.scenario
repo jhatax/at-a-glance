@@ -1,0 +1,13 @@
+PREAMBLE
+  SCENARIO screenshots_evidence_bnw
+  SCREENSHOTS yes
+  EMULATORS aplite flint
+END
+
+EXECUTE
+  STEP weather display=white temp=539 code=71 is_day=1
+  STEP health display=white bpm=101 steps=8000
+  STEP weather display=black temp=539 code=71 is_day=1
+  STEP health display=black bpm=101 steps=8000
+END
+

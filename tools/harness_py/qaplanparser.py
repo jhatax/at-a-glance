@@ -10,7 +10,7 @@ def parse_step(needs_screenshot: str, tokens: list[str]) -> ParsedStep:
     raise ValueError("STEP requires capability and field=value entries")
 
   capability = tokens[1]
-  if capability not in QAPlanGrammar.SUPPORTED_CAPABILITIES:
+  if not QAPlanGrammar.is_valid_capability(capability):
     raise ValueError(f"Unsupported STEP capability '{capability}'")
 
   fields: dict[str, str] = {}
@@ -26,7 +26,7 @@ def parse_step(needs_screenshot: str, tokens: list[str]) -> ParsedStep:
       raise ValueError(f"Unsupported display-mode '{value}'")
     fields[key] = value
 
-  expected_fields = set(QAPlanGrammar.CAPABILITY_FIELD_ORDER[capability])
+  expected_fields = set(QAPlanGrammar.CAPABILITY_FIELDS[capability])
   actual_fields = set(fields)
   missing = sorted(expected_fields - actual_fields)
   if missing:
@@ -39,7 +39,7 @@ def parse_step(needs_screenshot: str, tokens: list[str]) -> ParsedStep:
       capability=capability,
       needs_screenshot=True if needs_screenshot == "yes" else False,
       fields={key: fields[key]
-              for key in QAPlanGrammar.CAPABILITY_FIELD_ORDER[capability]},
+              for key in QAPlanGrammar.CAPABILITY_FIELDS[capability]},
   )
 
 

@@ -79,7 +79,7 @@ parse_args() {
         EMULATORS=(${(s:,:)2})
         shift 2
         ;;
-      --exec-plan)
+      --exec-plan | --exec)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
           PARSE_ERROR_MESSAGE="--qaplan requires a plan name to execute"
           return 1
@@ -89,7 +89,7 @@ parse_args() {
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      --plans)
+      --plans | --qaplans)
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="list-qaplans"
         shift

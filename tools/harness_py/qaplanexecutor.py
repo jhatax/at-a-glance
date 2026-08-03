@@ -2,9 +2,16 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import time
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 from qaharnessruntime import HarnessRuntimeContext, StepResult, finalize
-from qaplanresolver import BatteryStep, HealthStep, PlanDefinition, PlanStep, WeatherStep
+from qaplanresolver import (
+    AllForOneStep,
+    BatteryStep,
+    HealthStep,
+    PlanDefinition,
+    PlanStep,
+    WeatherStep,
+)
 from qaharnessconfig import DISPLAY_MODE_VALUES
 from pebbleadapter import PEBBLE_SETTLE_DELAY_SECONDS
 
@@ -59,64 +66,71 @@ def _capture_screenshot(
   step_result["screenshot_paths"].append(str(output_path))
 
 
-def _send_display_mode(state: ExecutionState, emulator: str, mode: str) -> None:
-  state.pebble.send_app_message(emulator, {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[mode])})
-
-
-def _send_weather_message(
-    state: ExecutionState,
-    emulator: str,
-    temperature: int,
-    weather_code: int,
-    is_day: int,
-    mode: str,
-) -> None:
-  mode_value = int(DISPLAY_MODE_VALUES[mode])
+def _run_weather_step(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, WeatherStep):
+    raise ValueError(f"Invalid weather-step: '{asdict(step)}'")
   state.pebble.send_app_message(
-      emulator, {
-          QA_MSG_TEMPERATURE: temperature,
-          QA_MSG_WEATHER_CONDITION: weather_code,
-          QA_MSG_IS_DAY: is_day,
-          QA_MSG_DISPLAY_MODE: mode_value,
+      step.emulator, {
+          QA_MSG_TEMPERATURE: step.temp,
+          QA_MSG_WEATHER_CONDITION: step.code,
+          QA_MSG_IS_DAY: step.is_day,
+          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
       }
   )
 
-
-def _send_health_override(state: ExecutionState, emulator: str, bpm: int, steps: int) -> None:
-  state.pebble.send_app_message(emulator, {
-      QA_MSG_ONESHOT_BPM: bpm,
-      QA_MSG_ONESHOT_STEPS: steps,
-  })
-
-
-def _set_battery_state(
-    state: ExecutionState, emulator: str, percent: int, charging_state: int
-) -> None:
-  state.pebble.set_battery(emulator, percent, charging_state)
-
-
-def _run_weather_step(state: ExecutionState, step: WeatherStep, result: StepResult) -> None:
-  _send_weather_message(state, step.emulator, step.temp, step.code, step.is_day, step.display)
   if step.capture_screenshots:
     _capture_screenshot(state, result, step.emulator)
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
 
 
-def _run_battery_step(state: ExecutionState, step: BatteryStep, result: StepResult) -> None:
+def _run_battery_step(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, BatteryStep):
+    raise ValueError(f"Invalid battery-step: '{asdict(step)}'")
   if step.display:
-    _send_display_mode(state, step.emulator, step.display)
+    state.pebble.send_app_message(
+        step.emulator,
+        {
+            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+        },
+    )
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  _set_battery_state(state, step.emulator, step.level, step.charging)
+  state.pebble.set_battery(step.emulator, step.level, step.charging)
   if step.capture_screenshots:
     _capture_screenshot(state, result, step.emulator)
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
 
 
-def _run_health_step(state: ExecutionState, step: HealthStep, result: StepResult) -> None:
-  if step.display:
-    _send_display_mode(state, step.emulator, step.display)
+def _run_health_step(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, HealthStep):
+    raise ValueError(f"Invalid health-step: '{asdict(step)}'")
+  state.pebble.send_app_message(
+      step.emulator, {
+          QA_MSG_ONESHOT_BPM: step.bpm,
+          QA_MSG_ONESHOT_STEPS: step.steps,
+          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+      }
+  )
+  if step.capture_screenshots:
+    _capture_screenshot(state, result, step.emulator)
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  _send_health_override(state, step.emulator, step.bpm, step.steps)
+
+
+def _set_them_all(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, AllForOneStep):
+    raise ValueError(f"Invalid step: '{asdict(step)}'")
+  state.pebble.send_app_message(
+      step.emulator, {
+          QA_MSG_TEMPERATURE: step.temp,
+          QA_MSG_WEATHER_CONDITION: step.code,
+          QA_MSG_IS_DAY: step.is_day,
+          QA_MSG_ONESHOT_BPM: step.bpm,
+          QA_MSG_ONESHOT_STEPS: step.steps,
+          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+      }
+  )
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
+  state.pebble.set_battery(step.emulator, step.level, step.charging)
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
   if step.capture_screenshots:
     _capture_screenshot(state, result, step.emulator)
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
@@ -140,15 +154,18 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
   # by logging the divider and header before we execute, there
   # is clean separation between steps executed
   try:
-    match step:
-      case WeatherStep():
+    match step.capability:
+      case "weather":
         _run_weather_step(state, step, result)
 
-      case BatteryStep():
+      case "battery":
         _run_battery_step(state, step, result)
 
-      case HealthStep():
+      case "health":
         _run_health_step(state, step, result)
+
+      case "all":
+        _set_them_all(state, step, result)
 
       case _:
         raise ValueError(f"Unknown step instance type: {type(step)}")

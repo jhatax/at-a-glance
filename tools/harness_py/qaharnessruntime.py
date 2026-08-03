@@ -101,7 +101,7 @@ class QAStepContext:
       raise ValueError(
           f"Invalid specification for capability: '{_capability}' in report.\n"
           f"Parameters retrieved: {_step_args.keys()}\n"
-          f"Parameters expected: {QAPlanGrammar.CAPABILITY_FIELD_ORDER[_capability]}\n"
+          f"Parameters expected: {QAPlanGrammar.CAPABILITY_FIELDS[_capability]}\n"
         )
 
     # display is a required argument for every step
