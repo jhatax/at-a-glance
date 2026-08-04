@@ -2,15 +2,15 @@
   "name": "AtAGlance",
   "author": "Manoj Mehta",
   "description": "Get all the info you need, with a glance at your Pebble.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "keywords": [
     "pebble",
     "watchface"
   ],
   "license": "MIT",
   "scripts": {
-    "format": "prettier --write src/pkjs package.json package-lock.json .prettierrc",
-    "format:check": "prettier --check src/pkjs package.json package-lock.json .prettierrc",
+    "format": "prettier --write src/pkjs *.js* */*.js* .prettierrc",
+    "format:check": "prettier --check src/pkjs *.js* */*.js* .prettierrc",
     "docs:check": "python3 tools/markdown_format.py --check",
     "docs:reflow": "python3 tools/markdown_format.py",
     "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
@@ -67,7 +67,7 @@
         },
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
-          "file": "fonts/BarlowCondensed-SemiBold.ttf",
+          "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "aplite",
             "chalk",
@@ -79,26 +79,13 @@
           "type": "font"
         },
         {
-          "characterRegex": "[A-Z ]",
-          "file": "fonts/CabinCondensed-SemiBold.ttf",
-          "targetPlatforms": [
-            "aplite",
-            "chalk",
-            "flint",
-            "basalt",
-            "diorite"
-          ],
-          "name": "FONT_LOCATION_14",
-          "type": "font"
-        },
-        {
           "characterRegex": "[-0-9.A-Z a-z·]",
-          "file": "fonts/BarlowCondensed-SemiBold.ttf",
+          "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "emery",
             "gabbro"
           ],
-          "name": "FONT_TEXT_SEMIBOLD_24",
+          "name": "FONT_TEXT_SEMIBOLD_22",
           "type": "font"
         },
         {
