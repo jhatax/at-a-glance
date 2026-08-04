@@ -50,9 +50,6 @@
   "notebook.defaultFormatter": "eeyore.yapf",
   "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
   "editor.codeActions.triggerOnFocusChange": true,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
   "[c]": {
     "editor.defaultFormatter": "xaver.clang-format",
     "editor.formatOnSave": true

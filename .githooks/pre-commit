@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+set -e
 
 # 1. Grab all currently staged files as a Zsh array
 local -a staged_files
@@ -8,7 +9,7 @@ staged_files=(${(f)"$(git diff --cached --name-only --diff-filter=ACMR)"})
 (( ${#staged_files} )) || exit 0
 
 # 2. Use Zsh array filtering to group files by extension
-local -a sh_files py_files c_files
+local -a sh_files py_files c_files js_files
 sh_files=(${(M)staged_files:#*.(sh|zsh)})
 py_files=(${(M)staged_files:#*.py})
 c_files=(${(M)staged_files:#*.(c|h)})
@@ -32,4 +33,10 @@ fi
 if (( ${#js_files} )); then
   npx --no-install prettier --write "${js_files[@]}"
 fi
+# Enforce the repository Markdown prose rule.
+npm run docs:check
+
+# Run deterministic harness tests before allowing the commit.
+npm run test:harness
+
 git add "${staged_files[@]}"

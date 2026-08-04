@@ -1,0 +1,55 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Pebble Project",
+      "type": "shell",
+      "command": "./aag-build-qa.sh -bc",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "Python: Syntax Check",
+      "type": "shell",
+      "command": "python -m py_compile ${file}",
+      "problemMatcher": []
+    },
+    {
+      "label": "Harness: Unit Tests",
+      "type": "shell",
+      "command": "npm run test:harness",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Repository: Check",
+      "type": "shell",
+      "command": "npm run check",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "QA: dev-smoke (emulator)",
+      "type": "shell",
+      "command": "./aag-build-qa.sh --exec dev-smoke",
+      "problemMatcher": [],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}

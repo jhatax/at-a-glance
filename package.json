@@ -8,6 +8,16 @@
     "watchface"
   ],
   "license": "MIT",
+  "scripts": {
+    "format": "prettier --write src/pkjs package.json package-lock.json .prettierrc",
+    "format:check": "prettier --check src/pkjs package.json package-lock.json .prettierrc",
+    "docs:check": "python3 tools/markdown_format.py --check",
+    "docs:reflow": "python3 tools/markdown_format.py",
+    "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
+    "test:harness": "PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
+    "test:harness:focused": "PYTHONPATH=tools/harness_py:tools/harness_py/unittests python3 -m unittest",
+    "check": "npm run format && npm run docs:check && npm run format:clang && npm run test:harness"
+  },
   "dependencies": {
     "@rebble/clay": "^1.0.10"
   },
@@ -176,5 +186,8 @@
         }
       ]
     }
+  },
+  "devDependencies": {
+    "prettier": "^3.9.6"
   }
 }

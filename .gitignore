@@ -1,7 +1,5 @@
 .continue/
 .git/
-.vscode/settings.json
-.vscode/tasks.json
 .prompts/
 .cache/
 .DS_Store
