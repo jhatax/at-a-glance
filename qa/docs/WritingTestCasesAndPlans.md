@@ -58,10 +58,7 @@ A suite is ordered composition. It has no screenshot policy, emulator list, or s
 
 Supported capabilities are `weather`, `battery`, `health`, and `all`.
 
-`all` supplies weather, health, and battery values in one step. It requires
-`display`, `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, and `charging`.
-It runs on emulators that support health data: `basalt`, `chalk`, `diorite`,
-`emery`, `flint`, and `gabbro`.
+`all` supplies weather, health, and battery values in one step. It requires `display`, `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, and `charging`. It runs on emulators that support health data: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
 
 ```text
 STEP all display=oxford bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0
@@ -120,8 +117,7 @@ If no selected emulator supports a step capability, resolution raises an error a
 2. Follow the block grammar and use supported names and fields.
 3. Validate it with `./aag-build-qa.sh --validate <name>`.
 4. Use `--dry-run` to inspect the resolved plan.
-5. Run the plan with `--exec <name>` or `--exec <name> --force`.
-   `--exec-plan` is an accepted alias for `--exec`.
+5. Run the plan with `--exec <name>` or `--exec <name> --force`. `--exec-plan` is an accepted alias for `--exec`.
 6. Inspect the generated `report.json`, `summary.md`, `commands.log`, and screenshots.
 
 ## Fixtures and tests

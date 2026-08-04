@@ -1,221 +1,132 @@
 # Contributing
 
-Thanks for your interest. This document explains how to extend and modify _At A Glance_ from cloning the repo, configuring your IDE, changing and validating code, and updating docs.
+This document is the contributor workflow for _At A Glance_: prepare the repository, make a narrow source or documentation change, validate the affected path, and submit evidence with the change.
 
 ## Adjacent
 
-- [Watchface_Readme](../README.md) gives an overview of the watch face with screenshots
-- [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
-- [Validation](Validation.md) for validation paths and evidence.
+- [BuildandInstall](BuildandInstall.md) owns build, installation, recovery, and editor-tooling operations.
+- [Validation](Validation.md) owns validation-path selection and evidence expectations.
 
-## Environment Setup
+## Prepare The Repository
 
-### Getting Started
-
-Clone the repository and enter its directory:
+Clone the repository, install its JavaScript dependencies, and initialize the checked-in Git hook:
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
 cd at-a-glance
 npm install
-pebble build
+zsh setup-git-hook.sh
 ```
 
-The build produces the PBW and platform artifacts under `build/`.
-
-### Prerequisites
-
-Install local tools used by the build, QA, and formatting flows:
+Install the Pebble SDK and CLI separately. The complete build and environment contract is in [BuildandInstall](BuildandInstall.md). The local formatting and QA tools are:
 
 ```sh
 brew install node python pre-commit yapf shfmt clang-format
 ```
 
-Install the Pebble SDK and `pebble` CLI using the official Pebble SDK instructions. The repository uses the SDK toolchain to build, install, and exercise the watch face on supported emulators.
-
-Verify the environment:
+Verify the tools needed for the path you intend to run:
 
 ```sh
 node --version
 npm --version
 python3 --version
-pre-commit --version
-yapf --version
-shfmt --version
 clang-format --version
 pebble --version
 ```
 
-Initialize the repository's checked-in Git hook:
+## Make A Change
+
+1. Start from an up-to-date branch and create a focused work branch.
+
+   ```sh
+   git switch main
+   git pull --ff-only origin main
+   git switch -c my-fix
+   ```
+
+2. Read the source owner and runtime boundary before editing. Keep one coherent slice, preserve unrelated user changes, and do not add compatibility scaffolding without a live requirement.
+
+3. Reconcile every affected producer and consumer. Settings, AppMessage, resources, capabilities, generated files, source, QA commands, and documentation change together when their contract changes. Use [SettingsandConfiguration](SettingsandConfiguration.md) for the settings and message-key checklist.
+
+4. Choose the narrowest validation path that proves the change. Use [Validation](Validation.md) for the change-type matrix, [BuildandInstall](BuildandInstall.md) for build or install operations, and [QA README](../qa/README.md) for scenario execution.
+
+5. Review the live diff, generated artifacts, and documentation before staging. Do not treat an old QA run or stale document as a source-of-truth substitute.
+
+## Editor And Local Checks
+
+The repository includes VS Code settings and tasks for clangd, format-on-save, Prettier, Python unittest discovery, harness tests, and explicit emulator QA. Regenerate `compile_commands.json` from a fresh build when editor diagnostics are stale; do not edit compiler flags by hand.
+
+The npm commands provide the same repeatable local checks outside the editor:
 
 ```sh
-zsh setup-git-hook.sh
+npm run lint
+npm run format:check
+npm run docs:check
+npm run test:harness
+npm run check
 ```
 
-The hook delegates each commit to the repository's pre-commit configuration.
-
-### Making a Change
-
-1. Update local to main before starting work, create a branch, get to work:
+Use one harness test or test class when narrowing a change:
 
 ```sh
-git switch main
-git pull --ff-only origin main
-git switch -c my-fix
+npm run test:harness:focused -- test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
 ```
 
-2. Test your code; review documentation
+Use `npm run docs:reflow` to repair artificial prose breaks across tracked Markdown files. `npm run docs:check` verifies the prose-wrapping rule without rewriting files. Prettier uses `proseWrap: "never"`; tables, headings, lists, blockquotes, and code fences retain their structural breaks.
 
-```sh
-./aag-build-qa.sh --plans
-./aag-build-qa.sh --list-steps canary
-./aag-build-qa.sh --list-steps dev-smoke
-./aag-build-qa.sh --exec dev-smoke
-```
+The checked-in pre-commit hook formats staged files, runs staged JavaScript linting, checks Markdown, and runs the harness unit suite. Emulator scenarios remain explicit because they install, reset, and exercise stateful devices. Use the `QA: dev-smoke (emulator)` task or the named plan documented by [Validation](Validation.md) when runtime evidence is required.
 
-3. Submit a PR with a clear description of change(s): What, Why, How Validated
+## Source And Runtime Discipline
 
-PRs get reviewed in the order of submission and as fast as possible.
+- Keep ownership explicit: lifecycle, services, persistence, AppMessage, and dispatch belong to `src/c/ataglance.c`; runtime facts belong to `watchface_runtime_boundary.c`; the live surface and feature lifecycle belong to `watchface.c`; feature modules own their layers, source state, refresh, and destruction.
+- Keep feature APIs narrow. Do not pass watchface or layout structs by value, retain `WatchfaceSurface*` in feature modules, or make a feature depend on a broader global update type when a narrower input exists.
+- Use fixed-size buffers, `snprintf`, integer geometry, capability guards, and paired resource cleanup. Keep allocation, network, JSON, heavy formatting, and layout calculations out of layer update procedures.
+- Render through `watchface_refresh()`. Palette changes repaint; new data targets the affected strata. Required text updates must not depend on optional icons.
+- Read [RuntimeArchitecture](RuntimeArchitecture.md) and [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) before changing ownership or lifecycle boundaries.
 
-### IDE Support
+## C, JavaScript, And Tooling Rules
 
-The following are in the repo to facilitate development and QA activities:
+For C and headers, use the repository `.clang-format`, keep lines at or below 100 characters where practical, and prefer direct auditable code. Check existing helpers before introducing a new abstraction.
 
-1. `compile_commands.json` for `IDE-clangd` integration
-2. `.clangd` for workspace-local `clangd` behavior
-3. `.clang-format` and `.pre-commit-config.yaml` for formatting consistency
-4. `.githooks` and `setup-git-hook.sh` for Git check-in quality control
+For PebbleKit JS, keep the runtime-compatible CommonJS style, validate AppMessage payloads, guard optional APIs, and keep network and fallback behavior explicit. Prettier covers the JavaScript and JSON source surface.
 
-If editor diagnostics look stale or incorrect, regenerate the compile database from a fresh build rather than editing flags by hand.
+For Python and shell changes, use the repository YAPF and shfmt configuration. Keep the shell-to-Python QA handoff narrow: zsh owns environment preparation, and Python owns harness plan state, execution, reports, and screenshots.
 
-The verbose harness build may generate `compile_commands.json` for the current compile-database target. `PebbleAdapter` supplies the active SDK compiler path to `compilerdbgenerator.py`; build and compile-database ownership is documented in [BuildandInstall](BuildandInstall.md).
+## Visual And Glyph Changes
 
-### Build, Install, and QA Automation
+For layout, palette, glyph, or visible-state changes, validate the actual render path and inspect emulator screenshots. Use [UserInterface](UserInterface.md) for accepted visual evidence and [VisualVocabulary](VisualVocabulary.md) for shared visual meaning.
 
-The automation harness, `aag-build-qa.sh`, provides build, install, and QA commands. Make it executable if needed:
+For broad glyph exploration, use `glyph-lab` before production porting:
 
-```sh
-chmod +x aag-build-qa.sh
-```
+1. State the glyph decision and relevant runtime states.
+2. Review color and black-and-white variants.
+3. Review at least emery, flint, chalk, and gabbro.
+4. Port only the selected drawing rules into the production module.
+5. Validate the final watchface layout and update visual evidence when it changes.
 
-**Features**
+## Documentation Changes
 
-1. Install the watch face on emulators and devices
+Give each document one independent question, one canonical owner, and one clear audience. Use [DocumentationOntology](DocumentationOntology.md) to route concepts and [DocumentationContracts](DocumentationContracts.md) to maintain `Adjacent`, `Read Next`, and ownership metadata. Link to a canonical document instead of duplicating its content.
 
-```sh
-./aag-build-qa.sh --emulators emery
-./aag-build-qa.sh --emulators chalk
-./aag-build-qa.sh -p <Developer Connection Server IP>
-```
+Keep Markdown prose paragraphs on logical lines so the editor or viewport controls visual wrapping. Preserve structural breaks for headings, lists, tables, blockquotes, code fences, and intentional hard breaks.
 
-2. Reset emulator and build state: `./aag-build-qa.sh --nuclear`
+## Review And Commit
 
-- kills running emulators
-- wipes emulator state
-- runs `pebble clean`
-- runs a verbose build and generates `compile_commands.json`
-- run `./aag-build-qa.sh --emulators <target>` separately when recovery should continue into emulator installation
+Before committing:
 
-3. Execute a QA plan: `./aag-build-qa.sh --exec canary`
-
-4. More info: `./aag-build-qa.sh -h`
-
-## Repo Hygiene Guidelines
-
-- Treat every change as small embedded firmware work.
-- Review architecture before non-trivial edits.
-- Design first. Audit live source, docs, generated files, and dirty tree before editing.
-- Prefer direct code over helper churn when the boundary is obvious and local.
-
-### Guidelines for C Code
-
-- Use portable C within the Pebble SDK's constrained embedded runtime model.
-- Format code with `clang-format`; the repo has a `.clang-format`.
-- Use integer layout and drawing math only.
-- Avoid heap allocation unless required.
-- Match every acquired resource with a destroy path.
-- Use fixed-size buffers and `snprintf`.
-- Keep allocation, network, JSON, heavy formatting, and layout calculation out of layer update procs.
-- Prefer Pebble platform-provided capability guards, e.g., `PBL_HEALTH`.
-- Do not pass or return large watch face or layout structs by value.
-- Keep module APIs narrow.
-- Prefer direct, auditable code.
-- Check `helper.c/.h` and `substratum_renderer.c/.h` before adding new helpers.
-
-### Runtime Logs
-
-Use the following to guide your use of Pebble's built-in `APP_LOG`:
-
-- Use `INFO` logs temporarily during feature development.
-- Use `APP_LOG_LEVEL_DEBUG` for debug-build diagnosis.
-- Remove temporary `INFO` logs before committing code.
-- Retain only `APP_LOG_LEVEL_WARNING` and `APP_LOG_LEVEL_ERROR` messages that materially help diagnose deployed watch-face issues.
-
-### Debugging
-
-For UI changes, one useful validation path is enabling `ATAGLANCE_DEBUG`, installing in the emulator, and inspecting the debug-rendered layer or glyph bounds. Build activation lives in [BuildandInstall](BuildandInstall.md); emulator validation flows live in [Validation](Validation.md).
-
-### Glyph Development
-
-Use `glyph-lab` for broad glyph work before production porting.
-
-Recommended loop:
-
-1. Define the glyph decision in prose.
-2. Identify the real state variants used by the product.
-3. Create or update lab variants only for those states.
-4. Review color and black-and-white screenshots.
-5. Review at least `emery`, `flint`, `chalk`, and `gabbro` before production porting.
-6. Select final glyph design after visual confirmation.
-7. Port the selected drawing rules into production modules.
-8. Validate in the real watch face layout.
-
-Glyph validation is required whenever glyphs are modified or new glyphs are introduced. Treat screenshots as evidence; keep accepted visual evidence in [UserInterface](UserInterface.md).
-
-## Repository Maintenance
-
-Use `.gitignore` to keep generated local state out of source control. Build artifacts, editor indexes, logs, temporary QA vectors, dependency directories, and generated compile databases should not become source files.
-
-The exception is a release PBW when explicitly prepared for distribution. A PBW is an output artifact to review or publish, not a substitute for committing the source, manifest, resources, and documentation that produced it.
-
-### Review and Commit Discipline
-
-Before committing a change:
-
+- run the narrow validation path required by [Validation](Validation.md)
+- run `npm run check` when the change touches code, tooling, or documentation workflows
 - run `git diff --check`
-- run `pebble build` for code changes or explicitly report the gap
-- run the relevant scenario or QA plan from [Validation](Validation.md)
-- use emulator screenshots for visual or layout changes when practical
-- review API, lifecycle, layout, and platform changes before coding
-- update relevant documentation
-- review the diff and stage only intended files
-- delete temporary screenshots and buffers unless intentionally retained
+- inspect the final diff and stage only intended files
+- inspect screenshots or runtime evidence for visible changes
+- state any unchecked validation path or known limitation
 
-### Formatting consistency: Clang-format, YAPF, shfmt
-
-The repository's pre-commit configuration runs YAPF for Python, `shfmt` for shell, and `clang-format` for C and headers. `.clang-format` and `.clangd` provide consistent formatting and Pebble-aware editor diagnostics from the repo root.
-
-Use `clang-format` before committing C changes:
-
-```sh
-clang-format -i src/c/*.[ch] src/modules/*.[ch]
-```
-
-If `clangd` cannot locate the Pebble compiler, configure your editor with the toolchain driver:
-
-```text
---query-driver=/path/to/arm-none-eabi-gcc
-```
-
-## Documentation Management
-
-- Use [DocumentationContracts](DocumentationContracts.md) to define a document's purpose, sub-concepts, and navigation.
-- Each document should still carry enough local context to be useful without forcing a reader to inspect code for basic understanding.
-- Follow the one-concept, one-document, one-responsibility invariant.
+The pre-commit hook is the final local gate, not a replacement for a build, emulator scenario, screenshot review, or release signoff when those are required by the change.
 
 ## Read Next
 
-- [BuildandInstall](BuildandInstall.md) for build, install, and editor-tooling details.
-- [Validation](Validation.md) for validation contract, evidence, and release profiles.
-- [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and boundaries.
-- [QA_Readme](../qa/README.md) for watch-face QA plan execution.
+- [BuildandInstall](BuildandInstall.md) for build, install, recovery, and compile-database operations.
+- [Validation](Validation.md) for validation-path selection and evidence.
+- [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and lifecycle.
+- [SettingsandConfiguration](SettingsandConfiguration.md) for settings and message contracts.
+- [QA README](../qa/README.md) for harness operation and artifacts.

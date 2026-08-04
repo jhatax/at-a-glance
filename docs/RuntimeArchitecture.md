@@ -1,6 +1,6 @@
 # Runtime Architecture
 
-This is the current source of truth for *At A Glance's* runtime architecture: execution flow, ownership, boundaries, lifecycle, and source organization.
+This is the current source of truth for _At A Glance's_ runtime architecture: execution flow, ownership, boundaries, lifecycle, and source organization.
 
 ## Adjacent
 
@@ -15,11 +15,14 @@ Layers have been implemented to satisfy visual display and runtime-architecture 
 1. Pebble OS adapter: `ataglance.c` => main window & persisted settings lifecycle owner
 2. Pebble events and updates adapter: `watchface_runtime_boundary.c` => translate system events into watch face vocabulary
 3. Watch face display: `watchface.c` => visual owner and lifecycle manager of supporting modules
-  - `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
+
+- `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
+
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
    - `climate` also owns the optional centered location text and its source buffer.
 
 ### Core Concepts
+
 - The watch face display is organized using tiles (strata). Each tile can include multiple visual channels (sub-strata: icon, text, progress-bar).
 - Information updates are relayed from Pebble OS (subscriptions, user-settings changes, major events, emulator messages).
 - Updates are scoped to new information only; multiple strata changes are batched.
@@ -118,6 +121,7 @@ src/pkjs/index.js appmessage handler
 ## Prepared Surface
 
 The watch face is organized around a prepared `WatchfaceSurface` using `blueprints` customized for watch face geometry and shape. Two device categories have been defined:
+
 1. `full` [`gabbro`, `emery`]
 2. `compact` [`aplite`, `flint`, `diorite`, `chalk`, `basalt`]
 
@@ -155,12 +159,10 @@ Current visual placement, palette, and typography are evidenced as screenshots i
 - `refresh()` APIs receive the current palette and narrow runtime payloads where needed.
 - Do not retain `WatchfaceSurface*` and global style.
 
-Two classes of strata have been defined:
-1. Required: [`time`, `battery`, `date`, `climate`]
-2. Others
-`Required` strata have been selected based on shared capabilities for all devices.
+Two classes of strata have been defined: required strata are [`time`, `battery`, `date`, `climate`], and all other strata are optional. Required strata have been selected based on capabilities available on all devices.
 
 Additionally,
+
 - **only text elements** are considered as required within each strata.
 - Placement of text is not impacted if icons cannot be created, are disabled, or cannot be displayed.
 - If `Required` strata cannot be created, watch face initialization fails and control is returned to the Pebble OS.
@@ -327,6 +329,7 @@ The steps module demonstrates the intended boundary:
 ## AppMessage Runtime Coverage
 
 `ataglance.c` is the Pebble container and transport/service adapter. Responsibilities:
+
 1. parse raw AppMessage tuples (using a helper function) into `WatchfaceEventData`;
 2. track whether each tuple was received and parsed;
 3. delegate runtime interpretation to `watchface_apply_received_data()`.
