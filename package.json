@@ -67,6 +67,19 @@
         },
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
+          "file": "fonts/Oswald-Medium.ttf",
+          "targetPlatforms": [
+            "aplite",
+            "chalk",
+            "flint",
+            "basalt",
+            "diorite"
+          ],
+          "name": "FONT_DATE_TEXT_16",
+          "type": "font"
+        },
+        {
+          "characterRegex": "[-0-9.A-Z a-z·]",
           "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "aplite",
@@ -75,17 +88,17 @@
             "basalt",
             "diorite"
           ],
-          "name": "FONT_TEXT_SEMIBOLD_16",
+          "name": "FONT_LOCATION_14",
           "type": "font"
         },
         {
           "characterRegex": "[-0-9.A-Z a-z·]",
-          "file": "fonts/CabinCondensed-SemiBold.ttf",
+          "file": "fonts/Oswald-Medium.ttf",
           "targetPlatforms": [
             "emery",
             "gabbro"
           ],
-          "name": "FONT_TEXT_SEMIBOLD_22",
+          "name": "FONT_DATE_TEXT_22",
           "type": "font"
         },
         {
