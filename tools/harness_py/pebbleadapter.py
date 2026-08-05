@@ -180,7 +180,7 @@ class PebbleAdapter:
             log_path=build_log_path,
             output_path=compile_database_path,
             platform="emery",
-            compiler_path=_pebble_tools_paths.compiler_path,
+            compiler_path=PEBBLE_TOOL_PATHS.compiler_path,
         )
     except Exception as exc:
       self._log_failure(f"Build {'verbose ' if verbose else ''}".strip(), exc)
