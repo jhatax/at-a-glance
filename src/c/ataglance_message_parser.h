@@ -35,9 +35,7 @@ void parse_string_tuple(DictionaryIterator* iter,
     uint8_t max_len);
 void parse_settings_data(DictionaryIterator* iter,
     WatchfaceEventData* data);
-void parse_weather_data(DictionaryIterator* iter,
-    WatchfaceEventData* data);
-void parse_location_data(DictionaryIterator* iter,
+void parse_weather_and_location_data(DictionaryIterator* iter,
     WatchfaceEventData* data);
 #ifdef PBL_HEALTH
 void parse_health_settings_data(DictionaryIterator* iter,

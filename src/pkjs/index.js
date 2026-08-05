@@ -9,6 +9,7 @@ const STEPS_GOAL_MAX = 32000;
 
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
 const UPDATE_INTERVAL_MAX = WEATHER_UPDATE_MINUTES_DEFAULT << 4; // (15 * 16: 4-hours max)
+const MAX_LOCATION_STRING_LENGTH = 15;
 var s_updateIntervalHandle = null;
 var s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
 var s_startingUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
@@ -192,12 +193,9 @@ function fetchLocation(lat, lon) {
       if (xhr.readyState === 4 && xhr.status === 200) {
         var response = JSON.parse(xhr.responseText);
 
-        city = (
-          response.address.city ||
-          response.address.town ||
-          response.address.village ||
-          'GPS'
-        ).toUpperCase();
+        city = (response.address.city || response.address.town || response.address.village || 'GPS')
+          .slice(0, MAX_LOCATION_STRING_LENGTH)
+          .toUpperCase();
       }
     } catch (e) {
       city = '';

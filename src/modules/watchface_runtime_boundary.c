@@ -149,7 +149,7 @@ static void apply_weather_or_location_data(
   }
 
   if (data->received & WATCHFACE_DATA_LOCATION) {
-    return apply_location_data(data, refresh);
+    apply_location_data(data, refresh);
   }
 
   // This a function local const vs. a global const
@@ -157,7 +157,7 @@ static void apply_weather_or_location_data(
       WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
   if (data->received & c_weather_mask) {
-    return maybe_apply_weather_update(data, refresh);
+    maybe_apply_weather_update(data, refresh);
   }
 }
 
@@ -238,7 +238,6 @@ void watchface_apply_received_data(
 
   apply_setting_data(data, settings, &refresh);
   apply_weather_or_location_data(data, &refresh);
-  apply_location_data(data, &refresh);
   apply_subscribed_service_updates(data, &refresh);
 
 #ifdef PBL_HEALTH

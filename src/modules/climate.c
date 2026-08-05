@@ -1,11 +1,14 @@
 #include "climate.h"
 
+#include <ctype.h>
+#include <stdint.h>
+
 #include "climate_glyphs.h"
 #include "helper.h"
 #include "settings.h"
 #include "substratum_renderer.h"
 
-#define MAX_STR_LEN 18
+#define MAX_STR_LEN 16
 
 enum {
   WEATHER_TEMP_MIN_CELSIUS_TENTHS = -1600,
@@ -287,4 +290,12 @@ void climate_module_set_location(
     return;
   }
   snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", location);
+  for (uint8_t i = 0; i < ARRAY_LENGTH(s_location_buffer); ++i) {
+    char* current = &s_location_buffer[i];
+    if (*current) {
+      *current = (char)toupper((unsigned char)*current);
+    } else {
+      break;
+    }
+  }
 }

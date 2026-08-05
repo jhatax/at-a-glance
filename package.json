@@ -102,13 +102,13 @@
           "type": "font"
         },
         {
-          "characterRegex": "[A-Z ]",
+          "characterRegex": "[.A-Z a-z_.-]",
           "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "emery",
             "gabbro"
           ],
-          "name": "FONT_LOCATION_18",
+          "name": "FONT_LOCATION_16",
           "type": "font"
         },
         {

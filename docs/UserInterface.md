@@ -166,7 +166,7 @@ Custom fonts: **Cabin** variants for time and location, **Oswald** for date and 
 | <b>Time</b> | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_MEDIUM_42` | `FONT_KEY_ROBOTO_BOLD_SUBSET_49` | `RESOURCE_ID_FONT_CABIN_MEDIUM_58` (Emery)<br>`RESOURCE_ID_FONT_CABIN_MEDIUM_70` (Gabbro) |
 | <b>Date</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_22` |
 | <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_16` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_22` |
-| <b>Location</b> | `FONT_KEY_GOTHIC_14_BOLD` | `RESOURCE_ID_FONT_LOCATION_14` | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_LOCATION_18` |
+| <b>Location</b> | `FONT_KEY_GOTHIC_14_BOLD` | `RESOURCE_ID_FONT_LOCATION_14` | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_LOCATION_16` |
 
 - Text metrics, coordinates, height, width, are defined per field.
 - Font selection depends on role, display class, and platform.

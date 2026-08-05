@@ -55,7 +55,7 @@ void parse_string_tuple(
     WatchfaceDataMask mask,
     char* value,
     uint8_t max_len) {
-  if (!iter || !data || !value) {
+  if (!iter || !data || !value || !max_len) {
     return;
   }
 
@@ -66,6 +66,7 @@ void parse_string_tuple(
 
   data->received = (WatchfaceDataMask)(data->received | mask);
   if (TUPLE_CSTRING == tuple->type) {
+    memset(value, 0, max_len * sizeof(*value));
     const char* text = tuple->value->cstring;
     if (!text) {
       return;
@@ -101,32 +102,26 @@ void parse_settings_data(
       &data->weather_update_minutes);
 }
 
-void parse_weather_data(
+void parse_weather_and_location_data(
     DictionaryIterator* iter,
     WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
+
   parse_int_tuple(iter,
       MESSAGE_KEY_TEMPERATURE,
       data,
       WATCHFACE_DATA_TEMPERATURE,
       &data->temperature_celsius_tenths);
+
   parse_int_tuple(iter,
       MESSAGE_KEY_WEATHER_CONDITION,
       data,
       WATCHFACE_DATA_WEATHER_CONDITION,
       &data->weather_condition);
   parse_int_tuple(iter, MESSAGE_KEY_IS_DAY, data, WATCHFACE_DATA_IS_DAY, &data->is_day);
-}
 
-void parse_location_data(
-    DictionaryIterator* iter,
-    WatchfaceEventData* data) {
-  if (!iter || !data) {
-    return;
-  }
-  memset(data->location, 0, sizeof(data->location));
   parse_string_tuple(iter,
       MESSAGE_KEY_MAYBE_CURRENT_LOCATION,
       data,

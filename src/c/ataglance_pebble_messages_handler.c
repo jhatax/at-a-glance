@@ -58,8 +58,7 @@ void inbox_received_callback(
   WatchfaceEventData data = {0};
 
   parse_settings_data(iter, &data);
-  parse_weather_data(iter, &data);
-  parse_location_data(iter, &data);
+  parse_weather_and_location_data(iter, &data);
 
 #ifdef PBL_HEALTH
   parse_health_settings_data(iter, &data);
@@ -111,8 +110,9 @@ uint32_t app_message_inbox_size() {
   // One-shot-only tuples:
   // 10. ONESHOT_BPM | 10020 | sizeof(int32_t)
   // 11. ONESHOT_STEPS | 10021 | sizeof(int32_t)
+  // 12. LOCATION | 10011 | 16-characters
 #if defined(PBL_HEALTH)
-  return dict_calc_buffer_size(11,  // tuples
+  return dict_calc_buffer_size(12,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
@@ -123,9 +123,10 @@ uint32_t app_message_inbox_size() {
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
       sizeof(int32_t),
-      sizeof(int32_t));
+      sizeof(int32_t),
+      16);
 #else
-  return dict_calc_buffer_size(9,  // tuples
+  return dict_calc_buffer_size(10,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -134,7 +135,8 @@ uint32_t app_message_inbox_size() {
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
-      sizeof(int32_t));
+      sizeof(int32_t),
+      16);
 #endif
 }
 

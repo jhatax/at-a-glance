@@ -69,10 +69,9 @@ service callback, accelerometer tap callback, or AppMessage callback in ataglanc
             -> mutate settings for time format, temp unit, display mode, steps goal
             -> accumulate targeted refresh mask
             -> mark repaint only for a valid display-mode change
-       -> apply_weather_data(...)
-            -> push complete or unavailable climate state
+       -> apply_weather_or_location_data(...)
+            -> push complete or unavailable climate state]
             -> request climate refresh when any weather field was received
-       -> apply_location_data(...)
             -> copy the bounded location payload into climate source state
             -> request the location text refresh
        -> apply_subscribed_service_updates(...)
@@ -97,7 +96,7 @@ service callback, accelerometer tap callback, or AppMessage callback in ataglanc
 ```text
 ataglance.c inbox_received_callback(iter)
   -> copy previous_settings
-  -> parse settings, weather, health settings, and one-shot health tuples
+  -> parse settings, weather, location, health settings, and one-shot health tuples
   -> watchface_apply_received_data(&data, &settings)
   -> if any persisted setting changed
        -> settings_save(&settings)
