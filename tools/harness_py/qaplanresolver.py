@@ -81,6 +81,32 @@ class WeatherStep(PlanStep):
 
 
 @dataclass
+class LocationStep(PlanStep):
+  location: str = ""
+  capability: str = field(default="location")
+
+  def __post_init__(self) -> None:
+    if (not all([self.capability, self.emulator, self.location])):
+      raise ValueError("All fields must have a valid, non-empty value")
+
+    self._step_id = "_".join(
+        filter(
+            None, [
+                self.capability,
+                self.emulator,
+                self.display,
+                self.location,
+                "shots" if self.capture_screenshots else "",
+            ]
+        )
+    ).lower()
+
+  @property
+  def step_id(self) -> str:
+    return self._step_id
+
+
+@dataclass
 class BatteryStep(PlanStep):
   level: int = INVALID_BATTERY_INPUT
   charging: int = INVALID_BATTERY_INPUT
@@ -148,6 +174,7 @@ class AllForOneStep(PlanStep):
   temp: int = INVALID_TEMPERATURE
   code: int = INVALID_CLIMATE_VALUE
   is_day: int = INVALID_CLIMATE_VALUE
+  location: str = ""
   capability: str = field(default="all")
 
   def __post_init__(self) -> None:
@@ -169,6 +196,7 @@ class AllForOneStep(PlanStep):
                 str(self.charging),
                 str(self.steps),
                 str(self.bpm),
+                str(self.location),
                 "shots" if self.capture_screenshots else "",
             ]
         )
@@ -212,6 +240,16 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
           expected_screenshots=expected,
       )
 
+    case "location":
+      return LocationStep(
+          emulator=str(kwargs.get("emulator", "")),
+          capability=_capability,
+          location=str(kwargs.get("location", "")),
+          display=str(kwargs.get("display", "")),
+          capture_screenshots=capture_screen,
+          expected_screenshots=expected,
+      )
+
     case "battery":
       return BatteryStep(
           emulator=str(kwargs.get("emulator", "")),
@@ -246,6 +284,7 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
           charging=int(kwargs.get("charging", "0")),
           bpm=int(kwargs.get("bpm", INVALID_HEALTH_METRIC)),
           steps=int(kwargs.get("steps", INVALID_HEALTH_METRIC)),
+          location=str(kwargs.get("location", "")),
           capture_screenshots=capture_screen,
           expected_screenshots=expected,
       )

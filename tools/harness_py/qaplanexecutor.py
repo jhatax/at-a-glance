@@ -8,6 +8,7 @@ from qaplanresolver import (
     AllForOneStep,
     BatteryStep,
     HealthStep,
+    LocationStep,
     PlanDefinition,
     PlanStep,
     WeatherStep,
@@ -22,6 +23,7 @@ QA_MSG_TEMPERATURE: Final[int] = 10002
 QA_MSG_WEATHER_CONDITION: Final[int] = 10003
 QA_MSG_IS_DAY: Final[int] = 10004
 QA_MSG_DISPLAY_MODE: Final[int] = 10006
+QA_MSG_MAYBE_CURRENT_LOCATION: Final[int] = 10011
 QA_MSG_ONESHOT_BPM: Final[int] = 10020
 QA_MSG_ONESHOT_STEPS: Final[int] = 10021
 SCREENSHOT_DELAY_SECONDS: Final[int] = 1
@@ -83,6 +85,20 @@ def _run_weather_step(state: ExecutionState, step: Any, result: StepResult) -> N
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
 
 
+def _run_location_step(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, LocationStep):
+    raise ValueError(f"Invalid location-step: '{asdict(step)}'")
+  state.pebble.send_app_message(
+      step.emulator, {
+          QA_MSG_MAYBE_CURRENT_LOCATION: step.location,
+          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+      }
+  )
+  if step.capture_screenshots:
+    _capture_screenshot(state, result, step.emulator)
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
+
+
 def _run_battery_step(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, BatteryStep):
     raise ValueError(f"Invalid battery-step: '{asdict(step)}'")
@@ -120,12 +136,13 @@ def _set_them_all(state: ExecutionState, step: Any, result: StepResult) -> None:
     raise ValueError(f"Invalid step: '{asdict(step)}'")
   state.pebble.send_app_message(
       step.emulator, {
-          QA_MSG_TEMPERATURE: step.temp,
-          QA_MSG_WEATHER_CONDITION: step.code,
-          QA_MSG_IS_DAY: step.is_day,
           QA_MSG_ONESHOT_BPM: step.bpm,
           QA_MSG_ONESHOT_STEPS: step.steps,
           QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+          QA_MSG_TEMPERATURE: step.temp,
+          QA_MSG_WEATHER_CONDITION: step.code,
+          QA_MSG_IS_DAY: step.is_day,
+          QA_MSG_MAYBE_CURRENT_LOCATION: step.location,
       }
   )
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
@@ -157,6 +174,9 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
     match step.capability:
       case "weather":
         _run_weather_step(state, step, result)
+
+      case "location":
+        _run_location_step(state, step, result)
 
       case "battery":
         _run_battery_step(state, step, result)

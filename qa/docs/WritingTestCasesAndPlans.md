@@ -56,15 +56,17 @@ A suite is ordered composition. It has no screenshot policy, emulator list, or s
 
 ## Steps and arguments
 
-Supported capabilities are `weather`, `battery`, `health`, and `all`.
+Supported capabilities are `weather`, `battery`, `health`, `location`, and `all`.
 
-`all` supplies weather, health, and battery values in one step. It requires `display`, `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, and `charging`. It runs on emulators that support health data: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
+| Capability | Arguments | Value constraints or notes |
+| --- | --- | --- |
+| `weather` | `display`, `temp`, `code`, `is_day` | `temp` is in celsius-tenths; `is_day` is `0` or `1`. |
+| `battery` | `display`, `level`, `charging` | `level` is `0` through `100`; `charging` is `0` or `1`. |
+| `health` | `display`, `bpm`, `steps` | Health metric values are supplied as integers. |
+| `location` | `display`, `location` | `location` is text sent through the location AppMessage field. |
+| `all` | `display`, `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `location` | Supplies weather, health, battery, and location values; supported on health-capable emulators. |
 
-```text
-STEP all display=oxford bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0
-```
-
-Every supported field is required, unknown fields are rejected, duplicate fields are rejected, and values are kept as strings by the parser. Capability-specific construction converts the values to the types required by execution.
+Every supported field is required, unknown fields are rejected, duplicate fields are rejected, and values are kept as strings by the parser. Capability-specific construction converts the values to the types required by execution. Strings with spaces need to be specified with quotes.
 
 The order of `field=value` arguments is not strict. These two steps are equivalent:
 
@@ -73,7 +75,7 @@ STEP battery display=white level=19 charging=0
 STEP battery charging=0 level=19 display=white
 ```
 
-Argument names, required-key membership, and values determine the step. The parser and report validation use the capability’s required field set; they do not require a particular argument order. The resolver reads the named fields when it constructs the typed step and computes its identity; no input ordering contract exists.
+Argument names, required-key membership, and values determine the step. The parser and report validation use the capability’s required field set; they do not require a particular argument order. The resolver reads named fields when it constructs the typed step and computes its identity; no input ordering contract exists.
 
 ### Weather
 
@@ -100,6 +102,22 @@ STEP health display=<mode> bpm=<value> steps=<value>
 ```
 
 Fields are `display`, `bpm`, and `steps`.
+
+### Location
+
+```text
+STEP location display=<mode> location=<text>
+```
+
+Fields are `display` and `location`. The location text is sent to the watch through the location AppMessage field.
+
+### All
+
+```text
+STEP all display=oxford bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0 location="San Francisco"
+```
+
+`all` supplies weather, health, battery, and location values in one step. It requires `display`, `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, and `location`. It runs on emulators that support health data: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
 
 ## Screenshot policy
 

@@ -64,11 +64,12 @@ def parse_scenario(path: Path, expected_name: str | None = None) -> ParsedScenar
   preamble_closed = False
   execute_closed = False
 
+  from shlex import split
   for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
     line = raw_line.split("#", 1)[0].strip()
     if not line:
       continue
-    tokens = line.split()
+    tokens = split(line)
     directive = tokens[0]
 
     if directive in {"PREAMBLE", "EXECUTE"}:

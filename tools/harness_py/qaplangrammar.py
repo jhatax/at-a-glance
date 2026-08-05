@@ -6,7 +6,7 @@ from qaharnessconfig import DISPLAY_MODE_VALUES
 
 @dataclass(frozen=True)
 class QAPlanGrammar:
-  SUPPORTED_CAPABILITIES: Final = frozenset({"weather", "battery", "health", "all"})
+  SUPPORTED_CAPABILITIES: Final = frozenset({"weather", "battery", "health", "all", "location"})
   SCREENSHOTS_POLICIES: Final = frozenset({"yes", "no"})
   SUPPORTED_EMULATORS: Final = frozenset(
       {
@@ -47,6 +47,7 @@ class QAPlanGrammar:
           "all": frozenset(EMULATORS_SUPPORTING_HEALTH),
           "battery": frozenset(SUPPORTED_EMULATORS),
           "weather": frozenset(SUPPORTED_EMULATORS),
+          "location": frozenset(SUPPORTED_EMULATORS),
       }
   )
 
@@ -59,16 +60,21 @@ class QAPlanGrammar:
           "health":
           frozenset({"display", "bpm", "steps"}),
           "all":
-          frozenset({
-              "display",
-              "bpm",
-              "steps",
-              "temp",
-              "code",
-              "is_day",
-              "level",
-              "charging",
-          }),
+          frozenset(
+              {
+                  "display",
+                  "bpm",
+                  "steps",
+                  "temp",
+                  "code",
+                  "is_day",
+                  "level",
+                  "charging",
+                  "location",
+              }
+          ),
+          "location":
+          frozenset({"display", "location"}),
       }
   )
 

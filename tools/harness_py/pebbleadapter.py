@@ -66,7 +66,7 @@ try:
   from libpebble2.communication import PebbleConnection # noqa: E402
   from libpebble2.communication.transports.qemu.protocol import QemuBattery # noqa: E402
   from libpebble2.services.install import AppInstaller # noqa: E402
-  from libpebble2.services.appmessage import AppMessageService, Int32 # noqa: E402
+  from libpebble2.services.appmessage import AppMessageService, CString, Int32 # noqa: E402
   from libpebble2.services.screenshot import Screenshot # noqa: E402
   from pebble_tool.commands.emucontrol import send_data_to_qemu # noqa: E402
   from pebble_tool.commands.sdk.project import SDKProjectCommand # noqa: E402
@@ -78,7 +78,6 @@ except ImportError as exc:
 
 
 class PebbleAdapter:
-  """Own Python-side Pebble protocol operations for one QA execution."""
 
   def __init__(self, log: Callable[[str], None]) -> None:
     self._log = log
@@ -98,7 +97,7 @@ class PebbleAdapter:
       self._connections[emulator] = connection
     return self._connections[emulator]
 
-  def send_app_message(self, emulator: str, values: dict[int, int]) -> None:
+  def send_app_message(self, emulator: str, values: dict[int, int | str]) -> None:
     connection = self._connection(emulator)
     service = AppMessageService(connection)
     completed = threading.Event()
@@ -116,7 +115,7 @@ class PebbleAdapter:
       transaction_id = service.send_message(
           PebbleProject().uuid,
           {
-              key: Int32(value)
+              key: CString(value) if isinstance(value, str) else Int32(value)
               for key, value in values.items()
           },
       )
@@ -153,11 +152,10 @@ class PebbleAdapter:
       self.install(emulator, pbw_path)
 
   def build(self, verbose: bool = False, output_path: Path | None = None) -> None:
-    """Build the current Pebble project without running npm."""
     command = SDKProjectCommand()
     command.sdk = None
     command._verbosity = 1 if verbose else 0
-
+    build_error = True
     build_log_path = output_path or Path("build.log")
     if verbose:
       build_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -174,6 +172,7 @@ class PebbleAdapter:
         os.dup2(output.fileno(), 2)
       command._waf("configure")
       command._waf("build")
+      build_error = False
       compile_database_path = build_log_path.parent / "compile_commands.json"
       compile_database_status = None
       if verbose:
@@ -181,7 +180,7 @@ class PebbleAdapter:
             log_path=build_log_path,
             output_path=compile_database_path,
             platform="emery",
-            compiler_path=PEBBLE_TOOL_PATHS.compiler_path,
+            compiler_path=_pebble_tools_paths.compiler_path,
         )
     except Exception as exc:
       self._log_failure(f"Build {'verbose ' if verbose else ''}".strip(), exc)
@@ -190,10 +189,12 @@ class PebbleAdapter:
       if output:
         sys.stdout.flush()
         sys.stderr.flush()
-        os.dup2(saved_stdout, 1)
-        os.dup2(saved_stderr, 2)
-        os.close(saved_stdout)
-        os.close(saved_stderr)
+        if saved_stdout:
+          os.dup2(saved_stdout, 1)
+          os.close(saved_stdout)
+        if saved_stderr:
+          os.dup2(saved_stderr, 2)
+          os.close(saved_stderr)
       if output:
         output.close()
     if verbose:
@@ -201,7 +202,15 @@ class PebbleAdapter:
         self._log(f"Compile database generated: {compile_database_path}")
       else:
         self._log(f"No compile database generated: {compile_database_path}")
-    self._log_success(f"Build {'verbose ' if verbose else ''}".strip())
+    if build_error:
+      if verbose:
+        sys.stderr.write(f"Build failed. Contents of '{build_log_path}':")
+        sys.stderr.write("-" * 40)
+        sys.stderr.write(build_log_path.read_text(encoding="utf-8"))
+        sys.stderr.write("-" * 40)
+        sys.stderr.flush()
+    else:
+      self._log_success(f"Build {'verbose ' if verbose else ''}".strip())
 
   def set_battery(self, emulator: str, percent: int, charging: int) -> None:
     connection = self._connection(emulator)
