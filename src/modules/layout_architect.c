@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include "helper.h"
 #include "layout_surface.h"
 #include "watchface_components.h"
@@ -33,6 +35,7 @@ typedef struct {
   int16_t margin_y;
   int16_t icon_w;
   int16_t icon_h;
+  int16_t icon_text_gap;
   int16_t time_y_percent;
   int16_t time_text_height;
   int16_t date_text_height;
@@ -49,6 +52,8 @@ static const LayoutBlueprint c_blueprint = {
     .margin_y = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_Y_MARGIN, DESIGN_COMPACT_Y_MARGIN),
     .icon_w = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_WIDTH, DESIGN_COMPACT_ICON_WIDTH),
     .icon_h = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_HEIGHT, DESIGN_COMPACT_ICON_HEIGHT),
+    .icon_text_gap =
+        HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_ICON_TEXT_GAP, DESIGN_COMPACT_ICON_TEXT_GAP),
     .time_y_percent =
         HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_TIME_Y_PERCENT, DESIGN_COMPACT_TIME_Y_PERCENT),
     .date_text_height = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
@@ -86,20 +91,20 @@ static void architect_calculate_health_layout_from_blueprint(
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
   const int16_t face_center = (face_width >> 1);
+  const int16_t icon_text_gap = blueprint->icon_text_gap;
   // Icon and text are on either side of the face_center
-  // Icon
-  int16_t module_x = face_center - DESIGN_ICON_TEXT_GAP - icon_w;
-  int16_t module_w = icon_w;
-  int16_t module_y = current_row_y;
-  // The icon is the next module, set its width
-  computed->steps_layer.steps.icon = GRect(module_x, module_y, module_w, icon_h);
-
-  // Text: X_text = X_icon + icon module's width
   // Module Y stays unchanged from icon's Y
-  module_x = face_center;
-  module_w = blueprint->steps_text_width;
+  int16_t module_x = face_center - icon_text_gap;
+  int16_t module_w = blueprint->steps_text_width;
+  int16_t module_y = current_row_y;
   computed->steps_layer.steps.text =
       GRect(module_x, module_y, module_w, blueprint->data_text_height);
+
+  // Icon
+  module_x = module_x - (icon_text_gap + icon_w);
+  module_w = icon_w;
+  // The icon is the next module, set its width
+  computed->steps_layer.steps.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Progress Bar is at the bottom and starts at the icon's X and extends
   // until the end of the text-box. Bar's width uses Progress Bar width %
@@ -108,10 +113,9 @@ static void architect_calculate_health_layout_from_blueprint(
   // Center horizontally
   // Start by using the module_w to save the interim width
   current_row_y += icon_h;
-  module_w = icon_w + DESIGN_ICON_TEXT_GAP + blueprint->steps_text_width;
+  module_w = icon_w + icon_text_gap + blueprint->steps_text_width;
   // Set the x to be that of the icon so that the rect starts exactly where the
-  // icon starts
-  module_x = computed->steps_layer.steps.icon.origin.x;
+  // icon starts, which is the current value of module_x
   module_y = current_row_y;
   // height is DESIGN_STEPS_PROGRESS_HEIGHT
   computed->steps_layer.progress =
@@ -120,15 +124,15 @@ static void architect_calculate_health_layout_from_blueprint(
   // BPM at the bottom of the screen
   current_row_y = face_height - margin_y - icon_h;
 
-  module_x = face_center - DESIGN_ICON_TEXT_GAP - icon_w;
-  module_w = icon_w;
-  module_y = current_row_y;
-  computed->bpm.icon = GRect(module_x, module_y, module_w, icon_h);
-
-  // Text: X_text = X_icon + icon module's width
-  module_x = face_center;
+  module_x = face_center - icon_text_gap;
   module_w = blueprint->bpm_text_width;
+  module_y = current_row_y;
   computed->bpm.text = GRect(module_x, module_y, module_w, blueprint->data_text_height);
+
+  // Icon
+  module_x = module_x - (icon_text_gap + icon_w);
+  module_w = icon_w;
+  computed->bpm.icon = GRect(module_x, module_y, module_w, icon_h);
 }
 #endif
 
@@ -148,6 +152,7 @@ static void architect_calculate_must_have_layout_from_blueprint(
   const int16_t x_start = margin_x;
   const int16_t x_end = face_width - margin_x;
   const int16_t content_width = x_end - x_start;
+  const int16_t icon_text_gap = blueprint->icon_text_gap;
 
   // Use these transient values to establish x and y for each module
   // Time, Battery, Date are separated by stacked together, no gaps
@@ -208,7 +213,7 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Add the bolt relative to the top of the BATTERY BAND
   module_y = current_row_y + ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_BOLT_HEIGHT) >> 1);
-  module_x += module_w + DESIGN_ICON_TEXT_GAP;
+  module_x += module_w + icon_text_gap;
   module_w = DESIGN_BATTERY_BOLT_WIDTH;
   computed->battery.bolt = GRect(module_x, module_y, module_w, DESIGN_BATTERY_BOLT_HEIGHT);
 
@@ -228,15 +233,13 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Climate Icon is to the left of x_center
   const int16_t face_center = (face_width >> 1);
-  module_x = face_center - icon_w - DESIGN_ICON_TEXT_GAP;
+  module_x = face_center - icon_w - (icon_text_gap << 1);
   module_w = icon_w;
   computed->climate.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Climate Text Width can be computed
-  computed->climate.text = GRect(x_start,
-      module_y,
-      module_x - DESIGN_ICON_TEXT_GAP - x_start,
-      blueprint->data_text_height);
+  computed->climate.text =
+      GRect(x_start, module_y, module_x - icon_text_gap - x_start, blueprint->data_text_height);
 
   // Date text
   module_x = face_center;
@@ -245,10 +248,8 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Location text
   current_row_y += HELPER_MAX(icon_h, blueprint->data_text_height);
-  // Move the location text up by 2-pixels on all platforms
-  module_y = current_row_y - 2;
   computed->location = GRect(computed->battery.track.origin.x,
-      module_y,
+      current_row_y,
       computed->battery.track.size.w,
       blueprint->location_text_height);
 }

@@ -75,11 +75,11 @@
             "basalt",
             "diorite"
           ],
-          "name": "FONT_DATE_TEXT_16",
+          "name": "FONT_DATE_TEXT_15",
           "type": "font"
         },
         {
-          "characterRegex": "[-0-9.A-Z a-z·]",
+          "characterRegex": "[a-zA-ZÀ-ÿ0-9 ,'._-]",
           "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "aplite",
@@ -98,11 +98,11 @@
             "emery",
             "gabbro"
           ],
-          "name": "FONT_DATE_TEXT_22",
+          "name": "FONT_DATE_TEXT_20",
           "type": "font"
         },
         {
-          "characterRegex": "[.A-Z a-z_.-]",
+          "characterRegex": "[a-zA-ZÀ-ÿ0-9 ,'._-]",
           "file": "fonts/CabinCondensed-SemiBold.ttf",
           "targetPlatforms": [
             "emery",

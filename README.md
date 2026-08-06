@@ -2,7 +2,7 @@
 
 This is a Pebble watch face inspired by cockpit instrumentation. It displays information with minimal interpretation. Time stays dominant. Icons identify. Numbers quantify. Lines show progress. Color communicates state.
 
-The goal is a display that feels *precise, neutral, obvious, and available at a glance*.
+The goal is a display that feels _precise, neutral, obvious, and available at a glance_.
 
 ## Adjacent
 
@@ -10,13 +10,10 @@ The goal is a display that feels *precise, neutral, obvious, and available at a 
 
 ## Screenshots
 
-| <center><b>Color rectangular</b></center> | <center><b>Round monochrome</b></center> |
-| :---: | :---: |
-| <center><b><img src="docs/assets/screenshots/at-a-glance-emery-celeste-qa.png" alt="At A Glance on a rectangular color Pebble in Clear as Celeste mode" width="200"><br>Emery: Clear as Celeste</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-whiteonblack-qa.png" alt="At A Glance on a round Pebble in White on Black mode" width="220"><br>Gabbro: White on Black</b></center> |
-
-| <center><b>Health-capable rectangular</b></center> | <center><b>Health-capable round</b></center> |
-| :---: | :---: |
-| <center><b><img src="docs/assets/screenshots/at-a-glance-emery-health.png" alt="At A Glance on Emery showing steps and heart rate" width="200"><br>Emery: Steps and heart rate</b></center> | <center><b><img src="docs/assets/screenshots/at-a-glance-gabbro-health.png" alt="At A Glance on Gabbro showing steps and heart rate" width="220"><br>Gabbro: Steps and heart rate</b></center> |
+|  |  |  |
+| :-: | :-: | :-: |
+| <b><img src="docs/assets/screenshots/at-a-glance-emery-blackonwhite.png" alt="Emery Black on White" width="160"><br>Emery: Black on White</b> | <b><img src="docs/assets/screenshots/at-a-glance-emery-whiteonblack.png" alt="Emery White on Black" width="160"><br>Emery: White on Black</b> | <b><img src="docs/assets/screenshots/at-a-glance-chalk-celeste.png" alt="Chalk Clear as Celeste" width="160"><br>Chalk: Clear as Celeste</b> |
+| <b><img src="docs/assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="docs/assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on BLack" width="130"><br>Flint: White on Black</b> | <b><img src="docs/assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
 
 ## Installation
 
