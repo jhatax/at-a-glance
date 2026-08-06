@@ -3,7 +3,7 @@ PREAMBLE
 END
 
 MEMBERS
-  INCLUDE SCENARIO chalk-weather
   INCLUDE SCENARIO chalk-battery
-  INCLUDE SCENARIO chalk-health
+  INCLUDE SCENARIO chalk-location
+  INCLUDE SCENARIO screenshots_evidence_chalk
 END

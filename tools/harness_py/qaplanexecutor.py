@@ -15,6 +15,7 @@ from qaplanresolver import (
 )
 from qaharnessconfig import DISPLAY_MODE_VALUES
 from pebbleadapter import PEBBLE_SETTLE_DELAY_SECONDS
+from textwrap import fill
 
 if TYPE_CHECKING:
   from pebbleadapter import PebbleAdapter
@@ -154,8 +155,6 @@ def _set_them_all(state: ExecutionState, step: Any, result: StepResult) -> None:
 
 
 def _execute_step(state: ExecutionState, step: PlanStep) -> None:
-  from textwrap import fill
-
   result: StepResult = {
       "step_result_id": step.step_id,
       "status": "running",

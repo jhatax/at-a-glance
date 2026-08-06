@@ -26,14 +26,16 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertNotIn("emulator", parsed.steps[0].fields)
 
   def test_parser_returns_parsed_suite_with_resolved_scenarios(self) -> None:
-    parsed = parse_suite(PLANS_ROOT / "dev-smoke.suite")
+    parsed = parse_suite(PLANS_ROOT / "qa-emery.suite")
     self.assertIsInstance(parsed, ParsedSuite)
-    self.assertEqual(parsed.name, "dev-smoke")
+    self.assertEqual(parsed.name, "qa-emery")
     self.assertEqual(
         [scenario.name for scenario in parsed.members], [
             "emery-weather",
             "emery-battery",
             "emery-health",
+            "emery-location",
+            "screenshots_evidence_emery",
         ]
     )
 
@@ -68,15 +70,30 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(plan.path, path)
 
   def test_named_suite_loads_and_expands(self) -> None:
-    plan = load_and_validate_plan("dev-smoke", PLANS_ROOT)
-    self.assertEqual(plan.name, "dev-smoke")
-    self.assertEqual(len(plan.steps), 8)
+    plan = load_and_validate_plan("qa-emery", PLANS_ROOT)
+    self.assertEqual(plan.name, "qa-emery")
+    self.assertEqual(len(plan.steps), 14)
     self.assertEqual(
         [step.capability for step in plan.steps.values()],
-        ["weather", "battery", "battery", "battery", "battery", "battery", "battery", "health"],
+        [
+            "weather",
+            "battery",
+            "battery",
+            "battery",
+            "battery",
+            "battery",
+            "battery",
+            "health",
+            "location",
+            "location",
+            "location",
+            "location",
+            "all",
+            "all",
+        ],
     )
     self.assertTrue(all(step.capture_screenshots for step in plan.steps.values()))
-    self.assertEqual(plan.expected_screenshots, 8)
+    self.assertEqual(plan.expected_screenshots, 14)
     self.assertEqual(plan.captured_screenshots, 0)
     _, first_step = next(iter(plan.steps.items()))
     first_step.captured_screenshots = 1

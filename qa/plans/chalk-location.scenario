@@ -1,0 +1,12 @@
+PREAMBLE
+  SCENARIO chalk-location
+  SCREENSHOTS yes
+  EMULATORS chalk
+END
+
+EXECUTE
+  STEP location display=white location=Oakland
+  STEP location display=white location="San-Francisco"
+  STEP location display=white location="Cabo San Lucas"
+  STEP location display=white location="Las_Vegas"
+END

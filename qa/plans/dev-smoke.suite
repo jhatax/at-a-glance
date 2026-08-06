@@ -4,4 +4,5 @@ END
 
 MEMBERS
   INCLUDE SUITE qa-emery
+  INCLUDE SUITE qa-chalk
 END
