@@ -86,6 +86,7 @@ void substratum_renderer_draw_scaled_circle_in_frame(GContext* ctx,
     int16_t y,
     int16_t r);
 
+// Use background color to draw a solid line before drawing a dashed-line
 void substratum_renderer_draw_unavailable_slash(GContext* ctx,
     const GSize* size,
     GColor color,
