@@ -1,5 +1,7 @@
 #include "substratum_renderer.h"
 
+#include <stdint.h>
+
 #include "modules/layout_surface.h"
 #include "watchface_debug.h"
 
@@ -121,8 +123,8 @@ void substratum_renderer_create_subframe(
   out->origin.x = x;
   out->origin.y = y;
   substratum_renderer_scale_icon_point_in_frame(frame, &out->origin);
-  out->size.w = HELPER_SCALE_ROUND(w, frame->size.w, SUBSTRATUM_RENDERER_ICON_GRID_W);
-  out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, SUBSTRATUM_RENDERER_ICON_GRID_H);
+  out->size.w = HELPER_SCALE_ROUND(w, frame->size.w, WATCHFACE_ICON_GRID_WIDTH);
+  out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, WATCHFACE_ICON_GRID_HEIGHT);
 }
 
 void substratum_renderer_draw_scaled_line(
@@ -168,8 +170,8 @@ void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
     return;
   }
 
-  int16_t scaled_w = substratum_renderer_scale_icon_x_in_frame(frame, (x1 - x0));
-  int16_t scaled_h = substratum_renderer_scale_icon_y_in_frame(frame, (y1 - y0));
+  int16_t scaled_w = substratum_renderer_scale_icon_x(&frame->size, (x1 - x0));
+  int16_t scaled_h = substratum_renderer_scale_icon_y(&frame->size, (y1 - y0));
   GRect rect = GRect(substratum_renderer_scale_icon_x_in_frame(frame, x0),
       substratum_renderer_scale_icon_y_in_frame(frame, y0),
       scaled_w,
@@ -215,27 +217,33 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     return;
   }
 
-  uint8_t grid_mid_x = (WATCHFACE_ICON_GRID_WIDTH >> 1) - 1;
-  uint8_t grid_mid_y = (WATCHFACE_ICON_GRID_HEIGHT >> 1) - 1;
-  uint8_t stroke_width =
-      SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 2);
-  uint8_t x_y_offset = stroke_width;
-  uint8_t arm = HELPER_MIN((grid_mid_x >> 1), (grid_mid_y >> 1));
+  uint8_t stroke_width = 2;
+  uint8_t offset = stroke_width;
+  uint8_t double_offset = offset << 1;
+  // uint8_t arm = HELPER_MIN((WATCHFACE_ICON_CENTER_X >> 1), (WATCHFACE_ICON_CENTER_Y >> 1));
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
-      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, x_y_offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, arm, grid_mid_y + x_y_offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, grid_mid_y + x_y_offset),
       substratum_renderer_scale_icon_x_y_in_frame(frame,
-          grid_mid_x,
-          WATCHFACE_ICON_GRID_HEIGHT - x_y_offset),
+          WATCHFACE_ICON_CENTER_X + double_offset,
+          offset),
       substratum_renderer_scale_icon_x_y_in_frame(frame,
-          WATCHFACE_ICON_GRID_WIDTH - x_y_offset,
-          grid_mid_y - x_y_offset),
+          double_offset,
+          WATCHFACE_ICON_CENTER_Y + offset),
       substratum_renderer_scale_icon_x_y_in_frame(frame,
-          WATCHFACE_ICON_GRID_WIDTH - x_y_offset - arm - arm,
-          grid_mid_y - x_y_offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, grid_mid_x + arm, x_y_offset),
+          WATCHFACE_ICON_CENTER_X,
+          WATCHFACE_ICON_CENTER_Y + offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_CENTER_X - offset,
+          WATCHFACE_ICON_GRID_HEIGHT - offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_GRID_WIDTH - double_offset,
+          WATCHFACE_ICON_CENTER_Y),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_CENTER_X + offset,
+          WATCHFACE_ICON_CENTER_Y),
+      substratum_renderer_scale_icon_x_y_in_frame(frame,
+          WATCHFACE_ICON_CENTER_X + double_offset,
+          offset),
   };
 
   GPathInfo path_info = (GPathInfo){
@@ -246,12 +254,12 @@ void substratum_renderer_draw_filled_bolt_in_frame(
 
   if (path) {
     graphics_context_set_fill_color(ctx, fill_color);
-    gpath_draw_filled(ctx, path);
     graphics_context_set_stroke_color(ctx, fill_color);
-    graphics_context_set_stroke_width(ctx, stroke_width);
-    // Add a 2-pt offset to draw a halo outside the currently filled path
-    gpath_move_to(path, GPoint(-stroke_width, stroke_width));
+    gpath_draw_filled(ctx, path);
     gpath_draw_outline(ctx, path);
+    gpath_move_to(path, GPoint(1, -1));
+    gpath_draw_filled(ctx, path);
+    graphics_context_set_stroke_width(ctx, stroke_width);
     gpath_destroy(path);
   }
   path = NULL;
@@ -260,7 +268,8 @@ void substratum_renderer_draw_filled_bolt_in_frame(
 void substratum_renderer_draw_unavailable_slash(
     GContext* ctx,
     const GSize* size,
-    GColor color) {
+    GColor color,
+    GColor background) {
   if (!ctx || !size) {
     return;
   }
@@ -268,11 +277,13 @@ void substratum_renderer_draw_unavailable_slash(
   // Unavailable slash contract: keep the 28x28 design-space diagonal
   // shared across metric and weather glyphs so missing-data affordance
   // does not drift between modules. Stroke-width set to 2.
-  graphics_context_set_stroke_color(ctx, color);
+  graphics_context_set_stroke_color(ctx, background);
   graphics_context_set_stroke_width(ctx, 2);
-  substratum_renderer_draw_scaled_line(ctx, size, 5, 5, 10, 10);
-  substratum_renderer_draw_scaled_line(ctx, size, 14, 14, 18, 18);
-  substratum_renderer_draw_scaled_line(ctx, size, 22, 22, 26, 26);
+  substratum_renderer_draw_scaled_line(ctx, size, 1, 1, 26, 26);
+  graphics_context_set_stroke_color(ctx, color);
+  substratum_renderer_draw_scaled_line(ctx, size, 1, 1, 6, 6);
+  substratum_renderer_draw_scaled_line(ctx, size, 11, 11, 16, 16);
+  substratum_renderer_draw_scaled_line(ctx, size, 21, 21, 26, 26);
 }
 
 // Module creation and lookup-helpers
