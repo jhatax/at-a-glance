@@ -122,7 +122,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
 // Weather stuff
 // Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.c.
 var WEATHER_TEMP_INVALID = -32768;
-// Must match WATCHFACE_WEATHER_CONDITION_UNKNOWN in src/modules/watchface.c.
+// Must match CLIMATE_CONDITION_OUTOFRANGE in climate.h
 var WEATHER_CONDITION_UNKNOWN = -1;
 // OAK is the product fallback location for this watchface.
 var OAK_WEATHER_LATITUDE = 37.85626;
