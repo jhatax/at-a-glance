@@ -45,7 +45,6 @@ static void climate_module_set_condition(int weather_condition);
 
 static const ClimatePalette c_dark_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
-    .halo = PBL_IF_COLOR_ELSE(GColorOrange, GColorLightGray),
     .cold = PBL_IF_COLOR_ELSE(GColorMintGreen, GColorWhite),
     .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
     .clear_ring = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorLightGray),
@@ -54,7 +53,6 @@ static const ClimatePalette c_dark_climate_palette = {
 
 static const ClimatePalette c_light_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
-    .halo = PBL_IF_COLOR_ELSE(GColorYellow, GColorDarkGray),
     .cold = PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack),
     .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
     .clear_ring = GColorLightGray,
