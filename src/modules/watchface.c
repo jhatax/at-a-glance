@@ -40,12 +40,6 @@
  *   the whole watchface surface or raw transport data.
  */
 
-// Weather AppMessage wire sentinels. PebbleKit JS mirrors these values when
-// weather is unavailable; do not change them without updating both sides of
-// the transport contract.
-#define WATCHFACE_WEATHER_TEMP_UNAVAILABLE CLIMATE_TEMP_UNAVAILABLE
-#define WATCHFACE_WEATHER_CONDITION_UNKNOWN CLIMATE_CONDITION_UNKNOWN
-
 #define ARE_CUSTOM_FONTS_LOADED() ((s_surface.style.fontbook.custom_fonts_loaded_count) > 0)
 
 static WatchfaceSurface s_surface = {0};
@@ -201,39 +195,29 @@ bool watchface_create(
 
 void watchface_destroy() {
   // Failed create can leave partial module state before initialization completes.
-  if (s_strata_created_mask) {
-    if (s_strata_created_mask & DATE_STRATUM_MASK) {
-      date_module_destroy();
-      s_strata_created_mask &= ~DATE_STRATUM_MASK;
-    }
+  date_module_destroy();
+  s_strata_created_mask &= ~DATE_STRATUM_MASK;
 
-    if (s_strata_created_mask & TIME_STRATUM_MASK) {
-      time_module_destroy();
-      s_strata_created_mask &= ~TIME_STRATUM_MASK;
-    }
+  time_module_destroy();
+  s_strata_created_mask &= ~TIME_STRATUM_MASK;
 
-    if (s_strata_created_mask & BATTERY_STRATUM_MASK) {
-      battery_module_destroy();
-      s_strata_created_mask &= ~BATTERY_STRATUM_MASK;
-    }
+  battery_module_destroy();
+  s_strata_created_mask &= ~BATTERY_STRATUM_MASK;
 
-    if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
-      climate_module_destroy();
-      s_strata_created_mask &= ~CLIMATE_STRATUM_MASK;
-    }
+  climate_module_destroy();
+  s_strata_created_mask &= ~CLIMATE_STRATUM_MASK;
 
 #ifdef PBL_HEALTH
-    if (s_strata_created_mask & BPM_STRATUM_MASK) {
-      bpm_module_destroy();
-      s_strata_created_mask &= ~BPM_STRATUM_MASK;
-    }
-    if (s_strata_created_mask & STEPS_STRATUM_MASK) {
-      steps_module_destroy();
-      s_strata_created_mask &= ~STEPS_STRATUM_MASK;
-    }
-    // End Health Capability check
-#endif
+  if (s_strata_created_mask & BPM_STRATUM_MASK) {
+    bpm_module_destroy();
+    s_strata_created_mask &= ~BPM_STRATUM_MASK;
   }
+  if (s_strata_created_mask & STEPS_STRATUM_MASK) {
+    steps_module_destroy();
+    s_strata_created_mask &= ~STEPS_STRATUM_MASK;
+  }
+  // End Health Capability check
+#endif
 
   if (ARE_CUSTOM_FONTS_LOADED()) {
     layout_watchface_unload_custom_fonts(&s_surface.style.fontbook);
