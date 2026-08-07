@@ -161,14 +161,7 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
       "screenshot_paths": [],
   }
 
-  divider = "=" * 80
-  header = f"--- Attempting step: Type: '{step.capability}' with id '{step.step_id}'"
-  pre_step = f"{divider}\n{header}"
-  state.inform_operator(pre_step)
-
   # step execution will write to the log or stdout / stderr
-  # by logging the divider and header before we execute, there
-  # is clean separation between steps executed
   try:
     match step.capability:
       case "weather":
@@ -188,8 +181,9 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
 
       case _:
         raise ValueError(f"Unknown step instance type: {type(step)}")
-  except (Exception, ValueError):
+  except (Exception) as err:
     result["status"] = "failed"
+    state.inform_operator(f"Encountered issue: '{err}'")
     # continue running until all steps have executed
   else:
     step.captured_screenshots = len(result["screenshot_paths"])
@@ -202,7 +196,7 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
     state.step_results.append(result)
     _step = fill(f"'{asdict(step)}'", width=80, subsequent_indent=" ")
     _result = fill(f"'{result}'", width=80, subsequent_indent=" ")
-    state.inform_operator(f"Executed: {_step}\nResult: {_result}\n{divider}")
+    state.inform_operator(f"Executed: {_step}\nResult: {_result}\n")
 
 
 def run_plan_execution(plan: PlanDefinition) -> int:
@@ -210,21 +204,24 @@ def run_plan_execution(plan: PlanDefinition) -> int:
   state = ExecutionState(create_harness_context(plan.expected_screenshots > 0), plan=plan)
   exit_status = 0
 
+  divider = "=" * 80
   try:
     state.inform_operator(f"QA Plan to execute:\n{asdict(plan)}\n", True)
     from qaharnessconfig import REPO_ROOT
     pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
     state.pebble.install_emulators(plan.emulators, pbw_path)
-    for step in plan.steps.values():
+    for index, (step) in enumerate(plan.steps.values(), start=1):
+      header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
+      pre_step = f"{divider}\n{header}"
+      state.inform_operator(pre_step)
       _execute_step(state, step)
+      state.inform_operator(f"{divider}")
   except (Exception, AssertionError) as exc:
     print(f"Error: {exc!r}")
     exit_status = 1
   finally:
+    state.inform_operator(f"{divider}")
     plan.captured_screenshots = sum(step.captured_screenshots for step in plan.steps.values())
-    # this should always be true because this is done in _run_step's finalize:
-    #   step.captured_screenshots = len(result["screenshot_paths"])
-
     state.pebble.close()
 
   return finalize(
