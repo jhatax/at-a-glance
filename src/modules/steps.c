@@ -49,27 +49,30 @@ typedef struct {
 static StepsPalette s_steps_palette = {0};
 
 static const StepsPalette c_dark_steps_palette = {
-  .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
-  .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+    .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
+    .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
 };
 
 static const StepsPalette c_light_steps_palette = {
-  .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-  .achieved = PBL_IF_COLOR_ELSE(GColorGreen, GColorBlack),
+    .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
+    .achieved = PBL_IF_COLOR_ELSE(GColorGreen, GColorBlack),
 };
 
 static void steps_update_palette(const ColorPalette* palette);
 static GColor calculate_steps_color(int steps);
-static void steps_icon_update_proc(Layer* layer, GContext* ctx);
-static void steps_progress_update_proc(Layer* layer, GContext* ctx);
-static void apply_steps_value(int steps, bool is_available);
+static void steps_icon_update_proc(Layer* layer,
+    GContext* ctx);
+static void steps_progress_update_proc(Layer* layer,
+    GContext* ctx);
+static void apply_steps_value(int steps,
+    bool is_available);
 static void update_steps();
 static void steps_module_oneshot_clear_steps();
 
 static void steps_update_palette(
-  const ColorPalette* palette) {
+    const ColorPalette* palette) {
   const StepsPalette* template =
-    palette->is_light_mode ? &c_light_steps_palette : &c_dark_steps_palette;
+      palette->is_light_mode ? &c_light_steps_palette : &c_dark_steps_palette;
 
   if (MODULE_PALETTE_LOADED(s_steps_palette)) {
     // We know that light-mode and dark-mode have different backgrounds
@@ -88,7 +91,7 @@ static void steps_update_palette(
 }
 
 static GColor calculate_steps_color(
-  int steps) {
+    int steps) {
   if (!MODULE_PALETTE_LOADED(s_steps_palette)) {
     return WATCHFACE_UNINITIALIZED_TEXT_COLOR;
   }
@@ -108,8 +111,8 @@ static GColor calculate_steps_color(
 }
 
 static void steps_icon_update_proc(
-  Layer* layer,
-  GContext* ctx) {
+    Layer* layer,
+    GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -128,13 +131,16 @@ static void steps_icon_update_proc(
   graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, bounds);
 
   if (!s_steps_is_available) {
-    substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_steps_palette.normal);
+    substratum_renderer_draw_unavailable_slash(ctx,
+        &bounds.size,
+        s_steps_palette.outofrange,
+        s_steps_palette.background);
   }
 }
 
 static void steps_progress_update_proc(
-  Layer* layer,
-  GContext* ctx) {
+    Layer* layer,
+    GContext* ctx) {
   if (!layer || !ctx || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -164,7 +170,7 @@ static void steps_progress_update_proc(
       // Change the width to be drawn. While this should never be greater than the width,
       // it doesn't hurt to be defensive+
       width =
-        HELPER_CLAMP_MAX(HELPER_ROUND_UP((completed * bounds.size.w), 100), (bounds.size.w - 1));
+          HELPER_CLAMP_MAX(HELPER_ROUND_UP((completed * bounds.size.w), 100), (bounds.size.w - 1));
     }
     graphics_fill_rect(ctx, GRect(pt1.x, pt1.y, width, bounds.size.h), 0, GCornerNone);
   } else {
@@ -175,8 +181,8 @@ static void steps_progress_update_proc(
 }
 
 static void apply_steps_value(
-  int steps,
-  bool is_available) {
+    int steps,
+    bool is_available) {
   if (!s_steps_layer || !MODULE_PALETTE_LOADED(s_steps_palette)) {
     return;
   }
@@ -215,7 +221,7 @@ static void update_steps() {
 
   // Store the current total sum first
   HealthServiceAccessibilityMask steps_mask =
-    health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
+      health_service_metric_accessible(HealthMetricStepCount, time_start_of_today(), time(NULL));
 
   if (steps_mask & HealthServiceAccessibilityMaskAvailable) {
     HealthValue health_steps = health_service_sum_today(HealthMetricStepCount);
@@ -237,11 +243,11 @@ static void update_steps() {
 }
 
 bool steps_module_create(
-  Layer* root,
-  const WatchfaceTextSubstratum* text,
-  const WatchfaceIconSubstratum* icon,
-  const GRect* progress,
-  GFont font) {
+    Layer* root,
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    const GRect* progress,
+    GFont font) {
   // The icon is not mandatory
   if (!root || !text || !progress || !font) {
     return false;
@@ -276,7 +282,7 @@ bool steps_module_create(
 
     if (s_steps_bitmap) {
       s_steps_icon_layer =
-        substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
+          substratum_renderer_create_icon_layer(root, icon, steps_icon_update_proc);
       if (!s_steps_icon_layer) {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create steps icon layer");
         gbitmap_destroy(s_steps_bitmap);
@@ -346,8 +352,8 @@ void steps_module_destroy() {
 }
 
 void steps_module_refresh(
-  const ColorPalette* palette,
-  uint16_t steps_goal) {
+    const ColorPalette* palette,
+    uint16_t steps_goal) {
   if (!palette) {
     return;
   }
@@ -359,7 +365,7 @@ void steps_module_refresh(
 }
 
 void steps_module_oneshot_set_steps(
-  int steps) {
+    int steps) {
   if (STEPS_IN_RANGE(steps)) {
     s_oneshot_steps = steps;
     s_oneshot_steps_is_set = true;
