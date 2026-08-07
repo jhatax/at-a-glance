@@ -9,7 +9,6 @@
 // weather is unavailable; do not change them without updating both sides of
 // the transport contract.
 enum {
-  CLIMATE_TEMP_UNAVAILABLE = INT16_MIN,
   CLIMATE_CONDITION_OUTOFRANGE = -1,
   CLIMATE_CONDITION_MIN = 0,
   CLIMATE_CONDITION_MAX = 99,
