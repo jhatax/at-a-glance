@@ -380,7 +380,7 @@ def _build_step_outputs(
     if result is None:
       result = StepResult(
           step_result_id=step_id,
-          status="unknown",
+          status="failed",
           screenshot_paths=[],
       )
     screenshot_paths = result["screenshot_paths"]
