@@ -236,7 +236,7 @@ static const ColorPalette mono_dark_palette = {
     .time_text = GColorWhite,
     .date_text = GColorWhite,
     .primary_text = GColorWhite,
-    .outofrange_text = GColorWhite,
+    .outofrange_text = GColorLightGray,
 };
 
 static const ColorPalette mono_light_palette = {
@@ -245,7 +245,7 @@ static const ColorPalette mono_light_palette = {
     .time_text = GColorBlack,
     .date_text = GColorBlack,
     .primary_text = GColorBlack,
-    .outofrange_text = GColorBlack,
+    .outofrange_text = GColorDarkGray,
 };
 
 // API Contract: If style is a valid value, the palette will always be non-NULL
