@@ -106,7 +106,7 @@ uint32_t app_message_inbox_size() {
   // 9. STEPS_GOAL | 10008 | sizeof(int32_t)
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
-  // 10. LOCATION | 10011 | 16-characters
+  // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
   //
   // One-shot-only tuples:
   // 11. ONESHOT_BPM | 10020 | sizeof(int32_t)
@@ -124,7 +124,7 @@ uint32_t app_message_inbox_size() {
       sizeof(int32_t),
       sizeof(int32_t),
       sizeof(int32_t),
-      16);
+      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE);
 #else
   return dict_calc_buffer_size(10,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -136,7 +136,7 @@ uint32_t app_message_inbox_size() {
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
-      16);
+      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE);
 #endif
 }
 

@@ -1,6 +1,6 @@
 # Documentation Ontology
 
-This ontology indexes the irreducible knowledge domains for the *At A Glance* documentation set.
+This ontology indexes the irreducible knowledge domains for the _At A Glance_ documentation set.
 
 ## Ontology Invariants
 
@@ -14,27 +14,28 @@ Document purpose, sub-concepts, relationships, navigation, and document-addition
 Translation of guardrails: Before placing content, classify the knowledge using these first-class concepts:
 
 | Concept | Canonical Home |
-|:---|:---|
+| :-- | :-- |
 | Product entry point | [Watchface_Readme](../README.md) |
-| <b>Prescriptive Documents</b> | |
+| <b>Prescriptive Documents</b> |  |
 | Product intent | [Design](Design.md) |
 | Product invariants | [ProductInvariants](ProductInvariants.md) |
 | Visual vocabulary | [VisualVocabulary](VisualVocabulary.md) |
-| <b>Implementation & Evidentiary Documents</b> | |
+| <b>Implementation & Evidentiary Documents</b> |  |
 | Watchface implementation flow | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
 | Visual evidence | [UserInterface](UserInterface.md) |
 | Runtime architecture | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Settings and configuration | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Contributor workflow | [Contributing](Contributing.md) |
 | Build & Install system | [BuildandInstall](BuildandInstall.md) |
-| <b>Validation & QA Documents</b> | |
+| <b>Validation & QA Documents</b> |  |
 | Validation system | [Validation](Validation.md) |
 | QA harness operations | [QA_Readme](../qa/README.md) |
 | QA test cases and plans | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) |
 | QA implementation flow | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) |
-| <b>Governance Documents</b> | |
+| <b>Governance Documents</b> |  |
 | Documentation routing | [DocumentationOntology](DocumentationOntology.md) |
 | Documentation contracts | [DocumentationContracts](DocumentationContracts.md) |
+| Engineering decisions | [RAID Log](RAID_LOG.md) |
 
 ## Document Relationship Graph
 
@@ -73,7 +74,7 @@ graph TD
 
   subgraph L6 ["<b>Documentation Governance</b>"]
     p2 ==> d1
-    d1["Docs Ontology"] ==> d2["Docs Contracts"]
+    d1["Docs Ontology"] ==> d2["Docs Contracts"] ==> d3["RAID Log"]
   end
 ```
 

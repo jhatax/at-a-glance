@@ -55,13 +55,19 @@ class HarnessCorrectnessTests(unittest.TestCase):
         Path(__file__).resolve().parents[3] / "qa" / "plans" / "emery-location.scenario"
     )
     plan = load_and_validate_plan(str(location_plan))
-    self.assertEqual(len(plan.steps), 4)
-    self.assertEqual([step.capability for step in plan.steps.values()], ["location"] * 4)
+    self.assertEqual(len(plan.steps), 6)
+    self.assertEqual([step.capability for step in plan.steps.values()], ["location"] * 6)
     self.assertEqual(
-        [step.location for step in plan.steps.values()],
-        ["Oakland", "San-Francisco", "Cabo San Lucas", "Las_Vegas"]
+        [step.location for step in plan.steps.values()], [
+            "LÀs-_ÿegasÿ",
+            "LÀs-_ÿegasÿÅÉÑØ",
+            "Oakland",
+            "San-Francisco",
+            "Cabo San Lucas",
+            "Las_Vegas",
+        ]
     )
-    self.assertEqual(plan.expected_screenshots, 4)
+    self.assertEqual(plan.expected_screenshots, 6)
 
   def test_direct_scenario_path_loads(self) -> None:
     path = PLANS_ROOT / "canary.scenario"

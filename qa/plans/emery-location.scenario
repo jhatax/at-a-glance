@@ -5,6 +5,8 @@ PREAMBLE
 END
 
 EXECUTE
+  STEP location display=white location="LÀs-_ÿegasÿ"
+  STEP location display=white location="LÀs-_ÿegasÿÅÉÑØ"
   STEP location display=white location=Oakland
   STEP location display=white location="San-Francisco"
   STEP location display=white location="Cabo San Lucas"

@@ -6,6 +6,7 @@ This document is the contributor workflow for _At A Glance_: prepare the reposit
 
 - [BuildandInstall](BuildandInstall.md) owns build, installation, recovery, and editor-tooling operations.
 - [Validation](Validation.md) owns validation-path selection and evidence expectations.
+- [RAID Log](RAID_LOG.md) records accepted engineering decisions and active review context.
 
 ## Prepare The Repository
 
@@ -44,7 +45,7 @@ pebble --version
    git switch -c my-fix
    ```
 
-2. Read the source owner and runtime boundary before editing. Keep one coherent slice, preserve unrelated user changes, and do not add compatibility scaffolding without a live requirement.
+2. Read the source owner, runtime boundary, and relevant [RAID Log](RAID_LOG.md) decisions before editing. Keep one coherent slice, preserve unrelated user changes, and do not reopen an accepted direction without fresh contrary evidence.
 
 3. Reconcile every affected producer and consumer. Settings, AppMessage, resources, capabilities, generated files, source, QA commands, and documentation change together when their contract changes. Use [SettingsandConfiguration](SettingsandConfiguration.md) for the settings and message-key checklist.
 

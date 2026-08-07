@@ -53,7 +53,7 @@ package.json
 |               |
 |               src/pkjs/index.js ──────────────────> package.json message keys
 |               - Clay bootstrap                    - generated message key symbols
-|               - geolocation, location text, and Oakland fallback
+|               - geolocation, location text, and unavailable-state fallback
 |               - weather refresh requests, appmessage packaging
 V               ────────────────────────────────────────────────────────────────────
 wscript
@@ -141,6 +141,7 @@ helper.c ───────────────────────�
 - Shared helpers: `substratum_renderer.h`, `helper.h`
 
 **Notes**
+
 1. Public and shared headers expose only the concepts cross-module callers need.
 2. Feature module headers must not include `watchface_layout.h`.
 
@@ -153,6 +154,7 @@ ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventDat
   -> layout delegates prepare geometry and style
   -> feature modules own their Pebble layers and source state
 ```
+
 ## Debug Source Placement
 
 Setting `ATAGLANCE_DEBUG` to 1/0 and flipping/unflipping the comment in `wscript` enables and disables `DEBUG` mode for the watch face:

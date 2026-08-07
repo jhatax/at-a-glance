@@ -169,7 +169,7 @@ These platforms use the same frames as Flint. Aplite uses the same frames but do
 
 The `layout_stylist` selects fonts by display class (compact or full) and font role. The `Text` role is shared by climate, BPM, and steps; location has its own font role. System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
 
-Custom fonts: **Cabin** variants for time and location, **Oswald** for date and metrics. Font sizes are customized for compact and full displays. The location value is truncated to 15 characters before it is sent to the watch.
+Custom fonts: **Cabin** variants for time and location, **Oswald** for date and metrics. Font sizes are customized for compact and full displays. PKJS limits production location names to 15 characters and normalizes them to uppercase before sending them to the watch; uppercase text is more legible at the 14-point and 16-point location sizes. The location fonts retain lowercase and Latin-1 glyphs so direct AppMessage and QA inputs render without a separate font restriction.
 
 | Role | Compact system font | Compact custom font | Full system font | Full custom font |
 | :-- | :-- | :-- | :-- | :-- |

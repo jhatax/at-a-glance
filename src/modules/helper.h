@@ -17,12 +17,12 @@
 
 #define HELPER_IF_ELSE(exp, a, b) ((exp) ? (a) : (b))
 
-#define HELPER_ROUND_UP(v, d) ((v) + ((d) / 2)) / (d)
-
 #define HELPER_SCALE_ROUND(v, n, d)                                \
   (((n) == (d)) ? (v)                                              \
                 : ((((v) >= 0) ? ((((v) * (n)) + ((d) / 2)) / (d)) \
                                : ((((v) * (n)) - ((d) / 2)) / (d)))))
+
+#define HELPER_ROUND_UP(v, d) (HELPER_SCALE_ROUND((v), 1, (d)))
 
 #define HELPER_COLOR_EQUAL(c1, c2) ((((GColor)c1).argb) == (((GColor)c2).argb))
 

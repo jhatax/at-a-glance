@@ -12,7 +12,6 @@ const UPDATE_INTERVAL_MAX = WEATHER_UPDATE_MINUTES_DEFAULT << 4; // (15 * 16: 4-
 const MAX_LOCATION_STRING_LENGTH = 15;
 var s_updateIntervalHandle = null;
 var s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
-var s_startingUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -42,9 +41,6 @@ function parseStepsGoal(rawSettings) {
 
 function updateWeatherInterval(newInterval) {
   s_currentUpdateInterval = newInterval;
-  // Weather Update Interval is going to backoff on timeout,
-  // so save user-pref to reset interval to user's preference.
-  s_startingUpdateInterval = newInterval;
 }
 
 // Return the default value if setting is invalid or irretrievable
@@ -124,10 +120,6 @@ Pebble.addEventListener('webviewclosed', function (e) {
 var WEATHER_TEMP_INVALID = -32768;
 // Must match CLIMATE_CONDITION_OUTOFRANGE in climate.h
 var WEATHER_CONDITION_UNKNOWN = -1;
-// OAK is the product fallback location for this watchface.
-var OAK_WEATHER_LATITUDE = 37.85626;
-var OAK_WEATHER_LONGITUDE = -122.21383;
-
 // Define custom function that manipulates the DOM elements inside index.js
 function sendWeather(celsius, weatherCode, isDay) {
   Pebble.sendAppMessage(
@@ -246,18 +238,7 @@ function fetchWeather(lat, lon) {
     sendWeatherUnavailable('request failed');
   };
   xhr.ontimeout = function () {
-    // exponentially back-off
-    // if the value is the max, you need to back-off to the original value
-    s_currentUpdateInterval =
-      s_currentUpdateInterval < UPDATE_INTERVAL_MAX
-        ? s_currentUpdateInterval * 2
-        : s_startingUpdateInterval;
-    if (s_currentUpdateInterval >= UPDATE_INTERVAL_MAX) {
-      // Clamp the update interval to UPDATE_INTERVAL_MAX
-      s_currentUpdateInterval = Math.min(s_currentUpdateInterval, UPDATE_INTERVAL_MAX);
-      sendWeatherUnavailable('request timed out');
-    }
-    scheduleUpdates();
+    sendWeatherUnavailable('request timed out');
   };
   xhr.send(null);
 }
@@ -270,14 +251,14 @@ function updateWeatherAndLocation() {
         fetchLocation(pos.coords.latitude, pos.coords.longitude);
       },
       function () {
-        fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
-        fetchLocation(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
+        sendWeatherUnavailable('geolocation unavailable');
+        sendLocationToWatch('');
       },
       { timeout: updateIntervalMs(), maximumAge: updateIntervalMs() }
     );
   } else {
-    fetchWeather(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
-    fetchLocation(OAK_WEATHER_LATITUDE, OAK_WEATHER_LONGITUDE);
+    sendWeatherUnavailable('geolocation unavailable');
+    sendLocationToWatch('');
   }
 }
 

@@ -8,7 +8,13 @@
 #include "settings.h"
 #include "substratum_renderer.h"
 
-#define MAX_STR_LEN 16
+#define MAX_TEMPERATURE_STR_LEN 16
+
+enum {
+  CLIMATE_LOCATION_MAX_CHARACTERS = 15,
+  CLIMATE_LOCATION_MAX_UTF8_BYTES = CLIMATE_LOCATION_MAX_CHARACTERS * 2,
+  CLIMATE_LOCATION_BUFFER_SIZE = CLIMATE_LOCATION_MAX_UTF8_BYTES + 1,
+};
 
 enum {
   WEATHER_TEMP_MIN_CELSIUS_TENTHS = -1600,
@@ -27,8 +33,8 @@ enum {
 static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
 static TextLayer* s_location_layer = NULL;
-static char s_temperature_buffer[MAX_STR_LEN] = {0};
-static char s_location_buffer[MAX_STR_LEN] = {0};
+static char s_temperature_buffer[MAX_TEMPERATURE_STR_LEN] = {0};
+static char s_location_buffer[CLIMATE_LOCATION_BUFFER_SIZE] = {0};
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_OUTOFRANGE;
 static int16_t s_weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
 static bool s_is_day = false;
@@ -94,11 +100,10 @@ static bool format_temperature(
   }
 
   if (temp_unit == TEMP_UNIT_F) {
-    int f_whole = ((s_temp_celsius_tenths * 9 + 25) / 50) + 32;
+    int f_whole = HELPER_ROUND_UP((s_temp_celsius_tenths * 9 + 1600), 50);
     snprintf(buf, buflen, "%dF", f_whole);
   } else {
-    int c_whole = (s_temp_celsius_tenths >= 0) ? (s_temp_celsius_tenths + 5) / 10
-                                               : (s_temp_celsius_tenths - 5) / 10;
+    int c_whole = HELPER_ROUND_UP(s_temp_celsius_tenths, 10);
     snprintf(buf, buflen, "%dC", c_whole);
   }
 
@@ -111,7 +116,8 @@ static void climate_module_update_temperature(
     return;
   }
 
-  bool is_temperature_available = format_temperature(s_temperature_buffer, MAX_STR_LEN, temp_unit);
+  bool is_temperature_available =
+      format_temperature(s_temperature_buffer, MAX_TEMPERATURE_STR_LEN, temp_unit);
 
   // Use formatting output to determine the color of text displayed
   GColor text_color =
@@ -133,11 +139,14 @@ static void climate_module_update_location() {
     return;
   }
 
+  bool is_location_available = (s_location_buffer[0] != '\0');
+  const char* location_text = is_location_available ? s_location_buffer : WATCHFACE_OUTOFRANGE_TEXT;
+
   // Use formatting output to determine the color of text displayed
   GColor text_color =
-      (strlen(s_location_buffer) > 0) ? s_climate_palette.normal : s_climate_palette.outofrange;
+      is_location_available ? s_climate_palette.normal : s_climate_palette.outofrange;
 
-  substratum_renderer_update_text_layer(s_location_layer, s_location_buffer, text_color);
+  substratum_renderer_update_text_layer(s_location_layer, location_text, text_color);
 }
 
 static void climate_icon_update_proc(
@@ -290,12 +299,4 @@ void climate_module_set_location(
     return;
   }
   snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", location);
-  for (uint8_t i = 0; i < ARRAY_LENGTH(s_location_buffer); ++i) {
-    char* current = &s_location_buffer[i];
-    if (*current) {
-      *current = (char)toupper((unsigned char)*current);
-    } else {
-      break;
-    }
-  }
 }

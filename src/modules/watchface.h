@@ -4,7 +4,7 @@
 #include "settings.h"
 #include "watchface_debug.h"
 
-#define MAX_LOCATION_LEN 18
+#define WATCHFACE_EVENT_LOCATION_BUFFER_SIZE 31
 
 typedef enum {
   WATCHFACE_UPDATE_NONE = 0,
@@ -61,7 +61,7 @@ typedef struct {
   int weather_condition;
   int is_day;
 
-  char location[MAX_LOCATION_LEN];
+  char location[WATCHFACE_EVENT_LOCATION_BUFFER_SIZE];
 
 #if defined(PBL_HEALTH)
   int oneshot_bpm;

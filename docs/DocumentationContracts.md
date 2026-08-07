@@ -88,9 +88,9 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Guides contributors from repository setup through build, validation, review, formatting, and commit. It provides the working discipline that keeps product, source, and documentation changes traceable.
 
-**Sub-concepts:** GitHub checkout; prerequisites; Pebble SDK; environment verification; Git hook setup; first build; IDE support; build/install/QA automation; C guidelines; runtime logs; debugging; glyph development; repository maintenance; review discipline; formatters; pre-commit; documentation management.
+**Sub-concepts:** GitHub checkout; prerequisites; Pebble SDK; environment verification; Git hook setup; first build; IDE support; build/install/QA automation; C guidelines; runtime logs; debugging; glyph development; repository maintenance; review discipline; formatters; pre-commit; documentation management; decision-log use.
 
-**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA_Readme](../qa/README.md).
+**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA_Readme](../qa/README.md).
 
 ### 12. BuildandInstall
 
@@ -131,6 +131,14 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 **Sub-concepts:** Implementation guardrails; four runtime phases; parser handoff; resolver handoff; executor handoff; finalization handoff; function ownership; Pebble adapter boundary; canonical JSON report; Markdown rendering; inspection and comparison; harness-specific validation gates.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [Validation](Validation.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md).
+
+### 17. RAIDLog
+
+**Purpose:** Records the durable decisions, active risks, assumptions, and issues that shaped the watch face. It preserves historical reasoning while routing current behavior back to its canonical source and contract document.
+
+**Sub-concepts:** Admission rules; accepted-decision summary; active risk, assumption, and issue records; historical log; status; evidence; canonical-owner links.
+
+**Connections:** Adjacent: [RuntimeArchitecture](RuntimeArchitecture.md), [DocumentationContracts](DocumentationContracts.md). Read next: [Contributing](Contributing.md), [Validation](Validation.md).
 
 ## Adding A Document
 

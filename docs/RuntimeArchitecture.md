@@ -348,7 +348,7 @@ Settings, Clay field mapping, generated message-key numbering, PKJS normalizatio
 
 ### Climate-specific transport behavior
 
-- The phone companion requests current weather from Open-Meteo on the configured cadence, uses phone geolocation when available, and falls back to Oakland, CA when location is unavailable.
+- The phone companion requests current weather from Open-Meteo on the configured cadence and renders weather and location unavailable when phone geolocation is unavailable.
 - PKJS sends the resolved location text through `MAYBE_CURRENT_LOCATION`; the runtime passes it to `climate.c`, which owns the location buffer and text layer.
 - Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.
