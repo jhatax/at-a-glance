@@ -115,7 +115,10 @@ static void bpm_icon_update_proc(
   graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
 
   if (!s_bpm_is_valid) {
-    substratum_renderer_draw_unavailable_slash(ctx, &bounds.size, s_bpm_palette.normal);
+    substratum_renderer_draw_unavailable_slash(ctx,
+        &bounds.size,
+        s_bpm_palette.outofrange,
+        s_bpm_palette.background);
   }
 }
 
