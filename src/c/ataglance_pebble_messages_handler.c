@@ -106,11 +106,11 @@ uint32_t app_message_inbox_size() {
   // 9. STEPS_GOAL | 10008 | sizeof(int32_t)
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
+  // 10. LOCATION | 10011 | 16-characters
   //
   // One-shot-only tuples:
-  // 10. ONESHOT_BPM | 10020 | sizeof(int32_t)
-  // 11. ONESHOT_STEPS | 10021 | sizeof(int32_t)
-  // 12. LOCATION | 10011 | 16-characters
+  // 11. ONESHOT_BPM | 10020 | sizeof(int32_t)
+  // 12. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
   return dict_calc_buffer_size(12,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
