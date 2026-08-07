@@ -1,10 +1,32 @@
 PREAMBLE
-  SCENARIO chalk-weather
+  SCENARIO all_weather_color
   SCREENSHOTS yes
-  EMULATORS chalk
+  EMULATORS chalk emery gabbro
 END
 
 EXECUTE
+  STEP battery display=white level=40 charging=1
+  STEP weather display=oxford temp=539 code=85 is_day=1
+  STEP battery display=white level=80 charging=1
+  STEP weather display=white temp=539 code=95 is_day=1
+  STEP battery display=white level=80 charging=1
+  STEP weather display=black temp=539 code=95 is_day=1
+  STEP battery display=white level=80 charging=1
+  STEP weather display=celeste temp=539 code=95 is_day=1
+  STEP battery display=white level=80 charging=1
+  STEP weather display=oxford temp=539 code=95 is_day=1
+  STEP weather display=white temp=539 code=0 is_day=0
+  STEP weather display=black temp=539 code=0 is_day=0
+  STEP weather display=celeste temp=539 code=0 is_day=0
+  STEP weather display=oxford temp=539 code=0 is_day=0
+  STEP weather display=white temp=539 code=2 is_day=0
+  STEP weather display=black temp=539 code=2 is_day=0
+  STEP weather display=celeste temp=539 code=2 is_day=0
+  STEP weather display=oxford temp=539 code=2 is_day=0
+  STEP weather display=white temp=539 code=3 is_day=0
+  STEP weather display=black temp=539 code=3 is_day=0
+  STEP weather display=celeste temp=539 code=3 is_day=0
+  STEP weather display=oxford temp=539 code=3 is_day=0
   STEP weather display=white temp=539 code=0 is_day=1
   STEP weather display=black temp=539 code=0 is_day=1
   STEP weather display=celeste temp=539 code=0 is_day=1
@@ -56,9 +78,4 @@ EXECUTE
   STEP weather display=white temp=539 code=85 is_day=1
   STEP weather display=black temp=539 code=85 is_day=1
   STEP weather display=celeste temp=539 code=85 is_day=1
-  STEP weather display=oxford temp=539 code=85 is_day=1
-  STEP weather display=white temp=539 code=95 is_day=1
-  STEP weather display=black temp=539 code=95 is_day=1
-  STEP weather display=celeste temp=539 code=95 is_day=1
-  STEP weather display=oxford temp=539 code=95 is_day=1
 END

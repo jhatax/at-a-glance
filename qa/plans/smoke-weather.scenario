@@ -1,0 +1,68 @@
+PREAMBLE
+  SCENARIO smoke-weather
+  SCREENSHOTS yes
+  EMULATORS emery chalk
+END
+
+EXECUTE
+  STEP battery display=celeste charging=1 level=81
+  STEP weather display=celeste is_day=1 temp=250 code=0
+  STEP weather display=celeste is_day=1 temp=250 code=1
+  STEP weather display=celeste is_day=1 temp=250 code=2
+  STEP weather display=celeste is_day=1 temp=250 code=3
+  STEP weather display=celeste is_day=0 temp=250 code=0
+  STEP weather display=celeste is_day=0 temp=250 code=1
+  STEP weather display=celeste is_day=0 temp=250 code=2
+  STEP weather display=celeste is_day=0 temp=250 code=3
+  STEP weather display=celeste is_day=0 temp=250 code=99
+  STEP weather display=celeste is_day=0 temp=250 code=66
+  STEP weather display=celeste is_day=0 temp=250 code=67
+  STEP weather display=celeste is_day=0 temp=250 code=77
+  STEP weather display=celeste is_day=0 temp=250 code=85
+  STEP weather display=celeste is_day=0 temp=250 code=57
+  STEP battery display=oxford charging=1 level=81
+  STEP weather display=oxford is_day=0 temp=250 code=0
+  STEP weather display=oxford is_day=0 temp=250 code=1
+  STEP weather display=oxford is_day=0 temp=250 code=2
+  STEP weather display=oxford is_day=0 temp=250 code=3
+  STEP weather display=oxford is_day=1 temp=250 code=0
+  STEP weather display=oxford is_day=1 temp=250 code=1
+  STEP weather display=oxford is_day=1 temp=250 code=2
+  STEP weather display=oxford is_day=1 temp=250 code=3
+  STEP weather display=oxford is_day=0 temp=250 code=99
+  STEP weather display=oxford is_day=0 temp=250 code=66
+  STEP weather display=oxford is_day=0 temp=250 code=67
+  STEP weather display=oxford is_day=0 temp=250 code=77
+  STEP weather display=oxford is_day=0 temp=250 code=85
+  STEP weather display=oxford is_day=0 temp=250 code=57
+  STEP battery display=white charging=1 level=81
+  STEP weather display=white is_day=0 temp=250 code=0
+  STEP weather display=white is_day=0 temp=250 code=1
+  STEP weather display=white is_day=0 temp=250 code=2
+  STEP weather display=white is_day=0 temp=250 code=3
+  STEP weather display=white is_day=1 temp=250 code=0
+  STEP weather display=white is_day=1 temp=250 code=1
+  STEP weather display=white is_day=1 temp=250 code=2
+  STEP weather display=white is_day=1 temp=250 code=3
+  STEP weather display=white is_day=0 temp=250 code=99
+  STEP weather display=white is_day=0 temp=250 code=66
+  STEP weather display=white is_day=0 temp=250 code=67
+  STEP weather display=white is_day=0 temp=250 code=77
+  STEP weather display=white is_day=0 temp=250 code=85
+  STEP weather display=white is_day=0 temp=250 code=57
+  STEP battery display=black charging=1 level=81
+  STEP weather display=black is_day=0 temp=250 code=0
+  STEP weather display=black is_day=0 temp=250 code=1
+  STEP weather display=black is_day=0 temp=250 code=2
+  STEP weather display=black is_day=0 temp=250 code=3
+  STEP weather display=black is_day=1 temp=250 code=0
+  STEP weather display=black is_day=1 temp=250 code=1
+  STEP weather display=black is_day=1 temp=250 code=2
+  STEP weather display=black is_day=1 temp=250 code=3
+  STEP weather display=black is_day=0 temp=250 code=99
+  STEP weather display=black is_day=0 temp=250 code=66
+  STEP weather display=black is_day=0 temp=250 code=67
+  STEP weather display=black is_day=0 temp=250 code=77
+  STEP weather display=black is_day=0 temp=250 code=85
+  STEP weather display=black is_day=0 temp=250 code=57
+END

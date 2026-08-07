@@ -5,5 +5,18 @@ PREAMBLE
 END
 
 EXECUTE
+  STEP weather display=black temp=539 code=0 is_day=0
+  STEP weather display=black temp=539 code=2 is_day=0
+  STEP weather display=black temp=539 code=3 is_day=0
+  STEP weather display=black temp=539 code=45 is_day=0
+  STEP weather display=black temp=539 code=51 is_day=0
+  STEP weather display=black temp=539 code=56 is_day=0
+  STEP weather display=black temp=539 code=61 is_day=0
+  STEP weather display=black temp=539 code=65 is_day=0
+  STEP weather display=black temp=539 code=66 is_day=0
+  STEP weather display=black temp=539 code=71 is_day=0
+  STEP weather display=black temp=539 code=80 is_day=0
+  STEP weather display=black temp=539 code=82 is_day=0
+  STEP weather display=black temp=539 code=85 is_day=0
   STEP weather display=black temp=539 code=95 is_day=0
 END
