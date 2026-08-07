@@ -236,13 +236,13 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
 | Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
-| Plugged In | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| Plugged In | `GColorBlack` | `GColorWhite` | `GColorDarkGreen` | `GColorGreen` | `GColorDarkGreen` | `GColorGreen` |
 | **STEPS** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
 | Approaching (`>70%` of goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
-| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorJaegerGreen` | `GColorIslamicGreen` | `GColorJaegerGreen` | `GColorIslamicGreen` |
+| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorGreen` | `GColorIslamicGreen` | `GColorGreen` | `GColorIslamicGreen` |
 | **CLIMATE** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
@@ -250,9 +250,9 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | Sun | `GColorBlack` | `GColorWhite` | `GColorWindsorTan` | `GColorChromeYellow` | `GColorWindsorTan` | `GColorChromeYellow` |
 | Cold | `GColorBlack` | `GColorWhite` | `GColorCobaltBlue` | `GColorMintGreen` | `GColorCobaltBlue` | `GColorMintGreen` |
 | Cloud | `GColorBlack` | `GColorWhite` | `GColorBlue` | `GColorElectricBlue` | `GColorBlue` | `GColorElectricBlue` |
-| Clear Ring (night) | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
+| Clear Ring (night) | `GColorLightGray` | `GColorLightGray` | `GColorLightGray` | `GColorBabyBlueEyes` | `GColorLightGray` | `GColorBabyBlueEyes` |
 | Clear Fill | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
-| **Heart-rate** |  |  |  |  |  |  |
+| **HEART-RATE BPM** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
