@@ -216,7 +216,7 @@ def print_plan(plan: PlanDefinition):
   print(f"Steps to execute: {plan.step_count}")
   print(f"Expected screenshots: {plan.expected_screenshots}")
   print("Resolved execution plan:")
-  for index, (_, step) in enumerate(plan.steps.items(), start=1):
+  for index, (step) in enumerate(plan.steps.values(), start=1):
     step_details = fill(f"{index}. Step: {asdict(step)}", width=80, subsequent_indent="  ")
     print(step_details)
 
