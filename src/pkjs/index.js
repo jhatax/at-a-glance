@@ -8,7 +8,6 @@ const STEPS_GOAL_DEFAULT = 10000;
 const STEPS_GOAL_MAX = 32000;
 
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
-const UPDATE_INTERVAL_MAX = WEATHER_UPDATE_MINUTES_DEFAULT << 4; // (15 * 16: 4-hours max)
 const MAX_LOCATION_STRING_LENGTH = 15;
 var s_updateIntervalHandle = null;
 var s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
@@ -39,10 +38,6 @@ function parseStepsGoal(rawSettings) {
   return goal;
 }
 
-function updateWeatherInterval(newInterval) {
-  s_currentUpdateInterval = newInterval;
-}
-
 // Return the default value if setting is invalid or irretrievable
 function parseWeatherUpdateMinutes(rawSettings) {
   var toreturn = rawSettings
@@ -56,17 +51,17 @@ function applyWeatherUpdateMinutes(minutes) {
   if (isNaN(minutes)) {
     // Reset only if needed.
     if (s_currentUpdateInterval != WEATHER_UPDATE_MINUTES_DEFAULT) {
+      s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
       shouldUpdateRefreshSchedule = true;
-      updateWeatherInterval(WEATHER_UPDATE_MINUTES_DEFAULT);
     }
   } else {
     // If the current s_weatherUpdateInterval is not the same as the input
     // to which the interval is going to be set, let's update the refresh schedule.
     if (s_currentUpdateInterval != minutes) {
       // Is the input from user within the accepted range?
-      if (minutes > 0 && minutes <= UPDATE_INTERVAL_MAX) {
+      if (minutes > 0) {
+        s_currentUpdateInterval = minutes;
         shouldUpdateRefreshSchedule = true;
-        updateWeatherInterval(minutes);
       }
     }
   }
@@ -260,6 +255,7 @@ function updateWeatherAndLocation() {
     sendWeatherUnavailable('geolocation unavailable');
     sendLocationToWatch('');
   }
+  scheduleUpdates();
 }
 
 function scheduleUpdates() {
@@ -272,5 +268,4 @@ function scheduleUpdates() {
 
 Pebble.addEventListener('ready', function () {
   updateWeatherAndLocation();
-  scheduleUpdates();
 });
