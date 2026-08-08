@@ -1,6 +1,3 @@
-#include <pebble.h>
-#include <resource_ids.auto.h>
-
 #include "glyph_lab_glyphs.h"
 #include "glyph_lab_helper.h"
 
@@ -43,7 +40,7 @@ static const ClimatePageTemplate GLYPH_PAGE_TEMPLATES[] = {
             {
                 {"CLEAR D", 0, true},
                 {"CLEAR N", 0, false},
-                {"PARTLY D", 2, true},
+                {"PARTLY CLOUDY", 2, true},
                 {"CLOUD", 3, false},
             },
     },
@@ -74,7 +71,17 @@ static const ClimatePageTemplate GLYPH_PAGE_TEMPLATES[] = {
                 {"SHOWERS", 80, false},
                 {"HEAVY SH", 82, false},
                 {"STORM", 95, false},
-                {"UNAVAIL", -1, false},
+                {"OUT OF RANGE", -1, false},
+            },
+    },
+    {
+        .title = "TROUBLE MAKERS",
+        .cells =
+            {
+                {"PARTLY CLOUDY", 2, false},
+                {"SLEET H", 66, false},
+                {"SNOW", 71, false},
+                {"SNOW SH", 85, false},
             },
     },
 };
