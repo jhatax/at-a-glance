@@ -127,22 +127,6 @@ void substratum_renderer_create_subframe(
   out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, WATCHFACE_ICON_GRID_HEIGHT);
 }
 
-void substratum_renderer_draw_scaled_line(
-    GContext* ctx,
-    const GSize* size,
-    int16_t x0,
-    int16_t y0,
-    int16_t x1,
-    int16_t y1) {
-  if (!ctx || !size) {
-    return;
-  }
-
-  graphics_draw_line(ctx,
-      substratum_renderer_scale_icon_point(size, x0, y0),
-      substratum_renderer_scale_icon_point(size, x1, y1));
-}
-
 void substratum_renderer_draw_scaled_line_in_frame(
     GContext* ctx,
     const GRect* frame,
@@ -264,12 +248,12 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   path = NULL;
 }
 
-void substratum_renderer_draw_unavailable_slash(
+void substratum_renderer_mark_info_outofrange(
     GContext* ctx,
-    const GSize* size,
+    const GRect* frame,
     GColor color,
     GColor background) {
-  if (!ctx || !size) {
+  if (!ctx || !frame) {
     return;
   }
 
@@ -278,11 +262,11 @@ void substratum_renderer_draw_unavailable_slash(
   // does not drift between modules. Stroke-width set to 2.
   graphics_context_set_stroke_color(ctx, background);
   graphics_context_set_stroke_width(ctx, 2);
-  substratum_renderer_draw_scaled_line(ctx, size, 1, 1, 26, 26);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 1, 1, 26, 26);
   graphics_context_set_stroke_color(ctx, color);
-  substratum_renderer_draw_scaled_line(ctx, size, 1, 1, 6, 6);
-  substratum_renderer_draw_scaled_line(ctx, size, 11, 11, 16, 16);
-  substratum_renderer_draw_scaled_line(ctx, size, 21, 21, 26, 26);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 1, 1, 6, 6);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 11, 11, 16, 16);
+  substratum_renderer_draw_scaled_line_in_frame(ctx, frame, 21, 21, 26, 26);
 }
 
 // Module creation and lookup-helpers

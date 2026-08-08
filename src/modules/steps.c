@@ -132,8 +132,8 @@ static void steps_icon_update_proc(
 
   if (!s_steps_is_available) {
     // Send background color as well as outofrange color
-    substratum_renderer_draw_unavailable_slash(ctx,
-        &bounds.size,
+    substratum_renderer_mark_info_outofrange(ctx,
+        &bounds,
         s_steps_palette.outofrange,
         s_steps_palette.background);
   }

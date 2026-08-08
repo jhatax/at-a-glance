@@ -597,8 +597,8 @@ static void draw_weather_unavailable_icon(
     return;
   }
   draw_weather_cloud(ctx, frame, climate_palette, WEATHER_ICON_OUTOFRANGE);
-  substratum_renderer_draw_unavailable_slash(ctx,
-      &frame->size,
+  substratum_renderer_mark_info_outofrange(ctx,
+      frame,
       climate_palette->outofrange,
       climate_palette->background);
 }
