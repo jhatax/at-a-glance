@@ -101,7 +101,7 @@ static void battery_track_update_proc(
 
   // Now draw the outline of the battery's track.
   graphics_context_set_stroke_color(ctx, fill_color);
-  graphics_draw_rect(ctx, bounds);
+  graphics_draw_round_rect(ctx, bounds, 2);
 
   // Now fill the inside of the track up to the charge width.
   graphics_context_set_fill_color(ctx, fill_color);
