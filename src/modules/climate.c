@@ -51,18 +51,18 @@ static void climate_module_set_condition(int weather_condition);
 
 static const ClimatePalette c_dark_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
-    .cold = PBL_IF_COLOR_ELSE(GColorMintGreen, GColorWhite),
+    .cold = GColorWhite,
     .cloud = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite),
     .clear_ring = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorLightGray),
-    .clear_fill = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorLightGray),
+    .clear_fill = PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorDarkGray),
 };
 
 static const ClimatePalette c_light_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorWindsorTan, GColorBlack),
-    .cold = PBL_IF_COLOR_ELSE(GColorVividCerulean, GColorBlack),
+    .cold = GColorDarkGray,
     .cloud = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack),
-    .clear_ring = GColorLightGray,
-    .clear_fill = GColorDarkGray,
+    .clear_ring = GColorDarkGray,
+    .clear_fill = GColorLightGray,
 };
 
 static void climate_module_update_palette(
