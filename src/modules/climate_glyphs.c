@@ -589,7 +589,7 @@ static void draw_weather_showers_icon(
   draw_weather_rain_marks(ctx, &sub_frame, color, heavy);
 }
 
-static void draw_weather_unavailable_icon(
+static void draw_weather_condition_outofrange_icon(
     GContext* ctx,
     const GRect* frame,
     const ClimatePalette* climate_palette) {
@@ -727,7 +727,7 @@ void draw_climate_icon(
           weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, climate_palette));
       break;
     case WEATHER_ICON_OUTOFRANGE:
-      draw_weather_unavailable_icon(ctx, frame, climate_palette);
+      draw_weather_condition_outofrange_icon(ctx, frame, climate_palette);
       break;
   }
 }
