@@ -8,6 +8,7 @@ typedef enum {
 } GlyphDesignInputs;
 
 typedef struct {
+  bool is_light_mode;
   GColor background;
   GColor background_layer_background;
   GColor background_layer_rule;

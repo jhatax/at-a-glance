@@ -1,45 +1,92 @@
 #include "glyph_lab_helper.h"
 
-bool helper_color_equal(GColor first, GColor second) { return first.argb == second.argb; }
-
-static int helper_get_colors_in_bitmap(GBitmap *bmp) {
-  if (!bmp) {
-    return 0;
+bool helper_tuple_to_int(
+    Tuple* tuple,
+    int* value) {
+  if (!tuple || !value) {
+    return false;
   }
 
-  switch (gbitmap_get_format(bmp)) {
-  case GBitmapFormat1BitPalette:
-    return 2;
-  case GBitmapFormat2BitPalette:
-    return 4;
-  case GBitmapFormat4BitPalette:
-    return 16;
-  default:
-    return 0;
+  switch (tuple->type) {
+    case TUPLE_INT:
+      *value = (int)tuple->value->int32;
+      return true;
+
+    case TUPLE_CSTRING: {
+      const char* text = tuple->value->cstring;
+      int parsed = 0;
+      if (!text || text[0] == '\0') {
+        return false;
+      }
+      for (const char* p = text; *p; ++p) {
+        if (*p < '0' || *p > '9') {
+          return false;
+        }
+        int digit = *p - '0';
+        if (parsed > (INT16_MAX - digit) / 10) {
+          return false;
+        }
+        parsed = (parsed * 10) + digit;
+      }
+      *value = parsed;
+      return true;
+    }
+
+    default:
+      return false;
   }
 }
 
-bool helper_replace_color_in_bitmap(GBitmap *bmp, GColor original_color, GColor new_color) {
+static int helper_get_colors_in_bmp(
+    GBitmap* bmp) {
   if (!bmp) {
-    return false;
+    return 0;
   }
 
-  int colors_in_bitmap = helper_get_colors_in_bitmap(bmp);
-  if (colors_in_bitmap == 0) {
-    return false;
+  // Bitmap palette mutation only works for palettized PNG resources.
+  switch (gbitmap_get_format(bmp)) {
+    case GBitmapFormat1BitPalette:
+      return 2;
+      break;
+    case GBitmapFormat2BitPalette:
+      return 4;
+      break;
+    case GBitmapFormat4BitPalette:
+      return 16;
+      break;
+    default:
+      return 0;  // PNG isn't palettized
+  }
+}
+
+bool helper_replace_color_in_bitmap(
+    GBitmap* bmp,
+    GColor originalColor,
+    GColor newColor) {
+  bool replaced = false;
+  if (!bmp) {
+    return replaced;
   }
 
-  GColor *palette = gbitmap_get_palette(bmp);
+  // 1. Determine the exact palette size mathematically based on the format
+  int num_colors = helper_get_colors_in_bmp(bmp);
+  if (num_colors == 0) {
+    return replaced;
+  }
+
+  GColor* palette = gbitmap_get_palette(bmp);
   if (!palette) {
-    return false;
+    return replaced;
   }
 
-  for (int i = 0; i < colors_in_bitmap; ++i) {
-    if (helper_color_equal(palette[i], original_color)) {
-      palette[i] = new_color;
-      return true;
+  // 2. Loop through the calculated palette allocation block
+  for (uint8_t i = 0; i < num_colors; ++i) {
+    if (HELPER_COLOR_EQUAL(palette[i], originalColor)) {
+      palette[i] = newColor;
+      replaced = true;
+      break;
     }
   }
 
-  return false;
+  return replaced;
 }
