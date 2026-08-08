@@ -154,26 +154,25 @@ static void draw_weather_cloud(
   // Cloud contract: three lobes plus a shared body fill, tuned for compact
   // displays so the silhouette reads as one cloud instead of three circles
   // with a heavy lower-right bias after scaling.
-  const int16_t left_cloud_center_x = 7;
+  const int16_t left_cloud_center_x = 6;
   const int16_t left_cloud_center_y = 18;
-  const int16_t left_cloud_radius = 4;
-  const int16_t center_cloud_center_x = 14;
-  const int16_t center_cloud_center_y = 12;
-  const int16_t center_cloud_radius = 6;
-  const int16_t right_cloud_center_x = 20;
-  const int16_t right_cloud_center_y = left_cloud_center_y;
+  const int16_t left_cloud_radius = 5;
+  const int16_t center_cloud_center_x = 15;
+  const int16_t center_cloud_center_y = 15;
+  const int16_t center_cloud_radius = 8;
+  const int16_t right_cloud_center_x = 21;
+  const int16_t right_cloud_center_y = left_cloud_center_y + 1;
   const int16_t right_cloud_radius = left_cloud_radius;
-  const int16_t cloud_fill_left = 1;
-  const int16_t cloud_fill_top = 20;
-  const int16_t cloud_fill_right = 23;
-  const int16_t cloud_fill_bottom = 24;
+  const int16_t cloud_fill_left = 5;
+  const int16_t cloud_fill_top = 23;
+  const int16_t cloud_fill_right = 22;
+  const int16_t cloud_fill_bottom = 26;
   GColor color = weather_color_for_kind(icon_kind, climate_palette);
 
   graphics_context_set_stroke_color(ctx, color);
 
   int stroke_width =
       SUBSTRATUM_RENDERER_ICON_STROKE_WIDTH(HELPER_MIN(frame->size.w, frame->size.h), 3);
-  int offset = HELPER_CLAMP_MIN(HELPER_ROUND_UP(stroke_width, 2), 1);
 
   graphics_context_set_stroke_width(ctx, stroke_width);
 
@@ -200,19 +199,19 @@ static void draw_weather_cloud(
       frame,
       left_cloud_center_x,
       left_cloud_center_y,
-      left_cloud_radius - offset);
+      left_cloud_radius - 1);
 
   substratum_renderer_fill_scaled_circle_in_frame(ctx,
       frame,
       center_cloud_center_x,
       center_cloud_center_y,
-      center_cloud_radius - offset);
+      center_cloud_radius - 1);
 
   substratum_renderer_fill_scaled_circle_in_frame(ctx,
       frame,
       right_cloud_center_x,
       right_cloud_center_y,
-      right_cloud_radius - offset);
+      right_cloud_radius - 1);
 
   substratum_renderer_fill_scaled_rect_from_corners_in_frame(ctx,
       frame,
@@ -222,6 +221,13 @@ static void draw_weather_cloud(
       cloud_fill_bottom);
 
   graphics_context_set_fill_color(ctx, color);
+  graphics_context_set_stroke_width(ctx, 1);
+  substratum_renderer_draw_scaled_line_in_frame(ctx,
+      frame,
+      center_cloud_center_x,
+      left_cloud_center_y,
+      right_cloud_center_x,
+      left_cloud_center_y);
   substratum_renderer_fill_scaled_rect_from_corners_in_frame(ctx,
       frame,
       cloud_fill_left,
