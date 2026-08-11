@@ -178,6 +178,10 @@ static void apply_subscribed_service_updates(
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_BATTERY);
   }
 
+  if (data->parsed & WATCHFACE_DATA_BLUETOOTH) {
+    *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_BLUETOOTH);
+  }
+
 #ifdef PBL_HEALTH
   if (data->parsed & WATCHFACE_DATA_HEALTH_EVENT) {
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
@@ -225,6 +229,7 @@ static void apply_oneshot_health_data(
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
   }
 }
+
 #endif
 
 void watchface_apply_received_data(
