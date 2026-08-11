@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ctypes import cast
 from pathlib import Path
 from typing import Final
 import unittest
@@ -8,10 +9,11 @@ from qaharnessruntime import QARunContext, QAStepContext, ScreenshotsContext
 from qaplangrammar import ParsedScenario, ParsedSuite, QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
 from ataglanceharness import handle_validate_plan
-from qaplanresolver import load_and_validate_plan
+from qaplanresolver import LocationStep, load_and_validate_plan
 
-QA_ROOT: Final = Path(__file__).resolve().parent
+QA_ROOT: Final = Path(__file__).resolve().parents[3] / "qa"
 PLANS_ROOT: Final = QA_ROOT / "plans"
+FIXTURES_ROOT: Final = Path(__file__).resolve().parent / "fixtures"
 
 
 class HarnessCorrectnessTests(unittest.TestCase):
@@ -43,7 +45,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
     plan = load_and_validate_plan("canary", PLANS_ROOT)
     self.assertEqual(plan.name, "canary")
     self.assertEqual(len(plan.steps), 1)
-    _, step = next(iter(plan.steps.items()))
+    step = next(iter(plan.steps.values()))
     self.assertFalse(step.capture_screenshots)
     self.assertEqual(step.expected_screenshots, 0)
     self.assertEqual(step.captured_screenshots, 0)
@@ -51,14 +53,16 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(plan.captured_screenshots, 0)
 
   def test_location_scenario_loads_and_expands(self) -> None:
-    location_plan = (
-        Path(__file__).resolve().parents[3] / "qa" / "plans" / "emery-location.scenario"
-    )
+    location_plan = (PLANS_ROOT / "emery-location.scenario")
     plan = load_and_validate_plan(str(location_plan))
     self.assertEqual(len(plan.steps), 6)
-    self.assertEqual([step.capability for step in plan.steps.values()], ["location"] * 6)
+    locations: list[str] = []
+    for step in plan.steps.values():
+      self.assertEqual(step.capability, "location")
+      self.assertTrue(isinstance(step, LocationStep))
+      locations.append(step.location)
     self.assertEqual(
-        [step.location for step in plan.steps.values()], [
+        locations, [
             "LÀs-_ÿegasÿ",
             "LÀs-_ÿegasÿÅÉÑØ",
             "Oakland",
@@ -76,30 +80,25 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(plan.path, path)
 
   def test_named_suite_loads_and_expands(self) -> None:
-    plan = load_and_validate_plan("qa-emery", PLANS_ROOT)
-    self.assertEqual(plan.name, "qa-emery")
-    self.assertEqual(len(plan.steps), 14)
+    plan = load_and_validate_plan("qa-smoke", PLANS_ROOT)
+    self.assertEqual(plan.name, "qa-smoke")
+    self.assertEqual(len(plan.steps), 9)
     self.assertEqual(
         [step.capability for step in plan.steps.values()],
         [
-            "weather",
-            "battery",
-            "battery",
-            "battery",
-            "battery",
-            "battery",
-            "battery",
-            "health",
-            "location",
-            "location",
-            "location",
-            "location",
+            "all",
+            "all",
+            "all",
+            "all",
+            "all",
+            "all",
+            "all",
             "all",
             "all",
         ],
     )
     self.assertTrue(all(step.capture_screenshots for step in plan.steps.values()))
-    self.assertEqual(plan.expected_screenshots, 14)
+    self.assertEqual(plan.expected_screenshots, 9)
     self.assertEqual(plan.captured_screenshots, 0)
     _, first_step = next(iter(plan.steps.items()))
     first_step.captured_screenshots = 1
@@ -111,27 +110,27 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(plan.path, path)
 
   def test_unknown_step_field_is_rejected(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-scenarios" / "unknown-option.scenario"
+    path = FIXTURES_ROOT / "invalid-scenarios" / "unknown-option.scenario"
     with self.assertRaisesRegex(ValueError, "Unsupported STEP weather field"):
       handle_validate_plan(str(path))
 
   def test_suite_include_cycle_is_rejected(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-scenarios" / "include-cycle-a.suite"
+    path = FIXTURES_ROOT / "invalid-scenarios" / "include-cycle-a.suite"
     with self.assertRaisesRegex(ValueError, "INCLUDE cycle"):
       load_and_validate_plan(str(path), path.parent)
 
   def test_unsupported_emulator_is_rejected(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-scenarios" / "unsupported-emulator.scenario"
+    path = FIXTURES_ROOT / "invalid-scenarios" / "unsupported-emulator.scenario"
     with self.assertRaisesRegex(ValueError, "Unsupported emulator"):
       handle_validate_plan(str(path))
 
   def test_unsupported_display_mode_is_rejected(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-scenarios" / "unsupported-display.scenario"
+    path = FIXTURES_ROOT / "invalid-scenarios" / "unsupported-display.scenario"
     with self.assertRaisesRegex(ValueError, "Unsupported display-mode"):
       handle_validate_plan(str(path))
 
   def test_color_display_mode_is_rejected_on_monochrome_emulator(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-scenarios" / "color-display-on-monochrome.scenario"
+    path = FIXTURES_ROOT / "invalid-scenarios" / "color-display-on-monochrome.scenario"
     with self.assertRaisesRegex(ValueError, "unsupported on emulator 'flint'"):
       handle_validate_plan(str(path))
 
@@ -295,17 +294,17 @@ class HarnessCorrectnessTests(unittest.TestCase):
       QARunContext.from_dict(report)
 
   def test_report_rejects_missing_required_resolved_context(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-reports" / "missing-resolved.json"
+    path = FIXTURES_ROOT / "invalid-reports" / "missing-resolved.json"
     with self.assertRaisesRegex(ValueError, "resolved"):
       QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
   def test_report_rejects_invalid_screenshot_count(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-reports" / "invalid-screenshot-count.json"
+    path = FIXTURES_ROOT / "invalid-reports" / "invalid-screenshot-count.json"
     with self.assertRaisesRegex(ValueError, "Captured screenshots mismatch"):
       QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
   def test_report_rejects_unknown_capability(self) -> None:
-    path = QA_ROOT / "fixtures" / "invalid-reports" / "unknown-capability.json"
+    path = FIXTURES_ROOT / "invalid-reports" / "unknown-capability.json"
     with self.assertRaisesRegex(ValueError, "Invalid capability"):
       QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
