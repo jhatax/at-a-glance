@@ -24,6 +24,10 @@ typedef struct {
 
 typedef struct {
   WatchfaceIconSubstratum icon;
+} WatchfaceIconStratum;
+
+typedef struct {
+  WatchfaceIconSubstratum icon;
   WatchfaceTextSubstratum text;
 } WatchfaceTextWithIconStratum;
 
@@ -57,4 +61,5 @@ typedef struct {
   WatchfaceBatteryStratum battery;
   WatchfaceTextWithIconStratum climate;
   WatchfaceTextStratum location;
+  WatchfaceIconStratum bt_icon;
 } WatchfaceSurface;
