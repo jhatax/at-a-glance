@@ -7,6 +7,7 @@ from qaharnessruntime import HarnessRuntimeContext, StepResult, finalize
 from qaplanresolver import (
     AllForOneStep,
     BatteryStep,
+    BluetoothStep,
     HealthStep,
     LocationStep,
     PlanDefinition,
@@ -71,7 +72,7 @@ def _capture_screenshot(
 
 def _run_weather_step(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, WeatherStep):
-    raise ValueError(f"Invalid weather-step: '{asdict(step)}'")
+    raise ValueError(f"Invalid weather-step: '{step}'")
   state.pebble.send_app_message(
       step.emulator, {
           QA_MSG_TEMPERATURE: step.temp,
@@ -88,7 +89,7 @@ def _run_weather_step(state: ExecutionState, step: Any, result: StepResult) -> N
 
 def _run_location_step(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, LocationStep):
-    raise ValueError(f"Invalid location-step: '{asdict(step)}'")
+    raise ValueError(f"Invalid location-step: '{step}'")
   state.pebble.send_app_message(
       step.emulator, {
           QA_MSG_MAYBE_CURRENT_LOCATION: step.location,
@@ -102,7 +103,7 @@ def _run_location_step(state: ExecutionState, step: Any, result: StepResult) -> 
 
 def _run_battery_step(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, BatteryStep):
-    raise ValueError(f"Invalid battery-step: '{asdict(step)}'")
+    raise ValueError(f"Invalid battery-step: '{step}'")
   if step.display:
     state.pebble.send_app_message(
         step.emulator,
@@ -117,9 +118,27 @@ def _run_battery_step(state: ExecutionState, step: Any, result: StepResult) -> N
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
 
 
+def _run_bluetooth_step(state: ExecutionState, step: Any, result: StepResult) -> None:
+  if not isinstance(step, BluetoothStep):
+    raise ValueError(f"Invalid bluetooth-step: '{step}'")
+  if step.display:
+    state.pebble.send_app_message(
+        step.emulator,
+        {
+            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
+        },
+    )
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
+  state.pebble.set_bluetooth(step.emulator, step.connected)
+  time.sleep(8)
+  if step.capture_screenshots:
+    _capture_screenshot(state, result, step.emulator)
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
+
+
 def _run_health_step(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, HealthStep):
-    raise ValueError(f"Invalid health-step: '{asdict(step)}'")
+    raise ValueError(f"Invalid health-step: '{step}'")
   state.pebble.send_app_message(
       step.emulator, {
           QA_MSG_ONESHOT_BPM: step.bpm,
@@ -127,6 +146,7 @@ def _run_health_step(state: ExecutionState, step: Any, result: StepResult) -> No
           QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
       }
   )
+  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
   if step.capture_screenshots:
     _capture_screenshot(state, result, step.emulator)
   time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
@@ -134,7 +154,7 @@ def _run_health_step(state: ExecutionState, step: Any, result: StepResult) -> No
 
 def _set_them_all(state: ExecutionState, step: Any, result: StepResult) -> None:
   if not isinstance(step, AllForOneStep):
-    raise ValueError(f"Invalid step: '{asdict(step)}'")
+    raise ValueError(f"Invalid step: '{step}'")
   state.pebble.send_app_message(
       step.emulator, {
           QA_MSG_ONESHOT_BPM: step.bpm,
@@ -176,6 +196,9 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
       case "health":
         _run_health_step(state, step, result)
 
+      case "bluetooth":
+        _run_bluetooth_step(state, step, result)
+
       case "all":
         _set_them_all(state, step, result)
 
@@ -206,7 +229,7 @@ def run_plan_execution(plan: PlanDefinition) -> int:
 
   divider = "=" * 80
   try:
-    state.inform_operator(f"QA Plan to execute:\n{asdict(plan)}\n", True)
+    state.inform_operator(f"QA Plan to execute:\n{plan.as_dict()}\n", True)
     from qaharnessconfig import REPO_ROOT
     pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
     state.pebble.install_emulators(plan.emulators, pbw_path)
