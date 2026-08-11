@@ -7,7 +7,9 @@ const STEPS_GOAL_MIN = 4000;
 const STEPS_GOAL_DEFAULT = 10000;
 const STEPS_GOAL_MAX = 32000;
 
-const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+const WEATHER_UPDATE_MINUTES_DEFAULT = 15; // 15-minutes
+const REQUEST_TIMEOUT = 2 * 60 * 1000; //2-minutes
+const GEO_REQUEST_AGE = 30 * 60 * 1000; // 30-minutes
 const MAX_LOCATION_STRING_LENGTH = 15;
 var s_updateIntervalHandle = null;
 var s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
@@ -61,8 +63,8 @@ function applyWeatherUpdateMinutes(minutes) {
       // Is the input from user within the accepted range?
       if (minutes > 0) {
         s_currentUpdateInterval = minutes;
-        shouldUpdateRefreshSchedule = true;
       }
+      shouldUpdateRefreshSchedule = true;
     }
   }
 
@@ -130,21 +132,6 @@ function sendWeather(celsius, weatherCode, isDay) {
   );
 }
 
-function sendWeatherUnavailable(reason) {
-  console.log('AtAGlance: Weather unavailable: ' + reason);
-  Pebble.sendAppMessage(
-    {
-      TEMPERATURE: WEATHER_TEMP_INVALID,
-      WEATHER_CONDITION: WEATHER_CONDITION_UNKNOWN,
-      IS_DAY: 0,
-    },
-    null,
-    function (e) {
-      console.log('AtAGlance: Weather unavailable send failed: ' + e.error);
-    }
-  );
-}
-
 function updateIntervalMs() {
   return s_currentUpdateInterval * 60 * 1000;
 }
@@ -162,32 +149,25 @@ function fetchLocation(lat, lon) {
   xhr.open('GET', url);
   // Nominatim requires a valid, unique User-Agent header
   xhr.setRequestHeader('User-Agent', 'PebbleWatchFace-AtAGlance');
-  xhr.timeout = updateIntervalMs();
-
-  xhr.ontimeout = function () {
-    console.log('Network request timed out.');
-    Pebble.sendAppMessage({ MAYBE_CURRENT_LOCATION: '' });
-  };
-
-  xhr.onerror = function () {
-    console.log('Network request encountered an error.');
-    Pebble.sendAppMessage({ MAYBE_CURRENT_LOCATION: '' });
-  };
+  xhr.timeout = REQUEST_TIMEOUT;
 
   xhr.onload = function () {
-    var city = '';
     try {
       if (xhr.readyState === 4 && xhr.status === 200) {
         var response = JSON.parse(xhr.responseText);
 
-        city = (response.address.city || response.address.town || response.address.village || 'GPS')
+        var city = (
+          response.address.city ||
+          response.address.town ||
+          response.address.village ||
+          'GPS'
+        )
           .slice(0, MAX_LOCATION_STRING_LENGTH)
           .toUpperCase();
+        sendLocationToWatch(city);
       }
     } catch (e) {
-      city = '';
-    } finally {
-      sendLocationToWatch(city);
+      console.log('Location fetch error: ' + e.message);
     }
   };
   xhr.send();
@@ -203,7 +183,7 @@ function fetchWeather(lat, lon) {
 
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
-  xhr.timeout = updateIntervalMs();
+  xhr.timeout = REQUEST_TIMEOUT;
   xhr.onload = function () {
     if (xhr.readyState === 4 && xhr.status === 200) {
       try {
@@ -219,23 +199,13 @@ function fetchWeather(lat, lon) {
             data.current.weather_code,
             data.current.is_day === 1
           );
-        } else {
-          sendWeatherUnavailable('malformed response');
         }
       } catch (e) {
-        sendWeatherUnavailable('parse error');
+        console.log('Weather fetch error: ' + e.message);
       }
-    } else if (xhr.readyState === 4) {
-      sendWeatherUnavailable('request status ' + xhr.status);
     }
   };
-  xhr.onerror = function () {
-    sendWeatherUnavailable('request failed');
-  };
-  xhr.ontimeout = function () {
-    sendWeatherUnavailable('request timed out');
-  };
-  xhr.send(null);
+  xhr.send();
 }
 
 function updateWeatherAndLocation() {
@@ -245,17 +215,12 @@ function updateWeatherAndLocation() {
         fetchWeather(pos.coords.latitude, pos.coords.longitude);
         fetchLocation(pos.coords.latitude, pos.coords.longitude);
       },
-      function () {
-        sendWeatherUnavailable('geolocation unavailable');
-        sendLocationToWatch('');
+      function (err) {
+        console.log('Geolocation error: ' + err.message);
       },
-      { timeout: updateIntervalMs(), maximumAge: updateIntervalMs() }
+      { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
     );
-  } else {
-    sendWeatherUnavailable('geolocation unavailable');
-    sendLocationToWatch('');
   }
-  scheduleUpdates();
 }
 
 function scheduleUpdates() {
@@ -268,4 +233,5 @@ function scheduleUpdates() {
 
 Pebble.addEventListener('ready', function () {
   updateWeatherAndLocation();
+  scheduleUpdates();
 });
