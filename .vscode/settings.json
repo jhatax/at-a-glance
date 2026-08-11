@@ -4,12 +4,13 @@
   "editor.formatOnSave": true,
   "editor.formatOnType": false,
   "editor.fontSize": 14,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
   "editor.wordWrap": "wordWrapColumn",
   "editor.defaultFormatter": null,
   "editor.wordWrapColumn": 100,
   "files.autoSave": "onFocusChange",
   "editor.mouseWheelZoom": false,
-  "editor.tabSize": 2,
   "[python]": {
     "editor.defaultFormatter": "eeyore.yapf",
     "editor.formatOnSave": true
@@ -31,8 +32,7 @@
   },
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.tabSize": 2
+    "editor.formatOnSave": true
   },
   "shellformat.flag": "-i=2 -ci",
   "accessibility.signals.chatResponseReceived": {
