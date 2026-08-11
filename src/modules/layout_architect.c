@@ -194,11 +194,17 @@ static void architect_calculate_must_have_layout_from_blueprint(
   current_row_y += blueprint->time_text_height;
 
   // Battery Band's width
-  module_w = HELPER_ROUND_UP((face_width * DESIGN_BATTERY_BAR_WIDTH_PERCENT), 100);
+  module_w = (face_width * DESIGN_BATTERY_BAR_WIDTH_PERCENT) / 100;
 
   // Center the module horizontally (centered regardless of charging bolt
   // visibility)
   module_x = (face_width - module_w) >> 1;
+
+  // The BT icon is at the same Y coordinate as the battery band
+  computed->bt_icon = GRect(module_x - DESIGN_BT_ICON_DIMS,
+      current_row_y,
+      DESIGN_BT_ICON_DIMS,
+      DESIGN_BT_ICON_DIMS);
 
   // Y2: Y1 + 1/2 (height_band - height_track)
   module_y = current_row_y + ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_TRACK_HEIGHT) >> 1);
@@ -211,7 +217,7 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Add the bolt relative to the top of the BATTERY BAND
   module_y = current_row_y + ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_BOLT_HEIGHT) >> 1);
-  module_x += module_w + icon_text_gap;
+  module_x += module_w;
   module_w = DESIGN_BATTERY_BOLT_WIDTH;
   computed->battery.bolt = GRect(module_x, module_y, module_w, DESIGN_BATTERY_BOLT_HEIGHT);
 
@@ -250,11 +256,6 @@ static void architect_calculate_must_have_layout_from_blueprint(
       current_row_y - 1,
       computed->battery.track.size.w,
       blueprint->location_text_height);
-  // The BT icon is at the same Y coordinate as the location text
-  computed->bt_icon = GRect(computed->climate.icon.origin.x + ((icon_w - DESIGN_BT_ICON_DIMS) >> 1),
-      current_row_y,
-      DESIGN_BT_ICON_DIMS,
-      DESIGN_BT_ICON_DIMS);
 }
 
 static void architect_apply_calculated_layout_to_watchface(
