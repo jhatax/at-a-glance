@@ -63,6 +63,7 @@ def _step_cell(step: QAStepContext | None) -> str:
   if not step:
     return "missing step"
   lines = [
+      f"Result: **{step.status.upper()}**",
       f"Emulator: {step.emulator or 'none'}",
   ]
   lines.extend(f"{key}: {value}" for key, value in step.step_args.items())
