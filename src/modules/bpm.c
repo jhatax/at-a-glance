@@ -105,20 +105,23 @@ static void bpm_icon_update_proc(
   graphics_context_set_fill_color(ctx, s_bpm_palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  if (s_bpm_bitmap && !HELPER_COLOR_EQUAL(s_bpm_icon_color, s_bpm_color)) {
-    if (helper_replace_color_in_bitmap(s_bpm_bitmap, s_bpm_icon_color, s_bpm_color)) {
-      s_bpm_icon_color = s_bpm_color;
+  // Bitmap can be optional; text is primary information source
+  if (s_bpm_bitmap) {
+    if (!HELPER_COLOR_EQUAL(s_bpm_icon_color, s_bpm_color)) {
+      if (helper_replace_color_in_bitmap(s_bpm_bitmap, s_bpm_icon_color, s_bpm_color)) {
+        s_bpm_icon_color = s_bpm_color;
+      }
     }
-  }
 
-  graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
 
-  if (!s_bpm_is_valid) {
-    substratum_renderer_mark_info_outofrange(ctx,
-        &bounds,
-        s_bpm_palette.outofrange,
-        s_bpm_palette.background);
+    if (!s_bpm_is_valid) {
+      substratum_renderer_mark_info_outofrange(ctx,
+          &bounds,
+          s_bpm_palette.outofrange,
+          s_bpm_palette.background);
+    }
   }
 }
 
@@ -195,9 +198,7 @@ bool bpm_module_create(
   s_bpm_color = gcolor_legible_over(s_bpm_icon_color);
 
   if (icon) {
-    uint32_t resource_id = 0;
-    resource_id = RESOURCE_ID_ECG;
-    s_bpm_bitmap = gbitmap_create_with_resource(resource_id);
+    s_bpm_bitmap = gbitmap_create_with_resource(RESOURCE_ID_ECG);
 
     if (s_bpm_bitmap) {
       s_bpm_icon_layer = substratum_renderer_create_icon_layer(root, icon, bpm_icon_update_proc);
