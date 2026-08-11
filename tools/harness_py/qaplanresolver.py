@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import fill
 from typing import Final, Any
@@ -32,6 +32,12 @@ class PlanDefinition:
   def step_count(self) -> int:
     return self._step_count
 
+  def as_dict(self) -> dict[str, Any]:
+    from dataclasses import asdict
+    d = asdict(self)
+    d["path"] = str(self.path)
+    return d
+
 
 @dataclass
 class PlanStep(ABC):
@@ -54,12 +60,12 @@ class WeatherStep(PlanStep):
   temp: int = INVALID_TEMPERATURE
   code: int = INVALID_CLIMATE_VALUE
   is_day: int = INVALID_CLIMATE_VALUE
-  capability: str = field(default="weather")
+  capability: str = field(default="weather", init=False)
 
   def __post_init__(self) -> None:
     if (not all([self.capability, self.emulator])) or (self.temp == INVALID_TEMPERATURE) \
         or (self.code == INVALID_CLIMATE_VALUE) or (self.is_day == INVALID_CLIMATE_VALUE):
-      raise ValueError("All fields must have a valid, non-empty value")
+      raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
 
     self._step_id = "_".join(
         filter(
@@ -83,11 +89,11 @@ class WeatherStep(PlanStep):
 @dataclass
 class LocationStep(PlanStep):
   location: str = ""
-  capability: str = field(default="location")
+  capability: str = field(default="location", init=False)
 
   def __post_init__(self) -> None:
     if (not all([self.capability, self.emulator, self.location])):
-      raise ValueError("All fields must have a valid, non-empty value")
+      raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
 
     self._step_id = "_".join(
         filter(
@@ -107,10 +113,36 @@ class LocationStep(PlanStep):
 
 
 @dataclass
+class BluetoothStep(PlanStep):
+  connected: int = -1
+  capability: str = field(default="bluetooth", init=False)
+
+  def __post_init__(self) -> None:
+    if not (all([self.capability, self.emulator]) and (0 <= self.connected <= 1)):
+      raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
+
+    self._step_id = "_".join(
+        filter(
+            None, [
+                self.capability,
+                self.emulator,
+                self.display,
+                str(self.connected),
+                "shots" if self.capture_screenshots else "",
+            ]
+        )
+    ).lower()
+
+  @property
+  def step_id(self) -> str:
+    return self._step_id
+
+
+@dataclass
 class BatteryStep(PlanStep):
   level: int = INVALID_BATTERY_INPUT
   charging: int = INVALID_BATTERY_INPUT
-  capability: str = field(default="battery")
+  capability: str = field(default="battery", init=False)
 
   def __post_init__(self) -> None:
     if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)):
@@ -140,7 +172,7 @@ class BatteryStep(PlanStep):
 class HealthStep(PlanStep):
   bpm: int = INVALID_HEALTH_METRIC
   steps: int = INVALID_HEALTH_METRIC
-  capability: str = field(default="health")
+  capability: str = field(default="health", init=False)
 
   def __post_init__(self) -> None:
     if (self.bpm == INVALID_HEALTH_METRIC) or (self.steps == INVALID_HEALTH_METRIC):
@@ -175,14 +207,15 @@ class AllForOneStep(PlanStep):
   code: int = INVALID_CLIMATE_VALUE
   is_day: int = INVALID_CLIMATE_VALUE
   location: str = ""
-  capability: str = field(default="all")
+  connected: int = -1
+  capability: str = field(default="all", init=False)
 
   def __post_init__(self) -> None:
     if (self.bpm == INVALID_HEALTH_METRIC) or (self.steps == INVALID_HEALTH_METRIC) or \
     not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)) or \
     (not all([self.capability, self.emulator])) or (self.temp == INVALID_TEMPERATURE) or \
     (self.code == INVALID_CLIMATE_VALUE) or (self.is_day == INVALID_CLIMATE_VALUE):
-      raise ValueError(f"Invalid input for step: '{asdict(self)}'")
+      raise ValueError(f"Invalid input for step: '{self}'")
     self._step_id = "_".join(
         filter(
             None, [
@@ -196,7 +229,8 @@ class AllForOneStep(PlanStep):
                 str(self.charging),
                 str(self.steps),
                 str(self.bpm),
-                str(self.location),
+                self.location,
+                str(self.connected),
                 "shots" if self.capture_screenshots else "",
             ]
         )
@@ -217,7 +251,7 @@ def print_plan(plan: PlanDefinition):
   print(f"Expected screenshots: {plan.expected_screenshots}")
   print("Resolved execution plan:")
   for index, (step) in enumerate(plan.steps.values(), start=1):
-    step_details = fill(f"{index}. Step: {asdict(step)}", width=80, subsequent_indent="  ")
+    step_details = fill(f"{index}. Step: {step}", width=80, subsequent_indent="  ")
     print(step_details)
 
   print(f"{divider}")
@@ -231,7 +265,6 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
     case "weather":
       return WeatherStep(
           emulator=str(kwargs.get("emulator", "")),
-          capability=_capability,
           temp=int(kwargs.get("temp", INVALID_TEMPERATURE)),
           code=int(kwargs.get("code", INVALID_CLIMATE_VALUE)),
           is_day=int(kwargs.get("is_day", INVALID_CLIMATE_VALUE)),
@@ -243,8 +276,16 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
     case "location":
       return LocationStep(
           emulator=str(kwargs.get("emulator", "")),
-          capability=_capability,
           location=str(kwargs.get("location", "")),
+          display=str(kwargs.get("display", "")),
+          capture_screenshots=capture_screen,
+          expected_screenshots=expected,
+      )
+
+    case "bluetooth":
+      return BluetoothStep(
+          emulator=str(kwargs.get("emulator", "")),
+          connected=int(kwargs.get("connected", "0")),
           display=str(kwargs.get("display", "")),
           capture_screenshots=capture_screen,
           expected_screenshots=expected,
@@ -253,7 +294,6 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
     case "battery":
       return BatteryStep(
           emulator=str(kwargs.get("emulator", "")),
-          capability=_capability,
           level=int(kwargs.get("level", INVALID_BATTERY_INPUT)),
           charging=int(kwargs.get("charging", "0")),
           display=str(kwargs.get("display", "")),
@@ -264,7 +304,6 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
     case "health":
       return HealthStep(
           emulator=str(kwargs.get("emulator", "")),
-          capability=_capability,
           bpm=int(kwargs.get("bpm", INVALID_HEALTH_METRIC)),
           steps=int(kwargs.get("steps", INVALID_HEALTH_METRIC)),
           display=str(kwargs.get("display", "")),
@@ -275,7 +314,6 @@ def _create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: 
     case "all":
       return AllForOneStep(
           emulator=str(kwargs.get("emulator", "")),
-          capability=_capability,
           display=str(kwargs.get("display", "")),
           temp=int(kwargs.get("temp", INVALID_TEMPERATURE)),
           code=int(kwargs.get("code", INVALID_CLIMATE_VALUE)),
@@ -315,7 +353,7 @@ def _expand_step_template(
     raise ValueError(
         fill(
             (
-                f"No step could be created from template: '{asdict(template)}'"
+                f"No step could be created from template: '{template}'"
                 f" for emulators: '{emulators}'"
             ),
             width=80,
