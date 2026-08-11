@@ -16,7 +16,8 @@
     "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
     "test:harness": "PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
     "test:harness:focused": "PYTHONPATH=tools/harness_py:tools/harness_py/unittests python3 -m unittest",
-    "check": "npm run format && npm run docs:check && npm run format:clang && npm run test:harness"
+    "check": "npm run format && npm run docs:check && npm run format:clang && npm run test:harness",
+    "compile": "python3 -m compileall tools/"
   },
   "dependencies": {
     "@rebble/clay": "^1.0.10"
