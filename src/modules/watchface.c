@@ -4,6 +4,7 @@
 #include "climate.h"
 #include "date.h"
 #include "modules/helper.h"
+#include "substratum_renderer.h"
 #include "time.h"
 #include "watchface_layout.h"
 
@@ -51,7 +52,7 @@ static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
     WATCHFACE_UPDATE_TIME | WATCHFACE_UPDATE_DATE | WATCHFACE_UPDATE_BATTERY |
-    WATCHFACE_UPDATE_CLIMATE | WATCHFACE_UPDATE_LOCATION |
+    WATCHFACE_UPDATE_CLIMATE | WATCHFACE_UPDATE_LOCATION | WATCHFACE_UPDATE_BLUETOOTH |
     PBL_IF_HEALTH_ELSE(WATCHFACE_UPDATE_HEALTH, WATCHFACE_UPDATE_NONE);
 
 typedef enum {
@@ -60,15 +61,18 @@ typedef enum {
   TIME_STRATUM_MASK = 1 << 1,
   BATTERY_STRATUM_MASK = 1 << 2,
   CLIMATE_STRATUM_MASK = 1 << 3,
+  BTICON_STRATUM_MASK = 1 << 4,
 #ifdef PBL_HEALTH
-  BPM_STRATUM_MASK = 16,
-  STEPS_STRATUM_MASK = 32,
+  BPM_STRATUM_MASK = 1 << 5,
+  STEPS_STRATUM_MASK = 1 << 6,
 #endif
   MUST_HAVE_STRATA_MASK =
       DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
 } WatchfaceStratumMask;
 
 static WatchfaceStratumMask s_strata_created_mask = NO_STRATA_MASK;
+static GBitmap* s_nobt_icon = NULL;
+static Layer* s_nobt_icon_layer = NULL;
 
 // Function declarations
 static void watchface_load_and_apply_palette(void);
@@ -91,6 +95,51 @@ static void watchface_load_and_apply_fonts() {
     if (s_fonts_initialized && !ARE_CUSTOM_FONTS_LOADED()) {
       layout_watchface_load_custom_fonts(&s_surface.style.fontbook);
     }
+  }
+}
+
+static void nobt_icon_update_proc(
+    Layer* layer,
+    GContext* ctx) {
+  if (!layer || !ctx || !s_nobt_icon) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+  static GColor l_icon_color = GColorBlack;
+  GColor background = s_surface.style.palette->background;
+
+  graphics_context_set_fill_color(ctx, background);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+  GColor maybe_color = s_surface.style.palette->outofrange_text;
+  if (!HELPER_COLOR_EQUAL(l_icon_color, maybe_color)) {
+    if (helper_replace_color_in_bitmap(s_nobt_icon, l_icon_color, maybe_color)) {
+      l_icon_color = maybe_color;
+    }
+  }
+  graphics_context_set_compositing_mode(ctx, GCompOpSet);
+  graphics_draw_bitmap_in_rect(ctx, s_nobt_icon, bounds);
+
+  substratum_renderer_mark_info_outofrange(ctx, &bounds, l_icon_color, background);
+}
+
+static void initialize_bt_icon(
+    Layer* root) {
+  s_nobt_icon = gbitmap_create_with_resource(RESOURCE_ID_BT);
+  if (s_nobt_icon) {
+    s_nobt_icon_layer =
+        substratum_renderer_create_icon_layer(root, &s_surface.bt_icon.icon, nobt_icon_update_proc);
+    if (!s_nobt_icon_layer) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create No Bluetooth icon layer");
+      gbitmap_destroy(s_nobt_icon);
+      s_nobt_icon = NULL;
+      s_strata_created_mask &= ~BTICON_STRATUM_MASK;
+    } else {
+      layer_set_hidden(s_nobt_icon_layer, true);
+      s_strata_created_mask |= BTICON_STRATUM_MASK;
+    }
+  } else {
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create No Bluetooth icon bitmap");
   }
 }
 
@@ -172,6 +221,7 @@ bool watchface_create(
 
 #ifdef PBL_HEALTH
   if (s_watchface_initialized) {
+    initialize_bt_icon(root);
     created = bpm_module_create(root,
         &s_surface.bpm.text,
         &s_surface.bpm.icon,
@@ -206,6 +256,17 @@ void watchface_destroy() {
 
   climate_module_destroy();
   s_strata_created_mask &= ~CLIMATE_STRATUM_MASK;
+
+  if (s_nobt_icon) {
+    gbitmap_destroy(s_nobt_icon);
+    s_nobt_icon = NULL;
+  }
+
+  if (s_nobt_icon_layer) {
+    layer_destroy(s_nobt_icon_layer);
+    s_nobt_icon_layer = NULL;
+  }
+  s_strata_created_mask &= ~BTICON_STRATUM_MASK;
 
 #ifdef PBL_HEALTH
   if (s_strata_created_mask & BPM_STRATUM_MASK) {
@@ -266,24 +327,42 @@ void watchface_refresh(
   if ((updates & WATCHFACE_UPDATE_BATTERY) && (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
     battery_module_refresh(s_surface.style.palette);
   }
-  if ((updates & WATCHFACE_UPDATE_CLIMATE) && (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
-    climate_module_refresh(s_surface.style.palette,
-        WATCHFACE_UPDATE_CLIMATE,
-        s_wf_settings->temp_unit);
+  if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
+    if (updates & WATCHFACE_UPDATE_CLIMATE) {
+      climate_module_refresh(s_surface.style.palette,
+          WATCHFACE_UPDATE_CLIMATE,
+          s_wf_settings->temp_unit);
+    }
+
+    if (updates & WATCHFACE_UPDATE_LOCATION) {
+      climate_module_refresh(s_surface.style.palette,
+          WATCHFACE_UPDATE_LOCATION,
+          s_wf_settings->temp_unit);
+    }
   }
-  if ((updates & WATCHFACE_UPDATE_LOCATION) && (s_strata_created_mask & CLIMATE_STRATUM_MASK)) {
-    climate_module_refresh(s_surface.style.palette,
-        WATCHFACE_UPDATE_LOCATION,
-        s_wf_settings->temp_unit);
+
+  APP_LOG(APP_LOG_LEVEL_INFO, "Checking BT status");
+  if ((updates & WATCHFACE_UPDATE_BLUETOOTH) && (s_strata_created_mask & BTICON_STRATUM_MASK)) {
+    bool bt_state = connection_service_peek_pebble_app_connection();
+    if (!bt_state) {
+      layer_set_hidden(s_nobt_icon_layer, false);
+      APP_LOG(APP_LOG_LEVEL_INFO, "BT status is disconnected; icon shown");
+      vibes_double_pulse();
+    } else {
+      layer_set_hidden(s_nobt_icon_layer, true);
+      APP_LOG(APP_LOG_LEVEL_INFO, "BT status is connected; icon hidden");
+    }
   }
 
 #ifdef PBL_HEALTH
-  if ((updates & WATCHFACE_UPDATE_HEALTH) && (s_strata_created_mask & BPM_STRATUM_MASK)) {
-    bpm_module_refresh(s_surface.style.palette);
-  }
+  if ((updates & WATCHFACE_UPDATE_HEALTH)) {
+    if (s_strata_created_mask & BPM_STRATUM_MASK) {
+      bpm_module_refresh(s_surface.style.palette);
+    }
 
-  if ((updates & WATCHFACE_UPDATE_HEALTH) && (s_strata_created_mask & STEPS_STRATUM_MASK)) {
-    steps_module_refresh(s_surface.style.palette, s_wf_settings->steps_goal);
+    if (s_strata_created_mask & STEPS_STRATUM_MASK) {
+      steps_module_refresh(s_surface.style.palette, s_wf_settings->steps_goal);
+    }
   }
 #endif
 }
