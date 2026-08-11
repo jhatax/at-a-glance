@@ -55,6 +55,7 @@ try:
   from libpebble2.services.appmessage import AppMessageService, CString, Int32 # noqa: E402
   from libpebble2.services.screenshot import Screenshot # noqa: E402
   from pebble_tool.commands.emucontrol import send_data_to_qemu # noqa: E402
+  from pebble_tool.commands.base import PebbleTransportEmulator # noqa: E402
   from pebble_tool.commands.install import ToolAppInstaller # noqa: E402
   from pebble_tool.commands.sdk.project.build import BuildCommand # noqa: E402
   from pebble_tool.commands.sdk.project.compile_commands import CompileCommandsCommand # noqa: E402
@@ -81,6 +82,7 @@ class PebbleAdapter:
       connection = PebbleConnection(ManagedEmulatorTransport(emulator))
       connection.connect()
       connection.run_async()
+      PebbleTransportEmulator.post_connect(connection)
       self._connections[emulator] = connection
     return self._connections[emulator]
 
