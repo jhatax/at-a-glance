@@ -87,24 +87,25 @@ static void architect_calculate_health_layout_from_blueprint(
   // Icon and text are on either side of the face_center
   // Steps progress spreads on either side of x_center
   // Y: anchored at the same Y for this row
-  int16_t current_row_y = margin_y;
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
   const int16_t face_center = (face_width >> 1);
   const int16_t icon_text_gap = blueprint->icon_text_gap;
+  const int16_t icon_x = face_center - (icon_w + (icon_w >> 1) + icon_text_gap);
+  const int16_t metric_x = icon_x + icon_w + icon_text_gap;
+
   // Icon and text are on either side of the face_center
   // Module Y stays unchanged from icon's Y
-  int16_t module_x = face_center - icon_text_gap;
   int16_t module_w = blueprint->steps_text_width;
+  int16_t current_row_y = margin_y;
   int16_t module_y = current_row_y;
   computed->steps_layer.steps.text =
-      GRect(module_x, module_y, module_w, blueprint->data_text_height);
+      GRect(metric_x, module_y, module_w, blueprint->data_text_height);
 
   // Icon
-  module_x = module_x - (icon_text_gap + icon_w);
   module_w = icon_w;
   // The icon is the next module, set its width
-  computed->steps_layer.steps.icon = GRect(module_x, module_y, module_w, icon_h);
+  computed->steps_layer.steps.icon = GRect(icon_x, module_y, module_w, icon_h);
 
   // Progress Bar is at the bottom and starts at the icon's X and extends
   // until the end of the text-box. Bar's width uses Progress Bar width %
@@ -118,21 +119,18 @@ static void architect_calculate_health_layout_from_blueprint(
   // icon starts, which is the current value of module_x
   module_y = current_row_y;
   // height is DESIGN_STEPS_PROGRESS_HEIGHT
-  computed->steps_layer.progress =
-      GRect(module_x, module_y, module_w, DESIGN_STEPS_PROGRESS_HEIGHT);
+  computed->steps_layer.progress = GRect(icon_x, module_y, module_w, DESIGN_STEPS_PROGRESS_HEIGHT);
 
   // BPM at the bottom of the screen
   current_row_y = face_height - margin_y - icon_h;
 
-  module_x = face_center - icon_text_gap;
   module_w = blueprint->bpm_text_width;
   module_y = current_row_y;
-  computed->bpm.text = GRect(module_x, module_y, module_w, blueprint->data_text_height);
+  computed->bpm.text = GRect(metric_x, module_y, module_w, blueprint->data_text_height);
 
   // Icon
-  module_x = module_x - (icon_text_gap + icon_w);
   module_w = icon_w;
-  computed->bpm.icon = GRect(module_x, module_y, module_w, icon_h);
+  computed->bpm.icon = GRect(icon_x, module_y, module_w, icon_h);
 }
 #endif
 
@@ -233,8 +231,8 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Climate Icon is to the left of x_center
   const int16_t face_center = (face_width >> 1);
-  module_x = face_center - icon_w - (icon_text_gap << 1);
   module_w = icon_w;
+  module_x = face_center - (icon_w + (icon_w >> 1) + icon_text_gap);
   computed->climate.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Climate Text Width can be computed
@@ -242,16 +240,21 @@ static void architect_calculate_must_have_layout_from_blueprint(
       GRect(x_start, module_y, module_x - icon_text_gap - x_start, blueprint->data_text_height);
 
   // Date text
-  module_x = face_center;
+  module_x += icon_w + icon_text_gap;
   module_w = face_width - module_x - 1;  // last X - current x-coordinate yields available width
   computed->date = GRect(module_x, module_y, module_w, blueprint->date_text_height);
 
   // Location text
   current_row_y += HELPER_MAX(icon_h, blueprint->data_text_height);
   computed->location = GRect(computed->battery.track.origin.x,
-      current_row_y,
+      current_row_y - 1,
       computed->battery.track.size.w,
       blueprint->location_text_height);
+  // The BT icon is at the same Y coordinate as the location text
+  computed->bt_icon = GRect(computed->climate.icon.origin.x + ((icon_w - DESIGN_BT_ICON_DIMS) >> 1),
+      current_row_y,
+      DESIGN_BT_ICON_DIMS,
+      DESIGN_BT_ICON_DIMS);
 }
 
 static void architect_apply_calculated_layout_to_watchface(
@@ -295,6 +298,10 @@ static void architect_apply_calculated_layout_to_watchface(
       .text.frame = computed->location,
       .text.alignment = GTextAlignmentCenter,
       .text.font_role = WATCHFACE_FONT_ROLE_LOCATION,
+  };
+
+  surface->bt_icon = (WatchfaceIconStratum){
+      .icon.frame = computed->bt_icon,
   };
 
 #ifdef PBL_HEALTH
