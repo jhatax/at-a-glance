@@ -47,13 +47,15 @@ static void main_window_unload(Window* window);
 
 // Event handlers
 static void battery_handler(BatteryChargeState state);
-static void tick_handler(struct tm* tick_time, TimeUnits units_changed);
+static void tick_handler(struct tm* tick_time,
+    TimeUnits units_changed);
 #ifdef PBL_HEALTH
-static void health_handler(HealthEventType event, void* context);
+static void health_handler(HealthEventType event,
+    void* context);
 #endif
 
 static void battery_handler(
-  BatteryChargeState state) {
+    BatteryChargeState state) {
   (void)state;
 
   WatchfaceEventData data = {0};
@@ -63,9 +65,18 @@ static void battery_handler(
   watchface_apply_received_data(&data, &s_settings);
 }
 
+static void bt_handler(
+    bool state) {
+  WatchfaceEventData data = {0};
+  // It is sufficient to set these values because they trigger a battery refresh
+  data.received = WATCHFACE_DATA_BLUETOOTH;
+  data.parsed = WATCHFACE_DATA_BLUETOOTH;
+  watchface_apply_received_data(&data, &s_settings);
+}
+
 static void tick_handler(
-  struct tm* tick_time,
-  TimeUnits units_changed) {
+    struct tm* tick_time,
+    TimeUnits units_changed) {
   (void)tick_time;
 
   WatchfaceEventData data = {0};
@@ -83,8 +94,8 @@ static void tick_handler(
 
 #ifdef PBL_HEALTH
 static void health_handler(
-  HealthEventType event,
-  void* context) {
+    HealthEventType event,
+    void* context) {
   (void)context;
   // We ignore the event because we use any health update to update all health items
   (void)event;
@@ -98,7 +109,7 @@ static void health_handler(
 #endif
 
 static void main_window_load(
-  Window* window) {
+    Window* window) {
   if (!window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
     return;
@@ -112,7 +123,7 @@ static void main_window_load(
 }
 
 static void main_window_unload(
-  Window* window) {
+    Window* window) {
   (void)window;
   watchface_destroy();
 }
@@ -133,12 +144,14 @@ static void init() {
   settings_load(&s_settings);
 
   window_set_window_handlers(s_window,
-    (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
+      (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
   window_stack_push(s_window, true);
 
   // Subscribe to services
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
   battery_state_service_subscribe(battery_handler);
+  connection_service_subscribe((ConnectionHandlers){.pebble_app_connection_handler = bt_handler});
+  bt_handler(connection_service_peek_pebble_app_connection());
 
 #ifdef PBL_HEALTH
   bool health_available = health_service_events_subscribe(health_handler, NULL);
@@ -166,6 +179,7 @@ static void deinit() {
   tick_timer_service_unsubscribe();
   battery_state_service_unsubscribe();
   app_message_deregister_callbacks();
+  connection_service_unsubscribe();
 #ifdef PBL_HEALTH
   if (s_health_events_subscribed) {
     health_service_events_unsubscribe();
@@ -182,7 +196,7 @@ static void deinit() {
 // Connect to the watch face's adapter to display received changes
 // using the established visual vocabulary.
 void ataglance_apply_received_data(
-  WatchfaceEventData* parsed) {
+    WatchfaceEventData* parsed) {
   if (!parsed) {
     return;
   }
