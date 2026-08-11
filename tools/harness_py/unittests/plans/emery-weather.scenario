@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO emery-weather
-  SCREENSHOTS yes
-  EMULATORS emery
-END
-
-EXECUTE
-  STEP weather display=white temp=539 code=71 is_day=1
-END

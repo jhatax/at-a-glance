@@ -1,0 +1,11 @@
+PREAMBLE
+  SCENARIO qa-smoke
+  SCREENSHOTS yes
+  EMULATORS emery chalk flint
+END
+
+EXECUTE
+  STEP all display=white bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0 location="OaKland-downtown" connected=0
+  STEP all display=black bpm=80 steps=8900 level=99 charging=1 temp=265 code=1 is_day=0 location="OPQRS 1234" connected=1
+  STEP all display=black bpm=125 steps=11000 level=99 charging=0 temp=265 code=2 is_day=1 location="OPQRS 1234" connected=1
+END

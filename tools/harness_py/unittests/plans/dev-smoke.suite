@@ -1,7 +1,0 @@
-PREAMBLE
-  SUITE dev-smoke
-END
-
-MEMBERS
-  INCLUDE SUITE qa-emery
-END
