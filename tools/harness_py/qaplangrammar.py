@@ -6,7 +6,16 @@ from qaharnessconfig import DISPLAY_MODE_VALUES
 
 @dataclass(frozen=True)
 class QAPlanGrammar:
-  SUPPORTED_CAPABILITIES: Final = frozenset({"weather", "battery", "health", "all", "location"})
+  SUPPORTED_CAPABILITIES: Final = frozenset(
+      {
+          "weather",
+          "battery",
+          "health",
+          "location",
+          "bluetooth",
+          "all",
+      }
+  )
   SCREENSHOTS_POLICIES: Final = frozenset({"yes", "no"})
   SUPPORTED_EMULATORS: Final = frozenset(
       {
@@ -46,6 +55,7 @@ class QAPlanGrammar:
           "health": frozenset(EMULATORS_SUPPORTING_HEALTH),
           "all": frozenset(EMULATORS_SUPPORTING_HEALTH),
           "battery": frozenset(SUPPORTED_EMULATORS),
+          "bluetooth": frozenset(SUPPORTED_EMULATORS),
           "weather": frozenset(SUPPORTED_EMULATORS),
           "location": frozenset(SUPPORTED_EMULATORS),
       }
@@ -59,6 +69,10 @@ class QAPlanGrammar:
           frozenset({"display", "level", "charging"}),
           "health":
           frozenset({"display", "bpm", "steps"}),
+          "location":
+          frozenset({"display", "location"}),
+          "bluetooth":
+          frozenset({"display", "connected"}),
           "all":
           frozenset(
               {
@@ -71,10 +85,9 @@ class QAPlanGrammar:
                   "level",
                   "charging",
                   "location",
+                  "connected",
               }
           ),
-          "location":
-          frozenset({"display", "location"}),
       }
   )
 
@@ -102,8 +115,8 @@ class QAPlanGrammar:
 
   @classmethod
   def is_valid_display_for_emulator(cls, display: str, emulator: str) -> bool:
-    return display in cls.DISPLAY_MODES_BY_EMULATOR["color" if emulator in
-                                                    cls.COLOR_EMULATORS else "monochrome"]
+    mode = "color" if emulator in cls.COLOR_EMULATORS else "monochrome"
+    return display in cls.DISPLAY_MODES_BY_EMULATOR[mode]
 
 
 @dataclass
