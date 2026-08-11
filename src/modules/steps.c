@@ -119,23 +119,24 @@ static void steps_icon_update_proc(
 
   GRect bounds = layer_get_bounds(layer);
 
+  // Bitmap can be optional; text is primary information source
   if (s_steps_bitmap) {
     if (!HELPER_COLOR_EQUAL(s_steps_icon_color, s_steps_color)) {
       if (helper_replace_color_in_bitmap(s_steps_bitmap, s_steps_icon_color, s_steps_color)) {
         s_steps_icon_color = s_steps_color;
       }
     }
-  }
 
-  graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, bounds);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet);
+    graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, bounds);
 
-  if (!s_steps_is_available) {
-    // Send background color as well as outofrange color
-    substratum_renderer_mark_info_outofrange(ctx,
-        &bounds,
-        s_steps_palette.outofrange,
-        s_steps_palette.background);
+    if (!s_steps_is_available) {
+      // Send background color as well as outofrange color
+      substratum_renderer_mark_info_outofrange(ctx,
+          &bounds,
+          s_steps_palette.outofrange,
+          s_steps_palette.background);
+    }
   }
 }
 
@@ -277,9 +278,7 @@ bool steps_module_create(
   s_steps_threshold = HELPER_ROUND_UP((s_steps_goal * STEPS_APPROACHING_GOAL_PERCENT), 100);
 
   if (icon) {
-    uint32_t resource_id = 0;
-    resource_id = RESOURCE_ID_WALK;
-    s_steps_bitmap = gbitmap_create_with_resource(resource_id);
+    s_steps_bitmap = gbitmap_create_with_resource(RESOURCE_ID_WALK);
 
     if (s_steps_bitmap) {
       s_steps_icon_layer =
