@@ -7,20 +7,13 @@ import shutil
 from pathlib import Path
 from typing import Callable, Final
 import threading
-from dataclasses import dataclass
 
 APP_MESSAGE_TIMEOUT_SECONDS: Final[float] = 2.0
-PEBBLE_SETTLE_DELAY_SECONDS: Final[int] = 2
-APP_READY_DELAY_SECONDS: Final[int] = 4
+PEBBLE_SETTLE_DELAY_SECONDS: Final[int] = 1
+APP_READY_DELAY_SECONDS: Final[int] = 3
 
 
-@dataclass(frozen=True)
-class PebbleToolPaths:
-  sdk_root: Path
-  compiler_path: Path
-
-
-def _load_pebble_tool() -> PebbleToolPaths:
+def _load_pebble_tool() -> None:
   """Make the installed Pebble tool libraries available to the harness."""
   pebble = shutil.which("pebble")
   if pebble is None:
@@ -49,30 +42,24 @@ def _load_pebble_tool() -> PebbleToolPaths:
   active_sdk = sdk_version()
   if not active_sdk:
     raise ImportError("Pebble Tool has no active SDK")
-  sdk_root = Path(get_persist_dir()) / "SDKs" / active_sdk
-  qemu = sdk_root / "toolchain" / "bin" / "qemu-pebble"
-  if not qemu.is_file():
-    raise ImportError(f"Active Pebble SDK has no QEMU binary: {qemu}")
-  os.environ.setdefault("PEBBLE_QEMU_PATH", str(qemu))
-  os.environ["PATH"] = os.pathsep.join([str(qemu.parent), os.environ.get("PATH", "")])
-  compiler_path = sdk_root / "toolchain" / "arm-none-eabi" / "bin" / "arm-none-eabi-gcc"
-  if not compiler_path.is_file():
-    raise ImportError(f"Active Pebble SDK has no compiler: {compiler_path}")
-  return PebbleToolPaths(sdk_root=sdk_root, compiler_path=compiler_path)
+  qemu_bin = Path(get_persist_dir()) / "SDKs" / active_sdk / "toolchain" / "bin" / "qemu-pebble"
+  if not qemu_bin.is_file():
+    raise ImportError(f"Active SDK has no QEMU binary: {qemu_bin}")
+  os.environ.setdefault("PEBBLE_QEMU_PATH", str(qemu_bin))
 
 
 try:
-  PEBBLE_TOOL_PATHS = _load_pebble_tool()
+  _load_pebble_tool()
   from libpebble2.communication import PebbleConnection # noqa: E402
-  from libpebble2.communication.transports.qemu.protocol import QemuBattery # noqa: E402
-  from libpebble2.services.install import AppInstaller # noqa: E402
+  from libpebble2.communication.transports.qemu.protocol import QemuBattery, QemuBluetoothConnection # noqa: E402
   from libpebble2.services.appmessage import AppMessageService, CString, Int32 # noqa: E402
   from libpebble2.services.screenshot import Screenshot # noqa: E402
   from pebble_tool.commands.emucontrol import send_data_to_qemu # noqa: E402
-  from pebble_tool.commands.sdk.project import SDKProjectCommand # noqa: E402
+  from pebble_tool.commands.install import ToolAppInstaller # noqa: E402
+  from pebble_tool.commands.sdk.project.build import BuildCommand # noqa: E402
+  from pebble_tool.commands.sdk.project.compile_commands import CompileCommandsCommand # noqa: E402
   from pebble_tool.sdk.emulator import ManagedEmulatorTransport # noqa: E402
   from pebble_tool.sdk.project import PebbleProject # noqa: E402
-  from compilerdbgenerator import generate_compile_database # noqa: E402
 except ImportError as exc:
   raise ImportError("libpebble2 or its Pebble Tool environment is unavailable") from exc
 
@@ -96,6 +83,11 @@ class PebbleAdapter:
       connection.run_async()
       self._connections[emulator] = connection
     return self._connections[emulator]
+
+  def _discard_connection(self, emulator: str) -> None:
+    connection = self._connections.pop(emulator, None)
+    if connection is not None:
+      connection.transport.ws.close()
 
   def send_app_message(self, emulator: str, values: dict[int, int | str]) -> None:
     connection = self._connection(emulator)
@@ -138,7 +130,7 @@ class PebbleAdapter:
 
   def install(self, emulator: str, pbw_path: Path) -> None:
     connection = self._connection(emulator)
-    installer = AppInstaller(connection, str(pbw_path))
+    installer = ToolAppInstaller(connection, str(pbw_path), quiet=True)
     try:
       installer.install()
       time.sleep(APP_READY_DELAY_SECONDS)
@@ -152,9 +144,7 @@ class PebbleAdapter:
       self.install(emulator, pbw_path)
 
   def build(self, verbose: bool = False, output_path: Path | None = None) -> None:
-    command = SDKProjectCommand()
-    command.sdk = None
-    command._verbosity = 1 if verbose else 0
+    command = BuildCommand()
     build_error = True
     build_log_path = output_path or Path("build.log")
     if verbose:
@@ -170,18 +160,10 @@ class PebbleAdapter:
         sys.stderr.flush()
         os.dup2(output.fileno(), 1)
         os.dup2(output.fileno(), 2)
-      command._waf("configure")
-      command._waf("build")
+      from argparse import Namespace
+
+      command(Namespace(sdk=None, v=1 if verbose else 0, args=[], debug=False))
       build_error = False
-      compile_database_path = build_log_path.parent / "compile_commands.json"
-      compile_database_status = None
-      if verbose:
-        compile_database_status = generate_compile_database(
-            log_path=build_log_path,
-            output_path=compile_database_path,
-            platform="emery",
-            compiler_path=PEBBLE_TOOL_PATHS.compiler_path,
-        )
     except Exception as exc:
       self._log_failure(f"Build {'verbose ' if verbose else ''}".strip(), exc)
       raise
@@ -198,10 +180,13 @@ class PebbleAdapter:
       if output:
         output.close()
     if verbose:
-      if compile_database_status == 0:
-        self._log(f"Compile database generated: {compile_database_path}")
-      else:
-        self._log(f"No compile database generated: {compile_database_path}")
+      from argparse import Namespace
+
+      try:
+        CompileCommandsCommand()(Namespace(sdk=None, v=0, platform="emery"))
+        self._log("Compile database generated: compile_commands.json")
+      except Exception as exc:
+        self._log(f"No compile database generated: {exc}")
     if build_error:
       if verbose:
         sys.stderr.write(f"Build failed. Contents of '{build_log_path}':")
@@ -224,7 +209,23 @@ class PebbleAdapter:
       raise
     finally:
       time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-    self._log_success(f"Battery {emulator}: {percent}% charging={int(charging)}")
+    self._log_success(f"Battery {emulator}: {percent}% charging={charging}")
+
+  def set_bluetooth(self, emulator: str, connected: int) -> None:
+    connection = self._connection(emulator)
+    try:
+      send_data_to_qemu(
+          connection.transport,
+          QemuBluetoothConnection(connected=True if connected == 1 else False),
+      )
+    except Exception as exc:
+      self._log_failure(f"Bluetooth {emulator}: connected={connected}", exc)
+      raise
+    finally:
+      time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
+      if not connected:
+        self._discard_connection(emulator)
+    self._log_success(f"Bluetooth {emulator}: connected={connected}")
 
   def screenshot(self, emulator: str, output_path: Path) -> None:
     try:
