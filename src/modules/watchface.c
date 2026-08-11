@@ -341,16 +341,13 @@ void watchface_refresh(
     }
   }
 
-  APP_LOG(APP_LOG_LEVEL_INFO, "Checking BT status");
   if ((updates & WATCHFACE_UPDATE_BLUETOOTH) && (s_strata_created_mask & BTICON_STRATUM_MASK)) {
     bool bt_state = connection_service_peek_pebble_app_connection();
     if (!bt_state) {
       layer_set_hidden(s_nobt_icon_layer, false);
-      APP_LOG(APP_LOG_LEVEL_INFO, "BT status is disconnected; icon shown");
       vibes_double_pulse();
     } else {
       layer_set_hidden(s_nobt_icon_layer, true);
-      APP_LOG(APP_LOG_LEVEL_INFO, "BT status is connected; icon hidden");
     }
   }
 
