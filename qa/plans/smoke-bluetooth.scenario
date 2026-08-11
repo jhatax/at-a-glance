@@ -1,0 +1,14 @@
+PREAMBLE
+  SCENARIO smoke-bluetooth
+  SCREENSHOTS yes
+  EMULATORS emery chalk
+END
+
+EXECUTE
+  STEP bluetooth display=celeste connected=0
+  STEP bluetooth display=celeste connected=1
+  STEP bluetooth display=black connected=0
+  STEP bluetooth display=black connected=1
+  STEP bluetooth display=oxford connected=0
+  STEP bluetooth display=oxford connected=1
+END

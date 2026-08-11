@@ -5,5 +5,28 @@ PREAMBLE
 END
 
 EXECUTE
+STEP battery display=celeste level=19 charging=0
+  STEP battery display=white level=19 charging=0
+  STEP battery display=black level=19 charging=0
+  STEP battery display=oxford level=19 charging=0
+  STEP battery display=celeste level=49 charging=0
+  STEP battery display=celeste level=81 charging=0
+  STEP battery display=celeste level=100 charging=0
+  STEP battery display=celeste level=40 charging=1
+  STEP battery display=celeste level=80 charging=1
+  STEP battery display=white level=49 charging=0
+  STEP battery display=white level=81 charging=0
   STEP battery display=white level=100 charging=0
+  STEP battery display=white level=40 charging=1
+  STEP battery display=white level=80 charging=1
+  STEP battery display=black level=49 charging=0
+  STEP battery display=black level=81 charging=0
+  STEP battery display=black level=100 charging=0
+  STEP battery display=black level=40 charging=1
+  STEP battery display=black level=80 charging=1
+  STEP battery display=oxford level=49 charging=0
+  STEP battery display=oxford level=81 charging=0
+  STEP battery display=oxford level=100 charging=0
+  STEP battery display=oxford level=40 charging=1
+  STEP battery display=oxford level=80 charging=1
 END
