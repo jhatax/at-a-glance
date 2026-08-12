@@ -77,10 +77,12 @@ typedef struct {
 // create returns false, because a failed create may leave partial module state
 // that must be unwound. Calling create after a successful create is idempotent
 // and returns true without rebuilding the active surface.
-bool watchface_create(Window* window,
+bool watchface_create(
+    Window* window,
     const WatchfaceSettings* settings);
 void watchface_destroy();
 void watchface_repaint(void);
 void watchface_refresh(WatchfaceUpdateMask updates);
-void watchface_apply_received_data(const WatchfaceEventData* data,
+void watchface_apply_received_data(
+    const WatchfaceEventData* data,
     WatchfaceSettings* settings);

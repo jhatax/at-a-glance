@@ -8,13 +8,17 @@ static char s_time_buffer[MAX_STR_LEN] = {0};
 static TextLayer* s_time_layer = NULL;
 static WatchfaceColorRole s_time_color_role = WATCHFACE_COLOR_ROLE_TIME;
 
-static void format_time(char* buf, size_t buflen, const struct tm* t, uint8_t time_format);
+static void format_time(
+    char* buf,
+    size_t buflen,
+    const struct tm* t,
+    uint8_t time_format);
 
 static void format_time(
-  char* buf,
-  size_t buflen,
-  const struct tm* t,
-  uint8_t time_format) {
+    char* buf,
+    size_t buflen,
+    const struct tm* t,
+    uint8_t time_format) {
   if (!buf || buflen == 0 || !t) {
     return;
   }
@@ -31,9 +35,9 @@ static void format_time(
 }
 
 bool time_module_create(
-  Layer* root,
-  const WatchfaceTextSubstratum* text,
-  GFont font) {
+    Layer* root,
+    const WatchfaceTextSubstratum* text,
+    GFont font) {
   if (!root || !text || !font) {
     return false;
   }
@@ -59,8 +63,8 @@ void time_module_destroy() {
 }
 
 void time_module_refresh(
-  const ColorPalette* palette,
-  uint8_t time_format) {
+    const ColorPalette* palette,
+    uint8_t time_format) {
   if (!s_time_layer || !palette) {
     return;
   }
@@ -72,7 +76,8 @@ void time_module_refresh(
   }
 
   format_time(s_time_buffer, MAX_STR_LEN, t, time_format);
-  substratum_renderer_update_text_layer(s_time_layer,
-    s_time_buffer,
-    substratum_renderer_color_for_role(palette, s_time_color_role));
+  substratum_renderer_update_text_layer(
+      s_time_layer,
+      s_time_buffer,
+      substratum_renderer_color_for_role(palette, s_time_color_role));
 }

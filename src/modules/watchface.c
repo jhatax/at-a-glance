@@ -190,12 +190,14 @@ bool watchface_create(
     // Load & Apply Fonts (one-time activity for every launch)
     watchface_load_and_apply_fonts();
 
-    created = date_module_create(root,
+    created = date_module_create(
+        root,
         &s_surface.date.text,
         s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role]);
     s_strata_created_mask |= (created) ? DATE_STRATUM_MASK : 0;
 
-    created = time_module_create(root,
+    created = time_module_create(
+        root,
         &s_surface.time.text,
         s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role]);
     s_strata_created_mask |= created ? TIME_STRATUM_MASK : 0;
@@ -203,7 +205,8 @@ bool watchface_create(
     created = battery_module_create(root, &s_surface.battery);
     s_strata_created_mask |= (created) ? BATTERY_STRATUM_MASK : 0;
 
-    created = climate_module_create(root,
+    created = climate_module_create(
+        root,
         &s_surface.climate.text,
         &s_surface.location.text,
         &s_surface.climate.icon,
@@ -222,13 +225,15 @@ bool watchface_create(
 #ifdef PBL_HEALTH
   if (s_watchface_initialized) {
     initialize_bt_icon(root);
-    created = bpm_module_create(root,
+    created = bpm_module_create(
+        root,
         &s_surface.bpm.text,
         &s_surface.bpm.icon,
         s_surface.style.fontbook.chosen_fonts[s_surface.bpm.text.font_role]);
     s_strata_created_mask |= (created) ? BPM_STRATUM_MASK : 0;
 
-    created = steps_module_create(root,
+    created = steps_module_create(
+        root,
         &s_surface.steps.text,
         &s_surface.steps.icon,
         &s_surface.steps.progress,
@@ -329,13 +334,15 @@ void watchface_refresh(
   }
   if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
     if (updates & WATCHFACE_UPDATE_CLIMATE) {
-      climate_module_refresh(s_surface.style.palette,
+      climate_module_refresh(
+          s_surface.style.palette,
           WATCHFACE_UPDATE_CLIMATE,
           s_wf_settings->temp_unit);
     }
 
     if (updates & WATCHFACE_UPDATE_LOCATION) {
-      climate_module_refresh(s_surface.style.palette,
+      climate_module_refresh(
+          s_surface.style.palette,
           WATCHFACE_UPDATE_LOCATION,
           s_wf_settings->temp_unit);
     }

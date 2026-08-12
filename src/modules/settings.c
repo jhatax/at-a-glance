@@ -5,25 +5,25 @@ static const uint32_t c_key_persisted_settings = 2;
 static const int c_settings_data_size = sizeof(WatchfaceSettings);
 
 static void settings_apply_defaults(
-  WatchfaceSettings* settings) {
+    WatchfaceSettings* settings) {
   if (!settings) {
     return;
   }
 
   *settings = (WatchfaceSettings){
-    .temp_unit = TEMP_UNIT_DEFAULT,
-    .time_format = TIME_FMT_DEFAULT,
-    .display_mode = DISPLAY_MODE_DEFAULT,
-    .weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT,
+      .temp_unit = TEMP_UNIT_DEFAULT,
+      .time_format = TIME_FMT_DEFAULT,
+      .display_mode = DISPLAY_MODE_DEFAULT,
+      .weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT,
 #ifdef PBL_HEALTH
-    .hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT,
-    .steps_goal = STEPS_GOAL_DEFAULT,
+      .hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT,
+      .steps_goal = STEPS_GOAL_DEFAULT,
 #endif
   };
 }
 
 static void settings_sanitize(
-  WatchfaceSettings* settings) {
+    WatchfaceSettings* settings) {
   if (!settings) {
     return;
   }
@@ -50,7 +50,7 @@ static void settings_sanitize(
 }
 
 static void settings_read_stored(
-  WatchfaceSettings* settings) {
+    WatchfaceSettings* settings) {
   if (!settings) {
     return;
   }
@@ -68,24 +68,27 @@ static void settings_read_stored(
 
   int read_size = stored_size;
   if (read_size > c_settings_data_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-      "Persisted settings truncated: size=%d max=%d",
-      stored_size,
-      c_settings_data_size);
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "Persisted settings truncated: size=%d max=%d",
+        stored_size,
+        c_settings_data_size);
     read_size = c_settings_data_size;
   } else if (read_size < c_settings_data_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-      "Persisted settings partial: size=%d expected=%d",
-      stored_size,
-      c_settings_data_size);
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "Persisted settings partial: size=%d expected=%d",
+        stored_size,
+        c_settings_data_size);
   }
 
   int bytes_read = persist_read_data(c_key_persisted_settings, &stored, read_size);
   if (bytes_read != read_size) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-      "Persisted settings read failed: result=%d expected=%d",
-      bytes_read,
-      read_size);
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "Persisted settings read failed: result=%d expected=%d",
+        bytes_read,
+        read_size);
     return;
   }
 
@@ -94,7 +97,7 @@ static void settings_read_stored(
 
 // This "API" block is called by other modules or main
 void settings_load(
-  WatchfaceSettings* settings) {
+    WatchfaceSettings* settings) {
   if (!settings) {
     return;
   }
@@ -105,17 +108,18 @@ void settings_load(
 }
 
 bool settings_save(
-  const WatchfaceSettings* settings) {
+    const WatchfaceSettings* settings) {
   if (!settings) {
     return false;
   }
 
   int bytes_written = persist_write_data(c_key_persisted_settings, settings, c_settings_data_size);
   if (bytes_written != (int)sizeof(*settings)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
-      "Persisted settings write failed: result=%d expected=%d",
-      bytes_written,
-      c_settings_data_size);
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "Persisted settings write failed: result=%d expected=%d",
+        bytes_written,
+        c_settings_data_size);
     return false;
   }
 

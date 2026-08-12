@@ -6,10 +6,11 @@
 #include "watchface_debug.h"
 
 #ifdef PBL_HEALTH
-bool bpm_module_create(Layer* root,
-  const WatchfaceTextSubstratum* text,
-  const WatchfaceIconSubstratum* icon,
-  GFont font);
+bool bpm_module_create(
+    Layer* root,
+    const WatchfaceTextSubstratum* text,
+    const WatchfaceIconSubstratum* icon,
+    GFont font);
 void bpm_module_destroy();
 void bpm_module_refresh(const ColorPalette* palette);
 

@@ -60,11 +60,14 @@ static const StepsPalette c_light_steps_palette = {
 
 static void steps_update_palette(const ColorPalette* palette);
 static GColor calculate_steps_color(int steps);
-static void steps_icon_update_proc(Layer* layer,
+static void steps_icon_update_proc(
+    Layer* layer,
     GContext* ctx);
-static void steps_progress_update_proc(Layer* layer,
+static void steps_progress_update_proc(
+    Layer* layer,
     GContext* ctx);
-static void apply_steps_value(int steps,
+static void apply_steps_value(
+    int steps,
     bool is_available);
 static void update_steps();
 static void steps_module_oneshot_clear_steps();
@@ -132,7 +135,8 @@ static void steps_icon_update_proc(
 
     if (!s_steps_is_available) {
       // Send background color as well as outofrange color
-      substratum_renderer_mark_info_outofrange(ctx,
+      substratum_renderer_mark_info_outofrange(
+          ctx,
           &bounds,
           s_steps_palette.outofrange,
           s_steps_palette.background);

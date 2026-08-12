@@ -56,20 +56,25 @@ static const LayoutBlueprint c_blueprint = {
         HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_ICON_TEXT_GAP, DESIGN_COMPACT_ICON_TEXT_GAP),
     .time_y_percent =
         HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_TIME_Y_PERCENT, DESIGN_COMPACT_TIME_Y_PERCENT),
-    .date_text_height = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
+    .date_text_height = HELPER_IF_ELSE(
+        IS_LARGE_DISPLAY,
         DESIGN_FULL_DATE_TEXT_HEIGHT,
         DESIGN_COMPACT_DATE_TEXT_HEIGHT),
-    .time_text_height = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
+    .time_text_height = HELPER_IF_ELSE(
+        IS_LARGE_DISPLAY,
         DESIGN_FULL_TIME_TEXT_HEIGHT,
         DESIGN_COMPACT_TIME_TEXT_HEIGHT),
-    .data_text_height = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
+    .data_text_height = HELPER_IF_ELSE(
+        IS_LARGE_DISPLAY,
         DESIGN_FULL_DATA_TEXT_HEIGHT,
         DESIGN_COMPACT_DATA_TEXT_HEIGHT),
-    .location_text_height = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
+    .location_text_height = HELPER_IF_ELSE(
+        IS_LARGE_DISPLAY,
         DESIGN_FULL_LOCATION_TEXT_HEIGHT,
         DESIGN_COMPACT_LOCATION_TEXT_HEIGHT),
 #ifdef PBL_HEALTH
-    .steps_text_width = HELPER_IF_ELSE(IS_LARGE_DISPLAY,
+    .steps_text_width = HELPER_IF_ELSE(
+        IS_LARGE_DISPLAY,
         DESIGN_FULL_STEPS_TEXT_WIDTH,
         DESIGN_COMPACT_STEPS_TEXT_WIDTH),
     .bpm_text_width =
@@ -201,7 +206,8 @@ static void architect_calculate_must_have_layout_from_blueprint(
   module_x = (face_width - module_w) >> 1;
 
   // The BT icon is at the same Y coordinate as the battery band
-  computed->bt_icon = GRect(module_x - DESIGN_BT_ICON_DIMS,
+  computed->bt_icon = GRect(
+      module_x - DESIGN_BT_ICON_DIMS - icon_text_gap,
       current_row_y,
       DESIGN_BT_ICON_DIMS,
       DESIGN_BT_ICON_DIMS);
@@ -252,7 +258,8 @@ static void architect_calculate_must_have_layout_from_blueprint(
 
   // Location text
   current_row_y += HELPER_MAX(icon_h, blueprint->data_text_height);
-  computed->location = GRect(computed->battery.track.origin.x,
+  computed->location = GRect(
+      computed->battery.track.origin.x,
       current_row_y - 1,
       computed->battery.track.size.w,
       blueprint->location_text_height);
@@ -347,7 +354,8 @@ bool layout_watchface_prepare(
 
   const LayoutBlueprint* blueprint = &c_blueprint;
   CalculatedLayout computed = {0};
-  architect_calculate_must_have_layout_from_blueprint(blueprint,
+  architect_calculate_must_have_layout_from_blueprint(
+      blueprint,
       &computed,
       face_width,
       face_height);

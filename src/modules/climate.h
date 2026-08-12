@@ -28,14 +28,16 @@ typedef struct {
   int is_day;
 } ClimateUpdate;
 
-bool climate_module_create(Layer* root,
+bool climate_module_create(
+    Layer* root,
     const WatchfaceTextSubstratum* text,
     const WatchfaceTextSubstratum* loc,
     const WatchfaceIconSubstratum* condition,
     GFont text_font,
     GFont location_font);
 void climate_module_destroy();
-void climate_module_refresh(const ColorPalette* palette,
+void climate_module_refresh(
+    const ColorPalette* palette,
     const WatchfaceUpdateMask refreshed,
     uint8_t temp_unit);
 void climate_module_set_weather(ClimateUpdate* update);

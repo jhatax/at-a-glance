@@ -23,7 +23,8 @@ enum {
 };
 
 #define TEMPERATURE_IS_VALID(cel_tenths) \
-  (HELPER_VALUE_IN_RANGE((cel_tenths),   \
+  (HELPER_VALUE_IN_RANGE(                \
+      (cel_tenths),                      \
       WEATHER_TEMP_MIN_CELSIUS_TENTHS,   \
       WEATHER_TEMP_MAX_CELSIUS_TENTHS))
 
@@ -42,7 +43,8 @@ static bool s_is_day = false;
 static ClimatePalette s_climate_palette = {0};
 
 static bool s_climate_is_available = false;
-static bool format_temperature(char* buf,
+static bool format_temperature(
+    char* buf,
     size_t buflen,
     uint8_t temp_unit);
 static void climate_module_update_temperature(uint8_t temp_unit);
@@ -139,7 +141,8 @@ static void climate_module_update_location() {
     return;
   }
 
-  substratum_renderer_update_text_layer(s_location_layer,
+  substratum_renderer_update_text_layer(
+      s_location_layer,
       s_location_buffer,
       (0 == strlen(s_location_buffer)) ? s_climate_palette.outofrange : s_climate_palette.normal);
 }
@@ -271,7 +274,8 @@ void climate_module_set_weather(
   int is_day = update->is_day;
   if (!update->is_complete || !(TEMPERATURE_IS_VALID(celsius_tenths)) ||
       !(CLIMATE_CONDITION_IS_VALID(weather_condition)) || !(VALID_IS_DAY(is_day))) {
-    APP_LOG(APP_LOG_LEVEL_WARNING,
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
         "Weather data invalid: temp=%d condition=%d is_day=%d",
         celsius_tenths,
         weather_condition,

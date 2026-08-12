@@ -14,7 +14,8 @@ typedef struct {
   GColor clear_fill;
 } ClimatePalette;
 
-void draw_climate_icon(GContext* ctx,
+void draw_climate_icon(
+    GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
     bool is_day,

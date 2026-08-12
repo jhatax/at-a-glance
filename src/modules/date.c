@@ -57,7 +57,8 @@ void date_module_refresh(
   strftime(s_date_buffer + len, (ARRAY_LENGTH(s_date_buffer) - len), "%d·%b", t);
 
   // uppercase_date(s_date_buffer);
-  substratum_renderer_update_text_layer(s_date_layer,
+  substratum_renderer_update_text_layer(
+      s_date_layer,
       s_date_buffer,
       substratum_renderer_color_for_role(palette, s_date_color_role));
 }

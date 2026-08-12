@@ -6,20 +6,25 @@
 #include "bpm.h"
 #include "steps.h"
 
-static void apply_health_setting_data(const WatchfaceEventData* data,
+static void apply_health_setting_data(
+    const WatchfaceEventData* data,
     WatchfaceSettings* settings);
-static void apply_oneshot_health_data(const WatchfaceEventData* data,
+static void apply_oneshot_health_data(
+    const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh);
 #endif
 
-static void apply_setting_data(const WatchfaceEventData* data,
+static void apply_setting_data(
+    const WatchfaceEventData* data,
     WatchfaceSettings* settings,
     WatchfaceUpdateMask* refresh);
 
-static void apply_weather_or_location_data(const WatchfaceEventData* data,
+static void apply_weather_or_location_data(
+    const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh);
 
-static void apply_subscribed_service_updates(const WatchfaceEventData* data,
+static void apply_subscribed_service_updates(
+    const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh);
 
 // Function definitions
@@ -39,7 +44,8 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime received invalid DISPLAY_MODE: value=%d",
           data->display_mode);
     }
@@ -52,7 +58,8 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime received invalid TIME_FORMAT: value=%d",
           data->time_format);
     }
@@ -65,7 +72,8 @@ static void apply_setting_data(
         *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime received invalid TEMP_UNIT: value=%d",
           data->temp_unit);
     }
@@ -75,7 +83,8 @@ static void apply_setting_data(
     if (WEATHER_UPDATE_MINUTES_VALID(data->weather_update_minutes)) {
       settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
           data->weather_update_minutes);
     }
@@ -87,7 +96,8 @@ static void apply_setting_data(
     if (!STEPS_GOAL_VALID(d_s_g)) {
       // Set steps goal back to the default setting
       d_s_g = STEPS_GOAL_DEFAULT;
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime reset STEPS_GOAL to default. Received: %d",
           data->steps_goal);
     }
@@ -203,7 +213,8 @@ static void apply_health_setting_data(
         settings->hr_sample_minutes = (uint8_t)data->hr_sample_minutes;
       }
     } else {
-      APP_LOG(APP_LOG_LEVEL_WARNING,
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
           "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
           data->hr_sample_minutes);
     }

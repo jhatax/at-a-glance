@@ -50,7 +50,8 @@ static const BpmPalette c_light_bpm_palette = {
 
 static void bpm_update_palette(const ColorPalette* palette);
 static GColor calculate_bpm_color(int bpm);
-static void bpm_icon_update_proc(Layer* layer,
+static void bpm_icon_update_proc(
+    Layer* layer,
     GContext* ctx);
 static void update_bpm();
 static void bpm_module_oneshot_clear_bpm();
@@ -117,7 +118,8 @@ static void bpm_icon_update_proc(
     graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
 
     if (!s_bpm_is_valid) {
-      substratum_renderer_mark_info_outofrange(ctx,
+      substratum_renderer_mark_info_outofrange(
+          ctx,
           &bounds,
           s_bpm_palette.outofrange,
           s_bpm_palette.background);

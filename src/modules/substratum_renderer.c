@@ -14,7 +14,8 @@ int16_t substratum_renderer_scale_icon_x(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->w, WATCHFACE_ICON_GRID_WIDTH),
+  return HELPER_CLAMP_MAX(
+      HELPER_SCALE_ROUND(coord, size->w, WATCHFACE_ICON_GRID_WIDTH),
       (size->w - 1));
 }
 
@@ -27,7 +28,8 @@ int16_t substratum_renderer_scale_icon_y(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, size->h, WATCHFACE_ICON_GRID_HEIGHT),
+  return HELPER_CLAMP_MAX(
+      HELPER_SCALE_ROUND(coord, size->h, WATCHFACE_ICON_GRID_HEIGHT),
       (size->h - 1));
 }
 
@@ -46,7 +48,8 @@ int16_t substratum_renderer_scale_icon_coord(
   int16_t design_dimension =
       (chosen_dimension == size->w) ? WATCHFACE_ICON_GRID_WIDTH : WATCHFACE_ICON_GRID_HEIGHT;
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension),
+  return HELPER_CLAMP_MAX(
+      HELPER_SCALE_ROUND(coord, chosen_dimension, design_dimension),
       (chosen_dimension - 1));
 }
 
@@ -60,7 +63,8 @@ GPoint substratum_renderer_scale_icon_point(
   }
 
   if (size) {
-    return GPoint(substratum_renderer_scale_icon_x(size, x),
+    return GPoint(
+        substratum_renderer_scale_icon_x(size, x),
         substratum_renderer_scale_icon_y(size, y));
   }
 
@@ -75,7 +79,8 @@ int16_t substratum_renderer_scale_icon_x_in_frame(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(frame->origin.x + substratum_renderer_scale_icon_x(&frame->size, coord),
+  return HELPER_CLAMP_MAX(
+      frame->origin.x + substratum_renderer_scale_icon_x(&frame->size, coord),
       (frame->origin.x + frame->size.w - 1));
 }
 
@@ -87,7 +92,8 @@ int16_t substratum_renderer_scale_icon_y_in_frame(
   }
 
   // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(frame->origin.y + substratum_renderer_scale_icon_y(&frame->size, coord),
+  return HELPER_CLAMP_MAX(
+      frame->origin.y + substratum_renderer_scale_icon_y(&frame->size, coord),
       (frame->origin.y + frame->size.h - 1));
 }
 
@@ -102,7 +108,8 @@ GPoint substratum_renderer_scale_icon_x_y_in_frame(
     const GRect* frame,
     int16_t x,
     int16_t y) {
-  return GPoint(substratum_renderer_scale_icon_x_in_frame(frame, x),
+  return GPoint(
+      substratum_renderer_scale_icon_x_in_frame(frame, x),
       substratum_renderer_scale_icon_y_in_frame(frame, y));
 }
 
@@ -138,7 +145,8 @@ void substratum_renderer_draw_scaled_line_in_frame(
     return;
   }
 
-  graphics_draw_line(ctx,
+  graphics_draw_line(
+      ctx,
       substratum_renderer_scale_icon_x_y_in_frame(frame, x0, y0),
       substratum_renderer_scale_icon_x_y_in_frame(frame, x1, y1));
 }
@@ -156,7 +164,8 @@ void substratum_renderer_fill_scaled_rect_from_corners_in_frame(
 
   int16_t scaled_w = substratum_renderer_scale_icon_x(&frame->size, (x1 - x0));
   int16_t scaled_h = substratum_renderer_scale_icon_y(&frame->size, (y1 - y0));
-  GRect rect = GRect(substratum_renderer_scale_icon_x_in_frame(frame, x0),
+  GRect rect = GRect(
+      substratum_renderer_scale_icon_x_in_frame(frame, x0),
       substratum_renderer_scale_icon_y_in_frame(frame, y0),
       scaled_w,
       scaled_h);
@@ -206,25 +215,32 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   uint8_t double_offset = offset << 1;
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_CENTER_X + double_offset,
           offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           double_offset,
           WATCHFACE_ICON_CENTER_Y + offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_CENTER_X,
           WATCHFACE_ICON_CENTER_Y + offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_CENTER_X - offset,
           WATCHFACE_ICON_GRID_HEIGHT - offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_GRID_WIDTH - double_offset,
           WATCHFACE_ICON_CENTER_Y),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_CENTER_X + offset,
           WATCHFACE_ICON_CENTER_Y),
-      substratum_renderer_scale_icon_x_y_in_frame(frame,
+      substratum_renderer_scale_icon_x_y_in_frame(
+          frame,
           WATCHFACE_ICON_CENTER_X + double_offset,
           offset),
   };

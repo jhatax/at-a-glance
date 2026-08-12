@@ -76,9 +76,11 @@ static GColor calculate_battery_color(
   return s_battery_palette.critical;
 }
 
-static void battery_track_update_proc(Layer* layer,
+static void battery_track_update_proc(
+    Layer* layer,
     GContext* ctx);
-static void battery_bolt_update_proc(Layer* layer,
+static void battery_bolt_update_proc(
+    Layer* layer,
     GContext* ctx);
 static void update_battery_state();
 
@@ -105,8 +107,10 @@ static void battery_track_update_proc(
 
   // Now fill the inside of the track up to the charge width.
   graphics_context_set_fill_color(ctx, fill_color);
-  graphics_fill_rect(ctx,
-      GRect(fill->origin.x - track->origin.x,
+  graphics_fill_rect(
+      ctx,
+      GRect(
+          fill->origin.x - track->origin.x,
           fill->origin.y - track->origin.y,
           HELPER_CLAMP_MIN((charge_percent * fill->size.w) / 100, 1),
           fill->size.h),
