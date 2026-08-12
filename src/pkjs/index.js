@@ -2,17 +2,21 @@
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config.json');
 var messageKeys = require('message_keys');
+var createAppMessageQueue = require('./app_message_queue').createAppMessageQueue;
+var createRefreshController = require('./weather_location').createRefreshController;
 
 const STEPS_GOAL_MIN = 4000;
 const STEPS_GOAL_DEFAULT = 10000;
 const STEPS_GOAL_MAX = 32000;
 
-const WEATHER_UPDATE_MINUTES_DEFAULT = 15; // 15-minutes
-const REQUEST_TIMEOUT = 2 * 60 * 1000; //2-minutes
-const GEO_REQUEST_AGE = 30 * 60 * 1000; // 30-minutes
-const MAX_LOCATION_STRING_LENGTH = 15;
-var s_updateIntervalHandle = null;
-var s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
+const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+function sendPebbleMessage(payload, success, failure) {
+  Pebble.sendAppMessage(payload, success, failure);
+}
+
+var sendWeatherMessage = createAppMessageQueue(sendPebbleMessage);
+var sendLocationMessage = createAppMessageQueue(sendPebbleMessage);
+var sendAppMessage = createAppMessageQueue(sendPebbleMessage);
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -49,32 +53,14 @@ function parseWeatherUpdateMinutes(rawSettings) {
 }
 
 function applyWeatherUpdateMinutes(minutes) {
-  var shouldUpdateRefreshSchedule = false;
-  if (isNaN(minutes)) {
-    // Reset only if needed.
-    if (s_currentUpdateInterval != WEATHER_UPDATE_MINUTES_DEFAULT) {
-      s_currentUpdateInterval = WEATHER_UPDATE_MINUTES_DEFAULT;
-      shouldUpdateRefreshSchedule = true;
-    }
-  } else {
-    // If the current s_weatherUpdateInterval is not the same as the input
-    // to which the interval is going to be set, let's update the refresh schedule.
-    if (s_currentUpdateInterval != minutes) {
-      // Is the input from user within the accepted range?
-      if (minutes > 0) {
-        s_currentUpdateInterval = minutes;
-      }
-      shouldUpdateRefreshSchedule = true;
-    }
-  }
-
-  updateWeatherAndLocation();
-  if (shouldUpdateRefreshSchedule) {
-    scheduleUpdates();
-  }
+  refresh.setIntervalMinutes(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
 }
 
 var clay = new Clay(clayConfig);
+var refresh = createRefreshController({
+  sendWeatherMessage: sendWeatherMessage,
+  sendLocationMessage: sendLocationMessage,
+});
 
 Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
@@ -101,137 +87,18 @@ Pebble.addEventListener('webviewclosed', function (e) {
   delete dict[messageKeys.STEPS_GOAL_PRESET];
   delete dict[messageKeys.STEPS_GOAL_CUSTOM];
   applyWeatherUpdateMinutes(parseWeatherUpdateMinutes(rawSettings));
-  Pebble.sendAppMessage(
+  sendAppMessage(
     dict,
     function () {
       console.log('Sent config data to Pebble');
     },
-    function (err) {
-      console.log('Failed to send config data!');
+    function (e) {
+      console.log('Config sent failed with error: ' + JSON.stringify(e));
     }
   );
 });
 
-// Weather stuff
-// Must match WATCHFACE_WEATHER_TEMP_UNAVAILABLE in src/modules/watchface.c.
-var WEATHER_TEMP_INVALID = -32768;
-// Must match CLIMATE_CONDITION_OUTOFRANGE in climate.h
-var WEATHER_CONDITION_UNKNOWN = -1;
-// Define custom function that manipulates the DOM elements inside index.js
-function sendWeather(celsius, weatherCode, isDay) {
-  Pebble.sendAppMessage(
-    {
-      TEMPERATURE: Math.round(celsius * 10),
-      WEATHER_CONDITION: weatherCode,
-      IS_DAY: isDay ? 1 : 0,
-    },
-    null,
-    function (e) {
-      console.log('AtAGlance: Weather send failed: ' + e.error);
-    }
-  );
-}
-
-function updateIntervalMs() {
-  return s_currentUpdateInterval * 60 * 1000;
-}
-
-function sendLocationToWatch(location) {
-  Pebble.sendAppMessage({ MAYBE_CURRENT_LOCATION: location }, null, function (e) {
-    console.log('AtAGlance: Location update failed: ' + e.error);
-  });
-}
-
-function fetchLocation(lat, lon) {
-  var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon;
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', url);
-  // Nominatim requires a valid, unique User-Agent header
-  xhr.setRequestHeader('User-Agent', 'PebbleWatchFace-AtAGlance');
-  xhr.timeout = REQUEST_TIMEOUT;
-
-  xhr.onload = function () {
-    try {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        var response = JSON.parse(xhr.responseText);
-
-        var city = (
-          response.address.city ||
-          response.address.town ||
-          response.address.village ||
-          'GPS'
-        )
-          .slice(0, MAX_LOCATION_STRING_LENGTH)
-          .toUpperCase();
-        sendLocationToWatch(city);
-      }
-    } catch (e) {
-      console.log('Location fetch error: ' + e.message);
-    }
-  };
-  xhr.send();
-}
-
-function fetchWeather(lat, lon) {
-  var url =
-    'https://api.open-meteo.com/v1/forecast?latitude=' +
-    lat +
-    '&longitude=' +
-    lon +
-    '&current=temperature_2m,weather_code,is_day&temperature_unit=celsius';
-
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', url, true);
-  xhr.timeout = REQUEST_TIMEOUT;
-  xhr.onload = function () {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      try {
-        var data = JSON.parse(xhr.responseText);
-        if (
-          data.current &&
-          typeof data.current.temperature_2m === 'number' &&
-          typeof data.current.weather_code === 'number' &&
-          typeof data.current.is_day === 'number'
-        ) {
-          sendWeather(
-            data.current.temperature_2m,
-            data.current.weather_code,
-            data.current.is_day === 1
-          );
-        }
-      } catch (e) {
-        console.log('Weather fetch error: ' + e.message);
-      }
-    }
-  };
-  xhr.send();
-}
-
-function updateWeatherAndLocation() {
-  if (typeof navigator !== 'undefined' && navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        fetchWeather(pos.coords.latitude, pos.coords.longitude);
-        fetchLocation(pos.coords.latitude, pos.coords.longitude);
-      },
-      function (err) {
-        console.log('Geolocation error: ' + err.message);
-      },
-      { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
-    );
-  }
-}
-
-function scheduleUpdates() {
-  if (s_updateIntervalHandle !== null) {
-    clearInterval(s_updateIntervalHandle);
-  }
-
-  s_updateIntervalHandle = setInterval(updateWeatherAndLocation, updateIntervalMs());
-}
-
 Pebble.addEventListener('ready', function () {
-  updateWeatherAndLocation();
-  scheduleUpdates();
+  refresh.start(WEATHER_UPDATE_MINUTES_DEFAULT);
+  sendAppMessage({ JS_READY: 1 });
 });
