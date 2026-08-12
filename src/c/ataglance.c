@@ -47,10 +47,12 @@ static void main_window_unload(Window* window);
 
 // Event handlers
 static void battery_handler(BatteryChargeState state);
-static void tick_handler(struct tm* tick_time,
+static void tick_handler(
+    struct tm* tick_time,
     TimeUnits units_changed);
 #ifdef PBL_HEALTH
-static void health_handler(HealthEventType event,
+static void health_handler(
+    HealthEventType event,
     void* context);
 #endif
 
@@ -108,18 +110,70 @@ static void health_handler(
 }
 #endif
 
+static void inbox_received_handler(
+    DictionaryIterator* iter,
+    void* context) {
+  (void)context;
+
+  if (!iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
+    return;
+  }
+
+  // Handle the entire message, always. No early returns
+  if (find_the_canary(iter)) {
+    // Re-send the user's preference whenever PKJS synchronizes.
+    send_loaded_weather_update_minutes(s_settings.weather_update_minutes);
+  }
+
+  handle_the_message(iter);
+}
+
+static void subscribe_to_services() {
+  // Subscribe to services
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  battery_state_service_subscribe(battery_handler);
+  connection_service_subscribe((ConnectionHandlers){.pebble_app_connection_handler = bt_handler});
+
+#ifdef PBL_HEALTH
+  bool health_available = health_service_events_subscribe(health_handler, NULL);
+  if (!health_available) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Health service subscription failed");
+  } else {
+    s_health_events_subscribed = true;
+    health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
+  }
+#endif
+
+  app_message_register_inbox_received(inbox_received_handler);
+  app_message_register_inbox_dropped(inbox_dropped_callback);
+  app_message_register_outbox_failed(outbox_failed_callback);
+  app_message_register_outbox_sent(outbox_sent_callback);
+  // This should be called immediately regardless of whether peeking at the
+  // pebble-kit connection returns true
+  initialize_inbox_outbox(NULL);
+}
+
 static void main_window_load(
     Window* window) {
   if (!window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Main window load received NULL window");
     return;
   }
+  // Sequence of initialization is important
+  // 1. Load settings
+  settings_load(&s_settings);
 
+  // 2. Create watchface
   if (!watchface_create(window, &s_settings)) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface creation failed");
     window_stack_remove(window, true);
     return;
   }
+
+  // 3. Subscribe to services
+  subscribe_to_services();
+  bt_handler(connection_service_peek_pebble_app_connection());
 }
 
 static void main_window_unload(
@@ -140,36 +194,10 @@ static void init() {
     return;
   }
 
-  // Load settings
-  settings_load(&s_settings);
-
-  window_set_window_handlers(s_window,
+  window_set_window_handlers(
+      s_window,
       (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
   window_stack_push(s_window, true);
-
-  // Subscribe to services
-  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
-  battery_state_service_subscribe(battery_handler);
-  connection_service_subscribe((ConnectionHandlers){.pebble_app_connection_handler = bt_handler});
-  bt_handler(connection_service_peek_pebble_app_connection());
-
-#ifdef PBL_HEALTH
-  bool health_available = health_service_events_subscribe(health_handler, NULL);
-  if (!health_available) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Health service subscription failed");
-  } else {
-    s_health_events_subscribed = true;
-    health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
-  }
-#endif
-
-  app_message_register_inbox_received(inbox_received_callback);
-  app_message_register_inbox_dropped(inbox_dropped_callback);
-  app_message_register_outbox_failed(outbox_failed_callback);
-  app_message_register_outbox_sent(outbox_sent_callback);
-  if (initialize_inbox_outbox() == APP_MSG_OK) {
-    send_loaded_weather_update_minutes(s_settings.weather_update_minutes);
-  }
 }
 
 static void deinit() {

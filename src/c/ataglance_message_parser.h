@@ -1,7 +1,6 @@
 #pragma once
 
 #include <pebble.h>
-#include <stdint.h>
 
 #include "modules/watchface.h"
 
@@ -22,24 +21,32 @@
  */
 
 // Message parsing
-void parse_int_tuple(DictionaryIterator* iter,
+
+bool parse_ready_sentinel(DictionaryIterator* iter);
+void parse_int_tuple(
+    DictionaryIterator* iter,
     uint32_t key,
     WatchfaceEventData* data,
     WatchfaceDataMask mask,
     int* value);
-void parse_string_tuple(DictionaryIterator* iter,
+void parse_string_tuple(
+    DictionaryIterator* iter,
     uint32_t key,
     WatchfaceEventData* data,
     WatchfaceDataMask mask,
     char* value,
     uint8_t max_len);
-void parse_settings_data(DictionaryIterator* iter,
+void parse_settings_data(
+    DictionaryIterator* iter,
     WatchfaceEventData* data);
-void parse_weather_and_location_data(DictionaryIterator* iter,
+void parse_weather_and_location_data(
+    DictionaryIterator* iter,
     WatchfaceEventData* data);
 #ifdef PBL_HEALTH
-void parse_health_settings_data(DictionaryIterator* iter,
+void parse_health_settings_data(
+    DictionaryIterator* iter,
     WatchfaceEventData* data);
-void parse_oneshot_health_data(DictionaryIterator* iter,
+void parse_oneshot_health_data(
+    DictionaryIterator* iter,
     WatchfaceEventData* data);
 #endif

@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ataglance_message_parser.h"
 #include "modules/helper.h"
 #include "modules/watchface.h"
 
@@ -78,24 +77,39 @@ void parse_string_tuple(
   }
 }
 
+bool parse_ready_sentinel(
+    DictionaryIterator* iter) {
+  if (iter) {
+    int ready = 0;
+    Tuple* tuple = dict_find(iter, MESSAGE_KEY_JS_READY);
+    if (tuple && helper_tuple_to_int(tuple, &ready)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void parse_settings_data(
     DictionaryIterator* iter,
     WatchfaceEventData* data) {
   if (!iter || !data) {
     return;
   }
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_TIME_FORMAT,
       data,
       WATCHFACE_DATA_TIME_FORMAT,
       &data->time_format);
   parse_int_tuple(iter, MESSAGE_KEY_TEMP_UNIT, data, WATCHFACE_DATA_TEMP_UNIT, &data->temp_unit);
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_DISPLAY_MODE,
       data,
       WATCHFACE_DATA_DISPLAY_MODE,
       &data->display_mode);
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
       data,
       WATCHFACE_DATA_WEATHER_UPDATE_MINUTES,
@@ -109,20 +123,23 @@ void parse_weather_and_location_data(
     return;
   }
 
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_TEMPERATURE,
       data,
       WATCHFACE_DATA_TEMPERATURE,
       &data->temperature_celsius_tenths);
 
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_WEATHER_CONDITION,
       data,
       WATCHFACE_DATA_WEATHER_CONDITION,
       &data->weather_condition);
   parse_int_tuple(iter, MESSAGE_KEY_IS_DAY, data, WATCHFACE_DATA_IS_DAY, &data->is_day);
 
-  parse_string_tuple(iter,
+  parse_string_tuple(
+      iter,
       MESSAGE_KEY_MAYBE_CURRENT_LOCATION,
       data,
       WATCHFACE_DATA_LOCATION,
@@ -137,7 +154,8 @@ void parse_health_settings_data(
   if (!iter || !data) {
     return;
   }
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       MESSAGE_KEY_HR_SAMPLE_MINUTES,
       data,
       WATCHFACE_DATA_HR_SAMPLE_MINUTES,
@@ -152,12 +170,14 @@ void parse_oneshot_health_data(
     return;
   }
 
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       WATCHFACE_ONESHOT_MESSAGE_KEY_BPM,
       data,
       WATCHFACE_DATA_ONESHOT_BPM,
       &data->oneshot_bpm);
-  parse_int_tuple(iter,
+  parse_int_tuple(
+      iter,
       WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS,
       data,
       WATCHFACE_DATA_ONESHOT_STEPS,

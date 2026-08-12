@@ -1,5 +1,8 @@
+#include <stdint.h>
+
 #include "ataglance_message_parser.h"
 #include "ataglance_messages_adapter.h"
+#include "modules/watchface.h"
 
 /*
  * File invariants:
@@ -23,33 +26,81 @@
 #define APP_MESSAGE_CONFIG_VALUE_SIZE 2
 #define APP_MESSAGE_OUTBOX_SIZE 64
 
-void send_loaded_weather_update_minutes(
-    uint8_t minutes) {
+#define MESSAGE_SEND_RETRY_MS 1000
+#define MAX_RETRIES 6
+
+static uint8_t s_pending_weather_update_minutes = 0;
+static uint8_t s_weather_sync_attempts = 0;
+static AppTimer* s_weather_sync_retry_timer = NULL;
+
+static void send_pending_weather_update_minutes();
+
+static void retry_pending_weather_update_minutes(
+    void* context) {
+  (void)context;
+  s_weather_sync_retry_timer = NULL;
+  ++s_weather_sync_attempts;
+  send_pending_weather_update_minutes();
+}
+
+static void schedule_weather_sync_retry(
+    void) {
+  if (s_weather_sync_retry_timer || s_weather_sync_attempts > MAX_RETRIES) {
+    return;
+  }
+
+  s_weather_sync_retry_timer = app_timer_register(
+      MESSAGE_SEND_RETRY_MS * s_weather_sync_attempts,
+      retry_pending_weather_update_minutes,
+      NULL);
+}
+
+static void send_pending_weather_update_minutes() {
   DictionaryIterator* out_iter = NULL;
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if (result != APP_MSG_OK || !out_iter) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox begin failed: result=%d", result);
+    schedule_weather_sync_retry();
     return;
   }
 
-  DictionaryResult dict_result =
-      dict_write_int32(out_iter, MESSAGE_KEY_WEATHER_UPDATE_MINUTES, minutes);
+  DictionaryResult dict_result = dict_write_int32(
+      out_iter,
+      MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
+      s_pending_weather_update_minutes);
   if (dict_result != DICT_OK) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
+    schedule_weather_sync_retry();
     return;
   }
 
   result = app_message_outbox_send();
   if (result != APP_MSG_OK) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox send failed: result=%d", result);
+    schedule_weather_sync_retry();
+    return;
   }
 }
 
-void inbox_received_callback(
-    DictionaryIterator* iter,
-    void* context) {
-  (void)context;
+void send_loaded_weather_update_minutes(
+    uint8_t minutes) {
+  if (s_weather_sync_retry_timer) {
+    app_timer_cancel(s_weather_sync_retry_timer);
+    s_weather_sync_retry_timer = NULL;
+  }
 
+  s_pending_weather_update_minutes = minutes;
+  s_weather_sync_attempts = 1;
+  send_pending_weather_update_minutes();
+}
+
+bool find_the_canary(
+    DictionaryIterator* iter) {
+  return parse_ready_sentinel(iter);
+}
+
+void handle_the_message(
+    DictionaryIterator* iter) {
   if (!iter) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
     return;
@@ -82,6 +133,7 @@ void outbox_failed_callback(
   (void)iterator;
   (void)context;
   APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
+  schedule_weather_sync_retry();
 }
 
 void outbox_sent_callback(
@@ -89,6 +141,11 @@ void outbox_sent_callback(
     void* context) {
   (void)iterator;
   (void)context;
+  s_weather_sync_attempts = 0;
+  if (s_weather_sync_retry_timer) {
+    app_timer_cancel(s_weather_sync_retry_timer);
+    s_weather_sync_retry_timer = NULL;
+  }
 }
 
 uint32_t app_message_inbox_size() {
@@ -107,12 +164,14 @@ uint32_t app_message_inbox_size() {
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
   // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
+  // 11. JS_READY | 10012 | sizeof(int32_t)
   //
   // One-shot-only tuples:
-  // 11. ONESHOT_BPM | 10020 | sizeof(int32_t)
-  // 12. ONESHOT_STEPS | 10021 | sizeof(int32_t)
+  // 12. ONESHOT_BPM | 10020 | sizeof(int32_t)
+  // 13. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
-  return dict_calc_buffer_size(12,  // tuples
+  return dict_calc_buffer_size(
+      13,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
@@ -124,9 +183,11 @@ uint32_t app_message_inbox_size() {
       sizeof(int32_t),
       sizeof(int32_t),
       sizeof(int32_t),
-      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE);
+      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
+      sizeof(int32_t));
 #else
-  return dict_calc_buffer_size(10,  // tuples
+  return dict_calc_buffer_size(
+      11,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -136,31 +197,54 @@ uint32_t app_message_inbox_size() {
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
-      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE);
+      WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
+      sizeof(int32_t));
 #endif
 }
 
-AppMessageResult initialize_inbox_outbox() {
-  uint32_t inbox_size = app_message_inbox_size();
-  bool pebblekit_connected = connection_service_peek_pebblekit_connection();
-  AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE);
-  if (result == APP_MSG_OK) {
-    return result;
+static uint8_t s_retries = 0;
+static AppTimer* s_init_timer = NULL;
+static void wait_then_retry_inbox_initialization() {
+  if (s_retries > MAX_RETRIES) {
+    if (s_init_timer) {
+      app_timer_cancel(s_init_timer);
+      s_init_timer = NULL;
+    }
+    s_retries = 0;
+    return;
   }
 
-  APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage open failed: result=%d inbox=%lu", result, inbox_size);
-  APP_LOG(APP_LOG_LEVEL_WARNING,
-      "AppMessage sizes: outbox=%d kit=%d",
-      APP_MESSAGE_OUTBOX_SIZE,
-      pebblekit_connected);
+  if (!s_init_timer) {
+    s_retries = 1;
+  } else {
+    ++s_retries;
+  }
+  s_init_timer =
+      app_timer_register(MESSAGE_SEND_RETRY_MS * s_retries, initialize_inbox_outbox, NULL);
+}
 
-  result = app_message_open(APP_MESSAGE_INBOX_SIZE_MINIMUM, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+void initialize_inbox_outbox(
+    void* context) {
+  (void)context;
+  uint32_t inbox_size = HELPER_MAX(APP_MESSAGE_INBOX_SIZE_MINIMUM, app_message_inbox_size());
+
+  AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
   if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_ERROR,
-        "AppMessage retry failed: result=%d kit=%d",
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "AppMessage open failed: result=%d inbox=%lu",
         result,
-        pebblekit_connected);
+        inbox_size);
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d", APP_MESSAGE_OUTBOX_SIZE);
+    wait_then_retry_inbox_initialization();
+    return;
   }
 
-  return result;
+  // Send succeeded
+  if (s_init_timer) {
+    app_timer_cancel(s_init_timer);
+    s_init_timer = NULL;
+    s_retries = 0;
+  }
+  return;
 }
