@@ -1,4 +1,4 @@
-.PHONY: build clean install log
+.PHONY: build clean install log compile
 
 build:
 	pebble build
@@ -11,3 +11,6 @@ install:
 
 log:
 	pebble logs --phone $(PHONE)
+
+compile:
+	pebble clean && pebble build && pebble compile-commands

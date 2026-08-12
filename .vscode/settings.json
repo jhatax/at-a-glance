@@ -11,6 +11,7 @@
   "editor.wordWrapColumn": 100,
   "files.autoSave": "onFocusChange",
   "editor.mouseWheelZoom": false,
+  "clangd.enableCodeCompletion": true,
   "[python]": {
     "editor.defaultFormatter": "eeyore.yapf",
     "editor.formatOnSave": true
@@ -48,11 +49,12 @@
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "shellformat.useEditorConfig": true,
   "editor.defaultFoldingRangeProvider": "xaver.clang-format",
-  "notebook.defaultFormatter": "eeyore.yapf",
+  "notebook.defaultFormatter": null,
   "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
   "editor.codeActions.triggerOnFocusChange": true,
   "[c]": {
     "editor.defaultFormatter": "xaver.clang-format",
+    "editor.autoIndent": "full",
     "editor.formatOnSave": true
   },
   "[cpp]": {
@@ -60,7 +62,9 @@
     "editor.formatOnSave": true
   },
   "clang-format.fallbackStyle": "Google",
-  "clang-format.executable": "/opt/homebrew/bin/clang-format",
+  "clang-format.executable": "",
   "clang-format.executable.osx": "/opt/homebrew/bin/clang-format",
-  "notebook.formatOnSave.enabled": true
+  "notebook.formatOnSave.enabled": true,
+  "clangd.path": "/usr/bin/clangd",
+  "clangd.onConfigChanged": "restart"
 }

@@ -10,7 +10,7 @@ BreakFunctionDefinitionParameters: true
 PenaltyBreakBeforeFirstCallParameter: 0
 BinPackArguments: false
 
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: AlwaysBreak
 BinPackParameters: AlwaysOnePerLine
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
