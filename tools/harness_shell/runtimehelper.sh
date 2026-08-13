@@ -16,7 +16,7 @@ list_qa_plans() {
   printf "Listing available QA plans in %s\n" "$QAPLANS_DIR"
 
   local plan
-  for plan in "${QAPLANS_DIR}"/*.(scenario|suite)(.N); do
+  for plan in "${QAPLANS_DIR}"/*.(scenario|suite|matrix)(.N); do
     printf "%s  %s\n" "$(stat -F '%Y-%m-%d %H:%M' +mtime "$plan")" "$plan"
   done
 }
