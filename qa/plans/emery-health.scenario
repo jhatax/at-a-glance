@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO emery-health
-  SCREENSHOTS yes
-  EMULATORS emery
-END
-
-EXECUTE
-  STEP health display=white bpm=99 steps=8000
-END

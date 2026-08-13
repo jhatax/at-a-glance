@@ -1,16 +1,11 @@
 PREAMBLE
-  SCENARIO smoke-display
   SCREENSHOTS yes
   EMULATORS emery chalk
+  DISPLAYS celeste white black oxford
 END
 
 EXECUTE
-  STEP battery display=celeste level=19 charging=0
-  STEP battery display=white level=19 charging=0
-  STEP battery display=black level=19 charging=0
-  STEP battery display=oxford level=19 charging=0
-  STEP battery display=celeste level=40 charging=1
-  STEP battery display=white level=40 charging=1
-  STEP battery display=black level=40 charging=1
-  STEP battery display=oxford level=80 charging=1
+  STEP battery level=19 charging=0
+  STEP battery level=40 charging=1
+  STEP battery level=80 charging=1
 END

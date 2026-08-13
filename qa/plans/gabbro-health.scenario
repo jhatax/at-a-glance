@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO gabbro-health
-  SCREENSHOTS yes
-  EMULATORS gabbro
-END
-
-EXECUTE
-  STEP health display=white bpm=121 steps=1000
-END

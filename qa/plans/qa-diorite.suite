@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE qa-diorite
-END
-
-MEMBERS
-  INCLUDE SCENARIO diorite-weather
-  INCLUDE SCENARIO diorite-battery
-  INCLUDE SCENARIO diorite-health
-END

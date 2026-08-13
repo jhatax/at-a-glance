@@ -1,9 +1,10 @@
 PREAMBLE
-  SCENARIO canary
-  SCREENSHOTS no
+  SCREENSHOTS yes
   EMULATORS emery
+  DISPLAYS white
 END
 
 EXECUTE
-  STEP weather display=white temp=539 code=65 is_day=1
+  STEP all bpm=80 steps=8000 level=80 charging=0 temp=200 code=0 is_day=1 location=Oakland connected=1
+  STEP all bpm=110 steps=11000 level=85 charging=1 temp=250 code=1 is_day=1 location=Oakland connected=0
 END

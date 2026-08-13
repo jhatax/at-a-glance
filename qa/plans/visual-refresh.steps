@@ -1,0 +1,4 @@
+EXECUTE
+  STEP all bpm=101 steps=10500 level=90 charging=1 temp=300 code=66 is_day=0 location="OaKland-downtown" connected=0
+  STEP all bpm=80 steps=8900 level=99 charging=0 temp=265 code=0 is_day=1 location="OPQRS 1234" connected=1
+END

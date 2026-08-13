@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE qa-aplite
-END
-
-MEMBERS
-  INCLUDE SCENARIO aplite-weather
-  INCLUDE SCENARIO aplite-battery
-  INCLUDE SCENARIO aplite-health
-END

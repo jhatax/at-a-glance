@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE qa-basalt
-END
-
-MEMBERS
-  INCLUDE SCENARIO basalt-weather
-  INCLUDE SCENARIO basalt-battery
-  INCLUDE SCENARIO basalt-health
-END

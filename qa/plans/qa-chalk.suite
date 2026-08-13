@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE qa-chalk
-END
-
-MEMBERS
-  INCLUDE SCENARIO chalk-battery
-  INCLUDE SCENARIO chalk-location
-  INCLUDE SCENARIO screenshots_evidence_chalk
-END

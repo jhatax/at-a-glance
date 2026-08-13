@@ -1,9 +1,0 @@
-PREAMBLE
-  SCENARIO flint-health
-  SCREENSHOTS yes
-  EMULATORS flint
-END
-
-EXECUTE
-  STEP health display=black bpm=101 steps=11000
-END

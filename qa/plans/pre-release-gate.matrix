@@ -1,0 +1,9 @@
+PREAMBLE
+  SCREENSHOTS yes
+  EMULATORS aplite basalt chalk diorite emery flint gabbro
+  DISPLAYS white black celeste oxford
+END
+
+STEPS
+  pre-release.steps
+END

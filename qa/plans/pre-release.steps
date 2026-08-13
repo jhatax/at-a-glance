@@ -1,0 +1,15 @@
+EXECUTE
+  STEP weather temp=265 code=0 is_day=1
+  STEP weather temp=265 code=2 is_day=1
+  STEP weather temp=265 code=45 is_day=1
+  STEP weather temp=265 code=65 is_day=1
+  STEP weather temp=265 code=95 is_day=1
+  STEP battery level=19 charging=0
+  STEP battery level=49 charging=0
+  STEP battery level=81 charging=0
+  STEP battery level=40 charging=1
+  STEP battery level=80 charging=1
+  STEP health bpm=101 steps=8000
+  STEP location location=Oakland
+  STEP location location="San-Francisco"
+END

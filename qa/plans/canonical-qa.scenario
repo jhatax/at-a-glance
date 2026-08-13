@@ -1,0 +1,13 @@
+PREAMBLE
+  SCREENSHOTS yes
+  EMULATORS emery chalk
+  DISPLAYS white black celeste oxford
+END
+
+EXECUTE
+  STEP weather temp=265 code=0 is_day=1
+  STEP location location="LÀs-_ÿegasÿÅÉÑØ"
+  STEP battery level=40 charging=1
+  STEP all bpm=80 steps=8000 level=80 charging=0 temp=200 code=0 is_day=1 location=Oakland connected=1
+  STEP bluetooth connected=0
+  STEP health bpm=101 steps=8000

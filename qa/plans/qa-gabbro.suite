@@ -1,9 +1,0 @@
-PREAMBLE
-  SUITE qa-gabbro
-END
-
-MEMBERS
-  INCLUDE SCENARIO gabbro-weather
-  INCLUDE SCENARIO gabbro-battery
-  INCLUDE SCENARIO gabbro-health
-END

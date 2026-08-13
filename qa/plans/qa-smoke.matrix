@@ -1,0 +1,9 @@
+PREAMBLE
+  SCREENSHOTS yes
+  EMULATORS emery chalk flint
+  DISPLAYS white black
+END
+
+STEPS
+  smoke.steps
+END
