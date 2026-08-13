@@ -6,6 +6,8 @@ import os
 import shutil
 import socket
 import tempfile
+import re
+import traceback
 from contextlib import contextmanager
 from pathlib import Path
 from collections.abc import Generator
@@ -15,6 +17,7 @@ import threading
 APP_MESSAGE_TIMEOUT_SECONDS: Final[float] = 2.0
 PEBBLE_SETTLE_DELAY: Final[float] = 1.5
 APP_READY_DELAY_SECONDS: Final[int] = 3
+COMPILER_ERROR = re.compile(r"^.+:\d+(?::\d+)?:\s+(?:fatal )?error:")
 
 
 def _load_pebble_tool() -> Path:
@@ -178,16 +181,17 @@ class PebbleAdapter:
   def build(self, verbose: bool = False, output_path: Path | None = None) -> None:
     command = BuildCommand()
     build_log_path = output_path or Path("build.log")
-    if verbose:
+    capture_output = verbose or output_path is not None
+    if capture_output:
       build_log_path.parent.mkdir(parents=True, exist_ok=True)
-    output = build_log_path.open("w", encoding="utf-8") if verbose else None
+    output = build_log_path.open("w", encoding="utf-8") if capture_output else None
     saved_stdout = os.dup(1) if output else None
     saved_stderr = os.dup(2) if output else None
     build_exception: Exception | None = None
     try:
+      if verbose:
+        self._log("Will attempt to compile database for clangd integration if build succeeds...")
       if output:
-        if verbose:
-          self._log("Will attempt to compile database for clangd integration if build succeeds...")
         sys.stdout.flush()
         sys.stderr.flush()
         os.dup2(output.fileno(), 1)
@@ -201,25 +205,27 @@ class PebbleAdapter:
       if output:
         sys.stdout.flush()
         sys.stderr.flush()
-        if saved_stdout:
-          os.dup2(saved_stdout, 1)
-          os.close(saved_stdout)
-        if saved_stderr:
-          os.dup2(saved_stderr, 2)
-          os.close(saved_stderr)
+        os.dup2(saved_stdout, 1)
+        os.close(saved_stdout)
+        os.dup2(saved_stderr, 2)
+        os.close(saved_stderr)
+      if output and build_exception is not None:
+        output.write("\nPython build traceback:\n")
+        output.write("".join(traceback.format_exception(build_exception)))
       if output:
         output.close()
     if build_exception is not None:
-      build_reason = (
-          build_log_path.read_text(encoding="utf-8")
-          if verbose and build_log_path.is_file() else str(build_exception)
-      ).strip()
+      build_reason = ""
+      if capture_output:
+        build_reason = "\n".join(
+            line for line in build_log_path.read_text(encoding="utf-8").splitlines()
+            if COMPILER_ERROR.match(line)
+        )
+      if not build_reason:
+        build_reason = "Build failed; rerun with --verbose for compiler diagnostics"
       operation = f"Build {'verbose ' if verbose else ''}".strip()
       self._log(f"{operation} status=failed error={build_reason}")
-      if verbose:
-        sys.stderr.write(f"Build failed: {build_reason}\n")
-        sys.stderr.flush()
-      raise build_exception
+      raise ValueError(build_reason) from None
     if verbose:
       try:
         compile_database_path = build_log_path.parent / "compile_commands.json"
