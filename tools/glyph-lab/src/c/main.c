@@ -120,7 +120,8 @@ static void draw_status(
   const GlyphSizeMode* size_mode = &GLYPH_SIZE_MODES[size_index];
   const ClimatePageTemplate* page_template = &GLYPH_PAGE_TEMPLATES[template_index];
 
-  snprintf(status,
+  snprintf(
+      status,
       sizeof(status),
       "%d/%d %s %s %s",
       s_page_index + 1,
@@ -130,7 +131,8 @@ static void draw_status(
       PALETTE_NAMES[s_palette_index]);
 
   graphics_context_set_text_color(ctx, palette->primary_text);
-  graphics_draw_text(ctx,
+  graphics_draw_text(
+      ctx,
       status,
       s_status_font,
       GRect(bounds->origin.x, bounds->origin.y, bounds->size.w, STATUS_HEIGHT),
@@ -145,7 +147,8 @@ static void draw_cell_label(
     const ColorPalette* palette,
     const char* label) {
   graphics_context_set_text_color(ctx, palette->outofrange_text);
-  graphics_draw_text(ctx,
+  graphics_draw_text(
+      ctx,
       label,
       s_label_font,
       *frame,
@@ -160,7 +163,8 @@ static void draw_glyph_cell(
     const ClimateCell* cell,
     const ColorPalette* palette,
     const GlyphSizeMode* size_mode) {
-  GRect icon_area = GRect(cell_frame->origin.x + CELL_PADDING,
+  GRect icon_area = GRect(
+      cell_frame->origin.x + CELL_PADDING,
       cell_frame->origin.y + CELL_PADDING,
       cell_frame->size.w - (CELL_PADDING * 2),
       cell_frame->size.h - LABEL_HEIGHT - (CELL_PADDING * 2));
@@ -170,11 +174,13 @@ static void draw_glyph_cell(
     icon_size = size_mode->icon_size;
   }
 
-  GRect icon_frame = GRect(icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
+  GRect icon_frame = GRect(
+      icon_area.origin.x + ((icon_area.size.w - icon_size) / 2),
       icon_area.origin.y + ((icon_area.size.h - icon_size) / 2),
       icon_size,
       icon_size);
-  GRect label_frame = GRect(cell_frame->origin.x + 2,
+  GRect label_frame = GRect(
+      cell_frame->origin.x + 2,
       cell_frame->origin.y + cell_frame->size.h - LABEL_HEIGHT,
       cell_frame->size.w - 4,
       LABEL_HEIGHT);
@@ -193,7 +199,8 @@ static void canvas_update_proc(
   int16_t outer_padding = PBL_IF_ROUND_ELSE(OUTER_PADDING_ROUND, OUTER_PADDING_RECT);
   GRect content_bounds =
       grect_inset(bounds, GEdgeInsets(outer_padding, outer_padding, outer_padding, outer_padding));
-  GRect grid_bounds = GRect(content_bounds.origin.x,
+  GRect grid_bounds = GRect(
+      content_bounds.origin.x,
       content_bounds.origin.y + STATUS_HEIGHT,
       content_bounds.size.w,
       content_bounds.size.h - STATUS_HEIGHT);
@@ -210,7 +217,8 @@ static void canvas_update_proc(
   for (uint8_t row = 0; row < GLYPH_ROW_COUNT; ++row) {
     for (uint8_t col = 0; col < GLYPH_COL_COUNT; ++col) {
       int index = (row * GLYPH_COL_COUNT) + col;
-      GRect cell_frame = GRect(grid_bounds.origin.x + (col * cell_w),
+      GRect cell_frame = GRect(
+          grid_bounds.origin.x + (col * cell_w),
           grid_bounds.origin.y + (row * cell_h),
           cell_w,
           cell_h);
@@ -293,7 +301,8 @@ static void init() {
   }
 
   window_set_click_config_provider(s_window, click_config_provider);
-  window_set_window_handlers(s_window,
+  window_set_window_handlers(
+      s_window,
       (WindowHandlers){
           .load = main_window_load,
           .unload = main_window_unload,

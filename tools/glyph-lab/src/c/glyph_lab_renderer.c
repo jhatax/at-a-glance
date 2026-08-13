@@ -43,7 +43,7 @@ int16_t glyph_lab_scale_icon_coord(
   }
 
   if (!(is_valid_design_x_coord(coord, DESIGN_ICON_WIDTH) ||
-          is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT))) {
+        is_valid_design_y_coord(coord, DESIGN_ICON_HEIGHT))) {
     return 0;
   }
 
@@ -58,7 +58,7 @@ GPoint glyph_lab_scale_icon_point(
     int16_t x,
     int16_t y) {
   if (!(is_valid_design_x_coord(x, DESIGN_ICON_WIDTH) &&
-          is_valid_design_y_coord(y, DESIGN_ICON_HEIGHT))) {
+        is_valid_design_y_coord(y, DESIGN_ICON_HEIGHT))) {
     return GPointZero;
   }
 
@@ -80,7 +80,8 @@ void glyph_lab_draw_scaled_line(
     return;
   }
 
-  graphics_draw_line(ctx,
+  graphics_draw_line(
+      ctx,
       glyph_lab_scale_icon_point(size, x0, y0),
       glyph_lab_scale_icon_point(size, x1, y1));
 }

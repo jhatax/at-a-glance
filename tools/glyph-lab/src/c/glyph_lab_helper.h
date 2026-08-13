@@ -17,10 +17,10 @@
 
 #define HELPER_IF_ELSE(exp, a, b) ((exp) ? (a) : (b))
 
-#define HELPER_SCALE_ROUND(v, n, d)                                \
-  (((n) == (d)) ? (v)                                              \
-                : ((((v) >= 0) ? ((((v) * (n)) + ((d) / 2)) / (d)) \
-                               : ((((v) * (n)) - ((d) / 2)) / (d)))))
+#define HELPER_SCALE_ROUND(v, n, d) \
+  (((n) == (d))                     \
+       ? (v)                        \
+       : ((((v) >= 0) ? ((((v) * (n)) + ((d) / 2)) / (d)) : ((((v) * (n)) - ((d) / 2)) / (d)))))
 
 #define HELPER_ROUND_UP(v, d) (HELPER_SCALE_ROUND((v), 1, (d)))
 
@@ -28,9 +28,11 @@
 
 #define MODULE_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
 
-bool helper_tuple_to_int(Tuple* tuple,
+bool helper_tuple_to_int(
+    Tuple* tuple,
     int* value);
 
-bool helper_replace_color_in_bitmap(GBitmap* bmp,
+bool helper_replace_color_in_bitmap(
+    GBitmap* bmp,
     GColor color1,
     GColor color2);

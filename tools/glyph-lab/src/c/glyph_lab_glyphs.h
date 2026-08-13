@@ -7,10 +7,12 @@
 bool glyph_lab_glyphs_init(void);
 void glyph_lab_glyphs_deinit(void);
 
-void glyph_lab_select_palette(ColorPalette* palette,
+void glyph_lab_select_palette(
+    ColorPalette* palette,
     uint8_t palette_index);
 
-void glyph_lab_draw_climate_icon(GContext* ctx,
+void glyph_lab_draw_climate_icon(
+    GContext* ctx,
     const GRect* frame,
     int16_t weather_condition,
     bool is_day,
