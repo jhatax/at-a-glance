@@ -5,6 +5,8 @@ from collections.abc import Iterator
 from shlex import split
 
 from qaplangrammar import (
+    AcceptedMember,
+    MemberDiscard,
     QAPlanGrammar,
     ParseDiscard,
     ParsedStep,
@@ -320,18 +322,31 @@ def _parse_suite_source(path: Path, ) -> tuple[str, list[tuple[str, str]]]:
 def parse_suite(
     path: Path,
     discovered: dict[tuple[str, str], Path] | None = None,
-) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+) -> tuple[list[MemberDiscard], list[AcceptedMember]]:
   _suite_name, members = _parse_suite_source(path)
   if discovered is None:
-    return [], members
+    return [], [
+        AcceptedMember(
+            kind=member_kind,
+            name=member_name,
+            path=path.parent / f"{member_name}.{member_kind}",
+        ) for member_kind, member_name in members
+    ]
 
-  discarded: list[tuple[str, str]] = []
-  discovered_members: list[tuple[str, str]] = []
+  discarded: list[MemberDiscard] = []
+  discovered_members: list[AcceptedMember] = []
   for member_kind, member_name in members:
     member = (member_kind, member_name)
     if member in discovered:
-      discarded.append(member)
+      discarded.append(
+          MemberDiscard(
+              kind=member_kind,
+              name=member_name,
+              reason="Member was already discovered; cyclic or duplicate include",
+          )
+      )
       continue
-    discovered[member] = path.parent / f"{member_name}.{member_kind}"
-    discovered_members.append(member)
+    member_path = path.parent / f"{member_name}.{member_kind}"
+    discovered[member] = member_path
+    discovered_members.append(AcceptedMember(kind=member_kind, name=member_name, path=member_path))
   return discarded, discovered_members

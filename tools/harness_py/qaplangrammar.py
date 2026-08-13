@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Final
 
@@ -161,17 +162,45 @@ class QAPlanGrammar:
     return (emulator in cls.SUPPORT_MATRIX and display in cls.SUPPORT_MATRIX[emulator]["displays"])
 
 
+class AcceptedItem:
+  pass
+
+
+class DiscardedItem:
+  pass
+
+
 @dataclass
-class ParsedStep:
+class ParsedStep(AcceptedItem):
   capability: str
   fields: dict[str, str]
 
 
 @dataclass(frozen=True)
-class ParseDiscard:
+class AcceptedMember(AcceptedItem):
+  kind: str
+  name: str
+  path: Path
+
+
+@dataclass(frozen=True)
+class ParseDiscard(DiscardedItem):
   line_number: int
   source: str
   reason: str
+
+  def describe(self) -> str:
+    return f"line {self.line_number}: {self.source} ({self.reason})"
+
+
+@dataclass(frozen=True)
+class MemberDiscard(DiscardedItem):
+  kind: str
+  name: str
+  reason: str
+
+  def describe(self) -> str:
+    return f"{self.kind.title()} '{self.name}': {self.reason}"
 
 
 def validate_slug(value: str, label: str) -> None:

@@ -6,6 +6,8 @@ from pathlib import Path
 from textwrap import fill
 from typing import Any, Callable
 from qaplangrammar import (
+    DiscardedItem,
+    MemberDiscard,
     ParseDiscard,
     ParsedStep,
     QAPlanGrammar,
@@ -25,17 +27,17 @@ QA_MSG_ONESHOT_STEPS = 10021
 
 
 @dataclass(frozen=True)
-class ResolutionDiscard:
+class ResolutionDiscard(DiscardedItem):
   capability: str
   execution_config: tuple[str, str]
   reason: str
 
-
-@dataclass(frozen=True)
-class MemberDiscard:
-  kind: str
-  name: str
-  reason: str
+  def describe(self) -> str:
+    emulator, display = self.execution_config
+    target = f"Emulator '{emulator}', display '{display}'"
+    if self.capability:
+      target += f", capability='{self.capability}'"
+    return f"{target}: {self.reason}"
 
 
 @dataclass
@@ -70,7 +72,12 @@ class PlanStep(ABC):
   _step_id: str = field(init=False, default="")
 
   @abstractmethod
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     pass
 
   @property
@@ -117,8 +124,14 @@ class WeatherStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     pebble.send_app_message(
+        connection,
         self.emulator,
         {
             QA_MSG_TEMPERATURE: self.temp,
@@ -156,8 +169,14 @@ class LocationStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     pebble.send_app_message(
+        connection,
         self.emulator,
         {
             QA_MSG_MAYBE_CURRENT_LOCATION: self.location,
@@ -193,17 +212,24 @@ class BluetoothStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     if self.display:
       pebble.send_app_message(
+          connection,
           self.emulator,
           {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
       )
-    if self.capture_screenshots:
-      capture_screenshot(self.emulator)
-    pebble.set_bluetooth(self.emulator, self.connected)
-    if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+    pebble.set_bluetooth(
+        connection,
+        self.emulator,
+        self.connected,
+        capture_screenshot if self.capture_screenshots else None,
+    )
 
   @property
   def step_id(self) -> str:
@@ -235,13 +261,19 @@ class BatteryStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     if self.display:
       pebble.send_app_message(
+          connection,
           self.emulator,
           {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
       )
-    pebble.set_battery(self.emulator, self.level, self.charging)
+    pebble.set_battery(connection, self.emulator, self.level, self.charging)
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
 
@@ -272,8 +304,14 @@ class HealthStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     pebble.send_app_message(
+        connection,
         self.emulator,
         {
             QA_MSG_ONESHOT_BPM: self.bpm,
@@ -327,8 +365,14 @@ class AllForOneStep(PlanStep):
         )
     ).lower()
 
-  def run(self, pebble: Any, capture_screenshot: Callable[[str], None]) -> None:
+  def run(
+      self,
+      pebble: Any,
+      connection: Any,
+      capture_screenshot: Callable[[str], None],
+  ) -> None:
     pebble.send_app_message(
+        connection,
         self.emulator,
         {
             QA_MSG_ONESHOT_BPM: self.bpm,
@@ -340,8 +384,8 @@ class AllForOneStep(PlanStep):
             QA_MSG_MAYBE_CURRENT_LOCATION: self.location,
         },
     )
-    pebble.set_battery(self.emulator, self.level, self.charging)
-    pebble.set_bluetooth(self.emulator, self.connected)
+    pebble.set_battery(connection, self.emulator, self.level, self.charging)
+    pebble.set_bluetooth(connection, self.emulator, self.connected, self.capture_screenshots)
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
 
@@ -364,20 +408,7 @@ def print_plan(plan: PlanDefinition):
   if plan.discarded:
     print("Discarded plan items:")
     for index, discarded in enumerate(plan.discarded, start=1):
-      if isinstance(discarded, ParseDiscard):
-        details = (
-            f"{index}. line {discarded.line_number}: {discarded.source} "
-            f"({discarded.reason})"
-        )
-      elif isinstance(discarded, MemberDiscard):
-        details = (f"{index}. {discarded.kind.title()} '{discarded.name}': "
-                   f"{discarded.reason}")
-      else:
-        emulator, display = discarded.execution_config
-        target = f"Emulator '{emulator}', display '{display}'"
-        if discarded.capability:
-          target += f", capability='{discarded.capability}'"
-        details = f"{index}. {target}: {discarded.reason}"
+      details = f"{index}. {discarded.describe()}"
       print(fill(details, width=80, subsequent_indent="  "))
 
   print(f"{divider}")
@@ -564,24 +595,19 @@ def _expand_suite_members(path: Path, ) -> tuple[dict[tuple[str, str], Path], li
       continue
     member = (member_kind, member_name)
     repeated_members, new_members = parse_suite(discovered[member], discovered)
-    discarded.extend(
-        MemberDiscard(
-            kind=member_kind,
-            name=member_name,
-            reason="Member was already discovered; cyclic or duplicate include",
-        ) for member_kind, member_name in repeated_members
-    )
+    discarded.extend(repeated_members)
     for new_member in new_members:
-      member_path = discovered[new_member]
+      member = (new_member.kind, new_member.name)
+      member_path = discovered[member]
       if member_path.is_file():
-        member_types.append(new_member)
+        member_types.append(member)
         continue
-      del discovered[new_member]
+      del discovered[member]
       discarded.append(
           MemberDiscard(
-              kind=new_member[0],
-              name=new_member[1],
-              reason=f"Unknown included plan '{new_member[1]}'",
+              kind=new_member.kind,
+              name=new_member.name,
+              reason=f"Unknown included plan '{new_member.name}'",
           )
       )
   return discovered, discarded
