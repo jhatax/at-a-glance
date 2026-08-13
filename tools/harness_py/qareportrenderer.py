@@ -44,7 +44,7 @@ def _render_report_outputs(runs: list[QARunContext]) -> str:
 
 
 def render_report(runs: list[QARunContext], heading: str) -> str:
-  if not len(runs):
+  if not runs:
     raise ValueError("You must specify at least one run to render into report")
   top = render_report_top(runs, heading)
   steps = _render_report_steps(runs)
