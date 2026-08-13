@@ -1,9 +1,9 @@
 PREAMBLE
-  SCENARIO battery
   SCREENSHOTS yes
   EMULATORS chalk
+  DISPLAYS black
 END
 
 EXECUTE
-  STEP battery display=black level=25 charging=0
+  STEP battery level=25 charging=0
 END

@@ -1,8 +1,8 @@
 PREAMBLE
-SCENARIO unsupported-display
 SCREENSHOTS no
 EMULATORS emery
+DISPLAYS purple
 END
 EXECUTE
-STEP battery display=purple level=80 charging=0
+STEP battery level=80 charging=0
 END

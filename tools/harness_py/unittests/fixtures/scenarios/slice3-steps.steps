@@ -1,0 +1,12 @@
+PREAMBLE
+  EMULATORS should_be_ignored
+  DISPLAYS should_be_ignored
+END
+
+EXECUTE
+  STEP weather temp=265 code=65 is_day=1
+  STEP battery level=50 charging=0
+END
+
+# Everything after EXECUTE END is ignored by a steps parser.
+PREAMBLE ignored

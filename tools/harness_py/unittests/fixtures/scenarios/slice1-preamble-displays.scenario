@@ -1,0 +1,14 @@
+PREAMBLE
+  SCREENSHOTS no
+  EMULATORS emery flint
+  DISPLAYS white celeste unknown white
+END
+
+EXECUTE
+  STEP weather temp=265 code=65 is_day=1
+  STEP battery level=50 charging=0
+  STEP battery level=bad charging=0
+  STEP weather temp=265 code=65
+  STEP weather temp=265 code=65 is_day=2
+  STEP weather display=white temp=265 code=65 is_day=1
+END

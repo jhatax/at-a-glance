@@ -1,0 +1,4 @@
+MEMBERS
+  INCLUDE SCENARIO missing-scenario
+  INCLUDE SCENARIO weather
+END

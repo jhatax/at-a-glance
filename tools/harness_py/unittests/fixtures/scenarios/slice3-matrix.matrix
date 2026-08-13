@@ -1,0 +1,10 @@
+PREAMBLE
+  SCREENSHOTS yes
+  EMULATORS emery chalk
+  DISPLAYS white black celeste
+END
+
+STEPS
+  slice3-steps.steps
+  another-steps.steps
+END

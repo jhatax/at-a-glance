@@ -1,0 +1,5 @@
+EXECUTE
+# comment
+STEP location location=Room#322
+STEP location location=Room
+END

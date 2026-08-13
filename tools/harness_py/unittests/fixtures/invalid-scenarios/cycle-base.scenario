@@ -5,5 +5,5 @@ PREAMBLE
 END
 
 EXECUTE
-  STEP weather temp=265 code=65 is_day=1 bogus=clear
+  STEP weather temp=250 code=0 is_day=1
 END

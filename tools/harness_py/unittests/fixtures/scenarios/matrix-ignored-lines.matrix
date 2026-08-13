@@ -1,0 +1,12 @@
+ignored text before the grammar
+PREAMBLE
+  SCREENSHOTS no
+  EMULATORS emery
+  DISPLAYS white
+END
+
+unsupported directive value
+STEPS
+  slice3-steps.steps
+END
+ignored text after the grammar

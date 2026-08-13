@@ -3,7 +3,3 @@ PREAMBLE
   EMULATORS emery
   DISPLAYS white
 END
-
-EXECUTE
-  STEP health bpm=121 steps=11000
-END

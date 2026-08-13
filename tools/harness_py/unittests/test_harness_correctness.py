@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from ctypes import cast
 from pathlib import Path
 from typing import Final
 import unittest
 import json
-from qaharnessruntime import QARunContext, QAStepContext, ScreenshotsContext
-from qaplangrammar import ParsedScenario, ParsedSuite, QAPlanGrammar
+from tempfile import TemporaryDirectory
+from qaharnessruntime import (
+    QARunContext,
+    QAStepContext,
+    REPORT_STEP_SCHEMA,
+    ScreenshotsContext,
+    build_step_outputs,
+)
+from qaplangrammar import QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
 from ataglanceharness import handle_validate_plan
-from qaplanresolver import LocationStep, load_and_validate_plan
+from qaplanresolver import AllForOneStep, LocationStep, MemberDiscard, load_and_validate_plan
+from qaresultinspector import write_summary_report
 
 QA_ROOT: Final = Path(__file__).resolve().parents[3] / "qa"
 PLANS_ROOT: Final = QA_ROOT / "plans"
@@ -19,47 +26,80 @@ FIXTURES_ROOT: Final = Path(__file__).resolve().parent / "fixtures"
 class HarnessCorrectnessTests(unittest.TestCase):
 
   def test_parser_returns_parsed_scenario_without_expanding(self) -> None:
-    parsed = parse_scenario(PLANS_ROOT / "canary.scenario")
-    self.assertIsInstance(parsed, ParsedScenario)
-    self.assertEqual(parsed.name, "canary")
-    self.assertEqual(parsed.screenshots_policy, "no")
-    self.assertEqual(parsed.emulators, ["emery"])
-    self.assertEqual(len(parsed.steps), 1)
-    self.assertNotIn("emulator", parsed.steps[0].fields)
+    screenshots, emulators, displays, steps, _ = parse_scenario(PLANS_ROOT / "canary.scenario")
+    self.assertEqual(screenshots, "yes")
+    self.assertEqual(emulators, ["emery"])
+    self.assertEqual(displays, ["white"])
+    self.assertEqual(len(steps), 2)
+    self.assertNotIn("emulator", steps[0].fields)
+
+  def test_canary_is_a_real_integrated_step(self) -> None:
+    screenshots, emulators, displays, steps, _ = parse_scenario(PLANS_ROOT / "canary.scenario")
+    self.assertEqual(screenshots, "yes")
+    self.assertEqual(emulators, ["emery"])
+    self.assertEqual(displays, ["white"])
+    self.assertEqual([step.capability for step in steps], ["all", "all"])
+
+    plan = load_and_validate_plan("canary", PLANS_ROOT)
+    self.assertEqual(plan.step_count, 2)
+    step = next(iter(plan.steps.values()))
+    self.assertIsInstance(step, AllForOneStep)
+    self.assertTrue(step.capture_screenshots)
+    self.assertEqual(plan.expected_screenshots, 2)
 
   def test_parser_returns_parsed_suite_with_resolved_scenarios(self) -> None:
-    parsed = parse_suite(PLANS_ROOT / "qa-emery.suite")
-    self.assertIsInstance(parsed, ParsedSuite)
-    self.assertEqual(parsed.name, "qa-emery")
+    archived_plans = PLANS_ROOT / "archive"
+    discovered = {}
+    repeated, parsed = parse_suite(
+        archived_plans / "qa-emery.suite",
+        discovered,
+    )
     self.assertEqual(
-        [scenario.name for scenario in parsed.members], [
-            "emery-weather",
-            "emery-battery",
-            "emery-health",
-            "emery-location",
-            "screenshots_evidence_emery",
-        ]
+        [member_name for _, member_name in parsed],
+        ["emery-weather", "emery-battery", "emery-health", "emery-location"],
+    )
+    self.assertEqual(
+        list(discovered),
+        [
+            ("scenario", "emery-weather"),
+            ("scenario", "emery-battery"),
+            ("scenario", "emery-health"),
+            ("scenario", "emery-location"),
+        ],
+    )
+    self.assertEqual(repeated, [])
+
+  def test_parser_returns_direct_suite_members_in_order(self) -> None:
+    _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )
+    self.assertEqual(
+        members,
+        [
+            ("scenario", "weather"),
+            ("scenario", "battery"),
+            ("scenario", "health"),
+            ("matrix", "slice3-matrix"),
+        ],
     )
 
   def test_named_scenario_loads_and_expands(self) -> None:
-    plan = load_and_validate_plan("canary", PLANS_ROOT)
-    self.assertEqual(plan.name, "canary")
-    self.assertEqual(len(plan.steps), 1)
+    plan = load_and_validate_plan("visual-refresh", PLANS_ROOT)
+    self.assertEqual(plan.name, "visual-refresh")
+    self.assertEqual(len(plan.steps), 12)
     step = next(iter(plan.steps.values()))
-    self.assertFalse(step.capture_screenshots)
-    self.assertEqual(step.expected_screenshots, 0)
+    self.assertTrue(step.capture_screenshots)
+    self.assertEqual(step.expected_screenshots, 1)
     self.assertEqual(step.captured_screenshots, 0)
-    self.assertEqual(plan.expected_screenshots, 0)
+    self.assertEqual(plan.expected_screenshots, 12)
     self.assertEqual(plan.captured_screenshots, 0)
 
   def test_location_scenario_loads_and_expands(self) -> None:
-    location_plan = (PLANS_ROOT / "emery-location.scenario")
+    location_plan = PLANS_ROOT / "archive" / "emery-location.scenario"
     plan = load_and_validate_plan(str(location_plan))
     self.assertEqual(len(plan.steps), 6)
     locations: list[str] = []
     for step in plan.steps.values():
-      self.assertEqual(step.capability, "location")
       self.assertTrue(isinstance(step, LocationStep))
+      self.assertTrue(isinstance(step.location, str))
       locations.append(step.location)
     self.assertEqual(
         locations, [
@@ -74,50 +114,117 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(plan.expected_screenshots, 6)
 
   def test_direct_scenario_path_loads(self) -> None:
-    path = PLANS_ROOT / "canary.scenario"
+    path = PLANS_ROOT / "qa-smoke.matrix"
     plan = load_and_validate_plan(str(path))
-    self.assertEqual(plan.name, "canary")
+    self.assertEqual(plan.name, "qa-smoke")
     self.assertEqual(plan.path, path)
 
-  def test_named_suite_loads_and_expands(self) -> None:
-    plan = load_and_validate_plan("qa-smoke", PLANS_ROOT)
-    self.assertEqual(plan.name, "qa-smoke")
-    self.assertEqual(len(plan.steps), 9)
+  def test_matrix_loads_preamble_and_step_files(self) -> None:
+    path = FIXTURES_ROOT / "scenarios" / "slice3-matrix.matrix"
+    plan = load_and_validate_plan(str(path))
+    self.assertEqual(plan.name, "slice3-matrix")
+    self.assertEqual(len(plan.execution_configs), 6)
+    self.assertEqual(len(plan.steps), 18)
+    self.assertEqual(plan.expected_screenshots, 18)
+
+  def test_pre_release_matrix_covers_every_supported_tuple(self) -> None:
+    plan = load_and_validate_plan("pre-release-gate", PLANS_ROOT)
+
+    self.assertEqual(len(plan.execution_configs), 20)
+    self.assertEqual(len(plan.steps), 258)
+    self.assertEqual(plan.expected_screenshots, 258)
+
+  def test_suite_aggregates_matrix_members(self) -> None:
+    _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )
+    self.assertIn(("matrix", "slice3-matrix"), members)
+
+  def test_nested_suite_members_are_discovered_once_in_order(self) -> None:
+    plan = load_and_validate_plan(
+        str(FIXTURES_ROOT / "scenarios" / "duplicate-nested-members.suite")
+    )
+    self.assertEqual(
+        plan.execution_configs,
+        [("emery", "white"), ("chalk", "black")],
+    )
+    self.assertEqual(len(plan.steps), 2)
     self.assertEqual(
         [step.capability for step in plan.steps.values()],
-        [
-            "all",
-            "all",
-            "all",
-            "all",
-            "all",
-            "all",
-            "all",
-            "all",
-            "all",
-        ],
+        ["weather", "battery"],
     )
+
+  def test_missing_suite_member_is_discarded_without_resolution(self) -> None:
+    plan = load_and_validate_plan(str(FIXTURES_ROOT / "scenarios" / "suite-missing-member.suite"))
+    self.assertEqual(plan.step_count, 1)
+    self.assertEqual(len(plan.discarded), 1)
+    self.assertEqual(
+        plan.discarded[0],
+        MemberDiscard(
+            kind="scenario",
+            name="missing-scenario",
+            reason="Unknown included plan 'missing-scenario'",
+        ),
+    )
+
+  def test_commit_smoke_loads_and_expands_across_visual_matrix(self) -> None:
+    plan = load_and_validate_plan("qa-smoke", PLANS_ROOT)
+    self.assertEqual(plan.name, "qa-smoke")
+    self.assertEqual(len(plan.execution_configs), 6)
+    self.assertEqual(len(plan.steps), len(plan.execution_configs))
+    self.assertTrue(all(isinstance(step, AllForOneStep) for step in plan.steps.values()))
     self.assertTrue(all(step.capture_screenshots for step in plan.steps.values()))
-    self.assertEqual(plan.expected_screenshots, 9)
+    self.assertEqual(plan.expected_screenshots, len(plan.execution_configs))
     self.assertEqual(plan.captured_screenshots, 0)
     _, first_step = next(iter(plan.steps.items()))
     first_step.captured_screenshots = 1
 
+  def test_report_step_projection_matches_report_schema(self) -> None:
+    plan = load_and_validate_plan("canary", PLANS_ROOT)
+    step = next(iter(plan.steps.values()))
+    rows = build_step_outputs(
+        plan,
+        [{
+            "step_result_id": step.step_id,
+            "status": "passed",
+            "screenshot_paths": [],
+        }],
+    )
+    row = rows[0]
+    self.assertEqual(set(row.step_args), set(REPORT_STEP_SCHEMA[step.capability]))
+    self.assertNotIn("emulator", row.step_args)
+    self.assertNotIn("capture_screenshots", row.step_args)
+    self.assertNotIn("expected_screenshots", row.step_args)
+    self.assertNotIn("captured_screenshots", row.step_args)
+    self.assertNotIn("_step_id", row.step_args)
+
+  def test_pre_push_gate_contains_visual_matrix(self) -> None:
+    plan = load_and_validate_plan("pre-push-gate", PLANS_ROOT)
+    self.assertEqual(plan.name, "pre-push-gate")
+    self.assertEqual(len(plan.execution_configs), 6)
+    self.assertEqual(plan.step_count, len(plan.execution_configs) * 2)
+    self.assertTrue(all(isinstance(step, AllForOneStep) for step in plan.steps.values()))
+    self.assertEqual(plan.expected_screenshots, plan.step_count)
+    self.assertEqual(plan.captured_screenshots, 0)
+
   def test_direct_suite_path_loads(self) -> None:
-    path = PLANS_ROOT / "dev-smoke.suite"
+    path = PLANS_ROOT / "pre-push-gate.suite"
     plan = load_and_validate_plan(str(path))
-    self.assertEqual(plan.name, "dev-smoke")
+    self.assertEqual(plan.name, "pre-push-gate")
     self.assertEqual(plan.path, path)
 
   def test_unknown_step_field_is_rejected(self) -> None:
     path = FIXTURES_ROOT / "invalid-scenarios" / "unknown-option.scenario"
-    with self.assertRaisesRegex(ValueError, "Unsupported STEP weather field"):
+    with self.assertRaisesRegex(ValueError, "Plan has no valid STEP directives"):
       handle_validate_plan(str(path))
 
-  def test_suite_include_cycle_is_rejected(self) -> None:
+  def test_suite_include_cycle_is_ignored(self) -> None:
     path = FIXTURES_ROOT / "invalid-scenarios" / "include-cycle-a.suite"
-    with self.assertRaisesRegex(ValueError, "INCLUDE cycle"):
-      load_and_validate_plan(str(path), path.parent)
+    plan = load_and_validate_plan(str(path), path.parent)
+    self.assertEqual(plan.step_count, 1)
+    self.assertEqual(plan.execution_configs, [("emery", "white")])
+    self.assertEqual(
+        [item.name for item in plan.discarded if isinstance(item, MemberDiscard)],
+        ["cycle-base", "include-cycle-a"],
+    )
 
   def test_unsupported_emulator_is_rejected(self) -> None:
     path = FIXTURES_ROOT / "invalid-scenarios" / "unsupported-emulator.scenario"
@@ -126,46 +233,32 @@ class HarnessCorrectnessTests(unittest.TestCase):
 
   def test_unsupported_display_mode_is_rejected(self) -> None:
     path = FIXTURES_ROOT / "invalid-scenarios" / "unsupported-display.scenario"
-    with self.assertRaisesRegex(ValueError, "Unsupported display-mode"):
+    with self.assertRaisesRegex(ValueError, "No supported emulator/display configurations remain"):
       handle_validate_plan(str(path))
 
   def test_color_display_mode_is_rejected_on_monochrome_emulator(self) -> None:
     path = FIXTURES_ROOT / "invalid-scenarios" / "color-display-on-monochrome.scenario"
-    with self.assertRaisesRegex(ValueError, "unsupported on emulator 'flint'"):
+    with self.assertRaisesRegex(ValueError, "No supported emulator/display configurations remain"):
       handle_validate_plan(str(path))
 
   def test_validate_handler_returns_process_status(self) -> None:
-    self.assertEqual(handle_validate_plan(str(PLANS_ROOT / "canary")), 0)
+    self.assertEqual(handle_validate_plan(str(PLANS_ROOT / "qa-smoke")), 0)
 
   def test_capability_arguments_are_validated_by_key(self) -> None:
     self.assertTrue(
-        QAPlanGrammar.does_step_have_needed_attributes(
-            "battery", {
-                "charging": "0",
-                "level": "50",
-                "display": "white"
-            }
-        )
-    )
-    self.assertFalse(
         QAPlanGrammar.does_step_have_needed_attributes("battery", {
             "charging": "0",
             "level": "50"
         })
     )
+    self.assertFalse(QAPlanGrammar.does_step_have_needed_attributes("battery", {"level": "50"}))
     with self.assertRaisesRegex(ValueError, "Unsupported capability"):
-      QAPlanGrammar.does_step_have_needed_attributes(
-          "unknown", {
-              "charging": "0",
-              "level": "50",
-              "display": "white"
-          }
-      )
+      QAPlanGrammar.does_step_have_needed_attributes("unknown", {"charging": "0", "level": "50"})
 
   def test_report_step_accepts_capability_arguments_in_any_order(self) -> None:
     step = QAStepContext.from_dict(
         {
-            "step_id": "battery_emery_50_0",
+            "step_id": "battery_emery_white_50_0",
             "capability": "battery",
             "status": "passed",
             "emulator": "emery",
@@ -183,6 +276,16 @@ class HarnessCorrectnessTests(unittest.TestCase):
     )
     self.assertEqual(step.capability, "battery")
     self.assertEqual(step.screenshot_ctx.captured, 0)
+
+  def test_summary_report_matches_report_fixture(self) -> None:
+    report_root = FIXTURES_ROOT / "reports" / "canary"
+    expected_summary = (report_root / "summary.md").read_text(encoding="utf-8")
+
+    with TemporaryDirectory() as temporary_directory:
+      generated_summary = Path(temporary_directory) / "GeneratedReport.md"
+      write_summary_report(report_root, generated_summary)
+
+      self.assertEqual(generated_summary.read_text(encoding="utf-8"), expected_summary)
 
   def test_report_rejects_screenshot_path_count_mismatch(self) -> None:
     with self.assertRaisesRegex(ValueError, "Captured screenshots mismatch"):
@@ -213,14 +316,13 @@ class HarnessCorrectnessTests(unittest.TestCase):
             "20260727T154241",
             "output_folder":
             "/tmp/20260727T154241-pid1234",
-            "_run_id":
+            "run_id":
             "20260727T154241-pid1234",
             "status":
             "passed",
             "resolved": {
                 "expected_screenshots": 0,
                 "captured_screenshots": 0,
-                "emulators": ["emery"],
             },
             "run_outputs": {
                 "root": "/tmp/20260727T154241-pid1234"
@@ -229,7 +331,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
             1,
             "step_outputs": [
                 {
-                    "step_id": "battery_emery_50_0",
+                    "step_id": "battery_emery_white_50_0",
                     "capability": "battery",
                     "status": "passed",
                     "emulator": "emery",
@@ -249,7 +351,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
     )
     self.assertEqual(run.run_id, "20260727T154241-pid1234")
 
-  def test_run_identity_rejects_timestamp_mismatch(self) -> None:
+  def test_run_identity_rejects_run_id_mismatch(self) -> None:
     report = {
         "plan":
         "canary",
@@ -257,14 +359,13 @@ class HarnessCorrectnessTests(unittest.TestCase):
         "20260727T154242",
         "output_folder":
         "/tmp/20260727T154241-pid1234",
-        "_run_id":
-        "20260727T154241-pid1234",
+        "run_id":
+        "20260727T154242-pid1234",
         "status":
         "passed",
         "resolved": {
             "expected_screenshots": 0,
             "captured_screenshots": 0,
-            "emulators": ["emery"],
         },
         "run_outputs": {
             "root": "/tmp/20260727T154241-pid1234"
@@ -273,7 +374,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
         1,
         "step_outputs": [
             {
-                "step_id": "battery_emery_50_0",
+                "step_id": "battery_emery_white_50_0",
                 "capability": "battery",
                 "status": "passed",
                 "emulator": "emery",
@@ -290,7 +391,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
             }
         ],
     }
-    with self.assertRaisesRegex(ValueError, "folder and run_id mismatch"):
+    with self.assertRaisesRegex(ValueError, "Run-id and output_folder"):
       QARunContext.from_dict(report)
 
   def test_report_rejects_missing_required_resolved_context(self) -> None:

@@ -1,0 +1,4 @@
+MEMBERS
+  INCLUDE SCENARIO weather
+  INCLUDE SUITE nested-battery
+END

@@ -1,0 +1,9 @@
+PREAMBLE
+  SCREENSHOTS no
+  EMULATORS aplite flint
+  DISPLAYS white celeste
+END
+
+EXECUTE
+  STEP health bpm=80 steps=9000
+END

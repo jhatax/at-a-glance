@@ -1,0 +1,71 @@
+{
+  "plan": "canary",
+  "started_at": "20260812T173253",
+  "output_folder": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899",
+  "run_id": "20260812T173253-pid6899",
+  "status": "passed",
+  "resolved": {
+    "expected_screenshots": 2,
+    "captured_screenshots": 2
+  },
+  "run_outputs": {
+    "root": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899",
+    "commands_log": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/commands.log",
+    "report_json": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/report.json",
+    "summary_md": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/summary.md",
+    "screenshots_dir": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/screenshots"
+  },
+  "step_count": 2,
+  "step_outputs": [
+    {
+      "step_id": "all_emery_white_200_0_1_80_0_8000_80_oakland_1_shots",
+      "capability": "all",
+      "status": "passed",
+      "emulator": "emery",
+      "step_args": {
+        "display": "white",
+        "bpm": 80,
+        "steps": 8000,
+        "level": 80,
+        "charging": 0,
+        "temp": 200,
+        "code": 0,
+        "is_day": 1,
+        "location": "Oakland",
+        "connected": 1
+      },
+      "screenshot_ctx": {
+        "expected": 1,
+        "captured": 1,
+        "paths": [
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/screenshots/all_emery_white_200_0_1_80_0_8000_80_oakland_1_shots.png"
+        ]
+      }
+    },
+    {
+      "step_id": "all_emery_white_250_1_1_85_1_11000_110_oakland_0_shots",
+      "capability": "all",
+      "status": "passed",
+      "emulator": "emery",
+      "step_args": {
+        "display": "white",
+        "bpm": 110,
+        "steps": 11000,
+        "level": 85,
+        "charging": 1,
+        "temp": 250,
+        "code": 1,
+        "is_day": 1,
+        "location": "Oakland",
+        "connected": 0
+      },
+      "screenshot_ctx": {
+        "expected": 1,
+        "captured": 1,
+        "paths": [
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260812T173253-pid6899/screenshots/all_emery_white_250_1_1_85_1_11000_110_oakland_0_shots.png"
+        ]
+      }
+    }
+  ]
+}

@@ -4,6 +4,7 @@ PREAMBLE
   DISPLAYS white
 END
 
-EXECUTE
-  STEP weather temp=265 code=65 is_day=1 bogus=clear
+STEPS
+  not-a-steps-file.txt
+  slice3-steps.steps
 END

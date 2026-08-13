@@ -1,7 +1,7 @@
 PREAMBLE
-  SUITE include-cycle-b
 END
 
 MEMBERS
+  INCLUDE SCENARIO cycle-base
   INCLUDE SUITE include-cycle-a
 END
