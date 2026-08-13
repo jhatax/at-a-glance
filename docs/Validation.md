@@ -29,14 +29,14 @@ The validation layer helps you confirm that watch face changes continue to satis
 
 Use the narrowest path that proves the change.
 
-| Change type                                | Minimum validation                                                                                                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Documentation only                         | Read the touched docs for contradictions and run Markdown/link checks when practical.                                                                                   |
-| Build tooling                              | Run the affected build or compile-database path.                                                                                                                        |
-| Runtime C change                           | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior.                                                                          |
-| Settings, AppMessage, or persistence       | Validate defaults, invalid values, applied behavior, and restart behavior where applicable.                                                                             |
+| Change type | Minimum validation |
+| --- | --- |
+| Documentation only | Read the touched docs for contradictions and run Markdown/link checks when practical. |
+| Build tooling | Run the affected build or compile-database path. |
+| Runtime C change | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
+| Settings, AppMessage, or persistence | Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
 | UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, confirm the mode changes and the watch repaints. |
-| Release candidate                          | Run the release scenario path and complete manual signoff.                                                                                                              |
+| Release candidate | Run the release scenario path and complete manual signoff. |
 
 If a validation path cannot be run, state the gap explicitly in the closeout.
 
@@ -72,19 +72,22 @@ Before release, validation should cover:
 
 ## Validation of Watch Face Functionality
 
-### 1. Using QA Scenarios and Suites
+### 1. Using QA Scenarios, Matrices, and Suites
 
 Out-of-the-box targets:
 
-- `canary`: Minimal proof that qa plan loading and step execution work.
-- `dev-smoke`: Fast daily confidence on the `qa-emery` suite.
-- `pre-release-gate`: Representative pre-release validation with screenshot evidence and manual signoff across the emulator QA suites.
+- `canary`: One screenshot-free integrated `all` step on Emery for fast plan/execution confidence.
+- `qa-smoke`: Matrix-driven six-surface integrated smoke coverage for Emery, Chalk, and Flint in white and black display modes.
+- `visual-refresh`: Matrix-driven screenshot-producing visual checks across the same six surfaces, including charging, connectivity, day/night, sleet, and clear-weather states.
+- `pre-push-gate`: Suite aggregation of the `visual-refresh` Matrix.
+- `pre-release-gate`: Matrix-driven representative pre-release validation across every supported emulator/display tuple, with screenshot evidence and manual signoff.
 
 Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and compare past qa runs, and validate qa plans for correctness.
 
 ```sh
 ./aag-build-qa.sh --exec canary
-./aag-build-qa.sh --exec dev-smoke
+./aag-build-qa.sh --exec qa-smoke
+./aag-build-qa.sh --exec pre-push-gate --force
 ./aag-build-qa.sh --exec pre-release-gate
 
 ./aag-build-qa.sh --runs
@@ -98,10 +101,10 @@ Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and co
 Use `--dry-run` with a qa plan to inspect the resolved execution plan without creating a run:
 
 ```sh
-./aag-build-qa.sh --exec dev-smoke --dry-run
+./aag-build-qa.sh --exec pre-push-gate --dry-run
 ```
 
-Use `--force` only after reviewing the resolved execution plan.
+Use `--force` only after reviewing the resolved execution plan. If validation discards any plan items, the harness requires confirmation and ignores `--force`.
 
 QA runs write evidence under: `qa/qa-runs/<run-id>/`
 
@@ -111,6 +114,8 @@ Typical evidence includes:
 - `report.json`
 - `commands.log`
 - `screenshots/`, when screenshots are enabled
+
+Bluetooth steps request two screenshots: one before changing the connection state and one after.
 
 To view prior qa plan execution results:
 

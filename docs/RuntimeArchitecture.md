@@ -36,10 +36,10 @@ These **four flows are the same** for supported capabilities of all Pebble devic
 
 ```text
 ataglance.c
-  -> settings_load(&settings)
   -> window_set_window_handlers(...)
   -> window_stack_push(window, true)
        -> main_window_load(window)
+            -> settings_load(&settings)
             -> watchface_create(window, &settings)
                  -> window_get_root_layer(window)
                  -> layout_watchface_initialize(width, height, &surface)
@@ -53,24 +53,29 @@ ataglance.c
                  -> feature_module_create(root, prepared surface strata...)
                  -> require date/time/battery/climate strata to succeed
                  -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
-  -> subscribe tick, battery, and health services
-  -> register AppMessage callbacks
-  -> open_app_message()
-  -> send loaded WEATHER_UPDATE_MINUTES to PKJS
+            -> subscribe tick, battery, connection, and health services
+            -> register AppMessage callbacks
+            -> app_message_open(...)
+                 -> retry open with AppTimer only if opening fails
 ```
 
 ### 2. Runtime event flow
 
 ```text
-service callback, accelerometer tap callback, or AppMessage callback in ataglance.c
+service callback in ataglance.c
   -> build WatchfaceEventData
   -> watchface_apply_received_data()
+
+AppMessage inbox handler
+  -> parse WatchfaceEventData
+  -> ataglance_apply_received_data()
+       -> watchface_apply_received_data()
        -> apply_setting_data(...)
             -> mutate settings for time format, temp unit, display mode, steps goal
             -> accumulate targeted refresh mask
             -> mark repaint only for a valid display-mode change
        -> apply_weather_or_location_data(...)
-            -> push complete or unavailable climate state]
+            -> push complete or unavailable climate state
             -> request climate refresh when any weather field was received
             -> copy the bounded location payload into climate source state
             -> request the location text refresh
@@ -94,27 +99,33 @@ service callback, accelerometer tap callback, or AppMessage callback in ataglanc
 ### 3. Settings persistence and side effects
 
 ```text
-ataglance.c inbox_received_callback(iter)
-  -> copy previous_settings
+AppMessage inbox handler
+  -> detect optional JS_READY synchronization sentinel
+  -> send persisted WEATHER_UPDATE_MINUTES when JS_READY is received
   -> parse settings, weather, location, health settings, and one-shot health tuples
-  -> watchface_apply_received_data(&data, &settings)
+  -> ataglance_apply_received_data(&data)
+       -> watchface_apply_received_data(&data, &settings)
   -> if any persisted setting changed
        -> settings_save(&settings)
   -> if hr_sample_minutes changed
        -> apply_hr_sample_period()
 ```
 
-### 4. Startup weather-cadence sync:
+### 4. Weather-cadence synchronization:
 
 ```text
-ataglance.c init()
-  -> settings_load(&s_settings)
-  -> open_app_message()
-  -> send loaded WEATHER_UPDATE_MINUTES through outbox
+src/pkjs/index.js ready
+  -> start weather/location refresh at the 15-minute default
+  -> enqueue JS_READY through the control AppMessage lane
+
+AppMessage inbox handler in ataglance.c
+  -> detect JS_READY
+  -> enqueue persisted WEATHER_UPDATE_MINUTES through the C outbox
 
 src/pkjs/index.js appmessage handler
-  -> applyWeatherUpdateMinutes(minutes, true)
-  -> schedule weather polling from the watch-loaded value
+  -> receive the persisted cadence
+  -> applyWeatherUpdateMinutes(minutes)
+  -> reschedule weather/location polling from the watch-loaded value
 ```
 
 ## Prepared Surface
@@ -327,11 +338,12 @@ The steps module demonstrates the intended boundary:
 
 ## AppMessage Runtime Coverage
 
-`ataglance.c` is the Pebble container and transport/service adapter. Responsibilities:
+`ataglance.c` is the Pebble container and service adapter. The private C message adapter owns AppMessage parsing, sizing, opening, callbacks, and the watch-to-phone cadence synchronization send. Responsibilities are split as follows:
 
-1. parse raw AppMessage tuples (using a helper function) into `WatchfaceEventData`;
-2. track whether each tuple was received and parsed;
-3. delegate runtime interpretation to `watchface_apply_received_data()`.
+1. the message parser translates raw tuples into `WatchfaceEventData`;
+2. the message handler owns AppMessage transport and delegates parsed data;
+3. `ataglance.c` owns lifecycle, persistence triggers, and service callbacks;
+4. `watchface_apply_received_data()` owns runtime interpretation.
 
 ### Inbound AppMessage coverage
 
@@ -342,17 +354,27 @@ The steps module demonstrates the intended boundary:
 
 ### Outbound AppMessage coverage
 
-- On startup, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back to PKJS so the phone-side weather polling schedule resumes from watch storage.
+- When PKJS sends `JS_READY`, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back through the C outbox so the phone-side weather polling schedule resumes from watch storage.
+- PKJS uses independent serialized lanes:
+  - Weather
+  - Location
+  - Control
+- Each lane retries failed `Pebble.sendAppMessage()` calls with bounded timer backoff.
+- Lane separation prevents a stalled weather or location send from blocking settings and control traffic.
 
 Settings, Clay field mapping, generated message-key numbering, PKJS normalization, and persistence rules are owned by [SettingsandConfiguration](SettingsandConfiguration.md). This section owns only the architecture-level transport route.
 
 ### Climate-specific transport behavior
 
-- The phone companion requests current weather from Open-Meteo on the configured cadence and renders weather and location unavailable when phone geolocation is unavailable.
+- The phone companion requests current weather from Open-Meteo on the configured cadence. If geolocation or either network request fails, PKJS logs the failure and leaves the watch's current weather/location state unchanged.
 - PKJS sends the resolved location text through `MAYBE_CURRENT_LOCATION`; the runtime passes it to `climate.c`, which owns the location buffer and text layer.
 - Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.
-- Any received weather tuple triggers a climate refresh. The runtime applies weather as complete climate state only when temperature, condition, and `is_day` are all parsed. `climate.c` then validates the parsed domain values; incomplete or invalid packets clear prior weather state and render the unavailable vocabulary.
+- Weather tuple flow:
+  1. A received tuple triggers a climate refresh.
+  2. The runtime applies complete climate state only when temperature, condition, and `is_day` are all parsed.
+  3. `climate.c` validates the parsed domain values.
+  4. Incomplete or invalid packets clear prior weather state and render the unavailable vocabulary.
 
 ## Lifecycle Priorities
 

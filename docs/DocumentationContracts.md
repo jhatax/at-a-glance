@@ -104,7 +104,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Defines how contributors choose a validation path and what evidence each path produces. It keeps signoff with the operator while making build, runtime, settings, visual, and release checks repeatable.
 
-**Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; scenario execution; run inspection; comparison; manual emulator commands; battery; weather; display mode; one-shot health; config page; debug builds.
+**Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather; display mode; one-shot health; config page; debug builds.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA_Readme](../qa/README.md).
 
@@ -112,7 +112,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Explains how to operate the QA harness and inspect its artifacts. It presents the public command flow, shell/Python boundary, run outputs, and correctness-test command.
 
-**Sub-concepts:** Public entrypoint; operator command flow; shell/Python boundary; scenario and suite operations; run artifacts; report inspection; comparison; build handoff; correctness tests; fixtures.
+**Sub-concepts:** Public entrypoint; operator command flow; shell/Python boundary; scenario, Matrix, and suite operations; run artifacts; report inspection; comparison; build handoff; correctness tests; fixtures.
 
 **Connections:** Adjacent: [Validation](Validation.md), [Contributing](Contributing.md). Read next: [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
@@ -120,7 +120,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Shows operators how to write the narrow QA grammar. It explains plan anatomy, scenario steps, suite composition, supported fields, policy rules, and grammar fixtures.
 
-**Sub-concepts:** Scenario example; suite example; plan hierarchy; step construction; scenario construction; suite construction; file shapes; grammar rules; capabilities; required fields; value ranges; emulator support; unordered field arguments; weather; battery; health; all; screenshot policy; identity and de-duplication; fixtures.
+**Sub-concepts:** Scenario example; Matrix example; suite example; reusable steps files; plan hierarchy; step construction; scenario construction; Matrix construction; suite construction; file shapes; grammar vocabulary; grammar rules; capabilities; required fields; value ranges; emulator support; unordered field arguments; weather; battery; health; Bluetooth; all; screenshot policy; identity and de-duplication; fixtures.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
@@ -128,7 +128,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Maps the live QA harness from shell handoff through Python dispatch, plan resolution, step execution, finalization, inspection, and comparison. It records function ownership and the canonical JSON-to-Markdown report boundary.
 
-**Sub-concepts:** Implementation guardrails; four runtime phases; parser handoff; resolver handoff; executor handoff; finalization handoff; function ownership; Pebble adapter boundary; canonical JSON report; Markdown rendering; inspection and comparison; harness-specific validation gates.
+**Sub-concepts:** Implementation guardrails; four runtime phases; parser handoff; shared line iterator; resolver handoff; support matrix; accepted and discarded items; typed step dispatch; executor handoff; finalization handoff; function ownership; Pebble adapter boundary; canonical JSON report; Markdown rendering; inspection and comparison; harness-specific validation gates.
 
 **Connections:** Adjacent: [QA_Readme](../qa/README.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [Validation](Validation.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md).
 

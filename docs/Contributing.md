@@ -22,7 +22,7 @@ zsh setup-git-hook.sh
 Install the Pebble SDK and CLI separately. The complete build and environment contract is in [BuildandInstall](BuildandInstall.md). The local formatting and QA tools are:
 
 ```sh
-brew install node python pre-commit yapf shfmt clang-format
+brew install node python uv pre-commit yapf shfmt clang-format
 ```
 
 Verify the tools needed for the path you intend to run:
@@ -30,7 +30,8 @@ Verify the tools needed for the path you intend to run:
 ```sh
 node --version
 npm --version
-python3 --version
+uv --version
+uv run --python 3.13 python --version
 clang-format --version
 pebble --version
 ```
@@ -47,15 +48,27 @@ pebble --version
 
 2. Read the source owner, runtime boundary, and relevant [RAID Log](RAID_LOG.md) decisions before editing. Keep one coherent slice, preserve unrelated user changes, and do not reopen an accepted direction without fresh contrary evidence.
 
-3. Reconcile every affected producer and consumer. Settings, AppMessage, resources, capabilities, generated files, source, QA commands, and documentation change together when their contract changes. Use [SettingsandConfiguration](SettingsandConfiguration.md) for the settings and message-key checklist.
+3. Reconcile every affected producer and consumer:
 
-4. Choose the narrowest validation path that proves the change. Use [Validation](Validation.md) for the change-type matrix, [BuildandInstall](BuildandInstall.md) for build or install operations, and [QA README](../qa/README.md) for scenario execution.
+   - Settings, AppMessage, resources, capabilities, generated files, source, QA commands, and documentation change together when their contract changes.
+   - Use [SettingsandConfiguration](SettingsandConfiguration.md) for the settings and message-key checklist.
+
+4. Choose the narrowest validation path that proves the change. Use [Validation](Validation.md) for the change-type matrix, [BuildandInstall](BuildandInstall.md) for build or install operations, and [QA README](../qa/README.md) for plan execution.
 
 5. Review the live diff, generated artifacts, and documentation before staging. Do not treat an old QA run or stale document as a source-of-truth substitute.
 
 ## Editor And Local Checks
 
-The repository includes VS Code settings and tasks for clangd, format-on-save, Prettier, Python unittest discovery, harness tests, and explicit emulator QA. Regenerate `compile_commands.json` from a fresh build when editor diagnostics are stale; do not edit compiler flags by hand.
+Editor support includes:
+
+- clangd
+- format-on-save
+- Prettier
+- Python unittest discovery
+- Harness tests
+- Explicit emulator QA
+
+Regenerate `compile_commands.json` from a fresh build when editor diagnostics are stale. Do not edit compiler flags by hand.
 
 The npm commands provide the same repeatable local checks outside the editor:
 
@@ -73,9 +86,19 @@ Use one harness test or test class when narrowing a change:
 npm run test:harness:focused -- test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
 ```
 
-Use `npm run docs:reflow` to repair artificial prose breaks across tracked Markdown files. `npm run docs:check` verifies the prose-wrapping rule without rewriting files. Prettier uses `proseWrap: "never"`; tables, headings, lists, blockquotes, and code fences retain their structural breaks.
+Documentation formatting commands:
 
-The checked-in pre-commit hook formats staged files, runs staged JavaScript linting, checks Markdown, and runs the harness unit suite. Emulator scenarios remain explicit because they install, reset, and exercise stateful devices. Use the `QA: dev-smoke (emulator)` task or the named plan documented by [Validation](Validation.md) when runtime evidence is required.
+- `npm run docs:reflow`: Repair artificial prose breaks across tracked Markdown files.
+- `npm run docs:check`: Verify the prose-wrapping rule without rewriting files.
+- Prettier: Uses `proseWrap: "never"`; tables, headings, lists, blockquotes, and code fences retain their structural breaks.
+
+The checked-in hooks have these responsibilities:
+
+- Pre-commit: Format staged files, run staged JavaScript linting, check Markdown, and run `npm run test:harness`. It does not launch emulators.
+- Pre-push: Run the unit tests, build the watchface, and execute the screenshot-producing `pre-push-gate` suite.
+- `pre-push-gate`: Aggregate the `visual-refresh` Matrix across Emery, Chalk, and Flint in white and black display modes.
+- Broader coverage: Keep emulator and pre-release Matrices explicit because they install, reset, and exercise stateful devices.
+- Validation guidance: Use the named plans documented by [Validation](Validation.md) when broader runtime evidence is required.
 
 ## Source And Runtime Discipline
 
@@ -107,9 +130,22 @@ For broad glyph exploration, use `glyph-lab` before production porting:
 
 ## Documentation Changes
 
-Give each document one independent question, one canonical owner, and one clear audience. Use [DocumentationOntology](DocumentationOntology.md) to route concepts and [DocumentationContracts](DocumentationContracts.md) to maintain `Adjacent`, `Read Next`, and ownership metadata. Link to a canonical document instead of duplicating its content.
+Documentation rules:
+
+- Give each document one independent question.
+- Give each document one canonical owner.
+- Give each document one clear audience.
+- Use [DocumentationOntology](DocumentationOntology.md) to route concepts.
+- Use [DocumentationContracts](DocumentationContracts.md) to maintain `Adjacent`, `Read Next`, and ownership metadata.
+- Link to the canonical document instead of duplicating its content.
 
 Keep Markdown prose paragraphs on logical lines so the editor or viewport controls visual wrapping. Preserve structural breaks for headings, lists, tables, blockquotes, code fences, and intentional hard breaks.
+
+For QA grammar, resolver, execution, or report changes:
+
+- Update the owning QA document.
+- Update [settled decisions](../qa/settled-decisions.md) only when the change establishes a new durable contract.
+- Keep [QA README](../qa/README.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), and [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) consistent with the live handoff.
 
 ## Review And Commit
 

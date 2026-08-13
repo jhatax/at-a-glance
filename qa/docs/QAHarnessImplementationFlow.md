@@ -1,10 +1,18 @@
 # QA Harness Implementation Flow
 
-This document records the live Python runtime flow. [QA README](../README.md) is the operator entry point; this document owns the implementation map. The phases are ordered and each handoff has one owner, one input contract, and one output contract. The phase table gives the conceptual flow, the command-handoff table names the live functions, and the report contract records the canonical output boundary.
+This document records the live Python runtime flow.
+
+- Operator entry point: [QA README](../README.md).
+- This document: Owns the implementation map.
+- Handoffs: Each phase has one owner, one input contract, and one output contract.
+- Phase table: Shows the conceptual flow.
+- Command-handoff table: Names the live functions.
+- Report contract: Records the canonical output boundary.
 
 ## Adjacent
 
 - [QA README](../README.md) for public commands and run artifacts.
+- [Settled decisions](../settled-decisions.md) for decisions that must not be relitigated without new contrary evidence.
 - [WritingTestCasesAndPlans](WritingTestCasesAndPlans.md) for grammar and fixtures.
 - [Validation](../../docs/Validation.md) for contributor validation paths.
 
@@ -25,28 +33,108 @@ This document records the live Python runtime flow. [QA README](../README.md) is
 
 | Phase | Caller | Callee | Input | Output | Owner |
 | --- | --- | --- | --- | --- | --- |
-| Parse | `ataglanceharness.py` | `qaplanparser.py` | Resolved scenario or suite path | `ParsedScenario` or `ParsedSuite` | Parser grammar, document validation, recursive suite-member resolution, and source order |
+| Parse | `ataglanceharness.py` | `qaplanparser.py` | Plan path | Grammar values, `ParsedStep` list, and parser discards | Parser grammar, block boundaries, source order, and include references |
 | Resolve | `ataglanceharness.py` | `qaplanresolver.py` | Parsed document | `PlanDefinition` with identity-keyed `PlanStep` objects | Resolver expansion, concrete fields, screenshot directives, expected counts, de-duplication |
 | Execute | `ataglanceharness.py` | `qaplanexecutor.py` and `pebbleadapter.py` | `PlanDefinition` and run context | Per-step results and captured screenshot paths | Executor iteration/dispatch; adapter transport and evidence |
 | Finalize | `qaplanexecutor.py` | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts and step results | `report.json`, `summary.md`, terminal closeout | Runtime aggregation/serialization; renderer Markdown |
 
 ### Parse
 
-`qaplanparser.py` parses scenario and suite files. `ParsedStep` contains a capability, a boolean screenshot directive, and string fields. `ParsedScenario` contains its name, screenshot policy, emulators, and ordered steps. `ParsedSuite` contains its name and an ordered list of parsed scenarios. The parser recursively resolves nested suite members into `ParsedScenario` objects and preserves their source order. `qaplanresolver.py` owns top-level name/path resolution, then receives those parsed scenarios and expands them into executable steps. The parser does not create `PlanStep` objects, access Pebble, execute commands, or write reports.
+```text
+qaplanparser.py
+  scenario / Matrix / steps -> grammar values, ParsedStep records, discards
+  Suite -> direct ordered member references
+  Suite + discovery dictionary -> newly discovered members only
+
+qaplanresolver.py
+  Suite members -> ordered, unique leaf Scenarios and Matrices
+  parsed plan values -> supported (emulator, display) tuples
+  tuples + parsed steps + screenshot policy -> executable PlanStep objects
+
+Parser does not create PlanStep objects, access Pebble, execute commands, or
+write reports.
+```
 
 ### Resolve
 
-`qaplanresolver.py` converts parsed documents into executable objects. `PlanDefinition.steps` is an insertion-ordered `dict[str, PlanStep]`; the key is the stable step identity and duplicate identities are de-duplicated. `PlanStep` carries capability inputs, emulator, display, `capture_screenshots`, `expected_screenshots`, and `captured_screenshots`. Expected counts are calculated when steps are created. Identity includes the stable step values and the optional `shots` marker, but never expected or captured counts. The resolver raises an error when a parsed step produces no executable expansion for the selected emulators.
+`qaplanresolver.py` owns the following resolution flow:
+
+```text
+_expand_suite_members()
+  seed root Suite
+  walk the growing ordered member list
+  dictionary de-duplicates (kind, name) identities
+  repeated and cyclic references add no new traversal entry
+
+SUPPORT_MATRIX
+  is the single support oracle for emulators, displays, and capabilities
+
+PlanDefinition.execution_configs
+  ordered supported (emulator, display) tuples
+
+PlanDefinition.steps
+  insertion-ordered step-identity -> PlanStep mapping
+  duplicate step identities are de-duplicated
+
+Resolver
+  converts parsed strings into typed steps
+  records unsupported configurations and construction failures as discards
+  applies screenshot policy and calculates expected counts
+  hands PlanDefinition to the Plan Execution Runtime
+```
 
 ### Execute
 
-`qaplanexecutor.py` creates `ExecutionState`, installs the plan’s emulators, and iterates over `plan.steps.values()`. Each step is dispatched by concrete type to weather, battery, health, location, or `all` operations. A location step sends its requested text and display mode, then captures one requested screenshot through the same execution path. An `all` step sends weather and health values, applies battery state, and captures one requested screenshot through the same execution path. A requested screenshot is captured through `PebbleAdapter`; successful capture appends its path to the step result and updates the step’s captured count. A failed step is recorded as failed and execution continues with the remaining steps. The executor closes the adapter before finalization.
+```text
+qaplanexecutor.py
+  -> derive unique emulators from PlanDefinition.execution_configs
+  -> install those emulators
+  -> iterate over plan.steps.values()
+       -> PlanStep.run()
+            -> call the capability-specific PebbleAdapter operation
+            -> capture requested screenshots through the supplied callback
+            -> append successful screenshot paths to the step result
+            -> update the step's captured count
+  -> record failed steps and continue with remaining steps
+  -> close the adapter before finalization
+```
 
-`PebbleAdapter` owns libpebble2 transport, emulator installation, AppMessage operations, battery state, screenshots, build operations, and command logging. The executor owns operation order and step status; it does not construct shell command lines or launch a second Pebble process.
+Screenshot behavior:
+
+- Typed `PlanStep` objects own capability dispatch through `run()`.
+- Weather, battery, health, location, Bluetooth, and `all` steps call their corresponding `PebbleAdapter` operation.
+- Bluetooth captures once before changing connection state and once after.
+
+Adapter and executor boundaries:
+
+- `PebbleAdapter` owns libpebble2 transport, emulator installation, AppMessage operations, battery state, screenshots, build operations, and command logging.
+- The executor owns operation order and step status.
+- The executor does not construct shell command lines or launch a second Pebble process.
 
 ### Finalize
 
-`qaharnessruntime.py` sums step facts, builds `QAStepContext` rows and one `QARunContext`, writes canonical `report.json`, renders `summary.md`, and prints closeout information. `QARunContext` contains plan identity, run identity, output paths, resolved totals, and step outputs. `QAStepContext` contains one step identity, capability, emulator, step arguments, status, and screenshot context. `qareportrenderer.py` renders Markdown from those typed report objects. `qaresultinspector.py` loads `report.json` for view and compare operations and regenerates Markdown when the derived file is absent.
+```text
+qaharnessruntime.py
+  -> sum step facts
+  -> build QAStepContext rows and one QARunContext
+  -> write report.json
+  -> render summary.md
+  -> print closeout information
+
+qareportrenderer.py
+  -> render Markdown from typed report objects
+  -> include each step's pass/fail result
+  -> supply step results for summary.md and comparison.md
+
+qaresultinspector.py
+  -> load report.json for view and compare
+  -> create derived Markdown only when it is absent
+```
+
+Report context contents:
+
+- `QARunContext`: Plan identity, run identity, output paths, resolved totals, and step outputs.
+- `QAStepContext`: One step identity, capability, emulator, step arguments, status, and screenshot context.
 
 ## Command handoffs
 
@@ -86,5 +174,6 @@ These are the evidence gates for a QA-harness change. Use [Validation](../../doc
 - Compile the Python harness and check shell syntax.
 - Run the harness unit tests and `git diff --check`.
 - For an execution change, run a real screenshot-enabled scenario and inspect its `report.json`, `summary.md`, and `commands.log`.
+- For a screenshot-policy change, verify the expected count for each capability, including two screenshots for Bluetooth.
 - For a reporting change, remove or rename a derived Markdown file, run view or compare, and confirm the regenerated Markdown matches the canonical JSON facts.
-- For a parser or resolver change, validate accepted plans, rejected fixtures, include cycles, suite order, and identity de-duplication.
+- For a parser or resolver change, validate accepted plans, rejected fixtures, ignored cyclic includes, suite order, and identity de-duplication.

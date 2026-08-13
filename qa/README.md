@@ -1,10 +1,25 @@
 # QA Harness
 
-The QA harness validates At A Glance with named scenarios and suites. The public entrypoint is `../aag-build-qa.sh`.
+The QA harness validates At A Glance with named scenarios, Matrices, and suites. The public entrypoint is `../aag-build-qa.sh`.
 
-## Scenario execution flow
+## Plan execution flow
 
-For scenario execution, the shell parses and validates the request, performs wrapper-owned emulator cleanup, and hands the plan name to Python. Python owns plan parsing, plan resolution, execution, screenshots, command logging, JSON reports, and Markdown reports. Build, install, validation, view, and compare commands use their own Python or shell handlers; they do not pass through every phase shown below.
+Plan execution crosses the shell/Python boundary once:
+
+```text
+shell
+  -> parse and validate the request
+  -> perform wrapper-owned emulator cleanup
+  -> hand the plan name to Python
+
+Python
+  -> parse the plan
+  -> resolve the support matrix
+  -> execute steps and capture screenshots
+  -> write command logs, JSON reports, and Markdown reports
+```
+
+Build, install, validation, view, and compare commands use their own Python or shell handlers. They do not pass through every phase shown above.
 
 ```text
 aag-build-qa.sh
@@ -39,34 +54,50 @@ Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) to author plans
 
 ## Boundary
 
-The shell prepares the environment and hands one validated command to Python. Python then owns the selected QA operation from plan loading through execution or inspection and report output. The implementation-level ownership map, typed handoffs, and failure behavior are maintained in [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md).
+Boundary contract:
+
+- Shell: Prepare the environment and hand one validated command to Python.
+- Python: Own the selected QA operation from plan loading through execution or inspection and report output.
+- Implementation details: See [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) for ownership, typed handoffs, and failure behavior.
 
 ## Run artifacts
 
 Each run is stored under `qa/qa-runs/<run-id>/`:
 
 - `report.json` is the canonical report.
-- `summary.md` is rendered from `report.json`.
+- `summary.md` is rendered from `report.json` and shows each step's pass/fail result.
+- Plan validation prints executable steps first, followed by discarded items. Discards require operator confirmation before execution.
 - `commands.log` contains operator-visible command and execution records.
 - `screenshots/` contains captured screenshots when the selected plan requests them.
 
-Comparisons are stored under `qa/comparisons/`. A comparison writes `comparison.json` and `comparison.md`; both are derived from the selected runs’ canonical `report.json` files.
+Comparisons are stored under `qa/comparisons/`. When generated, `comparison.json` and `comparison.md` are derived from the selected runs’ canonical `report.json` files, with each step's pass/fail result shown per run.
 
-The run identity is derived from the run timestamp and process id. The output folder name is the run id, and deserialization checks that the stored timestamp, run id, and output folder still agree.
+The only run identity invariant is that `run_id` equals the output folder name.
 
 ## Build and compile database
 
-Use the build commands documented in [BuildandInstall](../docs/BuildandInstall.md). The harness routes build requests through the Pebble Tool environment; verbose builds may generate an optional `compile_commands.json`. Failure to produce compile-database entries does not change the build result.
+Build behavior:
+
+- Commands: Use [BuildandInstall](../docs/BuildandInstall.md).
+- Environment: The harness routes build requests through the Pebble Tool environment.
+- Compile database: Verbose builds may generate an optional `compile_commands.json`.
+- Build result: Failure to produce compile-database entries does not change the build result.
+
+Verbose builds write complete output and any Python traceback to `build.log`. Console and QA-log failures show only extracted compiler diagnostics. Non-verbose builds do not create `build.log` and use the normal harness failure path.
 
 ## Tests
 
 Run the harness tests from the repository root:
 
 ```sh
-PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'
+PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'
 ```
 
-Plan fixtures and invalid report fixtures live under `tools/harness_py/unittests/fixtures/`. A changed execution path also requires Python compilation, shell syntax checks, `git diff --check`, and a real scenario run that exercises the path.
+Test and fixture locations:
+
+- Plan fixtures and invalid report fixtures: `tools/harness_py/unittests/fixtures/`
+- Canonical reusable step files and executable Matrix plans: `qa/plans/`
+- Changed execution path: Also requires Python compilation, shell syntax checks, `git diff --check`, and a real scenario or Matrix run that exercises the path.
 
 ## Adjacent
 

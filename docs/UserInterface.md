@@ -1,6 +1,6 @@
 # User Interface
 
-This document records the current UI of _At A Glance_. It is the reference for the implemented stack, geometry, fonts, palettes, icon sizes, glyph realization, and screenshot status.
+This document records the current UI of _At A Glance_. It is the reference for the implemented stack, typography, palettes, icon sizes, glyph realization, and screenshot status.
 
 ## Adjacent
 
@@ -11,14 +11,14 @@ This document records the current UI of _At A Glance_. It is the reference for t
 
 ### On Device
 
-Current device screenshots are checked in under `docs/assets/screenshots/`. Together with the coordinates, palettes, typography, and glyph realization tables below, they provide evidence to satisfy the watch face's visual invariants for legibility, placements, and compatibility with all devices.
+Current device screenshots are checked in under `docs/assets/screenshots/`. Together with the palettes, typography, and glyph realization tables below, they provide evidence for legibility, placement, and compatibility across supported devices.
 
 |  |  |  |
 | :-: | :-: | :-: |
 | <b><img src="assets/screenshots/at-a-glance-emery-blackonwhite.png" alt="Emery Black on White" width="160"><br>Emery: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-emery-whiteonblack.png" alt="Emery White on Black" width="160"><br>Emery: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-chalk-celeste.png" alt="Chalk Clear as Celeste" width="160"><br>Chalk: Clear as Celeste</b> |
-| <b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on BLack" width="130"><br>Flint: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
+| <b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black" width="130"><br>Flint: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
 
-Glyph validation is covered in [Contributing](Contributing.md). It should be treated as a priority when glyphs are modified or new glyphs are introduced.
+Glyph validation is covered in [Contributing](Contributing.md). Prioritize it when glyphs are modified or introduced.
 
 ### Settings
 
@@ -39,137 +39,16 @@ centered location
 bottom heart-rate context
 ```
 
-## Current Information Placement
-
-- Platform-specific and integer-based.
-- Resolved from defined layout constants for the active platform rather than scaling one master layout across every device.
-- Health rows are present only on `PBL_HEALTH` builds.
-
-## Current Coordinates
-
-Coordinates are `x,y,w,h`.
-
-The watchface supports seven platforms. `Aplite`, `Basalt`, `Diorite`, and `Flint` share the compact 144x168 layout. `Chalk` uses the compact 180x180 layout. `Emery` and `Gabbro` use the full layout.
-
-### Emery
-
-- Platform: Pebble Time 2
-- Face: `200x228`
-- Classification: full
-
-| Element        | Frame           |
-| :------------- | :-------------- |
-| Steps icon     | `70,10,28,28`   |
-| Steps text     | `99,10,56,28`   |
-| Steps progress | `70,38,85,4`    |
-| Time text      | `4,50,192,60`   |
-| Battery track  | `25,115,150,6`  |
-| Battery fill   | `26,116,148,4`  |
-| Battery bolt   | `176,109,18,18` |
-| Climate text   | `4,126,65,28`   |
-| Climate icon   | `70,126,28,28`  |
-| Date text      | `100,126,99,28` |
-| Location text  | `25,154,150,19` |
-| BPM icon       | `70,190,28,28`  |
-| BPM text       | `99,190,36,28`  |
-
-### Gabbro
-
-- Platform: Pebble Round 2
-- Face: `260x260`
-- Classification: full
-
-| Element        | Frame            |
-| :------------- | :--------------- |
-| Steps icon     | `100,10,28,28`   |
-| Steps text     | `129,10,56,28`   |
-| Steps progress | `100,38,85,4`    |
-| Time text      | `4,57,252,72`    |
-| Battery track  | `32,134,195,6`   |
-| Battery fill   | `33,135,193,4`   |
-| Battery bolt   | `228,128,18,18`  |
-| Climate text   | `4,145,95,28`    |
-| Climate icon   | `100,145,28,28`  |
-| Date text      | `130,145,129,28` |
-| Location text  | `32,173,195,19`  |
-| BPM icon       | `100,222,28,28`  |
-| BPM text       | `129,222,36,28`  |
-
-### Chalk
-
-- Platform: Pebble Time Round
-- Face: `180x180`
-- Classification: compact
-
-| Element        | Frame           |
-| :------------- | :-------------- |
-| Steps icon     | `70,10,18,18`   |
-| Steps text     | `89,10,42,18`   |
-| Steps progress | `70,28,61,4`    |
-| Time text      | `2,43,176,42`   |
-| Battery track  | `22,90,135,6`   |
-| Battery fill   | `23,91,133,4`   |
-| Battery bolt   | `158,84,18,18`  |
-| Climate text   | `2,106,66,18`   |
-| Climate icon   | `70,106,18,18`  |
-| Date text      | `90,106,89,18`  |
-| Location text  | `22,124,135,17` |
-| BPM icon       | `70,152,18,18`  |
-| BPM text       | `89,152,30,18`  |
-
-### Flint
-
-- Platform: Pebble 2 Duo
-- Face: `144x168`
-- Classification: compact
-
-| Element        | Frame           |
-| :------------- | :-------------- |
-| Steps icon     | `52,6,18,18`    |
-| Steps text     | `71,6,42,18`    |
-| Steps progress | `52,24,61,4`    |
-| Time text      | `2,40,140,42`   |
-| Battery track  | `18,87,108,6`   |
-| Battery fill   | `19,88,106,4`   |
-| Battery bolt   | `127,81,18,18`  |
-| Climate text   | `2,98,49,18`    |
-| Climate icon   | `52,98,18,18`   |
-| Date text      | `72,98,71,18`   |
-| Location text  | `18,116,108,17` |
-| BPM icon       | `52,144,18,18`  |
-| BPM text       | `71,144,30,18`  |
-
-### Aplite
-
-- Platform: Pebble Classic / Aplite
-- Face: `144x168`
-- Classification: compact
-- Health: not present
-
-| Element       | Frame           |
-| :------------ | :-------------- |
-| Time text     | `2,40,140,42`   |
-| Battery track | `18,87,108,6`   |
-| Battery fill  | `19,88,106,4`   |
-| Battery bolt  | `127,81,18,18`  |
-| Climate text  | `2,98,49,18`    |
-| Climate icon  | `52,98,18,18`   |
-| Date text     | `72,98,71,18`   |
-| Location text | `18,116,108,17` |
-
-### Basalt and Diorite
-
-- Platforms: Pebble Time / Basalt and Pebble Time Steel / Diorite
-- Face: `144x168`
-- Classification: compact
-
-These platforms use the same frames as Flint. Aplite uses the same frames but does not include the health rows.
-
 ### Typography
 
 The `layout_stylist` selects fonts by display class (compact or full) and font role. The `Text` role is shared by climate, BPM, and steps; location has its own font role. System fonts are selected first and replaced by the corresponding custom font when it loads successfully.
 
-Custom fonts: **Cabin** variants for time and location, **Oswald** for date and metrics. Font sizes are customized for compact and full displays. PKJS limits production location names to 15 characters and normalizes them to uppercase before sending them to the watch; uppercase text is more legible at the 14-point and 16-point location sizes. The location fonts retain lowercase and Latin-1 glyphs so direct AppMessage and QA inputs render without a separate font restriction.
+**Notes**
+
+- Sizes: Font sizes are customized for compact and full displays.
+- Custom fonts: **Cabin** variants for time and location, **Oswald** for date and metrics.
+- Location text: PKJS limits production location names to 15 characters and normalizes them to uppercase; uppercase text is more legible at selected location-font sizes.
+- Location fonts: Retain lowercase and Latin-1 glyphs so direct AppMessage and QA inputs render without a separate font restriction.
 
 | Role | Compact system font | Compact custom font | Full system font | Full custom font |
 | :-- | :-- | :-- | :-- | :-- |
@@ -178,7 +57,6 @@ Custom fonts: **Cabin** variants for time and location, **Oswald** for date and 
 | <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_20` |
 | <b>Location</b> | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_LOCATION_14` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_LOCATION_16` |
 
-- Text metrics, coordinates, height, width, are defined per field.
 - Font selection depends on role, display class, and platform.
 
 ## Supported Display Modes
