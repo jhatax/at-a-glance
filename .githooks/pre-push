@@ -1,0 +1,14 @@
+#!/usr/bin/env zsh
+set -e
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "${repo_root}"
+
+echo "Running unit tests before push."
+npm run test:harness
+
+echo "Building the watchface before push."
+./aag-build-qa.sh --build
+
+echo "Running the pre-push visual QA gate."
+./aag-build-qa.sh --exec pre-push-gate --force

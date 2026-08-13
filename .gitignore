@@ -11,8 +11,8 @@ compile_commands.json
 build.log
 compile_flags.txt
 archive/
-!qa/plans/archive/
-!qa/plans/archive/**
+qa/plans/archive/
+qa/plans/archive/**
 build/
 node_modules/
 compile-commands.json
