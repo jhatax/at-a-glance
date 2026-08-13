@@ -52,7 +52,7 @@ def _compare_runs(selectors: list[str]) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
 
   # always load payloads so that we can print summary to the console
-  payloads = [load_qarun(path) for path in paths]
+  payloads = [_load_qarun(path) for path in paths]
 
   comp_path = output_dir / "comparison.md"
   if comp_path.is_file():
@@ -69,22 +69,23 @@ def _compare_runs(selectors: list[str]) -> Path:
   return comp_path
 
 
+def write_summary_report(run_root: Path, summary_path: Path) -> None:
+  run = _load_qarun(run_root)
+  summary_path.write_text(render_report([run], "# QA Summary Report"), encoding="utf-8")
+
+
 def _view_run(selector: str) -> Path:
   run_root = _resolve_run_root(selector, QARUNS_ROOT)
-  # always load the payload
-  run = load_qarun(run_root)
-
   summary_path = run_root / "summary.md"
   if summary_path.is_file():
-    print("== Report found, printing key info and sharing file-path ==")
-    print(render_report_top([run], "# QA Summary Report"))
+    print("== Report found, sharing file-path ==")
   else:
     print("== No report available, generating summary and sharing location ==")
-    summary_path.write_text(render_report([run], "# QA Summary Report"), encoding="utf-8")
+    write_summary_report(run_root, summary_path)
   return summary_path
 
 
-def load_qarun(root: Path) -> QARunContext:
+def _load_qarun(root: Path) -> QARunContext:
   report_path = root / "report.json"
   if not report_path.is_file():
     raise ValueError(f"'{root}' is missing report.json")
