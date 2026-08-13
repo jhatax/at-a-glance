@@ -1,18 +1,38 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 import json
 import os
 from pathlib import Path
 from typing import Any, Final, TypedDict, cast
 
-from qaplanresolver import PlanDefinition
+from qaplanresolver import PlanDefinition, create_step_for_capability
 from qaharnessconfig import QARUNS_ROOT
 from tools.harness_py.qaplangrammar import QAPlanGrammar
 
 
 ALLOWED_RESULTS: Final = frozenset({"passed", "failed"})
+
+REPORT_STEP_SCHEMA: Final = {
+    "weather": {"display": str, "temp": int, "code": int, "is_day": int},
+    "location": {"display": str, "location": str},
+    "bluetooth": {"display": str, "connected": int},
+    "battery": {"display": str, "level": int, "charging": int},
+    "health": {"display": str, "bpm": int, "steps": int},
+    "all": {
+        "display": str,
+        "temp": int,
+        "code": int,
+        "is_day": int,
+        "level": int,
+        "charging": int,
+        "bpm": int,
+        "steps": int,
+        "location": str,
+        "connected": int,
+    },
+}
 
 @dataclass(frozen=True)
 class HarnessRuntimeContext:
@@ -35,6 +55,13 @@ class ScreenshotsContext:
   expected: int
   captured: int
   paths: list[str]
+
+  def as_dict(self) -> dict[str, Any]:
+    return {
+        "expected": self.expected,
+        "captured": self.captured,
+        "paths": list(self.paths),
+    }
 
   @classmethod
   def from_dict(cls, data: dict[str, Any]) -> ScreenshotsContext:
@@ -78,6 +105,16 @@ class QAStepContext:
   step_args: dict[str, Any]
   screenshot_ctx: ScreenshotsContext
 
+  def as_dict(self) -> dict[str, Any]:
+    return {
+        "step_id": self.step_id,
+        "capability": self.capability,
+        "status": self.status,
+        "emulator": self.emulator,
+        "step_args": dict(self.step_args),
+        "screenshot_ctx": self.screenshot_ctx.as_dict(),
+    }
+
   @classmethod
   def from_dict(cls, data: dict[str, Any]) -> QAStepContext:
     required = ("step_id", "capability", "status", "emulator")
@@ -86,36 +123,16 @@ class QAStepContext:
         raise ValueError(f"Invalid or missing '{key}' in report")
 
     _capability: str = data["capability"]
-    if not QAPlanGrammar.is_valid_capability(_capability):
-        raise ValueError(f"Invalid capability: '{_capability}' in report")
-
-    _step_args = data["step_args"] if "step_args" in data else None
     _emulator: str = data["emulator"]
-    if not QAPlanGrammar.is_valid_emulator(_emulator):
-        raise ValueError(f"Invalid emulator: '{_emulator}' in report")
-
-    if not ((_step_args) and (isinstance(_step_args, dict))):
+    _step_args = data.get("step_args")
+    if not isinstance(_step_args, dict):
       raise ValueError("Encountered non-canonical step arguments in report")
-
-    if not QAPlanGrammar.does_step_have_needed_attributes(_capability, _step_args):
-      raise ValueError(
-          f"Invalid specification for capability: '{_capability}' in report.\n"
-          f"Parameters retrieved: {_step_args.keys()}\n"
-          f"Parameters expected: {QAPlanGrammar.CAPABILITY_FIELDS[_capability]}\n"
-        )
-
-    # display is a required argument for every step
-    _display: str = data["step_args"]["display"]
-    if not QAPlanGrammar.is_valid_display_for_emulator(_display, _emulator):
-        raise ValueError(f"Invalid display: '{_display}' for '{_emulator}' in report")
-
     if not (("screenshot_ctx" in data) and (isinstance(data.get("screenshot_ctx"), dict))):
       raise ValueError("Invalid screenshots info in report")
     _step_id = data["step_id"]
     _status: str = data["status"]
-
-    if _status not in ALLOWED_RESULTS:
-      raise ValueError("Invalid step-status: '{_status}' for '{_step_id}' in report")
+    screenshot_ctx = ScreenshotsContext.from_dict(data["screenshot_ctx"])
+    validate_report_step(_capability, _emulator, _step_args, _step_id, _status, screenshot_ctx)
 
     return cls(
         step_id=_step_id,
@@ -123,37 +140,67 @@ class QAStepContext:
         status=_status,
         emulator=_emulator,
         step_args=_step_args,
-        screenshot_ctx=ScreenshotsContext.from_dict(data["screenshot_ctx"]),
+        screenshot_ctx=screenshot_ctx,
     )
 
 
+def validate_report_step(
+    capability: str,
+    emulator: str,
+    step_args: dict[str, Any],
+    step_id: str,
+    status: str,
+    screenshot_ctx: ScreenshotsContext,
+) -> None:
+  schema = REPORT_STEP_SCHEMA.get(capability)
+  if schema is None or not QAPlanGrammar.is_valid_capability(capability):
+    raise ValueError(f"Invalid capability: '{capability}' in report")
+  if not QAPlanGrammar.is_valid_emulator(emulator):
+    raise ValueError(f"Invalid emulator: '{emulator}' in report")
+  if set(step_args) != set(schema):
+    raise ValueError(
+        f"Invalid report fields for '{capability}': "
+        f"expected {set(schema)}, received {set(step_args)}"
+    )
+  for name, expected_type in schema.items():
+    value = step_args[name]
+    if type(value) is not expected_type:
+      raise ValueError(f"Invalid JSON type for report field '{name}'")
+  if not QAPlanGrammar.is_valid_display_for_emulator(step_args["display"], emulator):
+    raise ValueError(f"Invalid display: '{step_args['display']}' for '{emulator}' in report")
+  if status not in ALLOWED_RESULTS:
+    raise ValueError(f"Invalid step-status: '{status}' for '{step_id}' in report")
+  expected_capture = screenshot_ctx.expected > 0
+  step = create_step_for_capability(
+      capability,
+      expected_capture,
+      emulator=emulator,
+      **step_args,
+  )
+  if screenshot_ctx.expected != step.expected_screenshots or step.step_id != step_id:
+    raise ValueError(f"Step identity or screenshot contract mismatch for '{step_id}'")
+
+
 class ResolvedContext(TypedDict):
-  emulators: list[str]
   expected_screenshots: int
   captured_screenshots: int
-
-
-def generate_run_id(name: str) -> str:
-  return f"{name}-pid{os.getpid()}"
 
 
 def parse_resolved_context(data: Any) -> ResolvedContext:
   if not isinstance(data, dict):
     raise ValueError("Invalid resolved run context in report")
 
-  required = ("expected_screenshots", "captured_screenshots", "emulators")
+  required = ("expected_screenshots", "captured_screenshots")
   for key in required:
     if key not in data:
       raise ValueError(f"Missing '{key}' in report")
 
-  _emulators = data["emulators"]
   if type(data["expected_screenshots"]) is int \
-      and type(data["captured_screenshots"]) is int \
-      and isinstance(_emulators, list) \
-      and all(isinstance(em, str) for em in _emulators) \
-      and QAPlanGrammar.are_valid_emulators(_emulators):
+      and type(data["captured_screenshots"]) is int:
     resolved = cast(ResolvedContext, data)
-    if (resolved["captured_screenshots"] < 0) or (resolved["expected_screenshots"] < 0):
+    if (resolved["captured_screenshots"] < 0) or \
+        (resolved["expected_screenshots"] < 0) or \
+        (resolved["captured_screenshots"] > resolved["expected_screenshots"]):
       raise ValueError("Invalid resolved run context in report")
     else:
       return resolved
@@ -165,24 +212,28 @@ class QARunContext:
   plan: str
   started_at: str
   output_folder: Path
-  _run_id: str = field(init=False, default="")
   status: str
   resolved: ResolvedContext
   run_outputs: dict[str, str]
   step_count: int
   step_outputs: list[QAStepContext]
 
-  def __post_init__(self) -> None:
-    self._run_id = self.output_folder.name
-
   @property
   def run_id(self) -> str:
-    return self._run_id
+    return self.output_folder.name
 
   def as_dict(self) -> dict[str, Any]:
-    d = asdict(self)
-    d["output_folder"] = str(self.output_folder)
-    return d
+    return {
+        "plan": self.plan,
+        "started_at": self.started_at,
+        "output_folder": str(self.output_folder),
+        "run_id": self.run_id,
+        "status": self.status,
+        "resolved": dict(self.resolved),
+        "run_outputs": dict(self.run_outputs),
+        "step_count": self.step_count,
+        "step_outputs": [step.as_dict() for step in self.step_outputs],
+    }
 
   @classmethod
   def from_dict(cls, data: Any) -> QARunContext:
@@ -190,26 +241,24 @@ class QARunContext:
       raise ValueError("Cannot recreate run context from non-canonical report")
 
     # Validate primary configuration string keys
-    required = ("plan", "status", "started_at", "output_folder", "_run_id")
+    required = ("plan", "status", "started_at", "output_folder", "run_id")
     for key in required:
       if key not in data or not (isinstance(data[key], str) and (data[key])):
         raise ValueError(f"Invalid or missing '{key}' in report")
 
     _output:Path = Path(data["output_folder"])
-    _run_id:str = str(data["_run_id"])
+    if not _output.name == data["run_id"]:
+      raise ValueError(f"Run-id and output_folder '{_output.name}' are non-canonical")
     _started_at:str = data["started_at"]
-    if not (
-      _run_id.startswith(f"{_started_at}-")
-      and _output.name == _run_id
-    ):
-      raise ValueError("Run folder and run_id mismatch in report")
+    if data["status"] not in ALLOWED_RESULTS:
+      raise ValueError(f"Invalid run status: '{data['status']}' in report")
 
     required = ("step_count", "run_outputs", "resolved", "step_outputs")
     for key in required:
       if key not in data or not data[key]:
         raise ValueError(f"Invalid or missing '{key}' in report")
 
-    if type(data["step_count"]) is not int:
+    if type(data["step_count"]) is not int or data["step_count"] < 0:
         raise ValueError("Invalid 'step_count' in report")
 
     # Validate the nested outputs dictionary configuration
@@ -233,13 +282,23 @@ class QARunContext:
 
     if not data["step_count"] == len(reconstructed_steps):
       raise ValueError("Run outputs length is not equal to steps executed in report")
+    expected_screenshots = sum(
+        step.screenshot_ctx.expected for step in reconstructed_steps
+    )
+    captured_screenshots = sum(
+        step.screenshot_ctx.captured for step in reconstructed_steps
+    )
+    resolved = parse_resolved_context(data["resolved"])
+    if resolved["expected_screenshots"] != expected_screenshots or \
+        resolved["captured_screenshots"] != captured_screenshots:
+      raise ValueError("Resolved screenshot totals do not match report steps")
 
     return cls(
         plan=data["plan"],
         started_at=_started_at,
         output_folder=_output,
         status=data["status"],
-        resolved=parse_resolved_context(data["resolved"]),
+        resolved=resolved,
         run_outputs=cast(dict[str, str], run_outputs_data),
         step_count=data["step_count"],
         step_outputs=reconstructed_steps,
@@ -251,7 +310,7 @@ class QARunContext:
 def create_harness_context(capture_screenshots: bool) -> HarnessRuntimeContext:
   now = datetime.now().astimezone()
   started_at = now.strftime("%Y%m%dT%H%M%S")
-  output_root = QARUNS_ROOT / generate_run_id(started_at)
+  output_root = QARUNS_ROOT / f"{started_at}-pid{os.getpid()}"
   commands_log_path = output_root / "commands.log"
   report_json_path = output_root / "report.json"
   report_md_path = output_root / "summary.md"
@@ -330,7 +389,7 @@ def finalize(
 ) -> int:
   # Create outputs
   run_outputs = _build_run_outputs(context)
-  step_outputs = _build_step_outputs(plan, step_results)
+  step_outputs = build_step_outputs(plan, step_results)
   _passed: bool = (exit_status == 0 and plan.step_count == len(step_outputs))
   if _passed:
     _passed = not _missing_outputs(run_outputs, (plan.expected_screenshots > 0)) and \
@@ -356,7 +415,6 @@ def finalize(
     started_at=context.started_at,
     run_outputs=run_outputs,
     resolved={
-        "emulators": plan.emulators,
         "expected_screenshots": plan.expected_screenshots,
         "captured_screenshots": plan.captured_screenshots,
     },
@@ -366,7 +424,7 @@ def finalize(
   return 0 if _passed else 1
 
 
-def _build_step_outputs(
+def build_step_outputs(
     plan: PlanDefinition,
     step_results: list[StepResult],
 ) -> list[QAStepContext]:
@@ -384,7 +442,7 @@ def _build_step_outputs(
           screenshot_paths=[],
       )
     screenshot_paths = result["screenshot_paths"]
-    step_fields: dict[str, Any] = asdict(step)
+    step_fields: dict[str, Any] = step.as_dict()
     step_rows.append(QAStepContext(
         step_id=step_id,
         capability=step.capability,
@@ -400,6 +458,14 @@ def _build_step_outputs(
             paths=screenshot_paths,
         ),
     ))
+    validate_report_step(
+        step.capability,
+        step.emulator,
+        step_rows[-1].step_args,
+        step_id,
+        result["status"],
+        step_rows[-1].screenshot_ctx,
+    )
 
   return step_rows
 

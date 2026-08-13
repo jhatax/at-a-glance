@@ -1,33 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-import time
-from typing import TYPE_CHECKING, Any, Final
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Final
 from qaharnessruntime import HarnessRuntimeContext, StepResult, finalize
-from qaplanresolver import (
-    AllForOneStep,
-    BatteryStep,
-    BluetoothStep,
-    HealthStep,
-    LocationStep,
-    PlanDefinition,
-    PlanStep,
-    WeatherStep,
-)
-from qaharnessconfig import DISPLAY_MODE_VALUES
-from pebbleadapter import PEBBLE_SETTLE_DELAY_SECONDS
+from qaplanresolver import PlanDefinition, PlanStep
 from textwrap import fill
 
 if TYPE_CHECKING:
   from pebbleadapter import PebbleAdapter
 
-QA_MSG_TEMPERATURE: Final[int] = 10002
-QA_MSG_WEATHER_CONDITION: Final[int] = 10003
-QA_MSG_IS_DAY: Final[int] = 10004
-QA_MSG_DISPLAY_MODE: Final[int] = 10006
-QA_MSG_MAYBE_CURRENT_LOCATION: Final[int] = 10011
-QA_MSG_ONESHOT_BPM: Final[int] = 10020
-QA_MSG_ONESHOT_STEPS: Final[int] = 10021
 SCREENSHOT_DELAY_SECONDS: Final[int] = 1
 
 
@@ -63,115 +44,14 @@ def _capture_screenshot(
 ) -> None:
 
   step_result_id = str(step_result["step_result_id"])
-  output_path = state.context.screenshots_dir / f"{step_result_id}.png"
-  # Sleep before capturing a screenshot as there could be a pebble lag
-  time.sleep(SCREENSHOT_DELAY_SECONDS)
+  screenshot_number = len(step_result["screenshot_paths"]) + 1
+  filename = (
+      f"{step_result_id}.png"
+      if screenshot_number == 1 else f"{step_result_id}-{screenshot_number}.png"
+  )
+  output_path = state.context.screenshots_dir / filename
   state.pebble.screenshot(emulator, output_path)
   step_result["screenshot_paths"].append(str(output_path))
-
-
-def _run_weather_step(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, WeatherStep):
-    raise ValueError(f"Invalid weather-step: '{step}'")
-  state.pebble.send_app_message(
-      step.emulator, {
-          QA_MSG_TEMPERATURE: step.temp,
-          QA_MSG_WEATHER_CONDITION: step.code,
-          QA_MSG_IS_DAY: step.is_day,
-          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-      }
-  )
-
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-
-
-def _run_location_step(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, LocationStep):
-    raise ValueError(f"Invalid location-step: '{step}'")
-  state.pebble.send_app_message(
-      step.emulator, {
-          QA_MSG_MAYBE_CURRENT_LOCATION: step.location,
-          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-      }
-  )
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-
-
-def _run_battery_step(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, BatteryStep):
-    raise ValueError(f"Invalid battery-step: '{step}'")
-  if step.display:
-    state.pebble.send_app_message(
-        step.emulator,
-        {
-            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-        },
-    )
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  state.pebble.set_battery(step.emulator, step.level, step.charging)
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-
-
-def _run_bluetooth_step(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, BluetoothStep):
-    raise ValueError(f"Invalid bluetooth-step: '{step}'")
-  if step.display:
-    state.pebble.send_app_message(
-        step.emulator,
-        {
-            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-        },
-    )
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  state.pebble.set_bluetooth(step.emulator, step.connected)
-  time.sleep(8)
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-
-
-def _run_health_step(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, HealthStep):
-    raise ValueError(f"Invalid health-step: '{step}'")
-  state.pebble.send_app_message(
-      step.emulator, {
-          QA_MSG_ONESHOT_BPM: step.bpm,
-          QA_MSG_ONESHOT_STEPS: step.steps,
-          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-      }
-  )
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-
-
-def _set_them_all(state: ExecutionState, step: Any, result: StepResult) -> None:
-  if not isinstance(step, AllForOneStep):
-    raise ValueError(f"Invalid step: '{step}'")
-  state.pebble.send_app_message(
-      step.emulator, {
-          QA_MSG_ONESHOT_BPM: step.bpm,
-          QA_MSG_ONESHOT_STEPS: step.steps,
-          QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[step.display]),
-          QA_MSG_TEMPERATURE: step.temp,
-          QA_MSG_WEATHER_CONDITION: step.code,
-          QA_MSG_IS_DAY: step.is_day,
-          QA_MSG_MAYBE_CURRENT_LOCATION: step.location,
-      }
-  )
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  state.pebble.set_battery(step.emulator, step.level, step.charging)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
-  if step.capture_screenshots:
-    _capture_screenshot(state, result, step.emulator)
-  time.sleep(PEBBLE_SETTLE_DELAY_SECONDS)
 
 
 def _execute_step(state: ExecutionState, step: PlanStep) -> None:
@@ -183,28 +63,11 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
 
   # step execution will write to the log or stdout / stderr
   try:
-    match step.capability:
-      case "weather":
-        _run_weather_step(state, step, result)
-
-      case "location":
-        _run_location_step(state, step, result)
-
-      case "battery":
-        _run_battery_step(state, step, result)
-
-      case "health":
-        _run_health_step(state, step, result)
-
-      case "bluetooth":
-        _run_bluetooth_step(state, step, result)
-
-      case "all":
-        _set_them_all(state, step, result)
-
-      case _:
-        raise ValueError(f"Unknown step instance type: {type(step)}")
-  except (Exception) as err:
+    step.run(
+        state.pebble,
+        lambda emulator: _capture_screenshot(state, result, emulator),
+    )
+  except Exception as err:
     result["status"] = "failed"
     state.inform_operator(f"Encountered issue: '{err}'")
     # continue running until all steps have executed
@@ -217,7 +80,7 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
     if result["status"] == "running":
       result["status"] = "failed"
     state.step_results.append(result)
-    _step = fill(f"'{asdict(step)}'", width=80, subsequent_indent=" ")
+    _step = fill(f"'{step.as_dict()}'", width=80, subsequent_indent=" ")
     _result = fill(f"'{result}'", width=80, subsequent_indent=" ")
     state.inform_operator(f"Executed: {_step}\nResult: {_result}\n")
 
@@ -232,14 +95,15 @@ def run_plan_execution(plan: PlanDefinition) -> int:
     state.inform_operator(f"QA Plan to execute:\n{plan.as_dict()}\n", True)
     from qaharnessconfig import REPO_ROOT
     pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
-    state.pebble.install_emulators(plan.emulators, pbw_path)
-    for index, (step) in enumerate(plan.steps.values(), start=1):
+    emulators = {emulator for emulator, _display in plan.execution_configs}
+    state.pebble.install_emulators(emulators, pbw_path)
+    for index, step in enumerate(plan.steps.values(), start=1):
       header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
       pre_step = f"{divider}\n{header}"
       state.inform_operator(pre_step)
       _execute_step(state, step)
       state.inform_operator(f"{divider}")
-  except (Exception, AssertionError) as exc:
+  except Exception as exc:
     print(f"Error: {exc!r}")
     exit_status = 1
   finally:
@@ -260,7 +124,7 @@ def resolve_and_execute_plan(action: str, plan_name: str) -> int:
 
   plan = load_and_validate_plan(plan_name)
   if plan:
-    if action == "run-scenario":
+    if action == "run-scenario" or plan.discarded:
       print("Execute this plan? [y/N] ", end="", flush=True)
       reply = input().strip().lower()
       if reply in {"n", "no"}:

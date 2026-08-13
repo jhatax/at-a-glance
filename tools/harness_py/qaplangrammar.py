@@ -1,82 +1,122 @@
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Final
-from qaharnessconfig import DISPLAY_MODE_VALUES
+
+SUPPORT_MATRIX: Final = MappingProxyType(
+    {
+        "aplite":
+        MappingProxyType(
+            {
+                "displays": ("white", "black"),
+                "capabilities": ("weather", "battery", "location", "bluetooth"),
+            }
+        ),
+        "basalt":
+        MappingProxyType(
+            {
+                "displays": ("white", "black"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+        "chalk":
+        MappingProxyType(
+            {
+                "displays": ("white", "black", "celeste", "oxford"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+        "diorite":
+        MappingProxyType(
+            {
+                "displays": ("white", "black"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+        "emery":
+        MappingProxyType(
+            {
+                "displays": ("white", "black", "celeste", "oxford"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+        "flint":
+        MappingProxyType(
+            {
+                "displays": ("white", "black"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+        "gabbro":
+        MappingProxyType(
+            {
+                "displays": ("white", "black", "celeste", "oxford"),
+                "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
+            }
+        ),
+    }
+)
+
+SUPPORTED_CAPABILITIES: Final = frozenset(
+    capability for support in SUPPORT_MATRIX.values() for capability in support["capabilities"]
+)
+
+GRAMMAR_VOCABULARY: Final = frozenset(
+    {
+        "PREAMBLE",
+        "DISPLAYS",
+        "EMULATORS",
+        "SCREENSHOTS",
+        "STEP",
+        "EXECUTE",
+        "END",
+        "MEMBERS",
+        "INCLUDE",
+        "STEPS",
+    }
+)
 
 
 @dataclass(frozen=True)
 class QAPlanGrammar:
-  SUPPORTED_CAPABILITIES: Final = frozenset(
-      {
-          "weather",
-          "battery",
-          "health",
-          "location",
-          "bluetooth",
-          "all",
-      }
-  )
+  SUPPORT_MATRIX: Final = SUPPORT_MATRIX
+  SUPPORTED_CAPABILITIES: Final = SUPPORTED_CAPABILITIES
+  GRAMMAR_VOCABULARY: Final = GRAMMAR_VOCABULARY
   SCREENSHOTS_POLICIES: Final = frozenset({"yes", "no"})
-  SUPPORTED_EMULATORS: Final = frozenset(
+  SUPPORTED_EMULATORS: Final = frozenset(SUPPORT_MATRIX)
+  ACCEPTED_PLAN_TYPES: Final = MappingProxyType(
       {
-          "aplite",
-          "basalt",
-          "chalk",
-          "diorite",
-          "emery",
-          "flint",
-          "gabbro",
+          ".scenario": "scenario",
+          ".suite": "suite",
+          ".matrix": "matrix",
       }
   )
-  EMULATORS_SUPPORTING_HEALTH: Final = frozenset(
+  ACCEPTED_STEPS_SUFFIX: Final[str] = ".steps"
+  EXPECTED_SCREENSHOTS: Final = MappingProxyType(
       {
-          "basalt",
-          "chalk",
-          "diorite",
-          "emery",
-          "flint",
-          "gabbro",
-      }
-  )
-
-  COLOR_EMULATORS: Final = frozenset({"chalk", "emery", "gabbro"})
-  ACCEPTED_PLAN_TYPES: Final = MappingProxyType({
-      ".scenario": "scenario",
-      ".suite": "suite",
-  })
-  DISPLAY_MODES_BY_EMULATOR: Final = MappingProxyType(
-      {
-          "color": frozenset(DISPLAY_MODE_VALUES),
-          "monochrome": frozenset({"white", "black"}),
-      }
-  )
-  EMULATOR_SUPPORT_BY_CAPABILITY: Final = MappingProxyType(
-      {
-          "health": frozenset(EMULATORS_SUPPORTING_HEALTH),
-          "all": frozenset(EMULATORS_SUPPORTING_HEALTH),
-          "battery": frozenset(SUPPORTED_EMULATORS),
-          "bluetooth": frozenset(SUPPORTED_EMULATORS),
-          "weather": frozenset(SUPPORTED_EMULATORS),
-          "location": frozenset(SUPPORTED_EMULATORS),
+          "weather": 1,
+          "battery": 1,
+          "health": 1,
+          "location": 1,
+          "bluetooth": 2,
+          "all": 1,
       }
   )
 
   CAPABILITY_FIELDS: Final = MappingProxyType(
       {
           "weather":
-          frozenset({"display", "temp", "code", "is_day"}),
+          frozenset({"temp", "code", "is_day"}),
           "battery":
-          frozenset({"display", "level", "charging"}),
+          frozenset({"level", "charging"}),
           "health":
-          frozenset({"display", "bpm", "steps"}),
+          frozenset({"bpm", "steps"}),
           "location":
-          frozenset({"display", "location"}),
+          frozenset({"location"}),
           "bluetooth":
-          frozenset({"display", "connected"}),
+          frozenset({"connected"}),
           "all":
           frozenset(
               {
-                  "display",
                   "bpm",
                   "steps",
                   "temp",
@@ -103,41 +143,35 @@ class QAPlanGrammar:
 
   @classmethod
   def is_valid_emulator(cls, emulator: str) -> bool:
-    return emulator in cls.SUPPORTED_EMULATORS
+    return emulator in cls.SUPPORT_MATRIX
 
   @classmethod
   def is_capability_supported_by_emulator(cls, capability: str, emulator: str) -> bool:
-    return emulator in cls.EMULATOR_SUPPORT_BY_CAPABILITY[capability]
+    return (
+        emulator in cls.SUPPORT_MATRIX
+        and capability in cls.SUPPORT_MATRIX[emulator]["capabilities"]
+    )
 
   @classmethod
-  def are_valid_emulators(cls, emulators: list[str]) -> bool:
-    return set(emulators).issubset(cls.SUPPORTED_EMULATORS)
+  def is_valid_display(cls, display: str) -> bool:
+    return any(display in support["displays"] for support in cls.SUPPORT_MATRIX.values())
 
   @classmethod
   def is_valid_display_for_emulator(cls, display: str, emulator: str) -> bool:
-    mode = "color" if emulator in cls.COLOR_EMULATORS else "monochrome"
-    return display in cls.DISPLAY_MODES_BY_EMULATOR[mode]
+    return (emulator in cls.SUPPORT_MATRIX and display in cls.SUPPORT_MATRIX[emulator]["displays"])
 
 
 @dataclass
 class ParsedStep:
   capability: str
-  needs_screenshot: bool
   fields: dict[str, str]
 
 
-@dataclass
-class ParsedScenario:
-  name: str
-  screenshots_policy: str
-  emulators: list[str]
-  steps: list[ParsedStep]
-
-
-@dataclass
-class ParsedSuite:
-  name: str
-  members: list[ParsedScenario]
+@dataclass(frozen=True)
+class ParseDiscard:
+  line_number: int
+  source: str
+  reason: str
 
 
 def validate_slug(value: str, label: str) -> None:
