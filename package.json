@@ -2,21 +2,21 @@
   "name": "AtAGlance",
   "author": "Manoj Mehta",
   "description": "Get all the info you need, with a glance at your Pebble.",
-  "version": "1.2.6",
+  "version": "1.3.0",
   "keywords": [
     "pebble",
     "watchface"
   ],
   "license": "MIT",
   "scripts": {
-    "format": "prettier --write src/pkjs *.js* */*.js* .prettierrc",
+    "format": "shfmt -i 2 -sr -ci -w $(git ls-files '*.sh' '*.zsh') && yapf --style=.style.yapf -i $(git ls-files '*.py') && clang-format -i $(git ls-files '*.c' '*.h') && prettier --write $(git ls-files '*.js' '*.jsx' '*.ts' '*.tsx' '*.json' '*.css' '*.scss' '*.yaml' '*.yml')",
     "format:check": "prettier --check src/pkjs *.js* */*.js* .prettierrc",
-    "docs:check": "python3 tools/markdown_format.py --check",
-    "docs:reflow": "python3 tools/markdown_format.py",
+    "docs:check": "uv run --python 3.13 python tools/markdown_format.py --check",
+    "docs:reflow": "uv run --python 3.13 python tools/markdown_format.py",
     "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
-    "test:harness": "PYTHONPATH=tools/harness_py python3 -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
-    "check": "npm run format && npm run docs:check && npm run format:clang && npm run test:harness",
-    "compile": "python3 -m compileall tools/"
+    "test:harness": "PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
+    "check": "npm run format && npm run docs:check && npm run test:harness",
+    "compile": "uv run --python 3.13 python -m compileall tools/"
   },
   "dependencies": {
     "@rebble/clay": "^1.0.10"
@@ -55,7 +55,8 @@
       "STEPS_GOAL",
       "STEPS_GOAL_PRESET",
       "STEPS_GOAL_CUSTOM",
-      "MAYBE_CURRENT_LOCATION"
+      "MAYBE_CURRENT_LOCATION",
+      "JS_READY"
     ],
     "resources": {
       "media": [
