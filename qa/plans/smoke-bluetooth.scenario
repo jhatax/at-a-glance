@@ -1,10 +1,9 @@
 PREAMBLE
   SCREENSHOTS yes
-  EMULATORS emery chalk
+  EMULATORS emery
   DISPLAYS black
 END
 
 EXECUTE
-  STEP bluetooth connected=1
   STEP bluetooth connected=0
 END

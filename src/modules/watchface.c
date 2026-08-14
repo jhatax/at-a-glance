@@ -222,9 +222,9 @@ bool watchface_create(
 
   s_watchface_initialized = success;
 
-#ifdef PBL_HEALTH
   if (s_watchface_initialized) {
     initialize_bt_icon(root);
+#ifdef PBL_HEALTH
     created = bpm_module_create(
         root,
         &s_surface.bpm.text,
@@ -239,8 +239,8 @@ bool watchface_create(
         &s_surface.steps.progress,
         s_surface.style.fontbook.chosen_fonts[s_surface.steps.text.font_role]);
     s_strata_created_mask |= (created) ? STEPS_STRATUM_MASK : 0;
-  }
 #endif
+  }
 
   if (s_watchface_initialized) {
     watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);

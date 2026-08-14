@@ -1,3 +1,4 @@
 MEMBERS
   INCLUDE MATRIX visual-refresh
+  INCLUDE SCENARIO smoke-bluetooth
 END

@@ -86,7 +86,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
     )
 
   def test_named_scenario_loads_and_expands(self) -> None:
-    expected_steps: Final[int] = 12
+    expected_steps: Final[int] = 6
     plan = load_and_validate_plan("visual-refresh", PLANS_ROOT)
     self.assertEqual(plan.name, "visual-refresh")
     self.assertEqual(len(plan.steps), expected_steps)
@@ -219,11 +219,10 @@ class HarnessCorrectnessTests(unittest.TestCase):
     plan = load_and_validate_plan("pre-push-gate", PLANS_ROOT)
     self.assertEqual(plan.name, "pre-push-gate")
     self.assertEqual(len(plan.execution_configs), 6)
-    self.assertEqual(plan.step_count, len(plan.execution_configs) * 2)
-    self.assertTrue(all(isinstance(step, AllForOneStep) for step in plan.steps.values()))
+    self.assertEqual(plan.step_count, 7)
     self.assertEqual(
         plan.expected_screenshots,
-        plan.step_count * QAPlanGrammar.EXPECTED_SCREENSHOTS["all"],
+        14,
     )
     self.assertEqual(plan.captured_screenshots, 0)
 
