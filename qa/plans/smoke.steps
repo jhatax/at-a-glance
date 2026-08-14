@@ -1,3 +1,4 @@
 EXECUTE
   STEP all bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0 location="OaKland-downtown" connected=0
+  STEP battery level=40 charging=1
 END

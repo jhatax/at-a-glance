@@ -8,8 +8,13 @@ from unittest.mock import patch
 
 from qaplanexecutor import resolve_and_execute_plan
 from qaplangrammar import ParseDiscard
-from qaplanresolver import PlanDefinition, load_and_validate_plan
-
+from qaplanresolver import (
+    MemberDiscard,
+    PlanDefinition,
+    ResolutionDiscard,
+    load_and_validate_plan,
+    print_plan,
+)
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "scenarios"
 
@@ -67,6 +72,32 @@ class Slice2ResolverTests(unittest.TestCase):
     self.assertLess(
         rendered.index("Resolved execution plan:"),
         rendered.index("Discarded plan items:"),
+    )
+
+  def test_discard_reporting_uses_each_type_description(self) -> None:
+    plan = PlanDefinition(
+        name="discarding",
+        path=FIXTURES / "slice2-capability-filter.scenario",
+        steps={},
+        execution_configs=[],
+        discarded=[
+            ParseDiscard(1, "STEP weather", "invalid field"),
+            ResolutionDiscard("health", ("aplite", "white"), "unsupported capability"),
+            MemberDiscard("scenario", "missing", "member is unavailable"),
+        ],
+    )
+    output = StringIO()
+    with redirect_stdout(output):
+      print_plan(plan)
+
+    rendered = output.getvalue()
+    self.assertLess(
+        rendered.index("1. line 1: STEP weather (invalid field)"),
+        rendered.index("2. Emulator 'aplite', display 'white'")
+    )
+    self.assertLess(
+        rendered.index("2. Emulator 'aplite', display 'white'"),
+        rendered.index("3. Scenario 'missing': member is unavailable")
     )
 
   def test_force_requires_confirmation_when_plan_has_discards(self) -> None:

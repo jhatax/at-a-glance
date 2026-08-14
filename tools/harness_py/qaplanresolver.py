@@ -77,7 +77,7 @@ class PlanStep(ABC):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     pass
 
   @property
@@ -129,7 +129,7 @@ class WeatherStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     pebble.send_app_message(
         connection,
         self.emulator,
@@ -142,6 +142,7 @@ class WeatherStep(PlanStep):
     )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
+    return False
 
   @property
   def step_id(self) -> str:
@@ -174,7 +175,7 @@ class LocationStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     pebble.send_app_message(
         connection,
         self.emulator,
@@ -185,6 +186,7 @@ class LocationStep(PlanStep):
     )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
+    return False
 
   @property
   def step_id(self) -> str:
@@ -217,19 +219,23 @@ class BluetoothStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     if self.display:
       pebble.send_app_message(
           connection,
           self.emulator,
           {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
       )
-    pebble.set_bluetooth(
+    if self.capture_screenshots:
+      capture_screenshot(self.emulator)
+    return_required = pebble.set_bluetooth(
         connection,
         self.emulator,
         self.connected,
-        capture_screenshot if self.capture_screenshots else None,
     )
+    if self.capture_screenshots:
+      capture_screenshot(self.emulator)
+    return return_required
 
   @property
   def step_id(self) -> str:
@@ -266,7 +272,7 @@ class BatteryStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     if self.display:
       pebble.send_app_message(
           connection,
@@ -276,6 +282,7 @@ class BatteryStep(PlanStep):
     pebble.set_battery(connection, self.emulator, self.level, self.charging)
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
+    return False
 
   @property
   def step_id(self) -> str:
@@ -309,7 +316,7 @@ class HealthStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     pebble.send_app_message(
         connection,
         self.emulator,
@@ -321,6 +328,7 @@ class HealthStep(PlanStep):
     )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
+    return False
 
   @property
   def step_id(self) -> str:
@@ -370,7 +378,7 @@ class AllForOneStep(PlanStep):
       pebble: Any,
       connection: Any,
       capture_screenshot: Callable[[str], None],
-  ) -> None:
+  ) -> bool:
     pebble.send_app_message(
         connection,
         self.emulator,
@@ -385,9 +393,16 @@ class AllForOneStep(PlanStep):
         },
     )
     pebble.set_battery(connection, self.emulator, self.level, self.charging)
-    pebble.set_bluetooth(connection, self.emulator, self.connected, self.capture_screenshots)
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
+    restart_required = pebble.set_bluetooth(
+        connection,
+        self.emulator,
+        self.connected,
+    )
+    if self.capture_screenshots:
+      capture_screenshot(self.emulator)
+    return restart_required
 
   @property
   def step_id(self) -> str:

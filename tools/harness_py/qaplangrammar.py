@@ -99,7 +99,7 @@ class QAPlanGrammar:
           "health": 1,
           "location": 1,
           "bluetooth": 2,
-          "all": 1,
+          "all": 2,
       }
   )
 

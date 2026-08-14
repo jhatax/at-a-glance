@@ -62,11 +62,16 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
   }
 
   # step execution will write to the log or stdout / stderr
+  restart_required = False
   try:
-    step.run(
-        state.pebble,
-        lambda emulator: _capture_screenshot(state, result, emulator),
-    )
+    with state.pebble.create_connection(step.emulator) as connection:
+      restart_required = step.run(
+          state.pebble,
+          connection,
+          lambda emulator: _capture_screenshot(state, result, emulator),
+      )
+    if restart_required:
+      state.pebble.restart_emulator_after_bluetooth_disconnect(step.emulator)
   except Exception as err:
     result["status"] = "failed"
     state.inform_operator(f"Encountered issue: '{err}'")

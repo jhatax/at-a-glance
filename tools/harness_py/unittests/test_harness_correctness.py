@@ -12,7 +12,7 @@ from qaharnessruntime import (
     ScreenshotsContext,
     build_step_outputs,
 )
-from qaplangrammar import QAPlanGrammar
+from qaplangrammar import AcceptedMember, QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
 from ataglanceharness import handle_validate_plan
 from qaplanresolver import AllForOneStep, LocationStep, MemberDiscard, load_and_validate_plan
@@ -34,6 +34,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertNotIn("emulator", steps[0].fields)
 
   def test_canary_is_a_real_integrated_step(self) -> None:
+    expected_steps: Final[int] = 2
     screenshots, emulators, displays, steps, _ = parse_scenario(PLANS_ROOT / "canary.scenario")
     self.assertEqual(screenshots, "yes")
     self.assertEqual(emulators, ["emery"])
@@ -41,11 +42,14 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual([step.capability for step in steps], ["all", "all"])
 
     plan = load_and_validate_plan("canary", PLANS_ROOT)
-    self.assertEqual(plan.step_count, 2)
+    self.assertEqual(plan.step_count, expected_steps)
     step = next(iter(plan.steps.values()))
     self.assertIsInstance(step, AllForOneStep)
     self.assertTrue(step.capture_screenshots)
-    self.assertEqual(plan.expected_screenshots, 2)
+    self.assertEqual(
+        plan.expected_screenshots,
+        expected_steps * QAPlanGrammar.EXPECTED_SCREENSHOTS["all"],
+    )
 
   def test_parser_returns_parsed_suite_with_resolved_scenarios(self) -> None:
     archived_plans = PLANS_ROOT / "archive"
@@ -55,7 +59,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
         discovered,
     )
     self.assertEqual(
-        [member_name for _, member_name in parsed],
+        [member.name for member in parsed],
         ["emery-weather", "emery-battery", "emery-health", "emery-location"],
     )
     self.assertEqual(
@@ -72,7 +76,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
   def test_parser_returns_direct_suite_members_in_order(self) -> None:
     _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )
     self.assertEqual(
-        members,
+        [(member.kind, member.name) for member in members],
         [
             ("scenario", "weather"),
             ("scenario", "battery"),
@@ -82,14 +86,18 @@ class HarnessCorrectnessTests(unittest.TestCase):
     )
 
   def test_named_scenario_loads_and_expands(self) -> None:
+    expected_steps: Final[int] = 12
     plan = load_and_validate_plan("visual-refresh", PLANS_ROOT)
     self.assertEqual(plan.name, "visual-refresh")
-    self.assertEqual(len(plan.steps), 12)
+    self.assertEqual(len(plan.steps), expected_steps)
     step = next(iter(plan.steps.values()))
     self.assertTrue(step.capture_screenshots)
-    self.assertEqual(step.expected_screenshots, 1)
+    self.assertEqual(step.expected_screenshots, 2)
     self.assertEqual(step.captured_screenshots, 0)
-    self.assertEqual(plan.expected_screenshots, 12)
+    self.assertEqual(
+        plan.expected_screenshots,
+        expected_steps * QAPlanGrammar.EXPECTED_SCREENSHOTS["all"],
+    )
     self.assertEqual(plan.captured_screenshots, 0)
 
   def test_location_scenario_loads_and_expands(self) -> None:
@@ -136,7 +144,10 @@ class HarnessCorrectnessTests(unittest.TestCase):
 
   def test_suite_aggregates_matrix_members(self) -> None:
     _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )
-    self.assertIn(("matrix", "slice3-matrix"), members)
+    self.assertIn(
+        ("matrix", "slice3-matrix"),
+        [(member.kind, member.name) for member in members],
+    )
 
   def test_nested_suite_members_are_discovered_once_in_order(self) -> None:
     plan = load_and_validate_plan(
@@ -166,16 +177,24 @@ class HarnessCorrectnessTests(unittest.TestCase):
     )
 
   def test_commit_smoke_loads_and_expands_across_visual_matrix(self) -> None:
+    expected_steps_by_type: Final[int] = 6
     plan = load_and_validate_plan("qa-smoke", PLANS_ROOT)
     self.assertEqual(plan.name, "qa-smoke")
-    self.assertEqual(len(plan.execution_configs), 6)
-    self.assertEqual(len(plan.steps), len(plan.execution_configs))
-    self.assertTrue(all(isinstance(step, AllForOneStep) for step in plan.steps.values()))
+    self.assertEqual(len(plan.execution_configs), expected_steps_by_type)
+    self.assertEqual(len(plan.steps), 12)
+    self.assertEqual(
+        [step.capability for step in plan.steps.values()],
+        ["all"] * expected_steps_by_type + ["battery"] * expected_steps_by_type,
+    )
     self.assertTrue(all(step.capture_screenshots for step in plan.steps.values()))
-    self.assertEqual(plan.expected_screenshots, len(plan.execution_configs))
+    self.assertEqual(
+        plan.expected_screenshots,
+        expected_steps_by_type * QAPlanGrammar.EXPECTED_SCREENSHOTS["all"] +
+        expected_steps_by_type * QAPlanGrammar.EXPECTED_SCREENSHOTS["battery"],
+    )
     self.assertEqual(plan.captured_screenshots, 0)
-    _, first_step = next(iter(plan.steps.items()))
-    first_step.captured_screenshots = 1
+    first_step = next(iter(plan.steps.values()))
+    first_step.captured_screenshots = 2
 
   def test_report_step_projection_matches_report_schema(self) -> None:
     plan = load_and_validate_plan("canary", PLANS_ROOT)
@@ -202,7 +221,10 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(len(plan.execution_configs), 6)
     self.assertEqual(plan.step_count, len(plan.execution_configs) * 2)
     self.assertTrue(all(isinstance(step, AllForOneStep) for step in plan.steps.values()))
-    self.assertEqual(plan.expected_screenshots, plan.step_count)
+    self.assertEqual(
+        plan.expected_screenshots,
+        plan.step_count * QAPlanGrammar.EXPECTED_SCREENSHOTS["all"],
+    )
     self.assertEqual(plan.captured_screenshots, 0)
 
   def test_direct_suite_path_loads(self) -> None:

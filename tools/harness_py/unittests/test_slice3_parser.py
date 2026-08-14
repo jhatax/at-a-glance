@@ -5,7 +5,6 @@ import unittest
 
 from qaplanparser import parse_matrix_files, parse_steps
 
-
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "scenarios"
 
 
@@ -52,9 +51,7 @@ class Slice3ParserTests(unittest.TestCase):
 
   def test_matrix_requires_steps_block(self) -> None:
     with self.assertRaisesRegex(ValueError, "Matrix is missing STEPS"):
-      parse_matrix_files(
-          FIXTURES.parent / "invalid-scenarios" / "matrix-missing-steps.matrix"
-      )
+      parse_matrix_files(FIXTURES.parent / "invalid-scenarios" / "matrix-missing-steps.matrix")
 
 
 if __name__ == "__main__":

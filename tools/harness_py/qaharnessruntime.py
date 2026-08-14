@@ -11,15 +11,33 @@ from qaplanresolver import PlanDefinition, create_step_for_capability
 from qaharnessconfig import QARUNS_ROOT
 from tools.harness_py.qaplangrammar import QAPlanGrammar
 
-
 ALLOWED_RESULTS: Final = frozenset({"passed", "failed"})
 
 REPORT_STEP_SCHEMA: Final = {
-    "weather": {"display": str, "temp": int, "code": int, "is_day": int},
-    "location": {"display": str, "location": str},
-    "bluetooth": {"display": str, "connected": int},
-    "battery": {"display": str, "level": int, "charging": int},
-    "health": {"display": str, "bpm": int, "steps": int},
+    "weather": {
+        "display": str,
+        "temp": int,
+        "code": int,
+        "is_day": int
+    },
+    "location": {
+        "display": str,
+        "location": str
+    },
+    "bluetooth": {
+        "display": str,
+        "connected": int
+    },
+    "battery": {
+        "display": str,
+        "level": int,
+        "charging": int
+    },
+    "health": {
+        "display": str,
+        "bpm": int,
+        "steps": int
+    },
     "all": {
         "display": str,
         "temp": int,
@@ -33,6 +51,7 @@ REPORT_STEP_SCHEMA: Final = {
         "connected": int,
     },
 }
+
 
 @dataclass(frozen=True)
 class HarnessRuntimeContext:
@@ -72,9 +91,8 @@ class ScreenshotsContext:
     else:
       raise ValueError("Invalid screenshot paths in report")
 
-    if (not isinstance(paths, list)) or (
-        not all((isinstance(path, str)) and (path) for path in paths)
-    ):
+    if (not isinstance(paths, list)) or (not all(
+        (isinstance(path, str)) and (path) for path in paths)):
       raise ValueError("Invalid screenshot paths in report")
 
     required = ("captured", "expected")
@@ -88,9 +106,9 @@ class ScreenshotsContext:
 
     if (data["captured"] == len(paths)) and (data["captured"] <= data["expected"]):
       return cls(
-        expected=data["expected"],
-        captured=data["captured"],
-        paths=paths,
+          expected=data["expected"],
+          captured=data["captured"],
+          paths=paths,
       )
     else:
       raise ValueError("Captured screenshots mismatch with screenshots paths in report")
@@ -207,6 +225,7 @@ def parse_resolved_context(data: Any) -> ResolvedContext:
   else:
     raise ValueError("Invalid resolved run context in report")
 
+
 @dataclass
 class QARunContext:
   plan: str
@@ -246,10 +265,10 @@ class QARunContext:
       if key not in data or not (isinstance(data[key], str) and (data[key])):
         raise ValueError(f"Invalid or missing '{key}' in report")
 
-    _output:Path = Path(data["output_folder"])
+    _output: Path = Path(data["output_folder"])
     if not _output.name == data["run_id"]:
       raise ValueError(f"Run-id and output_folder '{_output.name}' are non-canonical")
-    _started_at:str = data["started_at"]
+    _started_at: str = data["started_at"]
     if data["status"] not in ALLOWED_RESULTS:
       raise ValueError(f"Invalid run status: '{data['status']}' in report")
 
@@ -259,14 +278,13 @@ class QARunContext:
         raise ValueError(f"Invalid or missing '{key}' in report")
 
     if type(data["step_count"]) is not int or data["step_count"] < 0:
-        raise ValueError("Invalid 'step_count' in report")
+      raise ValueError("Invalid 'step_count' in report")
 
     # Validate the nested outputs dictionary configuration
     run_outputs_data = data["run_outputs"]
-    if not (
-      isinstance(run_outputs_data, dict) and len(run_outputs_data) and
-      all(isinstance(k, str) and (isinstance(v, str) and (v))
-        for k, v in run_outputs_data.items())):
+    if not (isinstance(run_outputs_data, dict) and len(run_outputs_data)
+            and all(isinstance(k, str) and (isinstance(v, str) and (v))
+                    for k, v in run_outputs_data.items())):
       raise ValueError("Run outputs are non-canonical in report")
 
     steps_data = data["step_outputs"]
@@ -282,12 +300,8 @@ class QARunContext:
 
     if not data["step_count"] == len(reconstructed_steps):
       raise ValueError("Run outputs length is not equal to steps executed in report")
-    expected_screenshots = sum(
-        step.screenshot_ctx.expected for step in reconstructed_steps
-    )
-    captured_screenshots = sum(
-        step.screenshot_ctx.captured for step in reconstructed_steps
-    )
+    expected_screenshots = sum(step.screenshot_ctx.expected for step in reconstructed_steps)
+    captured_screenshots = sum(step.screenshot_ctx.captured for step in reconstructed_steps)
     resolved = parse_resolved_context(data["resolved"])
     if resolved["expected_screenshots"] != expected_screenshots or \
         resolved["captured_screenshots"] != captured_screenshots:
@@ -346,10 +360,10 @@ def _print_closeout(run: QARunContext, summary_path: Path) -> None:
   print(f"Plan: {run.plan}")
   print(f"Steps: {_passed} passed, failed: {_failed}")
   print(
-    (
-      f"Screenshots: '{run.resolved['expected_screenshots']}' expected, "
-      f"captured '{run.resolved["captured_screenshots"]}'"
-    )
+      (
+          f"Screenshots: '{run.resolved['expected_screenshots']}' expected, "
+          f"captured '{run.resolved['captured_screenshots']}'"
+      )
   )
   if summary:
     _divider = "=" * len(summary)
@@ -407,17 +421,17 @@ def finalize(
     _passed = (plan.captured_screenshots == _sum_screenshot_paths)
 
   qa_run = QARunContext(
-    plan=plan.name,
-    output_folder=context.output_root,
-    step_count=plan.step_count,
-    step_outputs=step_outputs,
-    status="passed" if _passed else "failed",
-    started_at=context.started_at,
-    run_outputs=run_outputs,
-    resolved={
-        "expected_screenshots": plan.expected_screenshots,
-        "captured_screenshots": plan.captured_screenshots,
-    },
+      plan=plan.name,
+      output_folder=context.output_root,
+      step_count=plan.step_count,
+      step_outputs=step_outputs,
+      status="passed" if _passed else "failed",
+      started_at=context.started_at,
+      run_outputs=run_outputs,
+      resolved={
+          "expected_screenshots": plan.expected_screenshots,
+          "captured_screenshots": plan.captured_screenshots,
+      },
   )
   _emit_reports(qa_run, context.report_json_path, context.report_md_path)
 
@@ -443,21 +457,23 @@ def build_step_outputs(
       )
     screenshot_paths = result["screenshot_paths"]
     step_fields: dict[str, Any] = step.as_dict()
-    step_rows.append(QAStepContext(
-        step_id=step_id,
-        capability=step.capability,
-        status=result["status"],
-        emulator=step.emulator,
-        step_args={
-            key: value
-            for key, value in step_fields.items() if key.strip() not in {"emulator"}
-        },
-        screenshot_ctx=ScreenshotsContext(
-            expected=step.expected_screenshots,
-            captured=step.captured_screenshots,
-            paths=screenshot_paths,
-        ),
-    ))
+    step_rows.append(
+        QAStepContext(
+            step_id=step_id,
+            capability=step.capability,
+            status=result["status"],
+            emulator=step.emulator,
+            step_args={
+                key: value
+                for key, value in step_fields.items() if key.strip() not in {"emulator"}
+            },
+            screenshot_ctx=ScreenshotsContext(
+                expected=step.expected_screenshots,
+                captured=step.captured_screenshots,
+                paths=screenshot_paths,
+            ),
+        )
+    )
     validate_report_step(
         step.capability,
         step.emulator,
