@@ -13,7 +13,7 @@ This is a glance-first Pebble watch face that strives to make complex informatio
 
 ## Glance-First Philosophy
 
-*The information takes center stage. The watch face fades into the background.*
+_The information takes center stage. The watch face fades into the background._
 
 - Reward a quick glance with maximum information capture. A user must not need to stop and decode the layout.
 - Use irreducible simplicity: reduce each element until any further reduction would compromise function, recognition, or glanceability.

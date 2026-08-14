@@ -93,9 +93,11 @@ A shared watch face **stack** anchors information to stable locations across all
 2. Use a fixed design grid for procedural glyphs.
 3. Scale glyphs and icons to fit compact grid sizes.
 4. For layered same-color shapes:
-  - Draw the rear shape.
-  - Separate it with a background halo.
-  - Draw the foreground shape.
+
+- Draw the rear shape.
+- Separate it with a background halo.
+- Draw the foreground shape.
+
 5. Use simplification to preserve recognition, not to strip away meaning.
 
 ## Stable Visual Footprint

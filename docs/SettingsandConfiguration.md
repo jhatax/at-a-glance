@@ -1,6 +1,6 @@
 # Settings and Configuration
 
-This document covers settings, configuration transport, message-key mapping, persistence, and validation for *At A Glance*. Use this document to understand:
+This document covers settings, configuration transport, message-key mapping, persistence, and validation for _At A Glance_. Use this document to understand:
 
 - the canonical setting catalog
 - settings defaults
@@ -109,20 +109,20 @@ Weather cadence is also applied in PKJS. When Clay returns `WEATHER_UPDATE_MINUT
 
 Current manifest-backed keys:
 
-| # | Key | Generated numeric ID | Role |
-| --- | --- | --- | --- |
-| 1 | `TIME_FORMAT` | `10000` | Runtime setting |
-| 2 | `TEMP_UNIT` | `10001` | Runtime setting |
-| 3 | `TEMPERATURE` | `10002` | Weather data |
-| 4 | `WEATHER_CONDITION` | `10003` | Weather data |
-| 5 | `IS_DAY` | `10004` | Weather data |
-| 6 | `WEATHER_UPDATE_MINUTES` | `10005` | Runtime setting |
-| 7 | `DISPLAY_MODE` | `10006` | Runtime setting |
-| 8 | `HR_SAMPLE_MINUTES` | `10007` | Runtime setting on `PBL_HEALTH` |
-| 9 | `STEPS_GOAL` | `10008` | Runtime setting on `PBL_HEALTH` |
-| 10 | `STEPS_GOAL_PRESET` | `10009` | Clay-only input |
-| 11 | `STEPS_GOAL_CUSTOM` | `10010` | Clay-only input |
-| 12 | `MAYBE_CURRENT_LOCATION` | `10011` | Optional location data |
+| #   | Key                      | Generated numeric ID | Role                            |
+| --- | ------------------------ | -------------------- | ------------------------------- |
+| 1   | `TIME_FORMAT`            | `10000`              | Runtime setting                 |
+| 2   | `TEMP_UNIT`              | `10001`              | Runtime setting                 |
+| 3   | `TEMPERATURE`            | `10002`              | Weather data                    |
+| 4   | `WEATHER_CONDITION`      | `10003`              | Weather data                    |
+| 5   | `IS_DAY`                 | `10004`              | Weather data                    |
+| 6   | `WEATHER_UPDATE_MINUTES` | `10005`              | Runtime setting                 |
+| 7   | `DISPLAY_MODE`           | `10006`              | Runtime setting                 |
+| 8   | `HR_SAMPLE_MINUTES`      | `10007`              | Runtime setting on `PBL_HEALTH` |
+| 9   | `STEPS_GOAL`             | `10008`              | Runtime setting on `PBL_HEALTH` |
+| 10  | `STEPS_GOAL_PRESET`      | `10009`              | Clay-only input                 |
+| 11  | `STEPS_GOAL_CUSTOM`      | `10010`              | Clay-only input                 |
+| 12  | `MAYBE_CURRENT_LOCATION` | `10011`              | Optional location data          |
 
 Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
 
@@ -139,10 +139,10 @@ Generated C and JS artifacts may list keys in sorted-name order. That listing or
 
 The current one-shot health keys are runtime-only constants:
 
-| Key | Numeric ID | Purpose |
-| --- | --- | --- |
-| `WATCHFACE_ONESHOT_MESSAGE_KEY_BPM` | `10020` | One-shot BPM override |
-| `WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS` | `10021` | One-shot steps override |
+| Key                                   | Numeric ID | Purpose                 |
+| ------------------------------------- | ---------- | ----------------------- |
+| `WATCHFACE_ONESHOT_MESSAGE_KEY_BPM`   | `10020`    | One-shot BPM override   |
+| `WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS` | `10021`    | One-shot steps override |
 
 These are not Clay settings, not manifest-backed keys, and not persisted. They exist for focused QA and are consumed once by the health refresh path.
 
@@ -188,14 +188,14 @@ watchface_apply_received_data()
 
 Refresh effects:
 
-| Setting | Runtime action |
-| --- | --- |
-| `TIME_FORMAT` | `WATCHFACE_UPDATE_TIME` |
-| `TEMP_UNIT` | `WATCHFACE_UPDATE_CLIMATE` |
-| `DISPLAY_MODE` | `WATCHFACE_REPAINT` |
-| `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS |
-| `HR_SAMPLE_MINUTES` | Persisted in C; HealthService sample period updated in `ataglance.c` |
-| `STEPS_GOAL` | `WATCHFACE_UPDATE_HEALTH` |
+| Setting                  | Runtime action                                                       |
+| ------------------------ | -------------------------------------------------------------------- |
+| `TIME_FORMAT`            | `WATCHFACE_UPDATE_TIME`                                              |
+| `TEMP_UNIT`              | `WATCHFACE_UPDATE_CLIMATE`                                           |
+| `DISPLAY_MODE`           | `WATCHFACE_REPAINT`                                                  |
+| `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS                   |
+| `HR_SAMPLE_MINUTES`      | Persisted in C; HealthService sample period updated in `ataglance.c` |
+| `STEPS_GOAL`             | `WATCHFACE_UPDATE_HEALTH`                                            |
 
 Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct. Stored settings are sanitized on load.
 

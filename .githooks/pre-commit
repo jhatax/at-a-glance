@@ -13,7 +13,7 @@ local -a sh_files py_files c_files js_files
 sh_files=(${(M)staged_files:#*.(sh|zsh)})
 py_files=(${(M)staged_files:#*.py})
 c_files=(${(M)staged_files:#*.(c|h)})
-js_files=(${(M)staged_files:#*.(js|jsx|ts|tsx|json|css|scss|md|yaml|yml)})
+js_files=(${(M)staged_files:#*.(js|jsx|ts|tsx|json|css|scss|yaml|yml)})
 
 # 3. Format and automatically re-stage modified files safely
 if (( ${#sh_files} )); then
