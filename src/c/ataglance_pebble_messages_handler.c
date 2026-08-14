@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include "ataglance_message_parser.h"
 #include "ataglance_messages_adapter.h"
@@ -27,7 +28,7 @@
 #define APP_MESSAGE_OUTBOX_SIZE 64
 
 #define MESSAGE_SEND_RETRY_MS 1000
-#define MAX_RETRIES 6
+#define MAX_ATTEMPTS 6
 
 static uint8_t s_pending_weather_update_minutes = 0;
 static uint8_t s_weather_sync_attempts = 0;
@@ -45,7 +46,8 @@ static void retry_pending_weather_update_minutes(
 
 static void schedule_weather_sync_retry(
     void) {
-  if (s_weather_sync_retry_timer || s_weather_sync_attempts > MAX_RETRIES) {
+  // Return if the number of retries has been exceeded or there is a timer already inflight
+  if (s_weather_sync_retry_timer || s_weather_sync_attempts > MAX_ATTEMPTS) {
     return;
   }
 
@@ -148,7 +150,7 @@ void outbox_sent_callback(
   }
 }
 
-uint32_t app_message_inbox_size() {
+static uint32_t app_message_inbox_size() {
   // Inbound tuples, in order:
   // Refer to package.json for tuple ordering
   // Key-name | Key-Value | Size
@@ -202,33 +204,21 @@ uint32_t app_message_inbox_size() {
 #endif
 }
 
-static uint8_t s_retries = 0;
+static uint8_t s_init_attempts = 1;
 static AppTimer* s_init_timer = NULL;
-static void wait_then_retry_inbox_initialization() {
-  if (s_retries > MAX_RETRIES) {
-    if (s_init_timer) {
-      app_timer_cancel(s_init_timer);
-      s_init_timer = NULL;
-    }
-    s_retries = 0;
+void attempt_inbox_initialization(void*);
+
+void attempt_inbox_initialization(
+    void* context) {
+  if (!context) {
     return;
   }
-
-  if (!s_init_timer) {
-    s_retries = 1;
-  } else {
-    ++s_retries;
-  }
-  s_init_timer =
-      app_timer_register(MESSAGE_SEND_RETRY_MS * s_retries, initialize_inbox_outbox, NULL);
-}
-
-void initialize_inbox_outbox(
-    void* context) {
-  (void)context;
+  uint8_t* attempts = (uint8_t*)context;
   uint32_t inbox_size = HELPER_MAX(APP_MESSAGE_INBOX_SIZE_MINIMUM, app_message_inbox_size());
-
   AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  // We got here because we were called -> by initialize_inbox_outbox or a timer fired
+  // therefore, we should reset s_init_timer to NULL
+  s_init_timer = NULL;
   if (result != APP_MSG_OK) {
     APP_LOG(
         APP_LOG_LEVEL_WARNING,
@@ -236,15 +226,24 @@ void initialize_inbox_outbox(
         result,
         inbox_size);
     APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage sizes: outbox=%d", APP_MESSAGE_OUTBOX_SIZE);
-    wait_then_retry_inbox_initialization();
+    ++(*attempts);
+    if (*attempts <= MAX_ATTEMPTS) {
+      s_init_timer = app_timer_register(
+          *attempts * MESSAGE_SEND_RETRY_MS,
+          attempt_inbox_initialization,
+          context);
+    }
     return;
   }
+}
 
-  // Send succeeded
+void initialize_inbox_outbox(
+    void* context) {
+  (void)context;
   if (s_init_timer) {
     app_timer_cancel(s_init_timer);
     s_init_timer = NULL;
-    s_retries = 0;
   }
-  return;
+  s_init_attempts = 1;
+  attempt_inbox_initialization(&s_init_attempts);
 }

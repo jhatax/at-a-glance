@@ -99,6 +99,6 @@ Pebble.addEventListener('webviewclosed', function (e) {
 });
 
 Pebble.addEventListener('ready', function () {
-  refresh.start(WEATHER_UPDATE_MINUTES_DEFAULT);
   sendAppMessage({ JS_READY: 1 });
+  refresh.start(WEATHER_UPDATE_MINUTES_DEFAULT);
 });
