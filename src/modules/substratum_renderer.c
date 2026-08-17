@@ -85,18 +85,12 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   uint8_t double_offset = offset << 1;
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X + double_offset,
-          offset),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          double_offset,
-          WATCHFACE_ICON_CENTER_Y + offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, WATCHFACE_ICON_CENTER_X + offset, offset),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, double_offset, WATCHFACE_ICON_CENTER_Y),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
           WATCHFACE_ICON_CENTER_X,
-          WATCHFACE_ICON_CENTER_Y + offset),
+          WATCHFACE_ICON_CENTER_Y),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
           WATCHFACE_ICON_CENTER_X - offset,
@@ -104,15 +98,12 @@ void substratum_renderer_draw_filled_bolt_in_frame(
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
           WATCHFACE_ICON_GRID_WIDTH - double_offset,
-          WATCHFACE_ICON_CENTER_Y),
+          WATCHFACE_ICON_CENTER_Y - offset),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
-          WATCHFACE_ICON_CENTER_X + offset,
-          WATCHFACE_ICON_CENTER_Y),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X + double_offset,
-          offset),
+          WATCHFACE_ICON_CENTER_X,
+          WATCHFACE_ICON_CENTER_Y - offset),
+      bolt_points[0],
   };
 
   GPathInfo path_info = (GPathInfo){
@@ -126,7 +117,7 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     graphics_context_set_stroke_color(ctx, fill_color);
     gpath_draw_filled(ctx, path);
     gpath_draw_outline(ctx, path);
-    gpath_move_to(path, GPoint(1, -1));
+    gpath_move_to(path, GPoint(1, 0));
     gpath_draw_filled(ctx, path);
     graphics_context_set_stroke_width(ctx, stroke_width);
     gpath_destroy(path);
