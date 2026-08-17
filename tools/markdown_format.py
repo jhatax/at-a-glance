@@ -23,9 +23,13 @@ def tracked_markdown() -> list[Path]:
 
 def is_structural(line: str) -> bool:
   stripped = line.strip()
+  # Add horizontal rules and specific spacing checks
+  is_break = stripped in ("---", "***", "___")
+  is_header = stripped.startswith(("#", ">", "|", "```", "~~~", "<!--"))
+
   return (
-      not stripped or stripped.startswith(("#", ">", "|", "```", "~~~", "<!--"))
-      or LIST_RE.match(line) is not None or line.startswith(("    ", "\t"))
+      not stripped or is_break or is_header or LIST_RE.match(line) is not None
+      or line.startswith(("    ", "\t"))
   )
 
 
