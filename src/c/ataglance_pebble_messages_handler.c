@@ -3,7 +3,6 @@
 
 #include "ataglance_message_parser.h"
 #include "ataglance_messages_adapter.h"
-#include "modules/watchface.h"
 
 /*
  * File invariants:

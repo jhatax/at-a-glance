@@ -1,8 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "modules/helper.h"
-#include "modules/watchface.h"
+#include "ataglance_message_parser.h"
 
 /*
  * File invariants:
@@ -64,16 +63,10 @@ void parse_string_tuple(
   }
 
   data->received = (WatchfaceDataMask)(data->received | mask);
-  if (TUPLE_CSTRING == tuple->type) {
-    memset(value, 0, max_len * sizeof(*value));
-    const char* text = tuple->value->cstring;
-    if (!text) {
-      return;
-    }
-    // If the empty string is sent, that means location couldn't be found
-    snprintf(value, max_len, "%s", text);
+  if (helper_tuple_to_string(tuple, value, max_len)) {
     data->parsed = (WatchfaceDataMask)(data->parsed | mask);
-    return;
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox invalid string tuple: key=%lu", key);
   }
 }
 
