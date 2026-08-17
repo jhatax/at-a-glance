@@ -451,7 +451,7 @@ static void draw_weather_snowflake(
   const int feather_h = feather_w;
 
   for (uint16_t angle_deg = 0; angle_deg < 360; angle_deg += 60) {
-    int32_t angle = (angle_deg * TRIG_MAX_ANGLE) / 360;
+    int32_t angle = DEG_TO_TRIGANGLE(angle_deg);
     int32_t sin_a = sin_lookup(angle);
     int32_t cos_a = cos_lookup(angle);
 
