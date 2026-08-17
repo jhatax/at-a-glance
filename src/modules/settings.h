@@ -3,6 +3,7 @@
 #include <pebble.h>
 
 #include "helper.h"
+#include "watchface_components.h"
 
 enum {
   TEMP_UNIT_F = 0,
@@ -19,21 +20,6 @@ enum {
   TIME_FMT_MAX = TIME_FMT_12,
   TIME_FMT_DEFAULT = TIME_FMT_24,
 };
-
-typedef enum {
-  DISPLAY_MODE_LIGHT_MONOCHROME = 0,
-  DISPLAY_MODE_MIN = DISPLAY_MODE_LIGHT_MONOCHROME,
-  DISPLAY_MODE_DEFAULT = DISPLAY_MODE_LIGHT_MONOCHROME,
-  DISPLAY_MODE_DARK_MONOCHROME = 1,
-#ifdef PBL_COLOR
-  DISPLAY_MODE_LIGHT_COLOR = 2,
-  DISPLAY_MODE_DARK_COLOR = 3,
-  DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_COLOR,
-#else
-  DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_MONOCHROME,
-#endif
-  DISPLAY_MODE_COUNT = DISPLAY_MODE_MAX + 1,
-} SupportedDisplayModes;
 
 enum {
   HR_SAMPLE_MINUTES_10 = 10,
@@ -87,3 +73,23 @@ typedef struct {
 
 void settings_load(WatchfaceSettings* settings);
 bool settings_save(const WatchfaceSettings* settings);
+bool settings_set_display_mode(
+    WatchfaceSettings* settings,
+    int display_mode);
+bool settings_set_time_format(
+    WatchfaceSettings* settings,
+    int time_format);
+bool settings_set_temp_unit(
+    WatchfaceSettings* settings,
+    int temp_unit);
+bool settings_set_weather_update_minutes(
+    WatchfaceSettings* settings,
+    int minutes);
+#ifdef PBL_HEALTH
+bool settings_set_hr_sample_minutes(
+    WatchfaceSettings* settings,
+    int minutes);
+bool settings_set_steps_goal(
+    WatchfaceSettings* settings,
+    int goal);
+#endif

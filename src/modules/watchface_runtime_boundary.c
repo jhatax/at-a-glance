@@ -37,72 +37,38 @@ static void apply_setting_data(
   }
 
   if (data->parsed & WATCHFACE_DATA_DISPLAY_MODE) {
-    if (DISPLAY_MODE_VALID(data->display_mode)) {
-      SupportedDisplayModes mode = (SupportedDisplayModes)data->display_mode;
-      if (settings->display_mode != mode) {
-        settings->display_mode = mode;
-        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
-      }
-    } else {
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime received invalid DISPLAY_MODE: value=%d",
-          data->display_mode);
+    SupportedDisplayModes previous = settings->display_mode;
+    settings_set_display_mode(settings, data->display_mode);
+    if (settings->display_mode != previous) {
+      *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
     }
   }
 
   if (data->parsed & WATCHFACE_DATA_TIME_FORMAT) {
-    if (TIME_FORMAT_VALID(data->time_format)) {
-      if (settings->time_format != (uint8_t)data->time_format) {
-        settings->time_format = (uint8_t)data->time_format;
-        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
-      }
-    } else {
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime received invalid TIME_FORMAT: value=%d",
-          data->time_format);
+    uint8_t previous = settings->time_format;
+    settings_set_time_format(settings, data->time_format);
+    if (settings->time_format != previous) {
+      *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
     }
   }
 
   if (data->parsed & WATCHFACE_DATA_TEMP_UNIT) {
-    if (TEMP_UNIT_VALID(data->temp_unit)) {
-      if (settings->temp_unit != (uint8_t)data->temp_unit) {
-        settings->temp_unit = (uint8_t)data->temp_unit;
-        *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
-      }
-    } else {
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime received invalid TEMP_UNIT: value=%d",
-          data->temp_unit);
+    uint8_t previous = settings->temp_unit;
+    settings_set_temp_unit(settings, data->temp_unit);
+    if (settings->temp_unit != previous) {
+      *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
     }
   }
 
   if (data->parsed & WATCHFACE_DATA_WEATHER_UPDATE_MINUTES) {
-    if (WEATHER_UPDATE_MINUTES_VALID(data->weather_update_minutes)) {
-      settings->weather_update_minutes = (uint8_t)data->weather_update_minutes;
-    } else {
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime received invalid WEATHER_UPDATE_MINUTES: value=%d",
-          data->weather_update_minutes);
-    }
+    settings_set_weather_update_minutes(settings, data->weather_update_minutes);
   }
 
 #ifdef PBL_HEALTH
   if (data->parsed & WATCHFACE_DATA_STEPS_GOAL) {
-    uint16_t d_s_g = (uint16_t)data->steps_goal;
-    if (!STEPS_GOAL_VALID(d_s_g)) {
-      // Set steps goal back to the default setting
-      d_s_g = STEPS_GOAL_DEFAULT;
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime reset STEPS_GOAL to default. Received: %d",
-          data->steps_goal);
-    }
-    if (settings->steps_goal != d_s_g) {
-      settings->steps_goal = d_s_g;
+    uint16_t previous = settings->steps_goal;
+    settings_set_steps_goal(settings, data->steps_goal);
+    if (settings->steps_goal != previous) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
     }
   }
@@ -208,16 +174,7 @@ static void apply_health_setting_data(
   }
 
   if (data->parsed & WATCHFACE_DATA_HR_SAMPLE_MINUTES) {
-    if (HR_SAMPLE_MINUTES_VALID(data->hr_sample_minutes)) {
-      if (settings->hr_sample_minutes != (uint8_t)data->hr_sample_minutes) {
-        settings->hr_sample_minutes = (uint8_t)data->hr_sample_minutes;
-      }
-    } else {
-      APP_LOG(
-          APP_LOG_LEVEL_WARNING,
-          "Runtime received invalid HR_SAMPLE_MINUTES: value=%d",
-          data->hr_sample_minutes);
-    }
+    settings_set_hr_sample_minutes(settings, data->hr_sample_minutes);
   }
 }
 

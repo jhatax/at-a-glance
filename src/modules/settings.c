@@ -96,6 +96,87 @@ static void settings_read_stored(
 }
 
 // This "API" block is called by other modules or main
+bool settings_set_display_mode(
+    WatchfaceSettings* settings,
+    int display_mode) {
+  if (!settings || !DISPLAY_MODE_VALID(display_mode)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected DISPLAY_MODE: value=%d", display_mode);
+    return false;
+  }
+
+  settings->display_mode = (SupportedDisplayModes)display_mode;
+  return true;
+}
+
+bool settings_set_time_format(
+    WatchfaceSettings* settings,
+    int time_format) {
+  if (!settings || !TIME_FORMAT_VALID(time_format)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected TIME_FORMAT: value=%d", time_format);
+    return false;
+  }
+
+  settings->time_format = (uint8_t)time_format;
+  return true;
+}
+
+bool settings_set_temp_unit(
+    WatchfaceSettings* settings,
+    int temp_unit) {
+  if (!settings || !TEMP_UNIT_VALID(temp_unit)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected TEMP_UNIT: value=%d", temp_unit);
+    return false;
+  }
+
+  settings->temp_unit = (uint8_t)temp_unit;
+  return true;
+}
+
+bool settings_set_weather_update_minutes(
+    WatchfaceSettings* settings,
+    int minutes) {
+  if (!settings) {
+    return false;
+  }
+  if (!WEATHER_UPDATE_MINUTES_VALID(minutes)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected WEATHER_UPDATE_MINUTES: value=%d", minutes);
+    return false;
+  }
+
+  settings->weather_update_minutes = (uint8_t)minutes;
+  return true;
+}
+
+#ifdef PBL_HEALTH
+bool settings_set_hr_sample_minutes(
+    WatchfaceSettings* settings,
+    int minutes) {
+  if (!settings || !HR_SAMPLE_MINUTES_VALID(minutes)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected HR_SAMPLE_MINUTES: value=%d", minutes);
+    return false;
+  }
+
+  settings->hr_sample_minutes = (uint8_t)minutes;
+  return true;
+}
+
+bool settings_set_steps_goal(
+    WatchfaceSettings* settings,
+    int goal) {
+  if (!settings) {
+    return false;
+  }
+  if (!STEPS_GOAL_VALID(goal)) {
+    settings->steps_goal = STEPS_GOAL_DEFAULT;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings reset STEPS_GOAL to default. Received: %d", goal);
+    return false;
+  }
+
+  settings->steps_goal = (uint16_t)goal;
+  return true;
+}
+#endif
+
 void settings_load(
     WatchfaceSettings* settings) {
   if (!settings) {
