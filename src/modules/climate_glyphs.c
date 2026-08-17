@@ -1,6 +1,6 @@
 #include "climate_glyphs.h"
 
-#include "helper.h"
+#include "modules/watchface_layout.h"
 #include "substratum_renderer.h"
 #include "watchface_debug.h"
 
@@ -96,8 +96,7 @@ static void draw_weather_sun(
   }
   const uint8_t sun_radius = 6;
   const uint8_t sun_dia = sun_radius << 1;
-  const uint8_t stroke_w =
-      HELPER_CLAMP_MIN((substratum_renderer_scale_icon_coord(&frame->size, 3)), 2);
+  const uint8_t stroke_w = HELPER_IF_ELSE(IS_LARGE_DISPLAY, 3, 2);
   graphics_context_set_stroke_color(ctx, climate_palette->sun);
   graphics_context_set_stroke_width(ctx, stroke_w);
 
