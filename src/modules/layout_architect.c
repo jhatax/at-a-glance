@@ -1,8 +1,6 @@
-#include <stdint.h>
-
 #include "helper.h"
+#include "layout_blueprints.h"
 #include "layout_surface.h"
-#include "watchface_components.h"
 #include "watchface_layout.h"
 
 /*
