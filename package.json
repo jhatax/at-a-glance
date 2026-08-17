@@ -15,7 +15,8 @@
     "docs:reflow": "uv run --python 3.13 python tools/markdown_format.py",
     "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
     "test:harness": "PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
-    "check": "npm run format && npm run docs:check && npm run test:harness",
+    "test:native": "tests/native/run.sh",
+    "check": "npm run format && npm run docs:check && npm run test:harness && npm run test:native",
     "compile": "uv run --python 3.13 python -m compileall tools/"
   },
   "dependencies": {

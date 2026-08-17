@@ -4,7 +4,6 @@
 
 #include "helper.h"
 #include "layout_blueprints.h"
-#include "substratum_computations.h"
 
 #define SUBSTRATUM_VALID_DESIGN_X(x) HELPER_VALUE_IN_RANGE((x), 0, (WATCHFACE_ICON_GRID_WIDTH - 1))
 #define SUBSTRATUM_VALID_DESIGN_Y(y) HELPER_VALUE_IN_RANGE((y), 0, (WATCHFACE_ICON_GRID_HEIGHT - 1))

@@ -38,5 +38,6 @@ npm run docs:check
 
 # Run deterministic harness tests before allowing the commit.
 npm run test:harness
+npm run test:native
 
 git add "${staged_files[@]}"

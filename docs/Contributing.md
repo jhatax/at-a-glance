@@ -77,6 +77,7 @@ npm run lint
 npm run format:check
 npm run docs:check
 npm run test:harness
+npm run test:native
 npm run check
 ```
 
@@ -94,10 +95,18 @@ Documentation formatting commands:
 
 The checked-in hooks have these responsibilities:
 
-- Pre-commit: Format staged files, run staged JavaScript linting, check Markdown, and run `npm run test:harness`. It does not launch emulators.
-- Pre-push: Run the unit tests, build the watchface, and execute the screenshot-producing `pre-push-gate` suite.
-- `pre-push-gate`: Aggregate the `visual-refresh` Matrix across Emery, Chalk, and Flint in white and black display modes.
-- Broader coverage: Keep emulator and pre-release Matrices explicit because they install, reset, and exercise stateful devices.
+- Pre-commit:
+  - Format staged files.
+  - Run staged JavaScript linting.
+  - Check Markdown.
+  - Run `npm run test:harness` and `npm run test:native`.
+  - Do not launch emulators.
+- Pre-push:
+  - Run the harness and native C unit tests.
+  - Build the watchface.
+  - Execute the screenshot-producing `pre-push-gate` suite.
+- Pre-push visual QA: `./aag-build-qa.sh --exec pre-push-gate --force`
+- Pre-release QA: `./aag-build-qa.sh --exec pre-release-gate`
 - Validation guidance: Use the named plans documented by [Validation](Validation.md) when broader runtime evidence is required.
 
 ## Source And Runtime Discipline

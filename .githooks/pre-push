@@ -6,6 +6,7 @@ cd "${repo_root}"
 
 echo "Running unit tests before push."
 npm run test:harness
+npm run test:native
 
 echo "Building the watchface before push."
 ./aag-build-qa.sh --build

@@ -1,5 +1,7 @@
 #include "substratum_computations.h"
 
+#include "modules/helper_computations.h"
+
 // Scale icon's X relative to the current frame vs. the reference design
 int16_t substratum_renderer_scale_icon_x(
     const GSize* size,
@@ -73,10 +75,10 @@ int16_t substratum_renderer_scale_icon_x_in_frame(
     return 0;
   }
 
-  // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(
+  return HELPER_CLAMP_TO_RANGE(
       frame->origin.x + substratum_renderer_scale_icon_x(&frame->size, coord),
-      (frame->origin.x + frame->size.w - 1));
+      frame->origin.x,
+      HELPER_MIN((frame->origin.x + frame->size.w - 1), (PBL_DISPLAY_WIDTH - 1)));
 }
 
 int16_t substratum_renderer_scale_icon_y_in_frame(
@@ -86,10 +88,10 @@ int16_t substratum_renderer_scale_icon_y_in_frame(
     return 0;
   }
 
-  // Clamp so coords go from 0..total-1
-  return HELPER_CLAMP_MAX(
+  return HELPER_CLAMP_TO_RANGE(
       frame->origin.y + substratum_renderer_scale_icon_y(&frame->size, coord),
-      (frame->origin.y + frame->size.h - 1));
+      frame->origin.y,
+      HELPER_MIN((frame->origin.y + frame->size.h - 1), (PBL_DISPLAY_HEIGHT - 1)));
 }
 
 void substratum_renderer_scale_icon_point_in_frame(
@@ -125,6 +127,11 @@ void substratum_renderer_create_subframe(
   out->origin.x = x;
   out->origin.y = y;
   substratum_renderer_scale_icon_point_in_frame(frame, &out->origin);
-  out->size.w = HELPER_SCALE_ROUND(w, frame->size.w, WATCHFACE_ICON_GRID_WIDTH);
-  out->size.h = HELPER_SCALE_ROUND(h, frame->size.h, WATCHFACE_ICON_GRID_HEIGHT);
+  int16_t maybe_w = HELPER_SCALE_ROUND(w, frame->size.w, WATCHFACE_ICON_GRID_WIDTH);
+  int16_t maybe_h = HELPER_SCALE_ROUND(h, frame->size.h, WATCHFACE_ICON_GRID_HEIGHT);
+
+  // If origin.x + w is greater than the screen's width, clamp width to be
+  // PBL_DISPLAY_WIDTH-origin.x. Same for height calculation.
+  out->size.w = HELPER_MIN(maybe_w, PBL_DISPLAY_WIDTH - out->origin.x);
+  out->size.h = HELPER_MIN(maybe_h, PBL_DISPLAY_HEIGHT - out->origin.y);
 }

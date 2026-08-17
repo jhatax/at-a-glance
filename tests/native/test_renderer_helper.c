@@ -128,51 +128,111 @@ int test_substratum_computations(
   point = substratum_renderer_scale_icon_point(&compact, 14, 28);
   TEST_CHECK(point.x == 0 && point.y == 0);
 
-  GRect frame = GRect(10, 20, 18, 18);
-  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 0) == 10);
-  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 27) == 27);
-  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, -1) == 10);
+  GRect frame = GRect(100, 130, 18, 18);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 0) == 100);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 27) == 117);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, -1) == 100);
   TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(NULL, 14) == 0);
-  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 0) == 20);
-  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 27) == 37);
-  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 28) == 20);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 0) == 130);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 27) == 147);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 28) == 130);
   TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(NULL, 14) == 0);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 7) == 135);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 7) == 105);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&frame, 14) == 139);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&frame, 14) == 109);
 
   point = GPoint(14, 14);
   substratum_renderer_scale_icon_point_in_frame(&frame, &point);
-  TEST_CHECK(point.x == 19 && point.y == 29);
+  TEST_CHECK(point.x == 109 && point.y == 139);
   point = GPoint(14, 14);
   substratum_renderer_scale_icon_point_in_frame(NULL, &point);
   TEST_CHECK(point.x == 0 && point.y == 0);
+  point = GPoint(7, 14);
+  substratum_renderer_scale_icon_point_in_frame(&frame, &point);
+  TEST_CHECK(point.x == 105 && point.y == 139);
+  point = GPoint(7, 7);
+  substratum_renderer_scale_icon_point_in_frame(&frame, &point);
+  TEST_CHECK(point.x == 105 && point.y == 135);
 
   GRect subframe = {0};
   substratum_renderer_create_subframe(&frame, &subframe, 0, 0, 28, 28);
-  TEST_CHECK(subframe.origin.x == 10 && subframe.origin.y == 20);
+  TEST_CHECK(subframe.origin.x == 100 && subframe.origin.y == 130);
   TEST_CHECK(subframe.size.w == 18 && subframe.size.h == 18);
 
   // Compact sleet cloud: design 20x12 becomes 13x8 in an 18x18 icon.
   substratum_renderer_create_subframe(&frame, &subframe, 3, 0, 20, 12);
-  TEST_CHECK(subframe.origin.x == 12 && subframe.origin.y == 20);
+  TEST_CHECK(subframe.origin.x == 102 && subframe.origin.y == 130);
   TEST_CHECK(subframe.size.w == 13 && subframe.size.h == 8);
   point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 15, 18);
-  TEST_CHECK(point.x == 19 && point.y == 25);
+  TEST_CHECK(point.x == 109 && point.y == 135);
   TEST_CHECK(substratum_renderer_scale_icon_coord(&subframe.size, 8) == 2);
 
   // Compact sleet and snow subframes: design 13x13 and 12x12 both become 8x8.
   substratum_renderer_create_subframe(&frame, &subframe, 14, 12, 13, 13);
-  TEST_CHECK(subframe.origin.x == 19 && subframe.origin.y == 28);
+  TEST_CHECK(subframe.origin.x == 109 && subframe.origin.y == 138);
   TEST_CHECK(subframe.size.w == 8 && subframe.size.h == 8);
   point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 4, 1);
-  TEST_CHECK(point.x == 20 && point.y == 28);
+  TEST_CHECK(point.x == 110 && point.y == 138);
   point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 1, 26);
-  TEST_CHECK(point.x == 19 && point.y == 35);
+  TEST_CHECK(point.x == 109 && point.y == 145);
   TEST_CHECK(substratum_renderer_scale_icon_coord(&subframe.size, 5) == 1);
 
   substratum_renderer_create_subframe(&frame, &subframe, 0, 14, 12, 12);
-  TEST_CHECK(subframe.origin.x == 10 && subframe.origin.y == 29);
+  TEST_CHECK(subframe.origin.x == 100 && subframe.origin.y == 139);
   TEST_CHECK(subframe.size.w == 8 && subframe.size.h == 8);
   point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 14, 14);
-  TEST_CHECK(point.x == 14 && point.y == 33);
+  TEST_CHECK(point.x == 104 && point.y == 143);
+
+  GRect full_frame = GRect(100, 130, 28, 28);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&full_frame, 0) == 100);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&full_frame, 27) == 127);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&full_frame, -1) == 100);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&full_frame, 0) == 130);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&full_frame, 27) == 157);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&full_frame, 28) == 130);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&full_frame, 7) == 137);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&full_frame, 7) == 107);
+  TEST_CHECK(substratum_renderer_scale_icon_y_in_frame(&full_frame, 14) == 144);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&full_frame, 14) == 114);
+
+  point = GPoint(14, 14);
+  substratum_renderer_scale_icon_point_in_frame(&full_frame, &point);
+  TEST_CHECK(point.x == 114 && point.y == 144);
+  point = GPoint(7, 14);
+  substratum_renderer_scale_icon_point_in_frame(&full_frame, &point);
+  TEST_CHECK(point.x == 107 && point.y == 144);
+  point = GPoint(7, 7);
+  substratum_renderer_scale_icon_point_in_frame(&full_frame, &point);
+  TEST_CHECK(point.x == 107 && point.y == 137);
+
+  substratum_renderer_create_subframe(&full_frame, &subframe, 0, 0, 28, 28);
+  TEST_CHECK(subframe.origin.x == 100 && subframe.origin.y == 130);
+  TEST_CHECK(subframe.size.w == 28 && subframe.size.h == 28);
+  substratum_renderer_create_subframe(&full_frame, &subframe, 3, 0, 20, 12);
+  TEST_CHECK(subframe.origin.x == 103 && subframe.origin.y == 130);
+  TEST_CHECK(subframe.size.w == 20 && subframe.size.h == 12);
+  point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 15, 18);
+  TEST_CHECK(point.x == 114 && point.y == 138);
+  TEST_CHECK(substratum_renderer_scale_icon_coord(&subframe.size, 8) == 3);
+  substratum_renderer_create_subframe(&full_frame, &subframe, 14, 12, 13, 13);
+  TEST_CHECK(subframe.origin.x == 114 && subframe.origin.y == 142);
+  TEST_CHECK(subframe.size.w == 13 && subframe.size.h == 13);
+  point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 4, 1);
+  TEST_CHECK(point.x == 116 && point.y == 142);
+  point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 1, 26);
+  TEST_CHECK(point.x == 114 && point.y == 154);
+  TEST_CHECK(substratum_renderer_scale_icon_coord(&subframe.size, 5) == 2);
+  substratum_renderer_create_subframe(&full_frame, &subframe, 0, 14, 12, 12);
+  TEST_CHECK(subframe.origin.x == 100 && subframe.origin.y == 144);
+  TEST_CHECK(subframe.size.w == 12 && subframe.size.h == 12);
+  point = substratum_renderer_scale_icon_x_y_in_frame(&subframe, 14, 14);
+  TEST_CHECK(point.x == 106 && point.y == 150);
+
+  GRect edge_frame = GRect(PBL_DISPLAY_WIDTH - 5, PBL_DISPLAY_HEIGHT - 5, 18, 18);
+  TEST_CHECK(substratum_renderer_scale_icon_x_in_frame(&edge_frame, 27) == (PBL_DISPLAY_WIDTH - 1));
+  TEST_CHECK(
+      substratum_renderer_scale_icon_y_in_frame(&edge_frame, 27) == (PBL_DISPLAY_HEIGHT - 1));
   GRect unchanged = GRect(1, 2, 3, 4);
   substratum_renderer_create_subframe(NULL, &unchanged, 0, 0, 1, 1);
   TEST_CHECK(unchanged.origin.x == 1 && unchanged.origin.y == 2);

@@ -29,6 +29,9 @@ typedef struct {
 #define GColorClear ((GColor){.argb = 0})
 #define GColorWhite ((GColor){.argb = 0xFF})
 
+#define PBL_DISPLAY_WIDTH 144
+#define PBL_DISPLAY_HEIGHT 168
+
 typedef struct {
   int16_t x;
   int16_t y;
