@@ -1,7 +1,7 @@
 #include "glyph_lab_glyphs.h"
 
 #include "../../../src/modules/climate_glyphs.h"
-#include "glyph_lab_helper.h"
+#include "../../../src/modules/helper_computations.h"
 
 bool glyph_lab_glyphs_init() { return true; }
 

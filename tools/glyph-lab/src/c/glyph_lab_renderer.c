@@ -1,7 +1,7 @@
 #include "glyph_lab_renderer.h"
 
+#include "../../../src/modules/helper_computations.h"
 #include "glyph_lab_components.h"
-#include "glyph_lab_helper.h"
 
 static bool is_valid_design_x_coord(
     int16_t x,

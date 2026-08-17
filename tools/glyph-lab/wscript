@@ -24,11 +24,10 @@ def build(ctx):
         ctx.env.INCLUDES += [ctx.env.BUILD_DIR + '/src']
         ctx.set_group(ctx.env.PLATFORM_NAME)
         app_elf = '{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
-        app_sources = [source for source in ctx.path.ant_glob('src/c/**/*.c')
-                       if source.name != 'glyph_lab_helper.c'] + [
+        app_sources = ctx.path.ant_glob('src/c/**/*.c') + [
             ctx.path.find_resource('../../src/modules/climate_glyphs.c'),
-            ctx.path.find_resource('../../src/modules/helper.c'),
             ctx.path.find_resource('../../src/modules/substratum_renderer.c'),
+            ctx.path.find_resource('../../src/modules/substratum_computations.c'),
         ]
         ctx.pbl_build(source=app_sources,
                       target=app_elf,

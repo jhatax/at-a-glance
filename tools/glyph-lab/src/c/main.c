@@ -1,5 +1,5 @@
+#include "../../../src/modules/helper_computations.h"
 #include "glyph_lab_glyphs.h"
-#include "glyph_lab_helper.h"
 
 #define GLYPH_COL_COUNT 2
 #define GLYPH_ROW_COUNT 2
