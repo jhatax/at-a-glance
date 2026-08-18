@@ -96,17 +96,17 @@ static bool format_temperature(
   }
 
   if (!(TEMPERATURE_IS_VALID(s_temp_celsius_tenths))) {
-    const char* unit_text = HELPER_IF_ELSE((temp_unit == TEMP_UNIT_C), "C", "F");
+    const char* unit_text = HELPER_IF_ELSE((temp_unit == TEMP_UNIT_C), "°C", "°F");
     snprintf(buf, buflen, "%s%s", WATCHFACE_OUTOFRANGE_TEXT, unit_text);
     return false;
   }
 
   if (temp_unit == TEMP_UNIT_F) {
     int f_whole = HELPER_ROUND_UP((s_temp_celsius_tenths * 9 + 1600), 50);
-    snprintf(buf, buflen, "%dF", f_whole);
+    snprintf(buf, buflen, "%d°F", f_whole);
   } else {
     int c_whole = HELPER_ROUND_UP(s_temp_celsius_tenths, 10);
-    snprintf(buf, buflen, "%dC", c_whole);
+    snprintf(buf, buflen, "%d°C", c_whole);
   }
 
   return true;

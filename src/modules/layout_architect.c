@@ -1,6 +1,7 @@
 #include "helper.h"
 #include "layout_blueprints.h"
 #include "layout_surface.h"
+#include "modules/helper_computations.h"
 #include "watchface_layout.h"
 
 /*
@@ -152,7 +153,6 @@ static void architect_calculate_must_have_layout_from_blueprint(
   const int16_t margin_x = blueprint->margin_x;
   const int16_t x_start = margin_x;
   const int16_t x_end = face_width - margin_x;
-  const int16_t content_width = x_end - x_start;
   const int16_t icon_text_gap = blueprint->icon_text_gap;
 
   // Use these transient values to establish x and y for each module
@@ -173,7 +173,7 @@ static void architect_calculate_must_have_layout_from_blueprint(
   int16_t module_y = current_row_y;
 
   // Current module's WIDTH
-  int16_t module_w = content_width;
+  int16_t module_w = x_end - x_start;
 
   computed->time = GRect(module_x, module_y, module_w, blueprint->time_text_height);
 
@@ -234,24 +234,28 @@ static void architect_calculate_must_have_layout_from_blueprint(
   current_row_y += DESIGN_BATTERY_BAND_HEIGHT;
   module_y = current_row_y;
 
-  // Date
+  // Climate and Date
   // For this row, anchor all modules at current-row's y
   const int16_t icon_w = blueprint->icon_w;
   const int16_t icon_h = blueprint->icon_h;
 
-  // Climate Icon is to the left of x_center
-  const int16_t face_center = (face_width >> 1);
+  // Climate Icon is at x_start + icon_text_gap
   module_w = icon_w;
-  module_x = face_center - (icon_w + (icon_w >> 1) + icon_text_gap);
+  module_x = x_start + icon_text_gap;
   computed->climate.icon = GRect(module_x, module_y, module_w, icon_h);
 
   // Climate Text Width can be computed
-  computed->climate.text =
-      GRect(x_start, module_y, module_x - icon_text_gap - x_start, blueprint->data_text_height);
+  module_x += icon_w + icon_text_gap;
+  // width split between climate and date is 35%:65% in favor of date
+  computed->climate.text = GRect(
+      module_x,
+      module_y,
+      HELPER_SCALE_ROUND(x_end - module_x, DESIGN_TEMP_X_PERCENT, 100),
+      blueprint->data_text_height);
 
   // Date text
-  module_x += icon_w + icon_text_gap;
-  module_w = face_width - module_x - 1;  // last X - current x-coordinate yields available width
+  module_x += computed->climate.text.size.w;
+  module_w = x_end - module_x;
   computed->date = GRect(module_x, module_y, module_w, blueprint->date_text_height);
 
   // Location text
@@ -277,7 +281,7 @@ static void architect_apply_calculated_layout_to_watchface(
   // Date
   surface->date.text = (WatchfaceTextSubstratum){
       .frame = computed->date,
-      .alignment = GTextAlignmentLeft,
+      .alignment = GTextAlignmentRight,
       .font_role = WATCHFACE_FONT_ROLE_DATE,
       .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
@@ -296,7 +300,7 @@ static void architect_apply_calculated_layout_to_watchface(
 
   surface->climate.text = (WatchfaceTextSubstratum){
       .frame = computed->climate.text,
-      .alignment = GTextAlignmentRight,
+      .alignment = GTextAlignmentLeft,
       .font_role = WATCHFACE_FONT_ROLE_TEXT,
   };
 

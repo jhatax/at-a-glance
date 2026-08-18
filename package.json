@@ -68,7 +68,7 @@
           "menuIcon": true
         },
         {
-          "characterRegex": "[-0-9.A-Z a-z·]",
+          "characterRegex": "[-0-9.A-Z a-z·°]",
           "file": "fonts/Oswald-Medium.ttf",
           "targetPlatforms": [
             "aplite",
@@ -94,7 +94,7 @@
           "type": "font"
         },
         {
-          "characterRegex": "[-0-9.A-Z a-z·]",
+          "characterRegex": "[-0-9.A-Z a-z·°]",
           "file": "fonts/Oswald-Medium.ttf",
           "targetPlatforms": [
             "emery",
