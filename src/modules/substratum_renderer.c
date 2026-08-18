@@ -1,6 +1,6 @@
 #include "substratum_renderer.h"
 
-#include "modules/layout_surface.h"
+#include "layout_blueprints.h"
 #include "substratum_computations.h"
 #include "watchface_debug.h"
 

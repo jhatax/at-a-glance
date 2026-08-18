@@ -2,9 +2,6 @@
 
 #include <pebble.h>
 
-#include "helper.h"
-#include "layout_blueprints.h"
-#include "substratum_computations.h"
 #include "watchface_components.h"
 
 #define MODULE_PALETTE_LOADED(pal) (!(HELPER_COLOR_EQUAL(((pal).normal), ((pal).background))))
