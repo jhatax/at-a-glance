@@ -34,7 +34,7 @@ parse_args() {
           shift
         done
         ;;
-      --validate | --list-steps)
+      --validate | --list-steps | -ls)
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="validate"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
