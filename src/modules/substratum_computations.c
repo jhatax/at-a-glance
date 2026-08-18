@@ -1,6 +1,6 @@
 #include "substratum_computations.h"
 
-#include "modules/helper_computations.h"
+#include "helper_computations.h"
 
 // Scale icon's X relative to the current frame vs. the reference design
 int16_t substratum_renderer_scale_icon_x(
