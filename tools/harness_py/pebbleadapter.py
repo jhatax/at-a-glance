@@ -288,7 +288,8 @@ class PebbleAdapter:
       self._log_failure(f"Bluetooth {emulator}: connected={connected}", exc)
       raise
     finally:
-      time.sleep(27.5) # bluetooth delay is long
+      if not connected:
+        time.sleep(27.5) # bluetooth delay is long
 
     self._log_success(f"Bluetooth {emulator}: connected={connected}")
     return connected == 0
