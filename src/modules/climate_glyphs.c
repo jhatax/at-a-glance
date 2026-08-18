@@ -1,6 +1,8 @@
 #include "climate_glyphs.h"
 
-#include "modules/watchface_layout.h"
+#include "helper_computations.h"
+#include "layout_blueprints.h"
+#include "substratum_computations.h"
 #include "substratum_renderer.h"
 #include "watchface_debug.h"
 
@@ -14,18 +16,14 @@
  *   Internal mapping, color selection, geometry, and drawing helpers stay
  *   file-local.
  *
- * - no layout ownership leaking in
- *   This file consumes caller-provided frames and palette data. It does not
- *   decide watchface layout, placement policy, or surface ownership.
+ * - no layout ownership
+ *   This file is a consumer of caller-provided frames and palette data.
  *
- * - no app/runtime policy leaking in
- *   This file maps already-resolved climate facts to glyph kinds and draws
- *   them. App lifecycle, transport, settings, and refresh policy belong
- *   elsewhere.
+ * - no app/runtime policy ownership
+ *   This file maps already-resolved climate facts to glyph kinds and draws them.
  *
  * - no duplicated primitive drawing logic
- *   Shared line, point, rect, path, and scaling primitives belong in
- *   substratum_renderer.c/.h, not in repeated local implementations here.
+ *   Line, point, rect, path, and scaling primitives are owned by substratum_renderer.c/.h.
  *
  * - clear section ordering inside the file
  *   Keep the file ordered as:
@@ -96,7 +94,7 @@ static void draw_weather_sun(
   }
   const uint8_t sun_radius = 6;
   const uint8_t sun_dia = sun_radius << 1;
-  const uint8_t stroke_w = HELPER_IF_ELSE(IS_LARGE_DISPLAY, 3, 2);
+  const uint8_t stroke_w = FULL_OR_COMPACT(3, 2);
   graphics_context_set_stroke_color(ctx, climate_palette->sun);
   graphics_context_set_stroke_width(ctx, stroke_w);
 
