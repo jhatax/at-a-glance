@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
-from qaharnessruntime import HarnessRuntimeContext, StepResult, finalize
+from qaharnessruntime import ANSI_CYAN, ANSI_RESET, HarnessRuntimeContext, StepResult, finalize
 from qaplanresolver import PlanDefinition, PlanStep
 from textwrap import fill
 
@@ -29,10 +29,15 @@ class ExecutionState:
 
     self.pebble = PebbleAdapter(self.inform_operator)
 
-  def inform_operator(self, line: str, log_only: bool = False) -> None:
+  def inform_operator(
+      self,
+      line: str,
+      log_only: bool = False,
+      terminal_color: str = "",
+  ) -> None:
     message = f"{line}\n"
     if not log_only:
-      print(message)
+      print(f"{terminal_color}{message}{ANSI_RESET}" if terminal_color else message)
     with self.context.commands_log_path.open("a", encoding="utf-8") as handle:
       handle.write(message)
 
@@ -105,9 +110,8 @@ def run_plan_execution(plan: PlanDefinition) -> int:
     for index, step in enumerate(plan.steps.values(), start=1):
       header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
       pre_step = f"{divider}\n{header}"
-      state.inform_operator(pre_step)
+      state.inform_operator(pre_step, terminal_color=ANSI_CYAN)
       _execute_step(state, step)
-      state.inform_operator(f"{divider}")
   except Exception as exc:
     print(f"Error: {exc!r}")
     exit_status = 1

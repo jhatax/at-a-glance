@@ -12,7 +12,7 @@ from qaharnessruntime import (
     ScreenshotsContext,
     build_step_outputs,
 )
-from qaplangrammar import AcceptedMember, QAPlanGrammar
+from qaplangrammar import QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
 from ataglanceharness import handle_validate_plan
 from qaplanresolver import AllForOneStep, LocationStep, MemberDiscard, load_and_validate_plan

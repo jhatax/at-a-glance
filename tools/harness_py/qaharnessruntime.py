@@ -12,6 +12,12 @@ from qaharnessconfig import QARUNS_ROOT
 from tools.harness_py.qaplangrammar import QAPlanGrammar
 
 ALLOWED_RESULTS: Final = frozenset({"passed", "failed"})
+ANSI_RESET: Final = "\033[0m"
+ANSI_BOLD: Final = "\033[1m"
+ANSI_RED: Final = "\033[31m"
+ANSI_GREEN: Final = "\033[32m"
+ANSI_YELLOW: Final = "\033[33m"
+ANSI_CYAN: Final = "\033[36m"
 
 REPORT_STEP_SCHEMA: Final = {
     "weather": {
@@ -177,8 +183,7 @@ def validate_report_step(
     raise ValueError(f"Invalid emulator: '{emulator}' in report")
   if set(step_args) != set(schema):
     raise ValueError(
-        f"Invalid report fields for '{capability}': "
-        f"expected {set(schema)}, received {set(step_args)}"
+        f"Invalid report fields for '{capability}': expected {set(schema)}, received {set(step_args)}"
     )
   for name, expected_type in schema.items():
     value = step_args[name]
@@ -345,29 +350,39 @@ def create_harness_context(capture_screenshots: bool) -> HarnessRuntimeContext:
   )
 
 
-def _print_closeout(run: QARunContext, summary_path: Path) -> None:
-  summary = ""
-  if summary_path.is_file():
-    summary = f"Summary report: {summary_path}"
-
+def print_closeout(run: QARunContext, summary_path: Path) -> None:
   _passed = len(run.step_outputs)
   _failed = 0
   if run.status != "passed":
     _passed = sum(step.status == "passed" for step in run.step_outputs)
     _failed = len(run.step_outputs) - _passed
 
-  print(f"Run status: {run.status}")
-  print(f"Plan: {run.plan}")
-  print(f"Steps: {_passed} passed, failed: {_failed}")
-  print(
-      (
-          f"Screenshots: '{run.resolved['expected_screenshots']}' expected, "
-          f"captured '{run.resolved['captured_screenshots']}'"
-      )
+  _status_color = ANSI_GREEN if run.status == "passed" else ANSI_RED
+  _failure_color = ANSI_GREEN if _failed == 0 else ANSI_RED
+  _screenshot_color = ANSI_GREEN
+  if run.resolved["captured_screenshots"] != run.resolved["expected_screenshots"]:
+    _screenshot_color = ANSI_YELLOW
+
+  output: str = (
+      f"{ANSI_BOLD}QA RUN SUMMARY{ANSI_RESET}\n"
+      f"Run status: {_status_color}{ANSI_BOLD}{run.status.upper()}{ANSI_RESET}\n"
+      f"Plan: {ANSI_CYAN}{run.plan}{ANSI_RESET}\n"
+      f"Steps: {ANSI_GREEN}{_passed} passed{ANSI_RESET}, "
+      f"{_failure_color}{_failed} failed{ANSI_RESET}\n"
+      f"Screenshots: {_screenshot_color}'{run.resolved['expected_screenshots']}' expected, "
+      f"captured '{run.resolved['captured_screenshots']}'{ANSI_RESET}"
   )
-  if summary:
-    _divider = "=" * len(summary)
-    print(f"{_divider}\n{summary}\n{_divider}")
+
+  print(output)
+  if summary_path.is_file():
+    _summary = f"Summary report: {summary_path}"
+    _divider = "=" * len(_summary)
+    output = (
+        f"{ANSI_CYAN}{_divider}{ANSI_RESET}\n"
+        f"{ANSI_BOLD}{ANSI_CYAN}{_summary}{ANSI_RESET}\n"
+        f"{ANSI_CYAN}{_divider}{ANSI_RESET}"
+    )
+    print(output)
 
 
 def _emit_reports(run: QARunContext, json_path: Path, summary_path: Path) -> None:
@@ -381,7 +396,7 @@ def _emit_reports(run: QARunContext, json_path: Path, summary_path: Path) -> Non
     pass
   finally:
     if summary_path.is_file():
-      _print_closeout(run, summary_path)
+      print_closeout(run, summary_path)
 
 
 def _build_run_outputs(context: HarnessRuntimeContext) -> dict[str, str]:
