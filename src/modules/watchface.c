@@ -3,7 +3,7 @@
 #include "battery.h"
 #include "climate.h"
 #include "date.h"
-#include "modules/helper.h"
+#include "helper.h"
 #include "substratum_renderer.h"
 #include "time.h"
 #include "watchface_layout.h"
