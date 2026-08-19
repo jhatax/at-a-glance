@@ -2,13 +2,8 @@
 
 #include <pebble.h>
 
+#include "layout_blueprints.h"
 #include "watchface_components.h"
-
-#if (defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO))
-#define IS_LARGE_DISPLAY 1
-#else
-#define IS_LARGE_DISPLAY 0
-#endif
 
 // Architect
 bool layout_watchface_prepare(

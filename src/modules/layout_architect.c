@@ -1,7 +1,7 @@
 #include "helper.h"
+#include "helper_computations.h"
 #include "layout_blueprints.h"
 #include "layout_surface.h"
-#include "modules/helper_computations.h"
 #include "watchface_layout.h"
 
 /*
@@ -12,8 +12,7 @@
  *   a caller-owned WatchfaceSurface.
  *
  * - blueprint-driven layout calculation
- *   Layout is derived from blueprint constants and display dimensions, not from
- *   live runtime state, module behavior, or transport inputs.
+ *   Layout is derived from blueprint constants and display dimensions.
  *
  * - must-have first, optional strata second
  *   The file calculates required watchface layout first, then optional health
@@ -28,88 +27,29 @@
  *   state or module refresh policy.
  */
 
-// Blueprint support structures
-typedef struct {
-  int16_t margin_x;
-  int16_t margin_y;
-  int16_t icon_w;
-  int16_t icon_h;
-  int16_t icon_text_gap;
-  int16_t time_y_percent;
-  int16_t time_text_height;
-  int16_t date_text_height;
-  int16_t data_text_height;
-  int16_t location_text_height;
 #ifdef PBL_HEALTH
-  int16_t steps_text_width;
-  int16_t bpm_text_width;
-#endif
-} LayoutBlueprint;
-
-static const LayoutBlueprint c_blueprint = {
-    .margin_x = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_X_MARGIN, DESIGN_COMPACT_X_MARGIN),
-    .margin_y = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_Y_MARGIN, DESIGN_COMPACT_Y_MARGIN),
-    .icon_w = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_WIDTH, DESIGN_COMPACT_ICON_WIDTH),
-    .icon_h = HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_ICON_HEIGHT, DESIGN_COMPACT_ICON_HEIGHT),
-    .icon_text_gap =
-        HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_ICON_TEXT_GAP, DESIGN_COMPACT_ICON_TEXT_GAP),
-    .time_y_percent =
-        HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_TIME_Y_PERCENT, DESIGN_COMPACT_TIME_Y_PERCENT),
-    .date_text_height = HELPER_IF_ELSE(
-        IS_LARGE_DISPLAY,
-        DESIGN_FULL_DATE_TEXT_HEIGHT,
-        DESIGN_COMPACT_DATE_TEXT_HEIGHT),
-    .time_text_height = HELPER_IF_ELSE(
-        IS_LARGE_DISPLAY,
-        DESIGN_FULL_TIME_TEXT_HEIGHT,
-        DESIGN_COMPACT_TIME_TEXT_HEIGHT),
-    .data_text_height = HELPER_IF_ELSE(
-        IS_LARGE_DISPLAY,
-        DESIGN_FULL_DATA_TEXT_HEIGHT,
-        DESIGN_COMPACT_DATA_TEXT_HEIGHT),
-    .location_text_height = HELPER_IF_ELSE(
-        IS_LARGE_DISPLAY,
-        DESIGN_FULL_LOCATION_TEXT_HEIGHT,
-        DESIGN_COMPACT_LOCATION_TEXT_HEIGHT),
-#ifdef PBL_HEALTH
-    .steps_text_width = HELPER_IF_ELSE(
-        IS_LARGE_DISPLAY,
-        DESIGN_FULL_STEPS_TEXT_WIDTH,
-        DESIGN_COMPACT_STEPS_TEXT_WIDTH),
-    .bpm_text_width =
-        HELPER_IF_ELSE(IS_LARGE_DISPLAY, DESIGN_FULL_BPM_TEXT_WIDTH, DESIGN_COMPACT_BPM_TEXT_WIDTH),
-#endif
-};
-
-#ifdef PBL_HEALTH
-static void architect_calculate_health_layout_from_blueprint(
-    const LayoutBlueprint* blueprint,
+static void architect_calculate_health_layout(
     CalculatedLayout* computed,
     int16_t face_width,
     int16_t face_height) {
-  const int16_t margin_y = blueprint->margin_y;
   // Icon and text are on either side of the face_center
   // Steps progress spreads on either side of x_center
   // Y: anchored at the same Y for this row
-  const int16_t icon_w = blueprint->icon_w;
-  const int16_t icon_h = blueprint->icon_h;
   const int16_t face_center = (face_width >> 1);
-  const int16_t icon_text_gap = blueprint->icon_text_gap;
-  const int16_t icon_x = face_center - (icon_w + (icon_w >> 1) + icon_text_gap);
-  const int16_t metric_x = icon_x + icon_w + icon_text_gap;
+  const int16_t icon_x = face_center - (HELPER_SCALE_ROUND(ICON_WIDTH, 3, 2) + ICON_TEXT_GAP);
+  const int16_t metric_x = icon_x + ICON_WIDTH + ICON_TEXT_GAP;
 
   // Icon and text are on either side of the face_center
   // Module Y stays unchanged from icon's Y
-  int16_t module_w = blueprint->steps_text_width;
-  int16_t current_row_y = margin_y;
+  int16_t module_w = STEPS_TEXT_WIDTH;
+  int16_t current_row_y = Y_MARGIN;
   int16_t module_y = current_row_y;
-  computed->steps_layer.steps.text =
-      GRect(metric_x, module_y, module_w, blueprint->data_text_height);
+  computed->steps_layer.steps.text = GRect(metric_x, module_y, module_w, DATA_TEXT_HEIGHT);
 
   // Icon
-  module_w = icon_w;
+  module_w = ICON_WIDTH;
   // The icon is the next module, set its width
-  computed->steps_layer.steps.icon = GRect(icon_x, module_y, module_w, icon_h);
+  computed->steps_layer.steps.icon = GRect(icon_x, module_y, module_w, ICON_HEIGHT);
 
   // Progress Bar is at the bottom and starts at the icon's X and extends
   // until the end of the text-box. Bar's width uses Progress Bar width %
@@ -117,65 +57,60 @@ static void architect_calculate_health_layout_from_blueprint(
   // Progress width = width of the icon + gap + text
   // Center horizontally
   // Start by using the module_w to save the interim width
-  current_row_y += icon_h;
-  module_w = icon_w + icon_text_gap + blueprint->steps_text_width;
+  current_row_y += ICON_HEIGHT;
+  module_w = ICON_WIDTH + ICON_TEXT_GAP + STEPS_TEXT_WIDTH;
   // Set the x to be that of the icon so that the rect starts exactly where the
   // icon starts, which is the current value of module_x
   module_y = current_row_y;
-  // height is DESIGN_STEPS_PROGRESS_HEIGHT
-  computed->steps_layer.progress = GRect(icon_x, module_y, module_w, DESIGN_STEPS_PROGRESS_HEIGHT);
+  // height is STEPS_PROGRESS_HEIGHT
+  computed->steps_layer.progress = GRect(icon_x, module_y, module_w, STEPS_PROGRESS_HEIGHT);
 
   // BPM at the bottom of the screen
-  current_row_y = face_height - margin_y - icon_h;
+  current_row_y = face_height - Y_MARGIN - ICON_HEIGHT;
 
-  module_w = blueprint->bpm_text_width;
+  module_w = BPM_TEXT_WIDTH;
   module_y = current_row_y;
-  computed->bpm.text = GRect(metric_x, module_y, module_w, blueprint->data_text_height);
+  computed->bpm.text = GRect(metric_x, module_y, module_w, DATA_TEXT_HEIGHT);
 
   // Icon
-  module_w = icon_w;
-  computed->bpm.icon = GRect(icon_x, module_y, module_w, icon_h);
+  module_w = ICON_WIDTH;
+  computed->bpm.icon = GRect(icon_x, module_y, module_w, ICON_HEIGHT);
 }
 #endif
 
-static void architect_calculate_must_have_layout_from_blueprint(
-    const LayoutBlueprint* blueprint,
+static void architect_calculate_must_have_layout(
     CalculatedLayout* computed,
     int16_t face_width,
     int16_t face_height) {
-  if (!blueprint || !computed) {
+  if (!computed) {
     return;
   }
 
   // Wipe the layout's state clean
   memset(computed, 0, sizeof(*computed));
 
-  const int16_t margin_x = blueprint->margin_x;
-  const int16_t x_start = margin_x;
-  const int16_t x_end = face_width - margin_x;
-  const int16_t icon_text_gap = blueprint->icon_text_gap;
-
+  const int16_t x_end = face_width - X_MARGIN;
   // Use these transient values to establish x and y for each module
   // Time, Battery, Date are separated by stacked together, no gaps
 
   // TIME is center aligned text
-  // X: computed x_start
-  // Y: computed using blueprint->time_y_percent
+  // X: computed X_MARGIN
+  // Y: computed using TIME_Y_PERCENT
   // W: content_width
-  // H: blueprint->time_text_height
-  // Anchor current row-y using blueprint->time_y_percent
-  int16_t current_row_y = HELPER_ROUND_UP((face_height * blueprint->time_y_percent), 100);
+  // H: time_text_height
+  // Anchor current row-y using TIME_Y_PERCENT
+  int16_t current_row_y = HELPER_ROUND_UP((face_height * TIME_Y_PERCENT), 100);
 
   // Current module's X
-  int16_t module_x = x_start;
+  int16_t module_x = X_MARGIN;
 
   // Current module's Y
   int16_t module_y = current_row_y;
 
   // Current module's WIDTH
-  int16_t module_w = x_end - x_start;
+  int16_t module_w = x_end - X_MARGIN;
 
-  computed->time = GRect(module_x, module_y, module_w, blueprint->time_text_height);
+  computed->time = GRect(module_x, module_y, module_w, TIME_TEXT_HEIGHT);
 
   // BATTERY BAND is centered on the viewport and has 4-parts:
   // 1/ Negative space from where time ends until the battery track
@@ -184,87 +119,81 @@ static void architect_calculate_must_have_layout_from_blueprint(
   // 4/ Negative space for visual separation from date
   // X1, X2, X4: all start at X computed using the module's width
   // X3: offset by 1 for halo, width = total-width - 2
-  // Y1: computed using DESIGN_TIME_Y_PERCENT
+  // Y1: computed using TIME_Y_PERCENT
   // Y2: Y1 + 1/2 (height_band - height_track)
   // Y3: Y2 + 1/2 (height_track - height_fill)
   // Y4: irrelevant as it is negative space
-  // W: computed using DESIGN_BATTERY_BAND_WIDTH_PERCENT
-  // H1: DESIGN_BATTERY_BAND_HEIGHT
-  // H2:DESIGN_BATTERY_TRACK_HEIGHT
-  // H3:DESIGN_BATTERY_FILL_HEIGHT
+  // W: computed using BATTERY_BAND_WIDTH_PERCENT
+  // H1: BATTERY_BAND_HEIGHT
+  // H2:BATTERY_TRACK_HEIGHT
+  // H3:BATTERY_FILL_HEIGHT
 
   // Advance the current row's y-position by TIME's HEIGHT: Y1
-  current_row_y += blueprint->time_text_height;
+  current_row_y += TIME_TEXT_HEIGHT;
 
   // Battery Band's width
-  module_w = (face_width * DESIGN_BATTERY_BAR_WIDTH_PERCENT) / 100;
+  module_w = HELPER_SCALE_ROUND(face_width, BATTERY_BAR_WIDTH_PERCENT, 100);
 
   // Center the module horizontally (centered regardless of charging bolt
   // visibility)
   module_x = (face_width - module_w) >> 1;
 
   // The BT icon is at the same Y coordinate as the battery band
-  computed->bt_icon = GRect(
-      module_x - DESIGN_BT_ICON_DIMS - icon_text_gap,
-      current_row_y,
-      DESIGN_BT_ICON_DIMS,
-      DESIGN_BT_ICON_DIMS);
+  computed->bt_icon =
+      GRect(module_x - BT_ICON_DIMS - ICON_TEXT_GAP, current_row_y, BT_ICON_DIMS, BT_ICON_DIMS);
 
   // Y2: Y1 + 1/2 (height_band - height_track)
-  module_y = current_row_y + ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_TRACK_HEIGHT) >> 1);
-  computed->battery.track = GRect(module_x, module_y, module_w, DESIGN_BATTERY_TRACK_HEIGHT);
+  module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_TRACK_HEIGHT) >> 1);
+  computed->battery.track = GRect(module_x, module_y, module_w, BATTERY_TRACK_HEIGHT);
 
   // Y3: Y2 + 1/2 (height_track - height_fill)
   // The exception to computing module_x and module_w before using them
-  module_y += (DESIGN_BATTERY_TRACK_HEIGHT - DESIGN_BATTERY_FILL_HEIGHT) >> 1;
-  computed->battery.fill = GRect(module_x + 1, module_y, module_w - 2, DESIGN_BATTERY_FILL_HEIGHT);
+  module_y += (BATTERY_TRACK_HEIGHT - BATTERY_FILL_HEIGHT) >> 1;
+  computed->battery.fill = GRect(module_x + 1, module_y, module_w - 2, BATTERY_FILL_HEIGHT);
 
   // Add the bolt relative to the top of the BATTERY BAND
-  module_y = current_row_y + ((DESIGN_BATTERY_BAND_HEIGHT - DESIGN_BATTERY_BOLT_HEIGHT) >> 1);
+  module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_BOLT_HEIGHT) >> 1);
   module_x += module_w;
-  module_w = DESIGN_BATTERY_BOLT_WIDTH;
-  computed->battery.bolt = GRect(module_x, module_y, module_w, DESIGN_BATTERY_BOLT_HEIGHT);
+  module_w = BATTERY_BOLT_WIDTH;
+  computed->battery.bolt = GRect(module_x, module_y, module_w, BATTERY_BOLT_HEIGHT);
 
   // The CLIMATE and DATE row
   // Climate:
   // X: center-oriented
   // Y: TIME_Y+BATTERY_BAND_HEIGHT
 
-  // Advance the curent row's Y by DESIGN_BATTERY_BAND_HEIGHT
-  current_row_y += DESIGN_BATTERY_BAND_HEIGHT;
+  // Advance the curent row's Y by BATTERY_BAND_HEIGHT
+  current_row_y += BATTERY_BAND_HEIGHT;
   module_y = current_row_y;
 
   // Climate and Date
   // For this row, anchor all modules at current-row's y
-  const int16_t icon_w = blueprint->icon_w;
-  const int16_t icon_h = blueprint->icon_h;
-
-  // Climate Icon is at x_start + icon_text_gap
-  module_w = icon_w;
-  module_x = x_start + icon_text_gap;
-  computed->climate.icon = GRect(module_x, module_y, module_w, icon_h);
+  // Climate Icon is at X_MARGIN
+  module_w = ICON_WIDTH;
+  module_x = X_MARGIN;
+  computed->climate.icon = GRect(module_x, module_y, module_w, ICON_HEIGHT);
 
   // Climate Text Width can be computed
-  module_x += icon_w + icon_text_gap;
+  module_x += ICON_WIDTH + ICON_TEXT_GAP;
   // width split between climate and date is 35%:65% in favor of date
   computed->climate.text = GRect(
       module_x,
       module_y,
-      HELPER_SCALE_ROUND(x_end - module_x, DESIGN_TEMP_X_PERCENT, 100),
-      blueprint->data_text_height);
+      HELPER_SCALE_ROUND(x_end - module_x, TEMP_X_PERCENT, 100),
+      DATA_TEXT_HEIGHT);
 
   // Date text
   module_x += computed->climate.text.size.w;
   module_w = x_end - module_x;
-  computed->date = GRect(module_x, module_y, module_w, blueprint->date_text_height);
+  computed->date = GRect(module_x, module_y, module_w, DATE_TEXT_HEIGHT);
 
   // Location text
-  current_row_y += HELPER_MAX(icon_h, blueprint->data_text_height);
+  current_row_y += HELPER_MAX(ICON_HEIGHT, DATA_TEXT_HEIGHT);
   computed->location = GRect(
       computed->battery.track.origin.x,
       current_row_y - 1,
       computed->battery.track.size.w,
-      blueprint->location_text_height);
+      LOCATION_TEXT_HEIGHT);
 }
 
 static void architect_apply_calculated_layout_to_watchface(
@@ -281,7 +210,7 @@ static void architect_apply_calculated_layout_to_watchface(
   // Date
   surface->date.text = (WatchfaceTextSubstratum){
       .frame = computed->date,
-      .alignment = GTextAlignmentRight,
+      .alignment = GTextAlignmentCenter,
       .font_role = WATCHFACE_FONT_ROLE_DATE,
       .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
@@ -354,16 +283,11 @@ bool layout_watchface_prepare(
   surface->face_width = face_width;
   surface->face_height = face_height;
 
-  const LayoutBlueprint* blueprint = &c_blueprint;
   CalculatedLayout computed = {0};
-  architect_calculate_must_have_layout_from_blueprint(
-      blueprint,
-      &computed,
-      face_width,
-      face_height);
+  architect_calculate_must_have_layout(&computed, face_width, face_height);
 
 #ifdef PBL_HEALTH
-  architect_calculate_health_layout_from_blueprint(blueprint, &computed, face_width, face_height);
+  architect_calculate_health_layout(&computed, face_width, face_height);
 #endif
 
   architect_apply_calculated_layout_to_watchface(surface, &computed);
