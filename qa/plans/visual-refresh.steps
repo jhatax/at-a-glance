@@ -1,3 +1,3 @@
 EXECUTE
-  STEP all bpm=80 steps=8900 level=99 charging=0 temp=265 code=0 is_day=1 location="OPQRS 1234" connected=1
+  STEP all bpm=80 steps=8900 level=99 charging=0 temp=265 code=0 is_day=1 location="LÀs-_ÿegasÿÅÉÑØ" connected=1
 END

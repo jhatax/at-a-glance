@@ -139,8 +139,8 @@ class HarnessCorrectnessTests(unittest.TestCase):
     plan = load_and_validate_plan("pre-release-gate", PLANS_ROOT)
 
     self.assertEqual(len(plan.execution_configs), 20)
-    self.assertEqual(len(plan.steps), 258)
-    self.assertEqual(plan.expected_screenshots, 258)
+    self.assertEqual(len(plan.steps), 90)
+    self.assertEqual(plan.expected_screenshots, 180)
 
   def test_suite_aggregates_matrix_members(self) -> None:
     _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )

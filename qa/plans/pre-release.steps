@@ -1,15 +1,7 @@
 EXECUTE
-  STEP weather temp=265 code=0 is_day=1
-  STEP weather temp=265 code=2 is_day=1
-  STEP weather temp=265 code=45 is_day=1
-  STEP weather temp=265 code=65 is_day=1
-  STEP weather temp=265 code=95 is_day=1
-  STEP battery level=19 charging=0
-  STEP battery level=49 charging=0
-  STEP battery level=81 charging=0
-  STEP battery level=40 charging=1
-  STEP battery level=80 charging=1
-  STEP health bpm=101 steps=8000
-  STEP location location=Oakland
-  STEP location location="San-Francisco"
+  STEP all temp=265 code=0 is_day=1 level=19 charging=0 bpm=101 steps=8000 location=Oakland connected=1
+  STEP all temp=265 code=2 is_day=1 level=49 charging=0 bpm=121 steps=11000 location="San-Francisco" connected=1
+  STEP all temp=265 code=45 is_day=1 level=81 charging=0 bpm=71 steps=1100 location="Las_Vegas" connected=1
+  STEP all temp=265 code=65 is_day=1 level=40 charging=1 bpm=101 steps=8000 location="New York City" connected=1
+  STEP all temp=265 code=95 is_day=1 level=80 charging=1 bpm=121 steps=12000 location="LÀs-_ÿegasÿÅÉÑØ" connected=0
 END
