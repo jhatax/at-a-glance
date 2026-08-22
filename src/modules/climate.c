@@ -145,7 +145,7 @@ static void climate_module_update_location() {
   substratum_renderer_update_text_layer(
       s_location_layer,
       is_location_available ? s_location_buffer : WATCHFACE_OUTOFRANGE_TEXT,
-      is_location_available ? s_climate_palette.outofrange : s_climate_palette.normal);
+      is_location_available ? s_climate_palette.normal : s_climate_palette.outofrange);
 }
 
 static void climate_icon_update_proc(
