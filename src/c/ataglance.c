@@ -110,25 +110,6 @@ static void health_handler(
 }
 #endif
 
-static void inbox_received_handler(
-    DictionaryIterator* iter,
-    void* context) {
-  (void)context;
-
-  if (!iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
-    return;
-  }
-
-  // Handle the entire message, always. No early returns
-  if (find_the_canary(iter)) {
-    // Re-send the user's preference whenever PKJS synchronizes.
-    send_loaded_weather_update_minutes(s_settings.weather_update_minutes);
-  }
-
-  handle_the_message(iter);
-}
-
 static void subscribe_to_services() {
   // Subscribe to services
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
@@ -145,6 +126,7 @@ static void subscribe_to_services() {
   }
 #endif
 
+  app_message_set_context(&s_settings);
   app_message_register_inbox_received(inbox_received_handler);
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);

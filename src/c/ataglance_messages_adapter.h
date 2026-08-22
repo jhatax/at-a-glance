@@ -24,6 +24,9 @@ void ataglance_apply_received_data(WatchfaceEventData* parsed);
 
 // Inbox-Outbox handling
 void initialize_inbox_outbox(void* context);
+void inbox_received_handler(
+    DictionaryIterator* iter,
+    void* context);
 bool find_the_canary(DictionaryIterator* iter);
 void handle_the_message(DictionaryIterator* iter);
 void inbox_dropped_callback(

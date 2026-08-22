@@ -3,6 +3,7 @@
 
 #include "ataglance_message_parser.h"
 #include "ataglance_messages_adapter.h"
+#include "modules/settings.h"
 
 /*
  * File invariants:
@@ -83,6 +84,28 @@ static void send_pending_weather_update_minutes() {
   }
 }
 
+void inbox_received_handler(
+    DictionaryIterator* iter,
+    void* context) {
+  if (!context) {
+    return;
+  }
+
+  WatchfaceSettings* settings = (WatchfaceSettings*)context;
+  if (!iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
+    return;
+  }
+
+  // Handle the entire message, always. No early returns
+  if (find_the_canary(iter)) {
+    // Re-send the user's preference whenever PKJS synchronizes.
+    send_loaded_weather_update_minutes(settings->weather_update_minutes);
+  }
+
+  handle_the_message(iter);
+}
+
 void send_loaded_weather_update_minutes(
     uint8_t minutes) {
   if (s_weather_sync_retry_timer) {
@@ -149,7 +172,7 @@ void outbox_sent_callback(
   }
 }
 
-static uint32_t app_message_inbox_size() {
+uint32_t app_message_inbox_size() {
   // Inbound tuples, in order:
   // Refer to package.json for tuple ordering
   // Key-name | Key-Value | Size
@@ -214,7 +237,11 @@ void attempt_inbox_initialization(
   }
   uint8_t* attempts = (uint8_t*)context;
   uint32_t inbox_size = HELPER_MAX(APP_MESSAGE_INBOX_SIZE_MINIMUM, app_message_inbox_size());
-  AppMessageResult result = app_message_open(inbox_size, APP_MESSAGE_OUTBOX_SIZE_MINIMUM);
+  // Need a minimum of 10-bytes to send the weather_update_minutes to JS
+  AppMessageResult result = app_message_open(
+      HELPER_MAX(APP_MESSAGE_INBOX_SIZE_MINIMUM, app_message_inbox_size()),
+      HELPER_MAX(10, APP_MESSAGE_OUTBOX_SIZE_MINIMUM));
+
   // We got here because we were called -> by initialize_inbox_outbox or a timer fired
   // therefore, we should reset s_init_timer to NULL
   s_init_timer = NULL;
