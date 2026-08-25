@@ -2,7 +2,7 @@
 
 #include <pebble.h>
 
-#include "helper.h"
+#include "helper_computations.h"
 #include "layout_blueprints.h"
 
 #define SUBSTRATUM_VALID_DESIGN_X(x) HELPER_VALUE_IN_RANGE((x), 0, (WATCHFACE_ICON_GRID_WIDTH - 1))
