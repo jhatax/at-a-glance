@@ -1,6 +1,5 @@
-#include "helper.h"
+#include "layout_blueprints.h"
 #include "layout_style.h"
-#include "settings.h"
 #include "watchface_layout.h"
 
 // Stylist: Font lifecycle management
@@ -30,7 +29,7 @@
 #define CUSTOM_FONT_TIME_RESOURCE RESOURCE_ID_FONT_CABIN_MEDIUM_42
 #define CUSTOM_FONT_DATE_RESOURCE RESOURCE_ID_FONT_DATE_TEXT_15
 #define CUSTOM_FONT_TEXT_RESOURCE CUSTOM_FONT_DATE_RESOURCE
-#define CUSTOM_FONT_LOCATION_RESOURCE RESOURCE_ID_FONT_LOCATION_15
+#define CUSTOM_FONT_LOCATION_RESOURCE CUSTOM_FONT_DATE_RESOURCE
 #endif
 
 #define STYLIST_INVALID_FONT_RESOURCE_ID 0
