@@ -13,7 +13,6 @@ typedef enum {
 #else
   DISPLAY_MODE_MAX = DISPLAY_MODE_DARK_MONOCHROME,
 #endif
-  DISPLAY_MODE_COUNT = DISPLAY_MODE_MAX + 1,
 } SupportedDisplayModes;
 
 typedef enum {
