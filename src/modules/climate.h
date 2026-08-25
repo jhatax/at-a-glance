@@ -41,4 +41,4 @@ void climate_module_refresh(
     const WatchfaceUpdateMask refreshed,
     uint8_t temp_unit);
 void climate_module_set_weather(ClimateUpdate* update);
-void climate_module_set_location(char* location);
+void climate_module_set_location(const char* location);

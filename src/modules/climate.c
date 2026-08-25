@@ -1,10 +1,7 @@
 #include "climate.h"
 
-#include <ctype.h>
-#include <stdint.h>
-
 #include "climate_glyphs.h"
-#include "helper.h"
+#include "helper_computations.h"
 #include "settings.h"
 #include "substratum_renderer.h"
 
@@ -141,10 +138,12 @@ static void climate_module_update_location() {
     return;
   }
 
-  bool is_location_available = (s_location_buffer[0] != '\0');
+  bool is_location_available =
+      (strncmp(s_location_buffer, WATCHFACE_OUTOFRANGE_TEXT, strlen(WATCHFACE_OUTOFRANGE_TEXT)) !=
+       0);
   substratum_renderer_update_text_layer(
       s_location_layer,
-      is_location_available ? s_location_buffer : WATCHFACE_OUTOFRANGE_TEXT,
+      s_location_buffer,
       is_location_available ? s_climate_palette.normal : s_climate_palette.outofrange);
 }
 
@@ -259,7 +258,9 @@ void climate_module_refresh(
   climate_module_update_palette(palette);
   if (refreshed == WATCHFACE_UPDATE_CLIMATE) {
     climate_module_update_temperature(temp_unit);
-  } else if (refreshed == WATCHFACE_UPDATE_LOCATION) {
+  }
+
+  if (refreshed == WATCHFACE_UPDATE_LOCATION) {
     climate_module_update_location();
   }
 }
@@ -294,9 +295,7 @@ void climate_module_set_weather(
 }
 
 void climate_module_set_location(
-    char* location) {
-  if (location == NULL) {
-    return;
-  }
-  snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", location);
+    const char* location) {
+  const char* loc = (location && location[0]) ? location : WATCHFACE_OUTOFRANGE_TEXT;
+  snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", loc);
 }
