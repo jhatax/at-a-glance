@@ -220,12 +220,11 @@ class BluetoothStep(PlanStep):
       connection: Any,
       capture_screenshot: Callable[[str], None],
   ) -> bool:
-    if self.display:
-      pebble.send_app_message(
-          connection,
-          self.emulator,
-          {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
-      )
+    pebble.send_app_message(
+        connection,
+        self.emulator,
+        {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
+    )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
     return_required = pebble.set_bluetooth(
@@ -273,13 +272,12 @@ class BatteryStep(PlanStep):
       connection: Any,
       capture_screenshot: Callable[[str], None],
   ) -> bool:
-    if self.display:
-      pebble.send_app_message(
-          connection,
-          self.emulator,
-          {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
-      )
     pebble.set_battery(connection, self.emulator, self.level, self.charging)
+    pebble.send_app_message(
+        connection,
+        self.emulator,
+        {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
+    )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
     return False
@@ -379,20 +377,20 @@ class AllForOneStep(PlanStep):
       connection: Any,
       capture_screenshot: Callable[[str], None],
   ) -> bool:
+    pebble.set_battery(connection, self.emulator, self.level, self.charging)
     pebble.send_app_message(
         connection,
         self.emulator,
         {
             QA_MSG_ONESHOT_BPM: self.bpm,
             QA_MSG_ONESHOT_STEPS: self.steps,
-            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display]),
             QA_MSG_TEMPERATURE: self.temp,
             QA_MSG_WEATHER_CONDITION: self.code,
             QA_MSG_IS_DAY: self.is_day,
             QA_MSG_MAYBE_CURRENT_LOCATION: self.location,
+            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display]),
         },
     )
-    pebble.set_battery(connection, self.emulator, self.level, self.charging)
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
     restart_required = pebble.set_bluetooth(
