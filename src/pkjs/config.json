@@ -40,6 +40,16 @@
           { "value": "0", "label": "24-hour" },
           { "value": "1", "label": "12-hour" }
         ]
+      },
+      {
+        "type": "select",
+        "messageKey": "BATTERY_ORIENTATION",
+        "label": "Preferred battery orientation?",
+        "defaultValue": "0",
+        "options": [
+          { "value": "0", "label": "Centered between time & date" },
+          { "value": "1", "label": "Along the right margin" }
+        ]
       }
     ]
   },

@@ -4,6 +4,7 @@
 #include "climate.h"
 #include "date.h"
 #include "helper.h"
+#include "layout_blueprints.h"
 #include "substratum_renderer.h"
 #include "time.h"
 #include "watchface_layout.h"
@@ -44,6 +45,7 @@
 #define ARE_CUSTOM_FONTS_LOADED() ((s_surface.style.fontbook.custom_fonts_loaded_count) > 0)
 
 static WatchfaceSurface s_surface = {0};
+static uint8_t s_cached_battery_orientation = BATTERY_ORIENTATION_DEFAULT;
 
 // Font lifecycle management
 static bool s_fonts_initialized = false;
@@ -52,27 +54,30 @@ static const WatchfaceSettings* s_wf_settings = NULL;
 static bool s_watchface_initialized = false;
 static const WatchfaceUpdateMask WATCHFACE_UPDATE_ALL_STRATA =
     WATCHFACE_UPDATE_TIME | WATCHFACE_UPDATE_DATE | WATCHFACE_UPDATE_BATTERY |
-    WATCHFACE_UPDATE_CLIMATE | WATCHFACE_UPDATE_LOCATION | WATCHFACE_UPDATE_BLUETOOTH |
-    PBL_IF_HEALTH_ELSE(WATCHFACE_UPDATE_HEALTH, WATCHFACE_UPDATE_NONE);
-
+    WATCHFACE_UPDATE_HORIZ_RULE | WATCHFACE_UPDATE_CLIMATE | WATCHFACE_UPDATE_LOCATION |
+    WATCHFACE_UPDATE_BT_LAYOUT | PBL_IF_HEALTH_ELSE(WATCHFACE_UPDATE_HEALTH, WATCHFACE_UPDATE_NONE);
 typedef enum {
   NO_STRATA_MASK = 0,
   DATE_STRATUM_MASK = 1 << 0,
   TIME_STRATUM_MASK = 1 << 1,
-  BATTERY_STRATUM_MASK = 1 << 2,
-  CLIMATE_STRATUM_MASK = 1 << 3,
-  BTICON_STRATUM_MASK = 1 << 4,
+  HORIZ_RULE_STRATUM_MASK = 1 << 2,
+  BATTERY_STRATUM_MASK = 1 << 3,
+  CLIMATE_STRATUM_MASK = 1 << 4,
+  BTICON_STRATUM_MASK = 1 << 5,
 #ifdef PBL_HEALTH
-  BPM_STRATUM_MASK = 1 << 5,
-  STEPS_STRATUM_MASK = 1 << 6,
+  BPM_STRATUM_MASK = 1 << 6,
+  STEPS_STRATUM_MASK = 1 << 7,
 #endif
-  MUST_HAVE_STRATA_MASK =
-      DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | CLIMATE_STRATUM_MASK,
 } WatchfaceStratumMask;
+
+static const WatchfaceStratumMask MUST_HAVE_STRATA_MASK =
+    DATE_STRATUM_MASK | TIME_STRATUM_MASK | BATTERY_STRATUM_MASK | HORIZ_RULE_STRATUM_MASK |
+    CLIMATE_STRATUM_MASK;
 
 static WatchfaceStratumMask s_strata_created_mask = NO_STRATA_MASK;
 static GBitmap* s_nobt_icon = NULL;
 static Layer* s_nobt_icon_layer = NULL;
+static Layer* s_horiz_rule_layer = NULL;
 
 // Function declarations
 static void watchface_load_and_apply_palette(void);
@@ -143,6 +148,24 @@ static void initialize_bt_icon(
   }
 }
 
+static void horiz_rule_update_proc(
+    Layer* layer,
+    GContext* ctx) {
+  if (!layer || !ctx || !s_watchface_initialized) {
+    return;
+  }
+
+  GRect bounds = layer_get_bounds(layer);
+  // Re-style
+  // Draw a horizontal rule between time and weather for a vertical battery bar
+  if (s_surface.battery.is_vertical) {
+    graphics_context_set_fill_color(ctx, s_surface.style.palette->primary_text);
+  } else {
+    graphics_context_set_fill_color(ctx, s_surface.style.palette->background);
+  }
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+}
+
 // Lifecycle Ownership responsibility
 bool watchface_create(
     Window* window,
@@ -164,6 +187,7 @@ bool watchface_create(
   if (success) {
     s_wf_window = window;
     s_wf_settings = settings;
+    s_cached_battery_orientation = settings->battery_orientation;
 
     root = window_get_root_layer(window);
   }
@@ -177,7 +201,11 @@ bool watchface_create(
     s_strata_created_mask = NO_STRATA_MASK;
 
     GRect bounds = layer_get_bounds(root);
-    if (!layout_watchface_prepare(bounds.size.w, bounds.size.h, &s_surface)) {
+    if (!layout_watchface_prepare(
+            bounds.size.w,
+            bounds.size.h,
+            (s_cached_battery_orientation == BATTERY_ORIENTATION_VERTICAL),
+            &s_surface)) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface layout initialization failed");
       success = false;
     }
@@ -213,6 +241,13 @@ bool watchface_create(
         s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role],
         s_surface.style.fontbook.chosen_fonts[s_surface.location.text.font_role]);
     s_strata_created_mask |= created ? CLIMATE_STRATUM_MASK : 0;
+
+    created = (s_horiz_rule_layer = layer_create(s_surface.horiz_rule));
+    if (created) {
+      layer_set_update_proc(s_horiz_rule_layer, horiz_rule_update_proc);
+      layer_add_child(root, s_horiz_rule_layer);
+    }
+    s_strata_created_mask |= created ? HORIZ_RULE_STRATUM_MASK : 0;
 
     if ((s_strata_created_mask & MUST_HAVE_STRATA_MASK) != MUST_HAVE_STRATA_MASK) {
       APP_LOG(APP_LOG_LEVEL_ERROR, "Watchface must-initialize controls failed");
@@ -273,6 +308,12 @@ void watchface_destroy() {
   }
   s_strata_created_mask &= ~BTICON_STRATUM_MASK;
 
+  if (s_horiz_rule_layer) {
+    layer_destroy(s_horiz_rule_layer);
+    s_horiz_rule_layer = NULL;
+  }
+  s_strata_created_mask &= ~HORIZ_RULE_STRATUM_MASK;
+
 #ifdef PBL_HEALTH
   if (s_strata_created_mask & BPM_STRATUM_MASK) {
     bpm_module_destroy();
@@ -290,6 +331,7 @@ void watchface_destroy() {
   }
 
   s_strata_created_mask = (uint8_t)NO_STRATA_MASK;
+  s_cached_battery_orientation = BATTERY_ORIENTATION_DEFAULT;
   s_wf_settings = NULL;
   s_wf_window = NULL;
   s_fonts_initialized = false;
@@ -299,13 +341,35 @@ void watchface_destroy() {
   memset(&s_surface, 0, sizeof(s_surface));
 }
 
-// Watch face update orchestration responsibility
+// If a relayout is needed, this function *will* mark additional elements to be updated
+// The watchface delegates update type and extent to modules vs. deciding unilaterally
+void watchface_maybe_relayout(
+    WatchfaceUpdateMask* refresh) {
+  if (!s_wf_window || !s_wf_settings || !refresh) {
+    return;
+  }
+
+  if (s_cached_battery_orientation != s_wf_settings->battery_orientation) {
+    s_cached_battery_orientation = s_wf_settings->battery_orientation;
+
+    Layer* root = window_get_root_layer(s_wf_window);
+    GRect bounds = layer_get_bounds(root);
+    relayout_battery_bolt_bticon(
+        bounds.size.w,
+        bounds.size.h,
+        (s_cached_battery_orientation == BATTERY_ORIENTATION_VERTICAL),
+        &s_surface);
+    *refresh |= WATCHFACE_UPDATE_BATTERY | WATCHFACE_UPDATE_BT_LAYOUT | WATCHFACE_UPDATE_HORIZ_RULE;
+    *refresh &= ~WATCHFACE_UPDATE_BATTERY_ORIENTATION;
+  }
+}
+
 void watchface_repaint() {
   if (!s_wf_window || !s_wf_settings) {
     return;
   }
 
-  // Re-style
+  // Re-style if needed
   watchface_load_and_apply_palette();
   watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
 }
@@ -315,7 +379,6 @@ void watchface_refresh(
   if (!s_wf_window || !s_wf_settings || updates == WATCHFACE_UPDATE_NONE) {
     return;
   }
-
   // Treat s_strata_created_mask as the sole source of truth for stratum creation success.
   // Using any other mask will create a hidden dependency / source of drift
   // Three exceptions to settings propagation handled outside this function:
@@ -330,7 +393,7 @@ void watchface_refresh(
     time_module_refresh(s_surface.style.palette, s_wf_settings->time_format);
   }
   if ((updates & WATCHFACE_UPDATE_BATTERY) && (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
-    battery_module_refresh(s_surface.style.palette);
+    battery_module_refresh(s_surface.style.palette, &s_surface.battery);
   }
   if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
     if (updates & WATCHFACE_UPDATE_CLIMATE) {
@@ -356,6 +419,20 @@ void watchface_refresh(
     } else {
       layer_set_hidden(s_nobt_icon_layer, true);
     }
+  }
+
+  if (updates & WATCHFACE_UPDATE_HORIZ_RULE) {
+    // Hide if battery is horizontal
+    // Show if battery is vertical
+    layer_set_hidden(
+        s_horiz_rule_layer,
+        s_cached_battery_orientation == BATTERY_ORIENTATION_HORIZONTAL);
+    layer_mark_dirty(s_horiz_rule_layer);
+  }
+
+  if (updates & WATCHFACE_UPDATE_BT_LAYOUT && (s_strata_created_mask & BTICON_STRATUM_MASK)) {
+    layer_set_frame(s_nobt_icon_layer, s_surface.bt_icon.icon.frame);
+    layer_mark_dirty(s_nobt_icon_layer);
   }
 
 #ifdef PBL_HEALTH

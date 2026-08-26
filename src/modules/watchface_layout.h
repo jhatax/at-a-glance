@@ -2,13 +2,19 @@
 
 #include <pebble.h>
 
-#include "layout_blueprints.h"
 #include "watchface_components.h"
 
 // Architect
 bool layout_watchface_prepare(
     int16_t face_width,
     int16_t face_height,
+    bool is_battery_vertical,
+    WatchfaceSurface* surface);
+
+void relayout_battery_bolt_bticon(
+    int16_t face_width,
+    int16_t face_height,
+    bool is_battery_vertical,
     WatchfaceSurface* surface);
 
 // Stylist: Palette

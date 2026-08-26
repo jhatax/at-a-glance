@@ -46,14 +46,16 @@ typedef struct {
   GRect track;
   GRect fill;
   GRect bolt;
+  bool is_vertical;
 } WatchfaceBatteryStratum;
 
 typedef struct {
   int16_t face_width;
   int16_t face_height;
   WatchfaceSurfaceStyle style;
-  WatchfaceTextStratum date;
   WatchfaceTextStratum time;
+  GRect horiz_rule;
+  WatchfaceTextStratum date;
 #ifdef PBL_HEALTH
   WatchfaceTextWithIconStratum bpm;
   WatchfaceTextWithIconAndProgressStratum steps;

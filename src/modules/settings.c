@@ -15,6 +15,7 @@ static void settings_apply_defaults(
       .time_format = TIME_FMT_DEFAULT,
       .display_mode = DISPLAY_MODE_DEFAULT,
       .weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT,
+      .battery_orientation = BATTERY_ORIENTATION_DEFAULT,
 #ifdef PBL_HEALTH
       .hr_sample_minutes = HR_SAMPLE_MINUTES_DEFAULT,
       .steps_goal = STEPS_GOAL_DEFAULT,
@@ -46,6 +47,9 @@ static void settings_sanitize(
   }
   if (!WEATHER_UPDATE_MINUTES_VALID(settings->weather_update_minutes)) {
     settings->weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
+  }
+  if (!BATTERY_ORIENTATION_VALID(settings->battery_orientation)) {
+    settings->battery_orientation = BATTERY_ORIENTATION_DEFAULT;
   }
 }
 
@@ -147,6 +151,18 @@ bool settings_set_weather_update_minutes(
   return true;
 }
 
+bool settings_set_battery_orientation(
+    WatchfaceSettings* settings,
+    int orientation) {
+  if (!settings || !BATTERY_ORIENTATION_VALID(orientation)) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected BATTERY_ORIENTATION: value=%d", orientation);
+    return false;
+  }
+
+  settings->battery_orientation = (uint8_t)orientation;
+  return true;
+}
+
 #ifdef PBL_HEALTH
 bool settings_set_hr_sample_minutes(
     WatchfaceSettings* settings,
@@ -188,6 +204,9 @@ void settings_load(
   settings_sanitize(settings);
 }
 
+// It is critical that you are deliberately frugal with writing to persisted storage
+// This is on the watchface and Pebble has specific documentation about persistent writes.
+// Pebble provides no guarantee that identical data is internally deduplicated.
 bool settings_save(
     const WatchfaceSettings* settings) {
   if (!settings) {

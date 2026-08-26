@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "ataglance_message_parser.h"
+#include "modules/helper_tuple_parsing.h"
 
 /*
  * File invariants:
@@ -107,6 +108,12 @@ void parse_settings_data(
       data,
       WATCHFACE_DATA_WEATHER_UPDATE_MINUTES,
       &data->weather_update_minutes);
+  parse_int_tuple(
+      iter,
+      MESSAGE_KEY_BATTERY_ORIENTATION,
+      data,
+      WATCHFACE_DATA_BATTERY_ORIENTATION,
+      &data->battery_orientation);
 }
 
 void parse_weather_and_location_data(

@@ -1,7 +1,7 @@
-#include "helper.h"
 #include "helper_computations.h"
 #include "layout_blueprints.h"
 #include "layout_surface.h"
+#include "watchface_components.h"
 #include "watchface_layout.h"
 
 /*
@@ -78,10 +78,91 @@ static void architect_calculate_health_layout(
 }
 #endif
 
+static int16_t place_battery_bar_vertically(
+    CalculatedLayout* computed,
+    GRect* time,
+    int16_t face_width,
+    int16_t face_height) {
+#ifdef PBL_RECT
+  // The battery bar is on the right, so the X calculation is easy
+  // All modules calculate their X coordinate relative to this first value
+  // Don't reset it without understand consequences
+  face_width -= ICON_TEXT_GAP;   // inset by icon_text_gap
+  face_height -= ICON_TEXT_GAP;  // inset by icon_text_gap
+  // All icons sit right below time to the left of the battery bar
+  // And to the left of the battery bar
+  int16_t module_x = face_width - (BATTERY_TRACK_HEIGHT + ICON_TEXT_GAP + BATTERY_BOLT_WIDTH +
+                                   ICON_TEXT_GAP + BT_ICON_WIDTH);
+  int16_t module_h = BT_ICON_HEIGHT;
+  int16_t module_y = time->origin.y + time->size.h;
+  computed->bt_icon = GRect(module_x, module_y, BT_ICON_WIDTH, BT_ICON_HEIGHT);
+
+  module_x += (BT_ICON_WIDTH + ICON_TEXT_GAP);
+  computed->battery.bolt = GRect(module_x, module_y, BATTERY_BOLT_WIDTH, BATTERY_BOLT_HEIGHT);
+
+  module_x += (BATTERY_BOLT_WIDTH + ICON_TEXT_GAP);
+  module_h = HELPER_SCALE_ROUND(face_height, BATTERY_BAR_SIZE_PERCENT, 100);
+  module_y = (face_height - module_h) >> 1;
+  computed->battery.is_vertical = true;
+  computed->battery.track = GRect(module_x, module_y, BATTERY_TRACK_HEIGHT, module_h);
+  computed->battery.fill = GRect(
+      module_x + BATTERY_TRACK_FILL_OFFSET,
+      module_y + BATTERY_TRACK_FILL_OFFSET,
+      BATTERY_FILL_HEIGHT,
+      module_h - BATTERY_TRACK_FILL_DIFF);
+#else
+  face_width -= (ICON_TEXT_GAP << 1);   // inset by icon_text_gap: left and right
+  face_height -= (ICON_TEXT_GAP << 1);  // inset by icon_text_gap: top and bottom
+  computed->battery.track = GRect(ICON_TEXT_GAP, ICON_TEXT_GAP, face_width, face_height);
+  computed->battery.fill =
+      grect_inset(computed->battery.track, GEdgeInsets(BATTERY_TRACK_FILL_OFFSET));
+#endif
+
+  return HELPER_MAX(BATTERY_BOLT_HEIGHT, BT_ICON_HEIGHT);
+}
+
+static int16_t place_battery_bar_horizontally(
+    CalculatedLayout* computed,
+    GRect* time,
+    int16_t face_width,
+    int16_t face_height) {
+  // Battery Band's width
+  int16_t module_w = HELPER_SCALE_ROUND(face_width, BATTERY_BAR_SIZE_PERCENT, 100);
+
+  // Center the module horizontally (centered regardless of charging bolt
+  // visibility)
+  int16_t module_x = (face_width - module_w) >> 1;
+  int16_t current_row_y = time->origin.y + time->size.h;
+
+  // The BT icon is at the same Y coordinate as the battery band
+  computed->bt_icon =
+      GRect(module_x - BT_ICON_WIDTH - ICON_TEXT_GAP, current_row_y, BT_ICON_WIDTH, BT_ICON_WIDTH);
+
+  // Y2: Y1 + 1/2 (height_band - height_track)
+  int16_t module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_TRACK_HEIGHT) >> 1);
+  computed->battery.track = GRect(module_x, module_y, module_w, BATTERY_TRACK_HEIGHT);
+
+  // Y3: Y2 + 1/2 (height_track - height_fill)
+  // The exception to computing module_x and module_w before using them
+  computed->battery.fill = GRect(
+      module_x + BATTERY_TRACK_FILL_OFFSET,
+      module_y + BATTERY_TRACK_FILL_OFFSET,
+      module_w - BATTERY_TRACK_FILL_DIFF,
+      BATTERY_FILL_HEIGHT);
+  computed->battery.is_vertical = false;
+
+  // Add the bolt to the right of the battery track
+  module_y = current_row_y;
+  module_x += computed->battery.track.size.w + ICON_TEXT_GAP;
+  computed->battery.bolt = GRect(module_x, module_y, BATTERY_BOLT_WIDTH, BATTERY_BOLT_HEIGHT);
+  return BATTERY_BAND_HEIGHT;
+}
+
 static void architect_calculate_must_have_layout(
     CalculatedLayout* computed,
     int16_t face_width,
-    int16_t face_height) {
+    int16_t face_height,
+    bool is_battery_vertical) {
   if (!computed) {
     return;
   }
@@ -93,107 +174,62 @@ static void architect_calculate_must_have_layout(
   // Use these transient values to establish x and y for each module
   // Time, Battery, Date are separated by stacked together, no gaps
 
-  // TIME is center aligned text
-  // X: computed X_MARGIN
-  // Y: computed using TIME_Y_PERCENT
-  // W: content_width
-  // H: time_text_height
+  // TIME is center aligned text that starts at the left margin
   // Anchor current row-y using TIME_Y_PERCENT
   int16_t current_row_y = HELPER_ROUND_UP((face_height * TIME_Y_PERCENT), 100);
-
-  // Current module's X
   int16_t module_x = X_MARGIN;
-
-  // Current module's Y
-  int16_t module_y = current_row_y;
 
   // Current module's WIDTH
   int16_t module_w = x_end - X_MARGIN;
-
-  computed->time = GRect(module_x, module_y, module_w, TIME_TEXT_HEIGHT);
-
-  // BATTERY BAND is centered on the viewport and has 4-parts:
-  // 1/ Negative space from where time ends until the battery track
-  // 2/ Battery track: legible-color band @ center for contrast
-  // 3/ State fill: centered showing battery & with calculated color
-  // 4/ Negative space for visual separation from date
-  // X1, X2, X4: all start at X computed using the module's width
-  // X3: offset by 1 for halo, width = total-width - 2
-  // Y1: computed using TIME_Y_PERCENT
-  // Y2: Y1 + 1/2 (height_band - height_track)
-  // Y3: Y2 + 1/2 (height_track - height_fill)
-  // Y4: irrelevant as it is negative space
-  // W: computed using BATTERY_BAND_WIDTH_PERCENT
-  // H1: BATTERY_BAND_HEIGHT
-  // H2:BATTERY_TRACK_HEIGHT
-  // H3:BATTERY_FILL_HEIGHT
+  computed->time = GRect(module_x, current_row_y, module_w, TIME_TEXT_HEIGHT);
 
   // Advance the current row's y-position by TIME's HEIGHT: Y1
+  // The Y-position of the charging bolt and BT-icon are going to be the same
+  // regardless of whether the bar is horizontal or vertical
   current_row_y += TIME_TEXT_HEIGHT;
-
-  // Battery Band's width
-  module_w = HELPER_SCALE_ROUND(face_width, BATTERY_BAR_WIDTH_PERCENT, 100);
-
-  // Center the module horizontally (centered regardless of charging bolt
-  // visibility)
-  module_x = (face_width - module_w) >> 1;
-
-  // The BT icon is at the same Y coordinate as the battery band
-  computed->bt_icon =
-      GRect(module_x - BT_ICON_DIMS - ICON_TEXT_GAP, current_row_y, BT_ICON_DIMS, BT_ICON_DIMS);
-
-  // Y2: Y1 + 1/2 (height_band - height_track)
-  module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_TRACK_HEIGHT) >> 1);
-  computed->battery.track = GRect(module_x, module_y, module_w, BATTERY_TRACK_HEIGHT);
-
-  // Y3: Y2 + 1/2 (height_track - height_fill)
-  // The exception to computing module_x and module_w before using them
-  module_y += (BATTERY_TRACK_HEIGHT - BATTERY_FILL_HEIGHT) >> 1;
-  computed->battery.fill = GRect(module_x + 1, module_y, module_w - 2, BATTERY_FILL_HEIGHT);
-
-  // Add the bolt relative to the top of the BATTERY BAND
-  module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_BOLT_HEIGHT) >> 1);
-  module_x += module_w;
-  module_w = BATTERY_BOLT_WIDTH;
-  computed->battery.bolt = GRect(module_x, module_y, module_w, BATTERY_BOLT_HEIGHT);
-
-  // The CLIMATE and DATE row
-  // Climate:
-  // X: center-oriented
-  // Y: TIME_Y+BATTERY_BAND_HEIGHT
-
   // Advance the curent row's Y by BATTERY_BAND_HEIGHT
-  current_row_y += BATTERY_BAND_HEIGHT;
-  module_y = current_row_y;
+  if (is_battery_vertical) {
+    current_row_y +=
+        place_battery_bar_vertically(computed, &computed->time, face_width, face_height);
+  } else {
+    current_row_y +=
+        place_battery_bar_horizontally(computed, &computed->time, face_width, face_height);
+  }
+
+  module_w = HELPER_SCALE_ROUND(HORIZ_RULE_SIZE_PERCENT, face_width, 100);
+  module_x = (face_width - module_w) >> 1;
+  computed->horiz_rule = GRect(
+      module_x,
+      current_row_y - ((current_row_y - computed->time.origin.y + HORIZ_RULE_HEIGHT) >> 1),
+      module_w,
+      HORIZ_RULE_HEIGHT);
 
   // Climate and Date
   // For this row, anchor all modules at current-row's y
   // Climate Icon is at X_MARGIN
   module_w = ICON_WIDTH;
   module_x = X_MARGIN;
-  computed->climate.icon = GRect(module_x, module_y, module_w, ICON_HEIGHT);
+  computed->climate.icon = GRect(module_x, current_row_y, module_w, ICON_HEIGHT);
 
   // Climate Text Width can be computed
-  module_x += ICON_WIDTH + ICON_TEXT_GAP;
+  module_x += (ICON_WIDTH + ICON_TEXT_GAP);
   // width split between climate and date is 35%:65% in favor of date
   computed->climate.text = GRect(
       module_x,
-      module_y,
+      current_row_y,
       HELPER_SCALE_ROUND(x_end - module_x, TEMP_X_PERCENT, 100),
       DATA_TEXT_HEIGHT);
 
   // Date text
   module_x += computed->climate.text.size.w;
   module_w = x_end - module_x;
-  computed->date = GRect(module_x, module_y, module_w, DATE_TEXT_HEIGHT);
+  computed->date = GRect(module_x, current_row_y, module_w, DATE_TEXT_HEIGHT);
 
   // Location text
-  current_row_y += HELPER_MAX(ICON_HEIGHT, DATA_TEXT_HEIGHT);
-  computed->location = GRect(
-      computed->battery.track.origin.x,
-      current_row_y - 1,
-      computed->battery.track.size.w,
-      LOCATION_TEXT_HEIGHT);
+  current_row_y += (HELPER_MAX(ICON_HEIGHT, DATE_TEXT_HEIGHT) - 1);
+  module_w = HELPER_SCALE_ROUND(face_width, LOCATION_TEXT_WIDTH_PERCENT, 100);
+  module_x = ((face_width - module_w) >> 1);
+  computed->location = GRect(module_x, current_row_y, module_w, LOCATION_TEXT_HEIGHT);
 }
 
 static void architect_apply_calculated_layout_to_watchface(
@@ -215,11 +251,14 @@ static void architect_apply_calculated_layout_to_watchface(
       .color_role = WATCHFACE_COLOR_ROLE_DATE,
   };
 
+  surface->horiz_rule = computed->horiz_rule;
+
   // Battery
   surface->battery = (WatchfaceBatteryStratum){
       .fill = computed->battery.fill,
       .track = computed->battery.track,
       .bolt = computed->battery.bolt,
+      .is_vertical = computed->battery.is_vertical,
   };
 
   // Climate
@@ -272,6 +311,7 @@ static void architect_apply_calculated_layout_to_watchface(
 bool layout_watchface_prepare(
     int16_t face_width,
     int16_t face_height,
+    bool is_battery_vertical,
     WatchfaceSurface* surface) {
   if (!surface) {
     return false;
@@ -284,7 +324,7 @@ bool layout_watchface_prepare(
   surface->face_height = face_height;
 
   CalculatedLayout computed = {0};
-  architect_calculate_must_have_layout(&computed, face_width, face_height);
+  architect_calculate_must_have_layout(&computed, face_width, face_height, is_battery_vertical);
 
 #ifdef PBL_HEALTH
   architect_calculate_health_layout(&computed, face_width, face_height);
@@ -293,4 +333,40 @@ bool layout_watchface_prepare(
   architect_apply_calculated_layout_to_watchface(surface, &computed);
 
   return true;
+}
+
+// Every component that is re-layed out should be re-framed using
+// the Pebble SDK's layer_set_frame(GRect) and a layer_mark_dirty
+void relayout_battery_bolt_bticon(
+    int16_t face_width,
+    int16_t face_height,
+    bool is_battery_vertical,
+    WatchfaceSurface* surface) {
+  CalculatedLayout computed = {0};
+  if (is_battery_vertical) {
+    (void)place_battery_bar_vertically(
+        &computed,
+        &(surface->time.text.frame),
+        face_width,
+        face_height);
+  } else {
+    (void)place_battery_bar_horizontally(
+        &computed,
+        &(surface->time.text.frame),
+        face_width,
+        face_height);
+  }
+
+  // Battery and bolt
+  surface->battery = (WatchfaceBatteryStratum){
+      .fill = computed.battery.fill,
+      .track = computed.battery.track,
+      .bolt = computed.battery.bolt,
+      .is_vertical = is_battery_vertical,
+  };
+
+  // Bluetooth icon
+  surface->bt_icon = (WatchfaceIconStratum){
+      .icon.frame = computed.bt_icon,
+  };
 }

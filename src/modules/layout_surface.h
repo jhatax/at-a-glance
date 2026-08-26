@@ -6,6 +6,7 @@ typedef struct {
   GRect track;
   GRect fill;
   GRect bolt;
+  bool is_vertical;
 } LayoutBatteryStratum;
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
 
 typedef struct {
   GRect time;
+  GRect horiz_rule;
   GRect date;
   LayoutBatteryStratum battery;
   LayoutMetricWithIcon climate;

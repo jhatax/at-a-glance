@@ -1,6 +1,3 @@
-#include <stdint.h>
-#include <string.h>
-
 #include "ataglance_message_parser.h"
 #include "ataglance_messages_adapter.h"
 #include "modules/settings.h"
@@ -189,13 +186,14 @@ uint32_t app_message_inbox_size() {
   // these two are processed in the handler for WebViewClosed.
   // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
   // 11. JS_READY | 10012 | sizeof(int32_t)
+  // 12. BATTERY_ORIENTATION | 10013 | APP_MESSAGE_CONFIG_VALUE_SIZE
   //
   // One-shot-only tuples:
-  // 12. ONESHOT_BPM | 10020 | sizeof(int32_t)
-  // 13. ONESHOT_STEPS | 10021 | sizeof(int32_t)
+  // 13. ONESHOT_BPM | 10020 | sizeof(int32_t)
+  // 14. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
   return dict_calc_buffer_size(
-      13,  // tuples
+      14,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
@@ -208,10 +206,11 @@ uint32_t app_message_inbox_size() {
       sizeof(int32_t),
       sizeof(int32_t),
       WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
-      sizeof(int32_t));
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE);
 #else
   return dict_calc_buffer_size(
-      11,  // tuples
+      12,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
@@ -222,7 +221,8 @@ uint32_t app_message_inbox_size() {
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
       WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
-      sizeof(int32_t));
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE);
 #endif
 }
 

@@ -196,7 +196,9 @@ static void deinit() {
     s_health_events_subscribed = false;
   }
 #endif
-  settings_save(&s_settings);
+  // We do not need to write settings to persist storage here because of two reasons:
+  // 1. If they were changed, they were persisted already
+  // 2. If they are defaults, they will be reconstructed upon init
   window_destroy(s_window);
   s_window = NULL;
 }
@@ -213,7 +215,8 @@ void ataglance_apply_received_data(
 
   // Copy current settings over before retrieving them from storage.
   // If there are any changes, apply them.
-  WatchfaceSettings previous_settings = s_settings;
+  WatchfaceSettings previous_settings;
+  memcpy(&previous_settings, &s_settings, sizeof(WatchfaceSettings));
 
   watchface_apply_received_data(parsed, &s_settings);
 
@@ -222,11 +225,13 @@ void ataglance_apply_received_data(
   if (previous_settings.time_format != s_settings.time_format ||
       previous_settings.temp_unit != s_settings.temp_unit ||
       previous_settings.display_mode != s_settings.display_mode ||
+      previous_settings.battery_orientation != s_settings.battery_orientation ||
 #ifdef PBL_HEALTH
       previous_settings.steps_goal != s_settings.steps_goal ||
       previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
 #endif
       previous_settings.weather_update_minutes != s_settings.weather_update_minutes) {
+    // It is critical that you are deliberately frugal with writing to persisted storage
     settings_save(&s_settings);
   }
 

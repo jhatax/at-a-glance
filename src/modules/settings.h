@@ -2,8 +2,8 @@
 
 #include <pebble.h>
 
-#include "helper.h"
-#include "watchface_components.h"
+#include "helper_computations.h"
+#include "layout_style.h"
 
 enum {
   TEMP_UNIT_F = 0,
@@ -19,6 +19,14 @@ enum {
   TIME_FMT_MIN = TIME_FMT_24,
   TIME_FMT_MAX = TIME_FMT_12,
   TIME_FMT_DEFAULT = TIME_FMT_24,
+};
+
+enum {
+  BATTERY_ORIENTATION_HORIZONTAL = 0,
+  BATTERY_ORIENTATION_VERTICAL,
+  BATTERY_ORIENTATION_MIN = BATTERY_ORIENTATION_HORIZONTAL,
+  BATTERY_ORIENTATION_MAX = BATTERY_ORIENTATION_VERTICAL,
+  BATTERY_ORIENTATION_DEFAULT = BATTERY_ORIENTATION_HORIZONTAL,
 };
 
 enum {
@@ -52,6 +60,8 @@ enum {
 #define TIME_FORMAT_VALID(value) (HELPER_VALUE_IN_RANGE((value), TIME_FMT_MIN, TIME_FMT_MAX))
 #define DISPLAY_MODE_VALID(value) \
   (HELPER_VALUE_IN_RANGE((value), DISPLAY_MODE_MIN, DISPLAY_MODE_MAX))
+#define BATTERY_ORIENTATION_VALID(value) \
+  (HELPER_VALUE_IN_RANGE((value), BATTERY_ORIENTATION_MIN, BATTERY_ORIENTATION_MAX))
 #define HR_SAMPLE_MINUTES_VALID(value) \
   ((HELPER_VALUE_IN_RANGE((value), HR_SAMPLE_MINUTES_MIN, HR_SAMPLE_MINUTES_MAX)))
 #define STEPS_GOAL_VALID(value) (HELPER_VALUE_IN_RANGE((value), STEPS_GOAL_MIN, STEPS_GOAL_MAX))
@@ -69,6 +79,7 @@ typedef struct {
   uint8_t hr_sample_minutes;
   uint16_t steps_goal;
 #endif
+  uint8_t battery_orientation;
 } WatchfaceSettings;
 
 void settings_load(WatchfaceSettings* settings);
@@ -85,6 +96,9 @@ bool settings_set_temp_unit(
 bool settings_set_weather_update_minutes(
     WatchfaceSettings* settings,
     int minutes);
+bool settings_set_battery_orientation(
+    WatchfaceSettings* settings,
+    int orientation);
 #ifdef PBL_HEALTH
 bool settings_set_hr_sample_minutes(
     WatchfaceSettings* settings,
