@@ -5,7 +5,7 @@ PREAMBLE
 END
 
 EXECUTE
-  STEP battery charging=1 level=81
+  STEP battery charging=1 level=81 orientation=0
   STEP weather is_day=1 temp=250 code=0
   STEP weather is_day=1 temp=250 code=1
   STEP weather is_day=1 temp=250 code=2

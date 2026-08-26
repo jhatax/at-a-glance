@@ -4,5 +4,5 @@ EMULATORS emery
 DISPLAYS purple
 END
 EXECUTE
-STEP battery level=80 charging=0
+STEP battery level=80 charging=0 orientation=0
 END

@@ -108,7 +108,7 @@ class QAPlanGrammar:
           "weather":
           frozenset({"temp", "code", "is_day"}),
           "battery":
-          frozenset({"level", "charging"}),
+          frozenset({"level", "charging", "orientation"}),
           "health":
           frozenset({"bpm", "steps"}),
           "location":
@@ -125,6 +125,7 @@ class QAPlanGrammar:
                   "is_day",
                   "level",
                   "charging",
+                  "orientation",
                   "location",
                   "connected",
               }

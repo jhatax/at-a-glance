@@ -267,10 +267,13 @@ class HarnessCorrectnessTests(unittest.TestCase):
 
   def test_capability_arguments_are_validated_by_key(self) -> None:
     self.assertTrue(
-        QAPlanGrammar.does_step_have_needed_attributes("battery", {
-            "charging": "0",
-            "level": "50"
-        })
+        QAPlanGrammar.does_step_have_needed_attributes(
+            "battery", {
+                "charging": "0",
+                "level": "50",
+                "orientation": "0",
+            }
+        )
     )
     self.assertFalse(QAPlanGrammar.does_step_have_needed_attributes("battery", {"level": "50"}))
     with self.assertRaisesRegex(ValueError, "Unsupported capability"):
@@ -279,14 +282,15 @@ class HarnessCorrectnessTests(unittest.TestCase):
   def test_report_step_accepts_capability_arguments_in_any_order(self) -> None:
     step = QAStepContext.from_dict(
         {
-            "step_id": "battery_emery_white_50_0",
+            "step_id": "battery_emery_white_50_0_horizontal",
             "capability": "battery",
             "status": "passed",
             "emulator": "emery",
             "step_args": {
                 "charging": 0,
                 "display": "white",
-                "level": 50
+                "level": 50,
+                "orientation": 0,
             },
             "screenshot_ctx": {
                 "expected": 0,
@@ -352,14 +356,15 @@ class HarnessCorrectnessTests(unittest.TestCase):
             1,
             "step_outputs": [
                 {
-                    "step_id": "battery_emery_white_50_0",
+                    "step_id": "battery_emery_white_50_0_horizontal",
                     "capability": "battery",
                     "status": "passed",
                     "emulator": "emery",
                     "step_args": {
                         "charging": 0,
                         "display": "white",
-                        "level": 50
+                        "level": 50,
+                        "orientation": 0,
                     },
                     "screenshot_ctx": {
                         "expected": 0,
@@ -395,14 +400,15 @@ class HarnessCorrectnessTests(unittest.TestCase):
         1,
         "step_outputs": [
             {
-                "step_id": "battery_emery_white_50_0",
+                "step_id": "battery_emery_white_50_0_horizontal",
                 "capability": "battery",
                 "status": "passed",
                 "emulator": "emery",
                 "step_args": {
                     "charging": 0,
                     "display": "white",
-                    "level": 50
+                    "level": 50,
+                    "orientation": 0,
                 },
                 "screenshot_ctx": {
                     "expected": 0,

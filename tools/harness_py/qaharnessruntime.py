@@ -37,7 +37,8 @@ REPORT_STEP_SCHEMA: Final = {
     "battery": {
         "display": str,
         "level": int,
-        "charging": int
+        "charging": int,
+        "orientation": int,
     },
     "health": {
         "display": str,
@@ -51,6 +52,7 @@ REPORT_STEP_SCHEMA: Final = {
         "is_day": int,
         "level": int,
         "charging": int,
+        "orientation": int,
         "bpm": int,
         "steps": int,
         "location": str,

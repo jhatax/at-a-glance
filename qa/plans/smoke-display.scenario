@@ -5,7 +5,7 @@ PREAMBLE
 END
 
 EXECUTE
-  STEP battery level=19 charging=0
-  STEP battery level=40 charging=1
-  STEP battery level=80 charging=1
+  STEP battery level=19 charging=0 orientation=0
+  STEP battery level=40 charging=1 orientation=0
+  STEP battery level=80 charging=1 orientation=0
 END

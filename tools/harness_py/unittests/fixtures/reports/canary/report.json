@@ -18,7 +18,7 @@
   "step_count": 2,
   "step_outputs": [
     {
-      "step_id": "all_emery_white_200_0_1_80_0_8000_80_oakland_1_shots",
+      "step_id": "all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots",
       "capability": "all",
       "status": "passed",
       "emulator": "emery",
@@ -28,6 +28,7 @@
         "steps": 8000,
         "level": 80,
         "charging": 0,
+        "orientation": 0,
         "temp": 200,
         "code": 0,
         "is_day": 1,
@@ -38,13 +39,13 @@
         "expected": 2,
         "captured": 2,
         "paths": [
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_8000_80_oakland_1_shots.png",
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_8000_80_oakland_1_shots-2.png"
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots.png",
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots-2.png"
         ]
       }
     },
     {
-      "step_id": "all_emery_white_250_1_1_85_1_11000_110_oakland_0_shots",
+      "step_id": "all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots",
       "capability": "all",
       "status": "passed",
       "emulator": "emery",
@@ -54,6 +55,7 @@
         "steps": 11000,
         "level": 85,
         "charging": 1,
+        "orientation": 1,
         "temp": 250,
         "code": 1,
         "is_day": 1,
@@ -64,8 +66,8 @@
         "expected": 2,
         "captured": 2,
         "paths": [
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_11000_110_oakland_0_shots.png",
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_11000_110_oakland_0_shots-2.png"
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots.png",
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots-2.png"
         ]
       }
     }

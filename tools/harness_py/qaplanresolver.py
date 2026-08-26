@@ -22,6 +22,7 @@ QA_MSG_WEATHER_CONDITION = 10003
 QA_MSG_IS_DAY = 10004
 QA_MSG_DISPLAY_MODE = 10006
 QA_MSG_MAYBE_CURRENT_LOCATION = 10011
+QA_MSG_BATTERY_ORIENTATION = 10013
 QA_MSG_ONESHOT_BPM = 10020
 QA_MSG_ONESHOT_STEPS = 10021
 
@@ -245,10 +246,12 @@ class BluetoothStep(PlanStep):
 class BatteryStep(PlanStep):
   level: int
   charging: int
+  orientation: int = field(default=0)
   capability: str = field(default="battery", init=False)
 
   def __post_init__(self) -> None:
-    if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)):
+    if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1) and
+            (0 <= self.orientation <= 1)):
       raise ValueError(
           f"Battery inputs are invalid, level: '{self.level}', charging: '{self.charging}'",
       )
@@ -261,6 +264,7 @@ class BatteryStep(PlanStep):
                 self.display,
                 str(self.level),
                 str(self.charging),
+                "vertical" if self.orientation else "horizontal",
                 "shots" if self.capture_screenshots else "",
             ]
         )
@@ -276,7 +280,10 @@ class BatteryStep(PlanStep):
     pebble.send_app_message(
         connection,
         self.emulator,
-        {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
+        {
+            QA_MSG_BATTERY_ORIENTATION: self.orientation,
+            QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])
+        },
     )
     if self.capture_screenshots:
       capture_screenshot(self.emulator)
@@ -344,12 +351,13 @@ class AllForOneStep(PlanStep):
   is_day: int
   location: str
   connected: int
+  orientation: int = field(default=0)
   capability: str = field(default="all", init=False)
 
   def __post_init__(self) -> None:
-    if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1)) or \
-    (not all([self.capability, self.emulator])) or \
-    (not 0 <= self.is_day <= 1) or (not 0 <= self.connected <= 1):
+    if not ((0 <= self.level <= 100) and (0 <= self.charging <= 1) and
+            (0 <= self.orientation <= 1) and self.capability and self.emulator and
+            (0 <= self.is_day <= 1) and (0 <= self.connected <= 1)):
       raise ValueError(f"Invalid input for step: '{self}'")
     self._step_id = "_".join(
         filter(
@@ -362,6 +370,7 @@ class AllForOneStep(PlanStep):
                 str(self.is_day),
                 str(self.level),
                 str(self.charging),
+                "vertical" if self.orientation else "horizontal",
                 str(self.steps),
                 str(self.bpm),
                 self.location,
@@ -388,6 +397,7 @@ class AllForOneStep(PlanStep):
             QA_MSG_WEATHER_CONDITION: self.code,
             QA_MSG_IS_DAY: self.is_day,
             QA_MSG_MAYBE_CURRENT_LOCATION: self.location,
+            QA_MSG_BATTERY_ORIENTATION: self.orientation,
             QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display]),
         },
     )
@@ -468,6 +478,7 @@ def create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: A
           **shared,
           level=int(required("level")),
           charging=int(required("charging")),
+          orientation=int(required("orientation")),
       )
 
     case "health":
@@ -489,6 +500,7 @@ def create_step_for_capability(step_type: str, capture_screen: bool, **kwargs: A
           steps=int(required("steps")),
           location=str(required("location")),
           connected=int(required("connected")),
+          orientation=int(required("orientation")),
       )
 
     case _:
