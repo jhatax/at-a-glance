@@ -26,26 +26,35 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 
 | Decision | Accepted direction | Canonical evidence |
 | --- | --- | --- |
-| Required strata | Required text layers determine module success; optional icons never gate them. | [RuntimeArchitecture](RuntimeArchitecture.md) |
-| Embedded allocation | Rendering uses bounded stack storage, not heap allocation in update paths. | [Contributing](Contributing.md) |
+| Required strata | Watchface creation requires date, time, battery, climate, and horizontal-rule strata; optional icons never gate required text. | [RuntimeArchitecture](RuntimeArchitecture.md) |
+| Embedded allocation | Procedural polygon point storage uses bounded local arrays instead of heap-allocated coordinate buffers. | [Contributing](Contributing.md) |
 | Runtime boundaries | `ataglance.c` adapts transport; the runtime boundary interprets facts; modules own source state and layers. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Prepared surface | `watchface` owns `WatchfaceSurface`; modules receive only narrow prepared inputs. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
-| Platform geometry | Reuse the architect/stylist architecture, not scaled geometry; each target receives intentional placement. | [UserInterface](UserInterface.md) |
+| Platform geometry | Reuse the architect/stylist architecture while giving each target intentional geometry instead of uniformly scaling another device class. | [UserInterface](UserInterface.md) |
 | Lifecycle failure | Keep the established Pebble lifecycle behavior unless fresh evidence reveals a crash, leak, or teardown defect. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Display default | Light mode is the product and Clay default. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Health configuration | Keep shared health settings visible while clearly limiting their effect to health-capable targets. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Text geometry | Field widths and heights follow role, font, and target geometry; there is no uniform-width invariant. | [UserInterface](UserInterface.md) |
 | Shared bolt | Charging and thunderstorm may reuse a low-level bolt primitive without sharing product semantics. | [VisualVocabulary](VisualVocabulary.md) |
 | Glyph validation | Validate non-trivial glyph work with representative emulators and visual evidence before production use. | [Contributing](Contributing.md) |
-| Weather coverage | QA covers representative WMO branch-entry codes, not every numeric value. | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) |
 | Tiny snowflakes | Reduce topology in mini frames instead of forcing large-frame detail. | [UserInterface](UserInterface.md) |
 | Palette reference | The consolidated UI palette table follows active module palette code. | [UserInterface](UserInterface.md) |
-| Weather/location absence | Missing geolocation renders unavailable weather and location; there is no fixed-location fallback. | [RuntimeArchitecture](RuntimeArchitecture.md) |
+| Weather/location absence | Geolocation failure sends no replacement weather or location; there is no fixed-location fallback. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Location presentation | Production PKJS limits locations to 15 characters and renders them uppercase; direct AppMessage and QA inputs may retain case. | [UserInterface](UserInterface.md) |
-| Battery presentation | The primary layout uses a battery track; battery text, where used, omits the percent sign. | [UserInterface](UserInterface.md) |
+| Battery presentation | Battery state is rendered as a track rather than percentage text. | [UserInterface](UserInterface.md) |
 | Build access | Direct `pebble build` remains a first-class operator flow; the harness is optional automation. | [BuildandInstall](BuildandInstall.md) |
 | QA evidence | `report.json` is canonical; rendered Markdown is derived, and operator visual signoff remains human-owned. | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) |
 | Release hygiene | Forced debug defines and incidental screenshots stay out of normal release commits. | [Contributing](Contributing.md) |
+| Prototype shortcuts | Replace prototype shortcuts before release when they bypass established ownership. | [Contributing](Contributing.md) |
+| Horizontal-rule ownership | `watchface` owns the horizontal rule as a dedicated layer with explicit lifecycle and targeted refresh. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
+| Frugal settings persistence | Persist settings only when a validated persisted field changes. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Orientation refresh | Orientation changes target battery, Bluetooth-icon layout, and horizontal rule; connection handling remains separate. | [RuntimeArchitecture](RuntimeArchitecture.md) |
+| Dirty versus refresh | `layer_mark_dirty()` schedules a layer redraw; application refresh masks separately control state reads, frame application, visibility, and alerts. | [RuntimeArchitecture](RuntimeArchitecture.md) |
+| Battery-orientation state | Settings own the preference, prepared strata carry orientation, and the battery module retains its drawing state. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
+| Vertical battery geometry | Rectangular targets use nested rectangles; round targets use nested chords. Both occupy 72 percent and drain downward. | [UserInterface](UserInterface.md) |
+| Battery-orientation setting | Clay key `10013` selects horizontal or vertical battery presentation; horizontal remains the default. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Charging indication | The procedural bolt is the required charging indicator; color remains supporting information. | [UserInterface](UserInterface.md) |
+| Editor include policy | `Completion.HeaderInsertion: Never` leaves include changes under developer control. | [`.clangd`](../.clangd) |
 
 ## Historical Log
 
@@ -385,3 +394,63 @@ Type: Decision Status: Accepted
 Type: Decision Status: Accepted
 
 PKJS limits production location names to 15 characters, then normalizes them to uppercase before sending them to the watch. Uppercase is the intended product presentation because it is more legible in the 14-point and 16-point location fonts. Keep the expanded lowercase and Latin-1 font glyph coverage: direct AppMessage and QA inputs may use their original case, and the production presentation policy must not constrain that validation surface merely to save approximately 1 KB of font resources.
+
+### Replace prototype shortcuts before final code
+
+Type: Decision Status: Accepted
+
+A shortcut may prove a concept. Before release, replace any shortcut that bypasses an established ownership boundary with the smallest complete design. The battery-orientation work exposed two shortcuts: removing change-only persistence before reviewing its settled rationale, and drawing the horizontal rule through the root layer instead of giving it a dedicated layer.
+
+### The horizontal rule owns a dedicated layer
+
+Type: Decision Status: Accepted
+
+`watchface.c` owns the horizontal rule as a dedicated Pebble layer with a prepared frame, local-coordinate update proc, visibility, create/destroy lifecycle, and targeted update bit. Root-layer drawing would obscure that ownership and couple the rule to root repaint behavior.
+
+### Persist Pebble settings frugally
+
+Type: Decision Status: Accepted
+
+Write the persisted settings struct only when a validated persisted field changes. This policy limits writes to Pebble's flash-backed storage. Preserve the pre/post settings comparison during refactors, append new persisted fields to the struct, and document them at the persistence boundary.
+
+### Orientation relayout selects three narrow visual updates
+
+Type: Decision Status: Accepted
+
+An accepted battery-orientation change recalculates geometry once, then targets battery layout, Bluetooth layout, and the horizontal rule. The Bluetooth layout update reframes and redraws the icon. Connection-state reads and disconnect vibration remain in the connection-event path. Display-mode repaint also leaves connection behavior unchanged.
+
+### Pebble rendering and application refresh are separate contracts
+
+Type: Decision Status: Accepted
+
+`layer_mark_dirty()` schedules Pebble rendering and may cause the window hierarchy to redraw. Application refresh masks independently control service reads, source-state mutation, frame application, visibility changes, and alerts. Application code requests required refresh operations.
+
+### Battery orientation has one source and explicit derived state
+
+Type: Decision Status: Accepted
+
+`WatchfaceSettings.battery_orientation` owns the persisted preference. The layout architect receives orientation as an explicit input. `LayoutBatteryStratum` and `WatchfaceBatteryStratum` carry the calculated orientation, and the battery module copies `battery->is_vertical` directly into callback-visible state. Existing layout and module-refresh boundaries carry orientation directly.
+
+### Vertical battery geometry follows the display shape
+
+Type: Decision Status: Accepted
+
+The vertical battery occupies 72 percent of the available extent and drains downward. Rectangular targets draw a fill rectangle inside a track rectangle. Round targets draw a fill chord inside a concentric track chord. A symmetric `grect_inset()` derives the inner radial frame. Both shapes preserve equivalent behavior through shape-specific geometry.
+
+### Horizontal battery orientation remains the compatibility default
+
+Type: Decision Status: Accepted
+
+Clay message key `10013` selects horizontal or vertical battery presentation. Horizontal is the persisted, sanitized, and Clay default. The key remains appended to the manifest-backed message-key list. Setting changes stay reconciled across Clay, generated keys, AppMessage sizing and parsing, settings, runtime dispatch, documentation, and QA commands.
+
+### The charging bolt is required
+
+Type: Decision Status: Accepted
+
+The bolt is the explicit charging indicator; color remains supporting information. Procedural drawing removes the former bitmap allocation risk. Battery-module creation requires the bolt layer and uses the established teardown path after partial creation.
+
+### Developers own include decisions
+
+Type: Decision Status: Accepted
+
+`Completion.HeaderInsertion: Never` disables automatic header insertion. Header additions and removals remain deliberate source changes reviewed against direct module dependencies. Developers retain ownership of include changes.
