@@ -103,7 +103,6 @@ static int16_t place_battery_bar_vertically(
   module_x += (BATTERY_BOLT_WIDTH + ICON_TEXT_GAP);
   module_h = HELPER_SCALE_ROUND(face_height, BATTERY_BAR_SIZE_PERCENT, 100);
   module_y = (face_height - module_h) >> 1;
-  computed->battery.is_vertical = true;
   computed->battery.track = GRect(module_x, module_y, BATTERY_TRACK_HEIGHT, module_h);
   computed->battery.fill = GRect(
       module_x + BATTERY_TRACK_FILL_OFFSET,
@@ -118,6 +117,8 @@ static int16_t place_battery_bar_vertically(
       grect_inset(computed->battery.track, GEdgeInsets(BATTERY_TRACK_FILL_OFFSET));
 #endif
 
+  // Battery is vertical regardless of geometry
+  computed->battery.is_vertical = true;
   return HELPER_MAX(BATTERY_BOLT_HEIGHT, BT_ICON_HEIGHT);
 }
 
@@ -149,12 +150,14 @@ static int16_t place_battery_bar_horizontally(
       module_y + BATTERY_TRACK_FILL_OFFSET,
       module_w - BATTERY_TRACK_FILL_DIFF,
       BATTERY_FILL_HEIGHT);
-  computed->battery.is_vertical = false;
 
   // Add the bolt to the right of the battery track
   module_y = current_row_y;
   module_x += computed->battery.track.size.w + ICON_TEXT_GAP;
   computed->battery.bolt = GRect(module_x, module_y, BATTERY_BOLT_WIDTH, BATTERY_BOLT_HEIGHT);
+
+  // Battery is horizontal regardless of geometry
+  computed->battery.is_vertical = false;
   return BATTERY_BAND_HEIGHT;
 }
 
