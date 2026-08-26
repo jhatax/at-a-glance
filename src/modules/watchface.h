@@ -90,4 +90,5 @@ void watchface_repaint();
 void watchface_refresh(WatchfaceUpdateMask updates);
 void watchface_apply_received_data(
     const WatchfaceEventData* data,
-    WatchfaceSettings* settings);
+    WatchfaceSettings* settings,
+    bool* settings_changed);

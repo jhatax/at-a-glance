@@ -64,7 +64,8 @@ static void battery_handler(
   // It is sufficient to set these values because they trigger a battery refresh
   data.received = WATCHFACE_DATA_BATTERY_EVENT;
   data.parsed = WATCHFACE_DATA_BATTERY_EVENT;
-  watchface_apply_received_data(&data, &s_settings);
+  bool settings_changed = false;
+  watchface_apply_received_data(&data, &s_settings, &settings_changed);
 }
 
 static void bt_handler(
@@ -73,7 +74,8 @@ static void bt_handler(
   // It is sufficient to set these values because they trigger a battery refresh
   data.received = WATCHFACE_DATA_BLUETOOTH;
   data.parsed = WATCHFACE_DATA_BLUETOOTH;
-  watchface_apply_received_data(&data, &s_settings);
+  bool settings_changed = false;
+  watchface_apply_received_data(&data, &s_settings, &settings_changed);
 }
 
 static void tick_handler(
@@ -91,7 +93,8 @@ static void tick_handler(
     data.parsed = (WatchfaceDataMask)(data.parsed | WATCHFACE_DATA_DATE_TICK);
   }
 
-  watchface_apply_received_data(&data, &s_settings);
+  bool settings_changed = false;
+  watchface_apply_received_data(&data, &s_settings, &settings_changed);
 }
 
 #ifdef PBL_HEALTH
@@ -106,7 +109,8 @@ static void health_handler(
   // It is sufficient to set these values because they trigger a health refresh
   data.received = WATCHFACE_DATA_HEALTH_EVENT;
   data.parsed = WATCHFACE_DATA_HEALTH_EVENT;
-  watchface_apply_received_data(&data, &s_settings);
+  bool settings_changed = false;
+  watchface_apply_received_data(&data, &s_settings, &settings_changed);
 }
 #endif
 
@@ -218,19 +222,12 @@ void ataglance_apply_received_data(
   WatchfaceSettings previous_settings;
   memcpy(&previous_settings, &s_settings, sizeof(WatchfaceSettings));
 
-  watchface_apply_received_data(parsed, &s_settings);
+  bool settings_changed = false;
+  watchface_apply_received_data(parsed, &s_settings, &settings_changed);
 
   // The check for weather update interval is managed in JS directly
   // You could be defensive here and send a message but it is redundant
-  if (previous_settings.time_format != s_settings.time_format ||
-      previous_settings.temp_unit != s_settings.temp_unit ||
-      previous_settings.display_mode != s_settings.display_mode ||
-      previous_settings.battery_orientation != s_settings.battery_orientation ||
-#ifdef PBL_HEALTH
-      previous_settings.steps_goal != s_settings.steps_goal ||
-      previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes ||
-#endif
-      previous_settings.weather_update_minutes != s_settings.weather_update_minutes) {
+  if (settings_changed) {
     // It is critical that you are deliberately frugal with writing to persisted storage
     settings_save(&s_settings);
   }
