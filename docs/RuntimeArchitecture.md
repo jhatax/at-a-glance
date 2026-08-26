@@ -42,7 +42,7 @@ ataglance.c
             -> settings_load(&settings)
             -> watchface_create(window, &settings)
                  -> window_get_root_layer(window)
-                 -> layout_watchface_initialize(width, height, &surface)
+                 -> layout_watchface_prepare(width, height, is_battery_vertical, &surface)
                       -> memset(surface, 0, sizeof(*surface))
                       -> calculate active blueprint and final geometry
                       -> store compact/full on surface.style
@@ -51,7 +51,7 @@ ataglance.c
                  -> layout_watchface_initialize_fonts(...)
                  -> layout_watchface_load_custom_fonts(...)
                  -> feature_module_create(root, prepared surface strata...)
-                 -> require date/time/battery/climate strata to succeed
+                 -> require date, time, battery, climate, and horizontal-rule strata to succeed
                  -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
             -> subscribe tick, battery, connection, and health services
             -> register AppMessage callbacks
@@ -71,7 +71,7 @@ AppMessage inbox handler
   -> ataglance_apply_received_data()
        -> watchface_apply_received_data()
        -> apply_setting_data(...)
-            -> mutate settings for time format, temp unit, display mode, steps goal
+            -> mutate settings for time format, temp unit, display mode, battery orientation, and steps goal
             -> accumulate targeted refresh mask
             -> mark repaint only for a valid display-mode change
        -> apply_weather_or_location_data(...)
@@ -86,6 +86,10 @@ AppMessage inbox handler
        -> apply_oneshot_health_data(...)
             -> queue one-shot BPM/steps overrides
             -> request health refresh
+       -> if battery orientation changed
+            -> watchface_maybe_relayout(&refresh)
+                 -> recalculate battery, charging-bolt, and Bluetooth frames
+                 -> request battery, Bluetooth-layout, and horizontal-rule updates
        -> if repaint
             -> watchface_repaint()
                  -> layout_watchface_update_palette(&surface.style, display_mode)
@@ -169,12 +173,14 @@ Current visual placement, palette, and typography are evidenced as screenshots i
 - `refresh()` APIs receive the current palette and narrow runtime payloads where needed.
 - Do not retain `WatchfaceSurface*` and global style.
 
-Two classes of strata have been defined: required strata are [`time`, `battery`, `date`, `climate`], and all other strata are optional. Required strata have been selected based on capabilities available on all devices.
+Two classes of strata have been defined: required strata are [`time`, `battery`, `date`, `climate`, `horizontal rule`], and all other strata are optional. Required strata have been selected based on capabilities available on all devices.
 
 Additionally,
 
-- **only text elements** are considered as required within each strata.
-- Placement of text is not impacted if icons cannot be created, are disabled, or cannot be displayed.
+- Time, date, and climate require their text layers.
+- Battery requires its track and procedurally drawn charging-bolt layers.
+- Horizontal rule requires its dedicated layer.
+- Optional icons never gate required text updates.
 - If `Required` strata cannot be created, watch face initialization fails and control is returned to the Pebble OS.
 
 This categorization satisfies the visual invariant of information hierarchy and display consistency for all supported devices.
@@ -347,7 +353,7 @@ The steps module demonstrates the intended boundary:
 
 ### Inbound AppMessage coverage
 
-- **Settings tuples**: time format, temperature unit, display mode, weather cadence, heart-rate cadence, and steps goal.
+- **Settings tuples**: time format, temperature unit, display mode, battery orientation, weather cadence, heart-rate cadence, and steps goal.
 - **Weather tuples**: temperature, weather condition, and `is_day`.
 - **Location tuple**: optional current-location text from PKJS; an empty value clears the location text.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.

@@ -49,7 +49,7 @@ A shared watch face **stack** anchors information to stable locations across all
 - Icons and progress bars support text in glanceability but can be hidden.
 - Negative space is used to serve glanceability.
 
-**Display hierarchy invariant** is the location and order in which time, battery track, weather, and date are displayed.
+**Display hierarchy invariant** preserves dominant time followed by weather and date context. Battery progress may remain in the central stack or move to the right margin while preserving the stack's visual rhythm.
 
 ## Glyph and Icon Selection
 

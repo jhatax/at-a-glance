@@ -83,9 +83,11 @@ watchface.c ──────────────────────�
 - WatchfaceSurface owner                           - display primitives
 - layout/style delegation                          - substrata · strata
 - module manager                                   - WatchfaceSurface vocabulary
+- root-owned Bluetooth and horizontal-rule layers
 - event and visual dispatcher                      - large-display vocabulary
 - create/destroy order
 - repaint/refresh routing
+- battery-orientation relayout dispatch
         |
         +─────────────────────────────────────────> watchface_layout.h
         |                                           - public layout facade
@@ -106,12 +108,14 @@ layout_architect.c                         layout_stylist.c
 - blueprint selection                      - font-role selection
 - compact/full classification              - custom-font load/unload
 - prepared-surface assembly                - display-mode styling
+- orientation-specific battery placement
         |
         v
 feature modules ─────────────────────────────────> module headers
      1. date.c                                     date.h
      2. time.c                                     time.h
      3. battery.c                                  battery.h
+        - orientation-aware track rendering
      4. climate.c                                  climate.h
         - climate_glyphs.c                         - climate_glyphs.h
         - optional location text and source buffer

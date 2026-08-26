@@ -26,7 +26,7 @@ This document covers settings, configuration transport, message-key mapping, per
 
 ## Settings Catalog
 
-The runtime setting source of truth is `WatchfaceSettings` in `src/modules/settings.h`. On health-capable builds, there are six persisted runtime settings.
+The runtime setting source of truth is `WatchfaceSettings` in `src/modules/settings.h`. On health-capable builds, there are seven persisted runtime settings.
 
 | Setting | C field | Canonical key | Default | Valid values | Persisted | Runtime effect |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -36,6 +36,7 @@ The runtime setting source of truth is `WatchfaceSettings` in `src/modules/setti
 | 4. Weather cadence | `weather_update_minutes` | `WEATHER_UPDATE_MINUTES` | `15` | `15`, `30`, `45`, `60` | Yes | Updates PKJS weather schedule |
 | 5. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `15` | `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
 | 6. Steps goal | `steps_goal` | `STEPS_GOAL` | `10000` | `4000` through `32000` | Yes on `PBL_HEALTH` | Refreshes steps display |
+| 7. Battery orientation | `battery_orientation` | `BATTERY_ORIENTATION` | `0` / `BATTERY_ORIENTATION_HORIZONTAL` | `0` horizontal, `1` vertical | Yes | Relayouts battery presentation |
 
 Clay also exposes two settings-page inputs that are not canonical runtime settings:
 
@@ -80,6 +81,8 @@ The current settings page is shown here as evidence of the configuration surface
 
 ![At A Glance settings page](assets/screenshots/at-a-glance-settings.png)
 
+Clay presents `BATTERY_ORIENTATION` as “Preferred battery orientation?” with “Centered between time & date” for horizontal and “Along the right margin” for vertical. Horizontal is the Clay default.
+
 ### PKJS Normalization
 
 PKJS sends most Clay-backed settings directly after Clay maps their keys.
@@ -123,6 +126,8 @@ Current manifest-backed keys:
 | 10  | `STEPS_GOAL_PRESET`      | `10009`              | Clay-only input                 |
 | 11  | `STEPS_GOAL_CUSTOM`      | `10010`              | Clay-only input                 |
 | 12  | `MAYBE_CURRENT_LOCATION` | `10011`              | Optional location data          |
+| 13  | `JS_READY`               | `10012`              | PKJS readiness control          |
+| 14  | `BATTERY_ORIENTATION`    | `10013`              | Runtime setting                 |
 
 Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
 
@@ -193,11 +198,12 @@ Refresh effects:
 | `TIME_FORMAT`            | `WATCHFACE_UPDATE_TIME`                                              |
 | `TEMP_UNIT`              | `WATCHFACE_UPDATE_CLIMATE`                                           |
 | `DISPLAY_MODE`           | `WATCHFACE_REPAINT`                                                  |
+| `BATTERY_ORIENTATION`    | `WATCHFACE_UPDATE_BATTERY_ORIENTATION`                                |
 | `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS                   |
 | `HR_SAMPLE_MINUTES`      | Persisted in C; HealthService sample period updated in `ataglance.c` |
 | `STEPS_GOAL`             | `WATCHFACE_UPDATE_HEALTH`                                            |
 
-Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct. Stored settings are sanitized on load.
+Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct only when a validated persisted field changes. Stored settings are sanitized on load.
 
 ## Validation Requirements
 

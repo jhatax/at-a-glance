@@ -33,11 +33,13 @@ The current stack and information hierarchy is shared across display families an
 ```text
 top steps context
 dominant centered time
-centered battery track and plugged-in bolt
+battery track or horizontal rule
 weather/date context
 centered location
 bottom heart-rate context
 ```
+
+Horizontal orientation places the battery track between time and date. Vertical orientation places the battery track along the right margin and shows a horizontal rule in the central stack. Horizontal remains the default.
 
 ### Typography
 
@@ -46,7 +48,7 @@ The `layout_stylist` selects fonts by display class (compact or full) and font r
 **Notes**
 
 - Sizes: Font sizes are customized for compact and full displays.
-- Custom fonts: **Cabin** variants for time and location, **Oswald** for date and metrics.
+- Custom fonts: **Cabin** for time and full-display location text; **Oswald** for date, metrics, and compact-display location text.
 - Location text: PKJS limits production location names to 15 characters and normalizes them to uppercase; uppercase text is more legible at selected location-font sizes.
 - Location fonts: Retain lowercase and Latin-1 glyphs so direct AppMessage and QA inputs render without a separate font restriction.
 
@@ -55,7 +57,7 @@ The `layout_stylist` selects fonts by display class (compact or full) and font r
 | <b>Time</b> | `FONT_KEY_BITHAM_42_MEDIUM_NUMBERS` | `RESOURCE_ID_FONT_CABIN_MEDIUM_42` | `FONT_KEY_LECO_60_NUMBERS_AM_PM` (Emery)<br>`FONT_KEY_LECO_60_BOLD_NUMBERS_AM_PM` (Gabbro) | `RESOURCE_ID_FONT_CABIN_MEDIUM_58` (Emery)<br>`RESOURCE_ID_FONT_CABIN_MEDIUM_70` (Gabbro) |
 | <b>Date</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_20` |
 | <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_20` |
-| <b>Location</b> | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_LOCATION_14` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_LOCATION_16` |
+| <b>Location</b> | `FONT_KEY_GOTHIC_14` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_LOCATION_17` |
 
 - Font selection depends on role, display class, and platform.
 
@@ -111,6 +113,7 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | Time | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
 | **BATTERY** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
+| Track | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` |
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
 | Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
@@ -139,8 +142,10 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 
 ## Current Icon Sizes
 
-- **Compact** icon size: `18x18`
-- **Full** icon size: `28x28`
+- **Compact** data icon size: `18x18`
+- **Full** data icon size: `28x28`
+- **Compact** battery bolt and Bluetooth icon size: `16x16`
+- **Full** battery bolt and Bluetooth icon size: `20x20`
 
 ## Current Glyph Realization
 
@@ -156,9 +161,11 @@ The current glyph system uses familiar heart-and-waveform, weather, walking, bat
 
 ### Battery Glyphs
 
-- Battery uses a horizontal track to convey charge level.
-- The track outline and fill use the live battery state color.
-- The fill width is proportional to charge percentage.
+- Horizontal battery uses a centered fill rectangle inside a track rectangle.
+- Vertical battery uses a fill rectangle inside a track rectangle on rectangular displays and a fill chord inside a track chord on round displays.
+- Horizontal and vertical tracks occupy 72 percent of their available extent.
+- Horizontal fill width is proportional to charge percentage. Vertical fill drains downward as charge decreases.
+- Track uses a neutral gray; fill uses the live battery state color.
 - A filled bolt appears only when the watch is plugged in.
 - On color displays, plugged-in state also shifts the battery color to the plugged-in palette color.
 

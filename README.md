@@ -51,6 +51,7 @@ pebble install --phone YOUR_PHONE_IP
 - Temperature unit: Fahrenheit or Celsius
 - Weather updates: 15, 30, 45, or 60 minutes
 - Display mode: platform-appropriate light, dark, and color palettes
+- Battery orientation: centered horizontal or right-margin vertical; horizontal is the default
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 - Steps goal: presets from `4,000` to `20,000`, with custom override support from `4,000` to `32,000`
 

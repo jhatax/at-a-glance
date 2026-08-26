@@ -58,7 +58,7 @@ Before release, validation should cover:
 - supported emulator behavior
 - settings defaults and applied values
 - three-click Back-button display-mode changes and repaint behavior
-- weather, battery, health, and display-mode behavior
+- weather, battery, battery orientation, health, and display-mode behavior
 - screenshot evidence for visual review
 - manual config-page review
 - manual hardware-install check when release confidence requires it
@@ -134,6 +134,17 @@ Use manual emulator commands for focused diagnosis or when a qa plan would be to
 pebble emu-battery --emulator emery --percent 19
 pebble emu-battery --emulator emery --percent 75 --charging
 ```
+
+#### Battery Orientation
+
+Battery orientation uses AppMessage key `10013`. Exercise horizontal, vertical, and invalid values on rectangular and round targets.
+
+```sh
+pebble send-app-message --emulator emery --int 10013=0
+pebble send-app-message --emulator gabbro --int 10013=1
+```
+
+Confirm horizontal default, live relayout without watchface teardown, and persistence after restart. Apply battery percentages and charging state in both orientations.
 
 #### Weather And Display Mode
 
