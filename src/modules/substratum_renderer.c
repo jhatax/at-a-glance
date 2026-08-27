@@ -169,13 +169,13 @@ TextLayer* substratum_renderer_create_text_layer(
 
 Layer* substratum_renderer_create_icon_layer(
     Layer* parent,
-    const WatchfaceIconSubstratum* icon,
+    const WatchfaceFrame* icon,
     LayerUpdateProc update_proc) {
   if (!parent || !icon) {
     return NULL;
   }
 
-  Layer* layer = layer_create(icon->frame);
+  Layer* layer = layer_create(*icon);
   if (!layer) {
     return NULL;
   }

@@ -8,7 +8,7 @@
 bool steps_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* text,
-    const WatchfaceIconSubstratum* icon,
+    const WatchfaceFrame* icon,
     const GRect* progress,
     GFont font);
 void steps_module_destroy();

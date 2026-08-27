@@ -177,7 +177,7 @@ static void update_bpm() {
 bool bpm_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* text,
-    const WatchfaceIconSubstratum* icon,
+    const WatchfaceFrame* icon,
     GFont font) {
   if (!root || !text || !font) {
     return false;

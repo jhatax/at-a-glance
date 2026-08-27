@@ -133,7 +133,7 @@ static void initialize_bt_icon(
   s_nobt_icon = gbitmap_create_with_resource(RESOURCE_ID_BT);
   if (s_nobt_icon) {
     s_nobt_icon_layer =
-        substratum_renderer_create_icon_layer(root, &s_surface.bt_icon.icon, nobt_icon_update_proc);
+        substratum_renderer_create_icon_layer(root, &s_surface.bt_icon, nobt_icon_update_proc);
     if (!s_nobt_icon_layer) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create No Bluetooth icon layer");
       gbitmap_destroy(s_nobt_icon);
@@ -220,14 +220,14 @@ bool watchface_create(
 
     created = date_module_create(
         root,
-        &s_surface.date.text,
-        s_surface.style.fontbook.chosen_fonts[s_surface.date.text.font_role]);
+        &s_surface.date,
+        s_surface.style.fontbook.chosen_fonts[s_surface.date.font_role]);
     s_strata_created_mask |= (created) ? DATE_STRATUM_MASK : 0;
 
     created = time_module_create(
         root,
-        &s_surface.time.text,
-        s_surface.style.fontbook.chosen_fonts[s_surface.time.text.font_role]);
+        &s_surface.time,
+        s_surface.style.fontbook.chosen_fonts[s_surface.time.font_role]);
     s_strata_created_mask |= created ? TIME_STRATUM_MASK : 0;
 
     created = battery_module_create(root, &s_surface.battery);
@@ -236,10 +236,10 @@ bool watchface_create(
     created = climate_module_create(
         root,
         &s_surface.climate.text,
-        &s_surface.location.text,
+        &s_surface.location,
         &s_surface.climate.icon,
         s_surface.style.fontbook.chosen_fonts[s_surface.climate.text.font_role],
-        s_surface.style.fontbook.chosen_fonts[s_surface.location.text.font_role]);
+        s_surface.style.fontbook.chosen_fonts[s_surface.location.font_role]);
     s_strata_created_mask |= created ? CLIMATE_STRATUM_MASK : 0;
 
     created = (s_horiz_rule_layer = layer_create(s_surface.horiz_rule));
@@ -351,14 +351,8 @@ void watchface_maybe_relayout(
 
   if (s_cached_battery_orientation != s_wf_settings->battery_orientation) {
     s_cached_battery_orientation = s_wf_settings->battery_orientation;
-
-    Layer* root = window_get_root_layer(s_wf_window);
-    GRect bounds = layer_get_bounds(root);
-    relayout_battery_bolt_bticon(
-        bounds.size.w,
-        bounds.size.h,
-        (s_cached_battery_orientation == BATTERY_ORIENTATION_VERTICAL),
-        &s_surface);
+    s_surface.battery.is_vertical = (s_cached_battery_orientation == BATTERY_ORIENTATION_VERTICAL);
+    relayout_battery_bolt_bticon(&s_surface);
     *refresh |= WATCHFACE_UPDATE_BATTERY | WATCHFACE_UPDATE_BT_LAYOUT | WATCHFACE_UPDATE_HORIZ_RULE;
     *refresh &= ~WATCHFACE_UPDATE_BATTERY_ORIENTATION;
   }
@@ -431,7 +425,7 @@ void watchface_refresh(
   }
 
   if (updates & WATCHFACE_UPDATE_BT_LAYOUT && (s_strata_created_mask & BTICON_STRATUM_MASK)) {
-    layer_set_frame(s_nobt_icon_layer, s_surface.bt_icon.icon.frame);
+    layer_set_frame(s_nobt_icon_layer, s_surface.bt_icon);
     layer_mark_dirty(s_nobt_icon_layer);
   }
 

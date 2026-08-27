@@ -9,7 +9,7 @@
 bool bpm_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* text,
-    const WatchfaceIconSubstratum* icon,
+    const WatchfaceFrame* icon,
     GFont font);
 void bpm_module_destroy();
 void bpm_module_refresh(const ColorPalette* palette);

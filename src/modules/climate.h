@@ -32,7 +32,7 @@ bool climate_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* text,
     const WatchfaceTextSubstratum* loc,
-    const WatchfaceIconSubstratum* condition,
+    const WatchfaceFrame* condition,
     GFont text_font,
     GFont location_font);
 void climate_module_destroy();

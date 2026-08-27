@@ -7,34 +7,26 @@
 #define WATCHFACE_OUTOFRANGE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR GColorWhite
 
-typedef struct {
-  GRect frame;
-} WatchfaceIconSubstratum;
+typedef GRect WatchfaceFrame;
 
 typedef struct {
-  GRect frame;
+  WatchfaceFrame frame;
   GTextAlignment alignment;
   WatchfaceFontRole font_role;
   WatchfaceColorRole color_role;
 } WatchfaceTextSubstratum;
 
-typedef struct {
-  WatchfaceTextSubstratum text;
-} WatchfaceTextStratum;
+typedef WatchfaceTextSubstratum WatchfaceTextStratum;
 
 typedef struct {
-  WatchfaceIconSubstratum icon;
-} WatchfaceIconStratum;
-
-typedef struct {
-  WatchfaceIconSubstratum icon;
+  WatchfaceFrame icon;
   WatchfaceTextSubstratum text;
 } WatchfaceTextWithIconStratum;
 
 typedef struct {
-  WatchfaceIconSubstratum icon;
+  WatchfaceFrame icon;
   WatchfaceTextSubstratum text;
-  GRect progress;
+  WatchfaceFrame progress;
 } WatchfaceTextWithIconAndProgressStratum;
 
 typedef struct {
@@ -43,9 +35,9 @@ typedef struct {
 } WatchfaceSurfaceStyle;
 
 typedef struct {
-  GRect track;
-  GRect fill;
-  GRect bolt;
+  WatchfaceFrame track;
+  WatchfaceFrame fill;
+  WatchfaceFrame bolt;
   bool is_vertical;
 } WatchfaceBatteryStratum;
 
@@ -54,7 +46,7 @@ typedef struct {
   int16_t face_height;
   WatchfaceSurfaceStyle style;
   WatchfaceTextStratum time;
-  GRect horiz_rule;
+  WatchfaceFrame horiz_rule;
   WatchfaceTextStratum date;
 #ifdef PBL_HEALTH
   WatchfaceTextWithIconStratum bpm;
@@ -63,5 +55,5 @@ typedef struct {
   WatchfaceBatteryStratum battery;
   WatchfaceTextWithIconStratum climate;
   WatchfaceTextStratum location;
-  WatchfaceIconStratum bt_icon;
+  WatchfaceFrame bt_icon;
 } WatchfaceSurface;

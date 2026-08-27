@@ -18,17 +18,3 @@ typedef struct {
   LayoutMetricWithIcon steps;
   GRect progress;
 } LayoutMetricPairWithProgress;
-
-typedef struct {
-  GRect time;
-  GRect horiz_rule;
-  GRect date;
-  LayoutBatteryStratum battery;
-  LayoutMetricWithIcon climate;
-  GRect location;
-  GRect bt_icon;
-#ifdef PBL_HEALTH
-  LayoutMetricPairWithProgress steps_layer;
-  LayoutMetricWithIcon bpm;
-#endif
-} CalculatedLayout;

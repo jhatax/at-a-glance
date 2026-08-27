@@ -193,7 +193,7 @@ bool climate_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* temp,
     const WatchfaceTextSubstratum* loc,
-    const WatchfaceIconSubstratum* condition,
+    const WatchfaceFrame* condition,
     GFont text_font,
     GFont location_font) {
   if (!root || !temp || !text_font || !location_font) {

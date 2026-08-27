@@ -13,7 +13,7 @@ TextLayer* substratum_renderer_create_text_layer(
 
 Layer* substratum_renderer_create_icon_layer(
     Layer* parent,
-    const WatchfaceIconSubstratum* icon,
+    const WatchfaceFrame* icon,
     LayerUpdateProc update_proc);
 
 void substratum_renderer_update_text_layer(

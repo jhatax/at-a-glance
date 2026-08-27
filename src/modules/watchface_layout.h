@@ -11,11 +11,7 @@ bool layout_watchface_prepare(
     bool is_battery_vertical,
     WatchfaceSurface* surface);
 
-void relayout_battery_bolt_bticon(
-    int16_t face_width,
-    int16_t face_height,
-    bool is_battery_vertical,
-    WatchfaceSurface* surface);
+void relayout_battery_bolt_bticon(WatchfaceSurface* surface);
 
 // Stylist: Palette
 void layout_watchface_update_palette(
