@@ -1,21 +1,19 @@
 const REQUEST_TIMEOUT = 2 * 60 * 1000;
 const GEO_REQUEST_AGE = 30 * 60 * 1000;
 const MAX_LOCATION_STRING_LENGTH = 15;
+const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
 
 function createRefreshController(dependencies) {
+  var currentUpdateInterval = -1;
+  var updateIntervalHandle = null;
+  var lastKnownLocation = null;
+
   if (
     !dependencies ||
     typeof dependencies.sendWeatherMessage !== 'function' ||
     typeof dependencies.sendLocationMessage !== 'function'
   ) {
     throw new Error('Refresh controller requires weather and location senders');
-  }
-
-  var currentUpdateInterval = 15;
-  var lastKnownLocation = null;
-
-  function updateIntervalMs() {
-    return currentUpdateInterval * 60 * 1000;
   }
 
   function isCurrentLocation(location) {
@@ -131,8 +129,6 @@ function createRefreshController(dependencies) {
     fetchLocation(location);
   }
 
-  var updateIntervalHandle = null;
-
   function requestLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       return;
@@ -170,16 +166,15 @@ function createRefreshController(dependencies) {
       clearInterval(updateIntervalHandle);
       updateIntervalHandle = null;
     }
-    updateIntervalHandle = setInterval(refreshNow, updateIntervalMs());
+    updateIntervalHandle = setInterval(refreshNow, currentUpdateInterval * 60 * 1000);
   }
-
   function setIntervalMinutes(minutes) {
     var isValid = typeof minutes === 'number' && minutes > 0;
-    var nextInterval = isValid ? minutes : 15;
+    var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
     var changed = currentUpdateInterval !== nextInterval;
-    currentUpdateInterval = nextInterval;
-    refreshNow();
     if (changed || updateIntervalHandle === null) {
+      currentUpdateInterval = nextInterval;
+      refreshNow();
       scheduleUpdates();
     }
   }
