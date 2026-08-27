@@ -44,11 +44,11 @@
       {
         "type": "select",
         "messageKey": "BATTERY_ORIENTATION",
-        "label": "Preferred battery orientation?",
+        "label": "Battery orientation:",
         "defaultValue": "0",
         "options": [
-          { "value": "0", "label": "Centered between time & date" },
-          { "value": "1", "label": "Along the right margin" }
+          { "value": "0", "label": "Central bar" },
+          { "value": "1", "label": "Right Margin" }
         ]
       }
     ]
