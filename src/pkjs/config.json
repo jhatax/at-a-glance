@@ -45,6 +45,18 @@
         "type": "select",
         "messageKey": "BATTERY_ORIENTATION",
         "label": "Battery orientation:",
+        "capabilities": ["ROUND"],
+        "defaultValue": "1",
+        "options": [
+          { "value": "0", "label": "Central bar" },
+          { "value": "1", "label": "Right Margin" }
+        ]
+      },
+      {
+        "type": "select",
+        "messageKey": "BATTERY_ORIENTATION",
+        "label": "Battery orientation:",
+        "capabilities": ["RECT"],
         "defaultValue": "0",
         "options": [
           { "value": "0", "label": "Central bar" },
