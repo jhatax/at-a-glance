@@ -254,7 +254,7 @@ static void architect_calculate_must_have_layout(
   };
 
   // Location text
-  current_row_y += (HELPER_MAX(ICON_HEIGHT, DATE_TEXT_HEIGHT) - 1);
+  current_row_y += (HELPER_MAX(ICON_HEIGHT, DATE_TEXT_HEIGHT) - 2);
   module_w = HELPER_SCALE_ROUND(face_width, LOCATION_TEXT_WIDTH_PERCENT, 100);
   module_x = ((face_width - module_w) >> 1);
   surface->location = (WatchfaceTextStratum){
