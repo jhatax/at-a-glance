@@ -39,7 +39,7 @@ centered location
 bottom heart-rate context
 ```
 
-Horizontal orientation places the battery track between time and date. Vertical orientation places the battery track along the right margin and shows a horizontal rule in the central stack. Horizontal remains the default.
+Horizontal orientation places the battery track between time and date. Vertical orientation places the battery track along the right margin and shows a horizontal rule in the central stack.
 
 ### Typography
 

@@ -137,7 +137,7 @@ pebble emu-battery --emulator emery --percent 75 --charging
 
 #### Battery Orientation
 
-Battery orientation uses AppMessage key `10013`. Exercise horizontal, vertical, and invalid values on rectangular and round targets.
+Battery orientation uses AppMessage key `10013`. Exercise horizontal and vertical values on rectangular and round targets.
 
 ```sh
 pebble send-app-message --emulator emery --int 10013=0

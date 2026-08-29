@@ -52,7 +52,7 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Dirty versus refresh | `layer_mark_dirty()` schedules a layer redraw; application refresh masks separately control state reads, frame application, visibility, and alerts. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Battery-orientation state | Settings own the preference, prepared strata carry orientation, and the battery module retains its drawing state. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
 | Vertical battery geometry | Rectangular targets use nested rectangles; round targets use nested chords. Both occupy 72 percent and drain downward. | [UserInterface](UserInterface.md) |
-| Battery-orientation setting | Clay key `10013` selects horizontal or vertical battery presentation; horizontal remains the default. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Battery-orientation setting | Clay key `10013` selects horizontal or vertical battery presentation . | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Charging indication | The procedural bolt is the required charging indicator; color remains supporting information. | [UserInterface](UserInterface.md) |
 | Editor include policy | `Completion.HeaderInsertion: Never` leaves include changes under developer control. | [`.clangd`](../.clangd) |
 
@@ -437,11 +437,11 @@ Type: Decision Status: Accepted
 
 The vertical battery occupies 72 percent of the available extent and drains downward. Rectangular targets draw a fill rectangle inside a track rectangle. Round targets draw a fill chord inside a concentric track chord. A symmetric `grect_inset()` derives the inner radial frame. Both shapes preserve equivalent behavior through shape-specific geometry.
 
-### Horizontal battery orientation remains the compatibility default
+### Battery orientation default follows device geometry
 
 Type: Decision Status: Accepted
 
-Clay message key `10013` selects horizontal or vertical battery presentation. Horizontal is the persisted, sanitized, and Clay default. The key remains appended to the manifest-backed message-key list. Setting changes stay reconciled across Clay, generated keys, AppMessage sizing and parsing, settings, runtime dispatch, documentation, and QA commands.
+Clay message key `10013` selects horizontal or vertical battery presentation. The key remains appended to the manifest-backed message-key list. Setting changes stay reconciled across Clay, generated keys, AppMessage sizing and parsing, settings, runtime dispatch, documentation, and QA commands.
 
 ### The charging bolt is required
 
