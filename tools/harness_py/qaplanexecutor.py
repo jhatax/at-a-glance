@@ -95,7 +95,7 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
     state.inform_operator(f"Executed: {_step}\nResult: {_result}\n")
 
 
-def run_plan_execution(plan: PlanDefinition) -> int:
+def execute_plan(plan: PlanDefinition) -> int:
   from qaharnessruntime import create_harness_context
   state = ExecutionState(create_harness_context(plan.expected_screenshots > 0), plan=plan)
   exit_status = 0
@@ -108,6 +108,7 @@ def run_plan_execution(plan: PlanDefinition) -> int:
     emulators = {emulator for emulator, _display in plan.execution_configs}
     state.pebble.install_emulators(emulators, pbw_path)
     for index, step in enumerate(plan.steps.values(), start=1):
+      step.step_number = index
       header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
       pre_step = f"{divider}\n{header}"
       state.inform_operator(pre_step, terminal_color=ANSI_CYAN)
@@ -140,7 +141,7 @@ def resolve_and_execute_plan(action: str, plan_name: str) -> int:
         print("Plan execution cancelled.")
         return 1
 
-    return run_plan_execution(plan)
+    return execute_plan(plan)
   else:
     print("Plan validation failed.")
     return 1

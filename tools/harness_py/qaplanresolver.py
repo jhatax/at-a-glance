@@ -71,6 +71,7 @@ class PlanStep(ABC):
   expected_screenshots: int = field(kw_only=True)
   captured_screenshots: int = field(kw_only=True, default=0)
   _step_id: str = field(init=False, default="")
+  step_number: int = field(default=0)
 
   @abstractmethod
   def run(

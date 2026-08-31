@@ -15,7 +15,7 @@ SUPPORT_MATRIX: Final = MappingProxyType(
         "basalt":
         MappingProxyType(
             {
-                "displays": ("white", "black"),
+                "displays": ("white", "black", "celeste", "oxford"),
                 "capabilities": ("weather", "battery", "health", "location", "bluetooth", "all"),
             }
         ),
