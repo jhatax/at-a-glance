@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from threading import Thread
 from typing import TYPE_CHECKING, Final
 from qaharnessruntime import ANSI_CYAN, ANSI_RESET, HarnessRuntimeContext, StepResult, finalize
 from qaplanresolver import PlanDefinition, PlanStep
@@ -13,7 +14,7 @@ SCREENSHOT_DELAY_SECONDS: Final[int] = 1
 
 
 @dataclass
-class ExecutionState:
+class PlanExecutionState:
   context: HarnessRuntimeContext
   plan: PlanDefinition
   step_results: list[StepResult] = field(default_factory=list)
@@ -43,7 +44,7 @@ class ExecutionState:
 
 
 def _capture_screenshot(
-    state: ExecutionState,
+    state: PlanExecutionState,
     step_result: StepResult,
     emulator: str,
 ) -> None:
@@ -59,7 +60,7 @@ def _capture_screenshot(
   step_result["screenshot_paths"].append(str(output_path))
 
 
-def _execute_step(state: ExecutionState, step: PlanStep) -> None:
+def _execute_step(state: PlanExecutionState, step: PlanStep) -> None:
   result: StepResult = {
       "step_result_id": step.step_id,
       "status": "running",
@@ -97,18 +98,16 @@ def _execute_step(state: ExecutionState, step: PlanStep) -> None:
 
 def execute_plan(plan: PlanDefinition) -> int:
   from qaharnessruntime import create_harness_context
-  state = ExecutionState(create_harness_context(plan.expected_screenshots > 0), plan=plan)
+  state = PlanExecutionState(create_harness_context(plan.expected_screenshots > 0), plan=plan)
   exit_status = 0
 
   divider = "=" * 80
   try:
     state.inform_operator(f"QA Plan to execute:\n{plan.as_dict()}\n", True)
     from qaharnessconfig import REPO_ROOT
-    pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
     emulators = {emulator for emulator, _display in plan.execution_configs}
-    state.pebble.install_emulators(emulators, pbw_path)
+    state.pebble.install_emulators(emulators, REPO_ROOT / "build" / "at-a-glance.pbw")
     for index, step in enumerate(plan.steps.values(), start=1):
-      step.step_number = index
       header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
       pre_step = f"{divider}\n{header}"
       state.inform_operator(pre_step, terminal_color=ANSI_CYAN)
