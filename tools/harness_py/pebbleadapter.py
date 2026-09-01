@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-import sys
-import time
-import os
 import errno
-import shutil
-import socket
-import tempfile
+import os
 import re
+import shutil
 import signal
+import socket
+import sys
+import tempfile
+import threading
+import time
 import traceback
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
 from pathlib import Path
-from collections.abc import Generator
-from typing import Callable, Final, Iterable
-import threading
+from typing import Final
 
 APP_MESSAGE_TIMEOUT_SECONDS: Final[float] = 2.0
 PEBBLE_SETTLE_DELAY: Final[float] = 1.5
@@ -63,26 +63,29 @@ def _load_pebble_tool() -> Path:
 
 try:
   _PEBBLE_COMPILER_PATH = _load_pebble_tool()
-  from libpebble2.communication import PebbleConnection # noqa: E402
-  from libpebble2.communication.transports.qemu.protocol import QemuBattery, QemuBluetoothConnection # noqa: E402
-  from libpebble2.services.appmessage import AppMessageService, CString, Int32 # noqa: E402
-  from pebble_tool.commands.emucontrol import send_data_to_qemu # noqa: E402
-  from pebble_tool.commands.base import PebbleTransportEmulator # noqa: E402
-  from pebble_tool.commands.install import ToolAppInstaller # noqa: E402
-  from pebble_tool.commands.sdk.project.build import BuildCommand # noqa: E402
-  from compilerdbgenerator import generate_compile_database # noqa: E402
-  from pebble_tool.sdk import sdk_manager # noqa: E402
-  from pebble_tool.sdk.emulator import ( # noqa: E402
+  from compilerdbgenerator import generate_compile_database
+  from libpebble2.communication import PebbleConnection
+  from libpebble2.communication.transports.qemu.protocol import (
+      QemuBattery,
+      QemuBluetoothConnection,
+  )
+  from libpebble2.services.appmessage import AppMessageService, CString, Int32
+  from pebble_tool.commands.base import PebbleTransportEmulator
+  from pebble_tool.commands.emucontrol import send_data_to_qemu
+  from pebble_tool.commands.install import ToolAppInstaller
+  from pebble_tool.commands.sdk.project.build import BuildCommand
+  from pebble_tool.sdk import sdk_manager
+  from pebble_tool.sdk.emulator import (
       ManagedEmulatorTransport,
       get_emulator_info,
       update_emulator_info,
   )
-  from pebble_tool.sdk.project import PebbleProject # noqa: E402
+  from pebble_tool.sdk.project import PebbleProject
 except ImportError as exc:
   raise ImportError("libpebble2 or its Pebble Tool environment is unavailable") from exc
 
 
-class _HarnessPebbleConnection(PebbleConnection):
+class PebbleEmulatorConnection(PebbleConnection):
   """Treat a relay closure as normal when a test changes emulator connectivity."""
 
   def run_sync(self) -> None:
@@ -108,7 +111,7 @@ class PebbleAdapter:
   def create_connection(self, emulator: str) -> Generator[PebbleConnection]:
     connection: PebbleConnection | None = None
     try:
-      connection = _HarnessPebbleConnection(ManagedEmulatorTransport(emulator))
+      connection = PebbleEmulatorConnection(ManagedEmulatorTransport(emulator))
       connection.connect()
       connection.run_async()
       PebbleTransportEmulator.post_connect(connection)
@@ -122,7 +125,7 @@ class PebbleAdapter:
   def _close_connection(self, connection: PebbleConnection) -> None:
     try:
       connection.transport.ws.close()
-    except Exception:
+    except Exception: # noqa: BLE001, S110
       pass
 
   def send_app_message(
@@ -211,7 +214,7 @@ class PebbleAdapter:
       from argparse import Namespace
 
       command(Namespace(sdk=None, v=1 if verbose else 0, args=[], debug=False))
-    except Exception as exc:
+    except Exception as exc: # noqa: BLE001
       build_exception = exc
     finally:
       if output:
@@ -248,7 +251,7 @@ class PebbleAdapter:
             compiler_path=_PEBBLE_COMPILER_PATH,
         )
         self._log(f"Compile database generated: {compile_database_path}")
-      except Exception as exc:
+      except Exception as exc: # noqa: BLE001
         self._log(f"No compile database generated: {exc}")
     self._log_success(f"Build {'verbose ' if verbose else ''}".strip())
 
@@ -282,14 +285,14 @@ class PebbleAdapter:
       time.sleep(PEBBLE_SETTLE_DELAY)
       send_data_to_qemu(
           connection.transport,
-          QemuBluetoothConnection(connected=True if connected == 1 else False),
+          QemuBluetoothConnection(connected=(connected == 1)),
       )
     except Exception as exc:
       self._log_failure(f"Bluetooth {emulator}: connected={connected}", exc)
       raise
     finally:
       if not connected:
-        time.sleep(27.5) # bluetooth delay is long
+        time.sleep(30) # bluetooth delay is long
 
     self._log_success(f"Bluetooth {emulator}: connected={connected}")
     return connected == 0
@@ -348,12 +351,12 @@ class PebbleAdapter:
           monitor.settimeout(1.5)
           try:
             monitor.recv(4096)
-          except socket.timeout:
+          except TimeoutError:
             pass
-          monitor.sendall(f"screendump {ppm_path}\n".encode("utf-8"))
+          monitor.sendall(f"screendump {ppm_path}\n".encode())
           try:
             monitor.recv(4096)
-          except socket.timeout:
+          except TimeoutError:
             pass
 
         deadline = time.time() + 0.80
