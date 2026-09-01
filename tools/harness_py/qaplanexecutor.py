@@ -78,7 +78,7 @@ def _execute_step(state: PlanExecutionState, step: PlanStep) -> None:
       )
     if restart_required:
       state.pebble.restart_emulator_after_bluetooth_disconnect(step.emulator)
-  except Exception as err:
+  except Exception as err: # noqa: BLE001
     result["status"] = "failed"
     state.inform_operator(f"Encountered issue: '{err}'")
     # continue running until all steps have executed
