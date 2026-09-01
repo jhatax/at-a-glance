@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from threading import Thread
+from textwrap import fill
 from typing import TYPE_CHECKING, Final
+
 from qaharnessruntime import ANSI_CYAN, ANSI_RESET, HarnessRuntimeContext, StepResult, finalize
 from qaplanresolver import PlanDefinition, PlanStep
-from textwrap import fill
 
 if TYPE_CHECKING:
   from pebbleadapter import PebbleAdapter
@@ -112,7 +112,7 @@ def execute_plan(plan: PlanDefinition) -> int:
       pre_step = f"{divider}\n{header}"
       state.inform_operator(pre_step, terminal_color=ANSI_CYAN)
       _execute_step(state, step)
-  except Exception as exc:
+  except Exception as exc: # noqa: BLE001
     print(f"Error: {exc!r}")
     exit_status = 1
   finally:

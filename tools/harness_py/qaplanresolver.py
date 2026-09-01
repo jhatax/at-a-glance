@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from textwrap import fill
-from typing import Any, Callable
+from typing import Any
+
+from qaharnessconfig import DISPLAY_MODE_VALUES, PLANS_ROOT
 from qaplangrammar import (
     DiscardedItem,
     MemberDiscard,
@@ -14,8 +17,6 @@ from qaplangrammar import (
     validate_slug,
 )
 from qaplanparser import parse_matrix_files, parse_scenario, parse_steps, parse_suite
-from qaharnessconfig import PLANS_ROOT
-from qaharnessconfig import DISPLAY_MODE_VALUES
 
 QA_MSG_TEMPERATURE = 10002
 QA_MSG_WEATHER_CONDITION = 10003
