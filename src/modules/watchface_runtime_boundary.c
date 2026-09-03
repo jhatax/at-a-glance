@@ -6,9 +6,6 @@
 #include "bpm.h"
 #include "steps.h"
 
-static void apply_health_setting_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings);
 static void apply_oneshot_health_data(
     const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh);
