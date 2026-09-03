@@ -2,6 +2,8 @@
   "clangd.checkUpdates": true,
   "clangd.inactiveRegions.opacity": 0.95,
   "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.autoIndent": "full",
   "editor.formatOnType": false,
   "editor.fontSize": 14,
   "editor.tabSize": 2,
@@ -20,20 +22,16 @@
     "editor.defaultFormatter": "foxundermoon.shell-format"
   },
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[javascriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "shellformat.flag": "-i=2 -ci",
   "accessibility.signals.chatResponseReceived": {
@@ -54,17 +52,16 @@
   "editor.codeActions.triggerOnFocusChange": true,
   "[c]": {
     "editor.defaultFormatter": "xaver.clang-format",
-    "editor.autoIndent": "full",
-    "editor.formatOnSave": true
+    "editor.autoIndent": "full"
   },
   "[cpp]": {
-    "editor.defaultFormatter": "xaver.clang-format",
-    "editor.formatOnSave": true
+    "editor.defaultFormatter": "xaver.clang-format"
   },
   "clang-format.fallbackStyle": "Google",
   "clang-format.executable": "",
   "clang-format.executable.osx": "/opt/homebrew/bin/clang-format",
   "notebook.formatOnSave.enabled": true,
   "clangd.path": "/usr/bin/clangd",
-  "clangd.onConfigChanged": "restart"
+  "clangd.onConfigChanged": "restart",
+  "yapf.importStrategy": "useBundled"
 }
