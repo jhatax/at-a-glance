@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Final
-import unittest
 import json
+import unittest
+from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Final
+
+from ataglanceharness import handle_validate_plan
 from qaharnessruntime import (
-    QARunContext,
-    QAStepContext,
     REPORT_STEP_SCHEMA,
+    ConsolidatedQARunOutputs,
+    QAStepOutput,
     ScreenshotsContext,
     build_step_outputs,
 )
 from qaplangrammar import QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
-from ataglanceharness import handle_validate_plan
 from qaplanresolver import AllForOneStep, LocationStep, MemberDiscard, load_and_validate_plan
 from qaresultinspector import write_summary_report
 
@@ -274,7 +275,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
       QAPlanGrammar.does_step_have_needed_attributes("unknown", {"charging": "0", "level": "50"})
 
   def test_report_step_accepts_capability_arguments_in_any_order(self) -> None:
-    step = QAStepContext.from_dict(
+    step = QAStepOutput.from_dict(
         {
             "step_id": "battery_emery_white_50_0_horizontal",
             "capability": "battery",
@@ -327,7 +328,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
       )
 
   def test_run_identity_matches_timestamp_and_folder(self) -> None:
-    run = QARunContext.from_dict(
+    run = ConsolidatedQARunOutputs.from_dict(
         {
             "plan":
             "canary",
@@ -413,22 +414,22 @@ class HarnessCorrectnessTests(unittest.TestCase):
         ],
     }
     with self.assertRaisesRegex(ValueError, "Run-id and output_folder"):
-      QARunContext.from_dict(report)
+      ConsolidatedQARunOutputs.from_dict(report)
 
   def test_report_rejects_missing_required_resolved_context(self) -> None:
     path = FIXTURES_ROOT / "invalid-reports" / "missing-resolved.json"
     with self.assertRaisesRegex(ValueError, "resolved"):
-      QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
+      ConsolidatedQARunOutputs.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
   def test_report_rejects_invalid_screenshot_count(self) -> None:
     path = FIXTURES_ROOT / "invalid-reports" / "invalid-screenshot-count.json"
     with self.assertRaisesRegex(ValueError, "Captured screenshots mismatch"):
-      QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
+      ConsolidatedQARunOutputs.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
   def test_report_rejects_unknown_capability(self) -> None:
     path = FIXTURES_ROOT / "invalid-reports" / "unknown-capability.json"
     with self.assertRaisesRegex(ValueError, "Invalid capability"):
-      QARunContext.from_dict(json.loads(path.read_text(encoding="utf-8")))
+      ConsolidatedQARunOutputs.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
 if __name__ == "__main__":
