@@ -4,10 +4,10 @@ from datetime import datetime
 from html import escape
 from pathlib import Path
 
-from qaharnessruntime import QARunContext, QAStepContext
+from qaharnessruntime import ConsolidatedQARunOutputs, QAStepOutput
 
 
-def render_report_top(runs: list[QARunContext], heading: str) -> str:
+def render_report_top(runs: list[ConsolidatedQARunOutputs], heading: str) -> str:
   lines = [
       heading,
       "",
@@ -24,7 +24,7 @@ def render_report_top(runs: list[QARunContext], heading: str) -> str:
   return joined
 
 
-def _render_report_steps(runs: list[QARunContext]) -> str:
+def _render_report_steps(runs: list[ConsolidatedQARunOutputs]) -> str:
   step_rows = [run.step_outputs for run in runs]
   lines: list[str] = []
   _max: int = max(len(steps) for steps in step_rows)
@@ -35,7 +35,7 @@ def _render_report_steps(runs: list[QARunContext]) -> str:
   return "\n".join(lines)
 
 
-def _render_report_outputs(runs: list[QARunContext]) -> str:
+def _render_report_outputs(runs: list[ConsolidatedQARunOutputs]) -> str:
   lines = [
       _row("**Logs**", [_output_link(run.run_outputs.get("commands_log", "")) for run in runs]),
       _row("**JSON**", [_output_link(run.run_outputs.get("report_json", "")) for run in runs]),
@@ -43,7 +43,7 @@ def _render_report_outputs(runs: list[QARunContext]) -> str:
   return "\n".join(lines)
 
 
-def render_report(runs: list[QARunContext], heading: str) -> str:
+def render_report(runs: list[ConsolidatedQARunOutputs], heading: str) -> str:
   if not runs:
     raise ValueError("You must specify at least one run to render into report")
   top = render_report_top(runs, heading)
@@ -52,14 +52,14 @@ def render_report(runs: list[QARunContext], heading: str) -> str:
   return f"{top}\n{steps}\n{outputs}"
 
 
-def _screenshot_summary(run: QARunContext) -> str:
+def _screenshot_summary(run: ConsolidatedQARunOutputs) -> str:
   return (
       f"Expected: **{run.resolved['expected_screenshots']}**; "
       f"Captured: **{run.resolved['captured_screenshots']}**"
   )
 
 
-def _step_cell(step: QAStepContext | None) -> str:
+def _step_cell(step: QAStepOutput | None) -> str:
   if not step:
     return "missing step"
   lines = [
@@ -84,5 +84,5 @@ def _row(label: str, values: list[str]) -> str:
 
 
 def _format_date(value: str) -> str:
-  timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+  timestamp = datetime.fromisoformat(value)
   return timestamp.astimezone().strftime("%B %-d, %Y at %-I:%M:%S %p %Z")

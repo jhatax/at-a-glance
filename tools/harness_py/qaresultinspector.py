@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Final
 
 from qaharnessconfig import QA_ROOT, QARUNS_ROOT
-from qaharnessruntime import QARunContext
+from qaharnessruntime import ConsolidatedQARunOutputs
 from qareportrenderer import render_report, render_report_top
 
 COMPARISONS_ROOT: Final = QA_ROOT / "comparisons"
@@ -85,11 +85,11 @@ def _view_run(selector: str) -> Path:
   return summary_path
 
 
-def _load_qarun(root: Path) -> QARunContext:
+def _load_qarun(root: Path) -> ConsolidatedQARunOutputs:
   report_path = root / "report.json"
   if not report_path.is_file():
     raise ValueError(f"'{root}' is missing report.json")
-  return QARunContext.from_dict(json.loads(report_path.read_text(encoding="utf-8")))
+  return ConsolidatedQARunOutputs.from_dict(json.loads(report_path.read_text(encoding="utf-8")))
 
 
 def _resolve_run_root(selector: str, runs_root: Path) -> Path:
