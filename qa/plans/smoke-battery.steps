@@ -1,0 +1,22 @@
+EXECUTE
+  STEP battery level=19 charging=1 orientation=1
+  STEP battery level=19 charging=0 orientation=1
+  STEP battery level=21 charging=1 orientation=1
+  STEP battery level=21 charging=0 orientation=1
+  STEP battery level=49 charging=1 orientation=1
+  STEP battery level=49 charging=0 orientation=1
+  STEP battery level=51 charging=1 orientation=1
+  STEP battery level=51 charging=0 orientation=1
+  STEP battery level=100 charging=1 orientation=1
+  STEP battery level=100 charging=0 orientation=1
+  STEP battery level=19 charging=1 orientation=0
+  STEP battery level=19 charging=0 orientation=0
+  STEP battery level=21 charging=1 orientation=0
+  STEP battery level=21 charging=0 orientation=0
+  STEP battery level=49 charging=1 orientation=0
+  STEP battery level=49 charging=0 orientation=0
+  STEP battery level=51 charging=1 orientation=0
+  STEP battery level=51 charging=0 orientation=0
+  STEP battery level=100 charging=1 orientation=0
+  STEP battery level=100 charging=0 orientation=0
+END

@@ -1,0 +1,9 @@
+PREAMBLE
+  SCREENSHOTS yes
+  EMULATORS emery chalk basalt gabbro
+  DISPLAYS white black oxford celeste
+END
+
+STEPS
+  smoke-battery.steps
+END
