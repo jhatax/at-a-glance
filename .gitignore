@@ -26,3 +26,4 @@ tools/__pycache__
 src/modules/.vscode/settings.json
 implementation_plans/
 tools/harness_py_refactor
+.npm-cache
