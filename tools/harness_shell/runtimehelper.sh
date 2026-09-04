@@ -27,7 +27,7 @@ list_qa_runs() {
   local run
   typeset -r -a runs=("${QARUNS_DIR}"/*(/omN[1,10]))
 
-  if ((!${#runs[@]})); then
+  if ((! ${#runs[@]})); then
     printf "There are no prior qa-runs. Execute one of these plans:\n"
     list_qa_plans
     printf "Execute: <repo-root>/aag-build-qa.sh --qaplan <plan>\n"
@@ -67,5 +67,4 @@ prepare_reset_actions() {
 cleanup_actions() {
   printf "Cleaning up Pebble emulator state after this run.\n"
   pebble_wipe || return $?
-  pebble_kill || return $?
 }
