@@ -45,7 +45,9 @@ Options:
   -bc, --build-clean      Clean first, then build
   -bv, --build-verbose    Build verbose, also generates compile-commands
 
-  -e,  --emulators LIST   Install on specified csv list of emulators.
+  -i,  --install LIST     Install on specified csv list of emulators.
+                          Supported: emery, flint, chalk, gabbro, aplite, basalt, diorite
+  -k,  --kill LIST        Kill specified csv list of emulators.
                           Supported: emery, flint, chalk, gabbro, aplite, basalt, diorite
   -p,  --phone IP         Install on phone using Pebble mobile-app Developer Connection
   -w,  --wipe             Wipe emulator data

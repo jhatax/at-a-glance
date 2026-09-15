@@ -29,6 +29,9 @@ handle_env_prep() {
     install-emulators)
       python3 "$PYTHON_HARNESS" install --emulators "${EMULATORS[@]}"
       ;;
+    kill)
+      python3 "$PYTHON_HARNESS" kill --emulators "${EMULATORS[@]}"
+      ;;
     install-phone)
       install_on_phone
       ;;

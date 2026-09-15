@@ -69,13 +69,23 @@ parse_args() {
         COMMAND_ARGS=("$2")
         shift 2
         ;;
-      -e | --emulators)
+      -i | --install)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="-e/--emulators requires a comma-separated emulator list"
+          PARSE_ERROR_MESSAGE="-i/--install requires a comma-separated emulator list"
           return 1
         fi
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="install-emulators"
+        EMULATORS=(${(s:,:)2})
+        shift 2
+        ;;
+      -k | --kill)
+        COMMAND_TYPE="env-prep"
+        COMMAND_ACTION="kill"
+        if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
+          PARSE_ERROR_MESSAGE="-k/--kill requires a comma-separated emulator list"
+          return 1
+        fi
         EMULATORS=(${(s:,:)2})
         shift 2
         ;;
