@@ -35,7 +35,7 @@ static const BatteryPalette c_light_battery_palette = {
     .track = GColorLightGray,
     .medium = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
     .critical = PBL_IF_COLOR_ELSE(GColorRed, GColorBlack),
-    .pluggedin = PBL_IF_COLOR_ELSE(GColorDarkGreen, GColorBlack),
+    .pluggedin = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
 };
 
 static void battery_update_palette(const ColorPalette* palette);
