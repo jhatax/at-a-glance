@@ -70,15 +70,19 @@ function createRefreshController(dependencies) {
 
       try {
         var response = JSON.parse(xhr.responseText);
-        var city = (
-          response.address.city ||
-          response.address.town ||
+        var location = (
+          response.address.neighborhood ||
+          response.address.suburb ||
+          response.address.borough ||
           response.address.village ||
+          response.address.town ||
+          response.address.city ||
+          response.address.county ||
           'GPS'
         )
           .slice(0, MAX_LOCATION_STRING_LENGTH)
           .toUpperCase();
-        sendLocationToWatch(city);
+        sendLocationToWatch(location);
       } catch (e) {
         console.log('Location fetch error: ' + JSON.stringify(e));
       }
