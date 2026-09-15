@@ -82,14 +82,14 @@ Supported emulators: emery | flint | chalk | gabbro | aplite | diorite | basalt
 
 ```sh
 pebble build
-./aag-build-qa.sh --emulators <target>
+./aag-build-qa.sh --install <target>
 ```
 
 Automation harness:
 
 ```sh
 ./aag-build-qa.sh --build
-./aag-build-qa.sh --emulators <target>
+./aag-build-qa.sh --install <target>
 ```
 
 ### Emulator Recovery
