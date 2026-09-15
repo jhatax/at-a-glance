@@ -1,52 +1,139 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from textwrap import fill
-from typing import TYPE_CHECKING, Final
+from typing import Any
 
-from qaharnessruntime import ANSI_CYAN, ANSI_RESET, HarnessRuntimeContext, StepResult, finalize
+from pebbleadapter import PebbleAdapter, PebbleEmulatorConnection
+from qaharnessruntime import (
+    ANSI_CYAN,
+    ANSI_GREEN,
+    ANSI_RED,
+    ANSI_RESET,
+    ConsolidatedQARunOutputs,
+    HarnessRuntime,
+    QAStepOutput,
+    RawStepResult,
+    ScreenshotsContext,
+    create_harness_runtime,
+)
 from qaplanresolver import PlanDefinition, PlanStep
-
-if TYPE_CHECKING:
-  from pebbleadapter import PebbleAdapter
-
-SCREENSHOT_DELAY_SECONDS: Final[int] = 1
 
 
 @dataclass
 class PlanExecutionState:
-  context: HarnessRuntimeContext
+  runtime: HarnessRuntime
   plan: PlanDefinition
-  step_results: list[StepResult] = field(default_factory=list)
+  step_results: list[RawStepResult] = field(default_factory=list)
+  step_outputs: list[QAStepOutput] = field(default_factory=list)
   pebble: PebbleAdapter = field(init=False)
 
   def __post_init__(self) -> None:
-    try:
-      from pebbleadapter import PebbleAdapter
-    except ImportError as exc:
-      raise ValueError(
-          "Pebble QA adapter unavailable: install or repair the Pebble Tool/libpebble2 environment."
-      ) from exc
-
-    self.pebble = PebbleAdapter(self.inform_operator)
+    self.pebble = PebbleAdapter(lambda msg: self.inform_operator(message=msg))
 
   def inform_operator(
       self,
-      line: str,
+      message: str,
       log_only: bool = False,
-      terminal_color: str = "",
+      text_color: str = "",
   ) -> None:
-    message = f"{line}\n"
+    from textwrap import fill
+    formatted = fill(f"{message}\n", width=80, subsequent_indent=" ")
     if not log_only:
-      print(f"{terminal_color}{message}{ANSI_RESET}" if terminal_color else message)
-    with self.context.commands_log_path.open("a", encoding="utf-8") as handle:
+      print(f"{text_color}{formatted}{ANSI_RESET}" if text_color else message)
+    with self.runtime.commands_log_path.open("a", encoding="utf-8") as handle:
       handle.write(message)
+      handle.flush()
+
+  def _missing_outputs(self) -> list[str]:
+    required = ["root", "commands_log"]
+    outputs = self.runtime.as_dict()
+
+    if self.plan.expected_screenshots > 0:
+      required.append("screenshots_dir")
+
+    missing: list[str] = []
+    for key in required:
+      path = outputs[key]
+      if not Path(path).exists():
+        missing.append(path)
+
+    return missing
+
+  def build_step_outputs(self) -> int:
+    results_by_identity = {str(item["step_result_id"]): item for item in self.step_results}
+    passed: int = 0
+
+    for step in self.plan.steps.values():
+      step_id = step.step_id
+      result = results_by_identity.get(step_id, None)
+      if result is None:
+        result = RawStepResult(
+            step_result_id=step_id,
+            status="failed",
+            screenshot_paths=[],
+        )
+      step_fields: dict[str, Any] = step.as_dict()
+      row: QAStepOutput = QAStepOutput(
+          step_id=step_id,
+          capability=step.capability,
+          status=result["status"],
+          emulator=step.emulator,
+          step_args={
+              key: value
+              for key, value in step_fields.items() if key.strip() not in {"emulator"}
+          },
+          screenshot_ctx=ScreenshotsContext(
+              expected=step.expected_screenshots,
+              captured=step.captured_screenshots,
+              paths=result["screenshot_paths"],
+          ),
+      )
+      passed += 1 if (row.status == "passed") else 0
+      self.step_outputs.append(row)
+
+    return passed
+
+  def finalize(self, exit_status: int) -> int:
+    # Create outputs
+    passed_steps = self.build_step_outputs()
+
+    outputs_match_plan = (
+        (passed_steps == self.plan.step_count) and (self.plan.step_count == len(self.step_outputs))
+    )
+
+    _passed = (exit_status == 0) and outputs_match_plan
+    if _passed:
+      _passed = not self._missing_outputs() and \
+        (self.plan.expected_screenshots == self.plan.captured_screenshots)
+
+    outputs = ConsolidatedQARunOutputs(
+        plan=self.plan.name,
+        output_folder=self.runtime.output_root,
+        step_count=self.plan.step_count,
+        step_outputs=self.step_outputs,
+        status="passed" if _passed else "failed",
+        started_at=self.runtime.started_at,
+        run_outputs=self.runtime.as_dict(),
+        resolved={
+            "expected_screenshots": self.plan.expected_screenshots,
+            "captured_screenshots": self.plan.captured_screenshots,
+        },
+        inform_operator=lambda msg: self.inform_operator(message=msg)
+    )
+    outputs.emit_reports(
+        self.runtime.commands_log_path,
+        self.runtime.report_json_path,
+        self.runtime.report_md_path,
+    )
+    return int(_passed) # boolean False is interpreted as 0
 
 
 def _capture_screenshot(
-    state: PlanExecutionState,
-    step_result: StepResult,
-    emulator: str,
+    screenshots_dir: Path,
+    connection: PebbleEmulatorConnection,
+    step_result: RawStepResult,
 ) -> None:
 
   step_result_id = str(step_result["step_result_id"])
@@ -55,77 +142,108 @@ def _capture_screenshot(
       f"{step_result_id}.png"
       if screenshot_number == 1 else f"{step_result_id}-{screenshot_number}.png"
   )
-  output_path = state.context.screenshots_dir / filename
-  state.pebble.screenshot(emulator, output_path)
+  output_path = screenshots_dir / filename
+  connection.screenshot(output_path)
   step_result["screenshot_paths"].append(str(output_path))
 
 
-def _execute_step(state: PlanExecutionState, step: PlanStep) -> None:
-  result: StepResult = {
+def _execute_step(plan_state: PlanExecutionState, step: PlanStep) -> None:
+  step_result: RawStepResult = {
       "step_result_id": step.step_id,
       "status": "running",
       "screenshot_paths": [],
+      "step_number": step.step_number,
   }
-
+  logs: list[str] = []
   # step execution will write to the log or stdout / stderr
   restart_required = False
   try:
-    with state.pebble.create_connection(step.emulator) as connection:
+    with plan_state.pebble.create_connection(emulator=step.emulator, logs=logs) as connection:
       restart_required = step.run(
-          state.pebble,
           connection,
-          lambda emulator: _capture_screenshot(state, result, emulator),
+          lambda: _capture_screenshot(
+              plan_state.runtime.screenshots_dir,
+              connection,
+              step_result,
+          ),
       )
     if restart_required:
-      state.pebble.restart_emulator_after_bluetooth_disconnect(step.emulator)
+      plan_state.pebble.restart_emulator(step.emulator)
   except Exception as err: # noqa: BLE001
-    result["status"] = "failed"
-    state.inform_operator(f"Encountered issue: '{err}'")
+    step_result["status"] = "failed"
+    plan_state.inform_operator(f"Encountered issue: '{err}'")
+    step.captured_screenshots = len(step_result["screenshot_paths"])
     # continue running until all steps have executed
   else:
-    step.captured_screenshots = len(result["screenshot_paths"])
+    step.captured_screenshots = len(step_result["screenshot_paths"])
     if (not step.capture_screenshots) or (step.expected_screenshots == step.captured_screenshots):
-      result["status"] = "passed"
+      step_result["status"] = "passed"
   finally:
+    # Inform the operator of what happened while executing the step
+    plan_state.inform_operator(
+        "\n".join(fill(log, width=80, subsequent_indent=" ") for log in logs),
+    )
     # an exception or error was raised
-    if result["status"] == "running":
-      result["status"] = "failed"
-    state.step_results.append(result)
-    _step = fill(f"'{step.as_dict()}'", width=80, subsequent_indent=" ")
-    _result = fill(f"'{result}'", width=80, subsequent_indent=" ")
-    state.inform_operator(f"Executed: {_step}\nResult: {_result}\n")
+    if step_result["status"] == "running":
+      step_result["status"] = "failed"
+    plan_state.step_results.append(step_result)
+    color = ANSI_GREEN if step_result["status"] == "passed" else ANSI_RED
+    plan_state.inform_operator(
+        message=fill(
+            f"Result: '{step_result}'",
+            width=80,
+            subsequent_indent=" ",
+        ),
+        text_color=color
+    )
 
 
 def execute_plan(plan: PlanDefinition) -> int:
-  from qaharnessruntime import create_harness_context
-  state = PlanExecutionState(create_harness_context(plan.expected_screenshots > 0), plan=plan)
+  from datetime import datetime
+  plan_state = PlanExecutionState(create_harness_runtime(plan.expected_screenshots > 0), plan=plan)
   exit_status = 0
 
   divider = "=" * 80
   try:
-    state.inform_operator(f"QA Plan to execute:\n{plan.as_dict()}\n", True)
+    plan_state.inform_operator(
+        message=f"QA Plan to execute:\n{plan.as_dict()}\n",
+        log_only=True,
+        text_color=ANSI_CYAN,
+    )
     from qaharnessconfig import REPO_ROOT
-    emulators = {emulator for emulator, _display in plan.execution_configs}
-    state.pebble.install_emulators(emulators, REPO_ROOT / "build" / "at-a-glance.pbw")
+    emulators = {emulator for emulator, _ in plan.execution_configs}
+    plan_state.pebble.install_emulators(emulators, REPO_ROOT / "build" / "at-a-glance.pbw")
     for index, step in enumerate(plan.steps.values(), start=1):
-      header = f"--- Attempting step# {index}: Type: '{step.capability}' with id '{step.step_id}'"
-      pre_step = f"{divider}\n{header}"
-      state.inform_operator(pre_step, terminal_color=ANSI_CYAN)
-      _execute_step(state, step)
+      step.step_number = index
+      plan_state.inform_operator(divider)
+      plan_state.inform_operator(
+          f"-- Attempting {step.step_number}/'{step.step_id}', Emulator: '{step.emulator}'"
+      )
+      plan_state.inform_operator(f"Type: '{step.capability}'\nArguments: '{step.as_dict()}'")
+      plan_state.inform_operator(divider)
+      _execute_step(plan_state, step)
   except Exception as exc: # noqa: BLE001
     print(f"Error: {exc!r}")
     exit_status = 1
   finally:
-    state.inform_operator(f"{divider}")
+    plan_state.inform_operator(f"{divider}")
     plan.captured_screenshots = sum(step.captured_screenshots for step in plan.steps.values())
-    state.pebble.close()
-
-  return finalize(
-      context=state.context,
-      plan=state.plan,
-      exit_status=exit_status,
-      step_results=state.step_results,
+  end = datetime.now().astimezone()
+  start = datetime.strptime(plan_state.runtime.started_at, "%Y%m%dT%H%M%S").astimezone()
+  minutes, seconds = divmod(int((end - start).total_seconds()), 60)
+  plan_state.inform_operator(
+      message=(
+          f"Ended at: {end.strftime('%Y%m%dT%H%M%S')}"
+          f"Time elapsed: {minutes}:{seconds:02d}"
+      ),
+      text_color=ANSI_CYAN,
   )
+  plan_state.inform_operator(
+      message=divider,
+      text_color=ANSI_CYAN,
+  )
+  PebbleAdapter.kill_emulators(emulators)
+  return plan_state.finalize(exit_status=exit_status)
 
 
 def resolve_and_execute_plan(action: str, plan_name: str) -> int:

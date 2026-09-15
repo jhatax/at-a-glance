@@ -10,12 +10,7 @@ from qaresultinspector import handle_compare_runs, handle_view_run
 
 def _handle_build(verbose: bool, log_path: str | None) -> int:
   from pebbleadapter import PebbleAdapter
-
-  adapter = PebbleAdapter(print)
-  try:
-    adapter.build(verbose, Path(log_path) if log_path else None)
-  finally:
-    adapter.close()
+  PebbleAdapter.build(verbose, Path(log_path) if log_path else None)
   return 0
 
 
@@ -23,21 +18,25 @@ def _handle_install(emulators: list[str]) -> int:
   from pebbleadapter import PebbleAdapter
   from qaharnessconfig import REPO_ROOT
 
-  adapter = PebbleAdapter(print)
-  try:
-    pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
-    adapter.install_emulators(emulators, pbw_path)
-  finally:
-    adapter.close()
+  pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
+  PebbleAdapter(print).install_emulators(emulators, pbw_path)
+  return 0
+
+
+def _handle_kill(emulators: list[str]) -> int:
+  from pebbleadapter import PebbleAdapter
+  PebbleAdapter.kill_emulators(emulators)
   return 0
 
 
 def handle_plan_exec(action: str, plan_name: str) -> int:
-  from qaplanexecutor import resolve_and_execute_plan
+  from qaplanexecutor_threaded import resolve_and_execute_plan_concurrently
+  # from qaplanexecutor import resolve_and_execute_plan
   if action not in {"run-scenario", "force-scenario"}:
     raise ValueError(f"Unsupported scenario-exec action '{action}'")
 
-  return resolve_and_execute_plan(action, plan_name)
+  return resolve_and_execute_plan_concurrently(action, plan_name)
+  # return resolve_and_execute_plan(action, plan_name)
 
 
 def handle_validate_plan(target: str) -> int:
@@ -98,6 +97,9 @@ def main(argv: list[str]) -> int:
     install = subparsers.add_parser("install")
     install.add_argument("--emulators", nargs="+", required=True)
 
+    install = subparsers.add_parser("kill")
+    install.add_argument("--emulators", nargs="+", required=True)
+
     args = parser.parse_args(argv)
 
     match args.command:
@@ -109,6 +111,8 @@ def main(argv: list[str]) -> int:
         return _handle_build(args.verbose, args.log_path)
       case "install":
         return _handle_install(args.emulators)
+      case "kill":
+        return _handle_kill(args.emulators)
       case _:
         return 1 # Standard fallback if command is unrecognized
 

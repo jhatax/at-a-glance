@@ -7,6 +7,7 @@ from pathlib import Path
 from textwrap import fill
 from typing import Any
 
+from pebbleadapter import PebbleEmulatorConnection
 from qaharnessconfig import DISPLAY_MODE_VALUES, PLANS_ROOT
 from qaplangrammar import (
     DiscardedItem,
@@ -71,15 +72,14 @@ class PlanStep(ABC):
   capture_screenshots: bool = field(kw_only=True)
   expected_screenshots: int = field(kw_only=True)
   captured_screenshots: int = field(kw_only=True, default=0)
+  step_number: int = field(init=False, default=0)
   _step_id: str = field(init=False, default="")
-  step_number: int = field(default=0)
 
   @abstractmethod
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
     pass
 
@@ -97,6 +97,7 @@ class PlanStep(ABC):
         "capture_screenshots",
         "expected_screenshots",
         "captured_screenshots",
+        "step_number",
     ):
       d.pop(key, None)
     return d
@@ -113,29 +114,30 @@ class WeatherStep(PlanStep):
     if (not all([self.capability, self.emulator])) or (not 0 <= self.is_day <= 1):
       raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
 
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                str(self.temp),
-                str(self.code),
-                str(self.is_day),
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    str(self.temp),
+                    str(self.code),
+                    str(self.is_day),
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.send_app_message(
-        connection,
-        self.emulator,
+    connection.send_app_message(
         {
             QA_MSG_TEMPERATURE: self.temp,
             QA_MSG_WEATHER_CONDITION: self.code,
@@ -144,7 +146,7 @@ class WeatherStep(PlanStep):
         },
     )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return False
 
   @property
@@ -161,34 +163,35 @@ class LocationStep(PlanStep):
     if (not all([self.capability, self.emulator, self.location])):
       raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
 
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                self.location,
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    self.location,
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.send_app_message(
-        connection,
-        self.emulator,
+    connection.send_app_message(
         {
             QA_MSG_MAYBE_CURRENT_LOCATION: self.location,
             QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display]),
         },
     )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return False
 
   @property
@@ -205,38 +208,33 @@ class BluetoothStep(PlanStep):
     if not (all([self.capability, self.emulator]) and (0 <= self.connected <= 1)):
       raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
 
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                str(self.connected),
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    str(self.connected),
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.send_app_message(
-        connection,
-        self.emulator,
-        {QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])},
-    )
+    connection.send_app_message({QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])}, )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
-    return_required = pebble.set_bluetooth(
-        connection,
-        self.emulator,
-        self.connected,
-    )
+      capture_screenshot()
+    return_required = connection.set_bluetooth(self.connected)
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return return_required
 
   @property
@@ -258,37 +256,38 @@ class BatteryStep(PlanStep):
           f"Battery inputs are invalid, level: '{self.level}', charging: '{self.charging}'",
       )
 
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                str(self.level),
-                str(self.charging),
-                "vertical" if self.orientation else "horizontal",
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    str(self.level),
+                    str(self.charging),
+                    "vertical" if self.orientation else "horizontal",
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.set_battery(connection, self.emulator, self.level, self.charging)
-    pebble.send_app_message(
-        connection,
-        self.emulator,
+    connection.set_battery(self.level, self.charging)
+    connection.send_app_message(
         {
             QA_MSG_BATTERY_ORIENTATION: self.orientation,
             QA_MSG_DISPLAY_MODE: int(DISPLAY_MODE_VALUES[self.display])
         },
     )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return False
 
   @property
@@ -305,28 +304,29 @@ class HealthStep(PlanStep):
   def __post_init__(self) -> None:
     if not all([self.capability, self.emulator]):
       raise ValueError(f"All fields must have a valid, non-empty value. Provided:\n{self}")
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                str(self.steps),
-                str(self.bpm),
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    str(self.steps),
+                    str(self.bpm),
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.send_app_message(
-        connection,
-        self.emulator,
+    connection.send_app_message(
         {
             QA_MSG_ONESHOT_BPM: self.bpm,
             QA_MSG_ONESHOT_STEPS: self.steps,
@@ -334,7 +334,7 @@ class HealthStep(PlanStep):
         },
     )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return False
 
   @property
@@ -361,37 +361,38 @@ class AllForOneStep(PlanStep):
             (0 <= self.orientation <= 1) and self.capability and self.emulator and
             (0 <= self.is_day <= 1) and (0 <= self.connected <= 1)):
       raise ValueError(f"Invalid input for step: '{self}'")
-    self._step_id = "_".join(
-        filter(
-            None, [
-                self.capability,
-                self.emulator,
-                self.display,
-                str(self.temp),
-                str(self.code),
-                str(self.is_day),
-                str(self.level),
-                str(self.charging),
-                "vertical" if self.orientation else "horizontal",
-                str(self.steps),
-                str(self.bpm),
-                self.location,
-                str(self.connected),
-                "shots" if self.capture_screenshots else "",
-            ]
-        )
-    ).lower()
+    self._step_id = fill(
+        "_".join(
+            filter(
+                None, [
+                    self.capability,
+                    self.emulator,
+                    self.display,
+                    str(self.temp),
+                    str(self.code),
+                    str(self.is_day),
+                    str(self.level),
+                    str(self.charging),
+                    "vertical" if self.orientation else "horizontal",
+                    str(self.steps),
+                    str(self.bpm),
+                    self.location,
+                    str(self.connected),
+                    "shots" if self.capture_screenshots else "",
+                ]
+            )
+        ).lower(),
+        width=80,
+        subsequent_indent=" ",
+    )
 
   def run(
       self,
-      pebble: Any,
-      connection: Any,
-      capture_screenshot: Callable[[str], None],
+      connection: PebbleEmulatorConnection,
+      capture_screenshot: Callable[[], None],
   ) -> bool:
-    pebble.set_battery(connection, self.emulator, self.level, self.charging)
-    pebble.send_app_message(
-        connection,
-        self.emulator,
+    connection.set_battery(self.level, self.charging)
+    connection.send_app_message(
         {
             QA_MSG_ONESHOT_BPM: self.bpm,
             QA_MSG_ONESHOT_STEPS: self.steps,
@@ -404,14 +405,10 @@ class AllForOneStep(PlanStep):
         },
     )
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
-    restart_required = pebble.set_bluetooth(
-        connection,
-        self.emulator,
-        self.connected,
-    )
+      capture_screenshot()
+    restart_required = connection.set_bluetooth(self.connected)
     if self.capture_screenshots:
-      capture_screenshot(self.emulator)
+      capture_screenshot()
     return restart_required
 
   @property
@@ -427,7 +424,7 @@ def print_plan(plan: PlanDefinition):
   print(f"Expected screenshots: {plan.expected_screenshots}")
   print("Resolved execution plan:")
   for index, step in enumerate(plan.steps.values(), start=1):
-    step_details = fill(f"{index}. Step: {step}", width=80, subsequent_indent="  ")
+    step_details = fill(f"{index}. Step: {step.as_dict()}", width=80, subsequent_indent="  ")
     print(step_details)
 
   if plan.discarded:

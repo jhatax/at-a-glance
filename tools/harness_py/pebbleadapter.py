@@ -16,10 +16,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Final
 
-APP_MESSAGE_TIMEOUT_SECONDS: Final[float] = 2.0
-PEBBLE_SETTLE_DELAY: Final[float] = 1.5
+APP_MESSAGE_TIMEOUT_SECONDS: Final[int] = 2
+PEBBLE_SETTLE_DELAY: Final[int] = 1
+PEBBLE_SCREENSHOT_DELAY: Final[int] = 1
 APP_READY_DELAY_SECONDS: Final[int] = 3
-COMPILER_ERROR = re.compile(r"^.+:\d+(?::\d+)?:\s+(?:fatal )?error:")
+_EMULATOR_REGISTRY_LOCK = threading.RLock()
+PEBBLE_BLUETOOTH_DISCONNECT_TIMEOUT: Final[int] = 29
 
 
 def _load_pebble_tool() -> Path:
@@ -62,7 +64,7 @@ def _load_pebble_tool() -> Path:
 
 
 try:
-  _PEBBLE_COMPILER_PATH = _load_pebble_tool()
+  _load_pebble_tool()
   from compilerdbgenerator import generate_compile_database
   from libpebble2.communication import PebbleConnection
   from libpebble2.communication.transports.qemu.protocol import (
@@ -73,7 +75,7 @@ try:
   from pebble_tool.commands.base import PebbleTransportEmulator
   from pebble_tool.commands.emucontrol import send_data_to_qemu
   from pebble_tool.commands.install import ToolAppInstaller
-  from pebble_tool.commands.sdk.project.build import BuildCommand
+  from pebble_tool.commands.sdk.project import SDKProjectCommand
   from pebble_tool.sdk import sdk_manager
   from pebble_tool.sdk.emulator import (
       ManagedEmulatorTransport,
@@ -85,116 +87,126 @@ except ImportError as exc:
   raise ImportError("libpebble2 or its Pebble Tool environment is unavailable") from exc
 
 
-class PebbleEmulatorConnection(PebbleConnection):
-  """Treat a relay closure as normal when a test changes emulator connectivity."""
-
-  def run_sync(self) -> None:
-    try:
-      super().run_sync()
-    except Exception as exc:
-      if self.transport.connected and not isinstance(exc, OSError):
-        raise
-
-
 class PebbleAdapter:
+  _log: Callable[[str], None]
 
   def __init__(self, log: Callable[[str], None]) -> None:
     self._log = log
 
-  def _log_failure(self, operation: str, exc: Exception) -> None:
-    self._log(f"{operation} status=failed error={exc}")
-
-  def _log_success(self, operation: str) -> None:
-    self._log(f"{operation} status=success")
+  def log_message(self, log: str) -> None:
+    self._log(f"{log}")
 
   @contextmanager
-  def create_connection(self, emulator: str) -> Generator[PebbleConnection]:
-    connection: PebbleConnection | None = None
+  def create_connection(
+      self,
+      emulator: str,
+      logs: list[str],
+  ) -> Generator[PebbleEmulatorConnection]:
+    connection: PebbleEmulatorConnection = None
     try:
-      connection = PebbleEmulatorConnection(ManagedEmulatorTransport(emulator))
-      connection.connect()
-      connection.run_async()
-      PebbleTransportEmulator.post_connect(connection)
+      with _EMULATOR_REGISTRY_LOCK:
+        connection = PebbleEmulatorConnection(ManagedEmulatorTransport(emulator), emulator, logs)
+        connection.connect()
+        connection.run_async()
+        PebbleTransportEmulator.post_connect(connection)
       if not connection.connected or connection.watch_info is None:
         raise ConnectionError(f"Emulator '{emulator}' connection is not ready")
       yield connection
     finally:
-      if connection is not None:
-        self._close_connection(connection)
+      with _EMULATOR_REGISTRY_LOCK:
+        if connection:
+          connection.transport.ws.close()
 
-  def _close_connection(self, connection: PebbleConnection) -> None:
-    try:
-      connection.transport.ws.close()
-    except Exception: # noqa: BLE001, S110
-      pass
+  @classmethod
+  def kill_emulator(cls, emulator: str) -> None:
+    from qaharnessruntime import (
+        ANSI_BOLD,
+        ANSI_RESET,
+        ANSI_YELLOW,
+    )
 
-  def send_app_message(
-      self,
-      connection: PebbleConnection,
-      emulator: str,
-      values: dict[int, int | str],
-  ) -> None:
-    service = None
-    ack_handle = None
-    nack_handle = None
-    try:
-      time.sleep(PEBBLE_SETTLE_DELAY)
-      service = AppMessageService(connection)
-      completed = threading.Event()
-      outcome: dict[str, tuple[object, ...]] = {}
-      transaction_id = -1
+    info = {}
+    print(f"{ANSI_YELLOW}{ANSI_BOLD}Killing emulator: {emulator}{ANSI_RESET}")
 
-      def handle_result(result: str, *args: object) -> None:
-        if args and args[0] == transaction_id:
-          outcome[result] = args
-          completed.set()
+    with _EMULATOR_REGISTRY_LOCK:
+      info = get_emulator_info(emulator, sdk_manager.get_current_sdk())
+      if info is None:
+        return
+      pids_to_wait: list[int] = []
+      for key in ("qemu", "pypkjs", "websockify"):
+        pid = info.get(key, {}).get("pid")
+        if not pid:
+          continue
+        try:
+          os.kill(pid, signal.SIGTERM)
+          pids_to_wait.append(pid)
+        except OSError as exc:
+          if exc.errno != errno.ESRCH:
+            raise
 
-      ack_handle = service.register_handler("ack", lambda *args: handle_result("ack", *args))
-      nack_handle = service.register_handler("nack", lambda *args: handle_result("nack", *args))
-      transaction_id = service.send_message(
-          PebbleProject().uuid,
-          {
-              key: CString(value) if isinstance(value, str) else Int32(value)
-              for key, value in values.items()
-          },
-      )
-      if not completed.wait(APP_MESSAGE_TIMEOUT_SECONDS):
-        raise TimeoutError(
-            f"AppMessage timed out waiting for emulator '{emulator}' acknowledgement"
-        )
-      if "nack" in outcome:
-        nack_args = outcome["nack"]
-        raise RuntimeError(f"AppMessage rejected by emulator '{emulator}': {nack_args}")
-    except Exception as exc:
-      self._log_failure(f"AppMessage {emulator}: {values}", exc)
-      raise
-    finally:
-      if service is not None:
-        if ack_handle is not None:
-          service.unregister_handler(ack_handle)
-        if nack_handle is not None:
-          service.unregister_handler(nack_handle)
-        service.shutdown()
-      time.sleep(PEBBLE_SETTLE_DELAY)
-    self._log_success(f"AppMessage {emulator}: {values}")
+      deadline = time.time() + 5.0
+      for pid in pids_to_wait:
+        while time.time() < deadline:
+          try:
+            os.kill(pid, 0)
+          except OSError as exc:
+            if exc.errno == errno.ESRCH:
+              break
+          time.sleep(0.05)
+        else:
+          try:
+            os.kill(pid, signal.SIGKILL)
+          except OSError:
+            pass
 
-  def install(self, emulator: str, pbw_path: Path) -> None:
-    with self.create_connection(emulator) as connection:
+      update_emulator_info(emulator, info["version"], None)
+
+  # Best effort emulator termination
+  @classmethod
+  def kill_emulators(cls, emulators: Iterable[str]) -> None:
+    if emulators:
+      try:
+        for emulator in emulators:
+          PebbleAdapter.kill_emulator(emulator)
+      except Exception: # noqa: BLE001, S110
+        pass
+
+  def restart_emulator(self, emulator: str) -> None:
+    from qaharnessconfig import REPO_ROOT
+    PebbleAdapter.kill_emulator(emulator)
+    self.install_emulator(emulator, REPO_ROOT / "build" / "at-a-glance.pbw")
+
+  def install_emulator(self, emulator: str, pbw_path: Path) -> None:
+    from qaharnessruntime import (
+        ANSI_BOLD,
+        ANSI_GREEN,
+        ANSI_RESET,
+    )
+
+    print(f"{ANSI_GREEN}{ANSI_BOLD}Installing emulator: {emulator}{ANSI_RESET}")
+    logs: list[str] = []
+    with self.create_connection(emulator, logs) as connection:
       installer = ToolAppInstaller(connection, str(pbw_path), quiet=True)
       try:
         installer.install()
         time.sleep(APP_READY_DELAY_SECONDS)
+        logs.append(f"Success: Install {emulator}: {pbw_path}")
       except Exception as exc:
-        self._log_failure(f"Install {emulator}: {pbw_path}", exc)
+        logs.append(f"Failure: Install {emulator}: {pbw_path}", exc)
         raise
-    self._log_success(f"Install {emulator}: {pbw_path}")
+      finally:
+        self.log_message("\n".join(logs))
 
   def install_emulators(self, emulators: Iterable[str], pbw_path: Path) -> None:
     for emulator in emulators:
-      self.install(emulator, pbw_path)
+      self.install_emulator(emulator, pbw_path)
 
-  def build(self, verbose: bool = False, output_path: Path | None = None) -> None:
-    command = BuildCommand()
+  @classmethod
+  def build(cls, verbose: bool = False, output_path: Path | None = None) -> None:
+    compiler_error = re.compile(r"^.+:\d+(?::\d+)?:\s+(?:fatal )?error:")
+    command = SDKProjectCommand()
+    command.sdk = None
+    command._verbosity = 1 if verbose else 0
     build_log_path = output_path or Path("build.log")
     capture_output = verbose or output_path is not None
     if capture_output:
@@ -205,15 +217,14 @@ class PebbleAdapter:
     build_exception: Exception | None = None
     try:
       if verbose:
-        self._log("Will attempt to compile database for clangd integration if build succeeds...")
+        print("Will attempt to compile database for clangd integration if build succeeds...")
       if output:
         sys.stdout.flush()
         sys.stderr.flush()
         os.dup2(output.fileno(), 1)
         os.dup2(output.fileno(), 2)
-      from argparse import Namespace
-
-      command(Namespace(sdk=None, v=1 if verbose else 0, args=[], debug=False))
+      command._waf("configure")
+      command._waf("build")
     except Exception as exc: # noqa: BLE001
       build_exception = exc
     finally:
@@ -234,12 +245,12 @@ class PebbleAdapter:
       if capture_output:
         build_reason = "\n".join(
             line for line in build_log_path.read_text(encoding="utf-8").splitlines()
-            if COMPILER_ERROR.match(line)
+            if compiler_error.match(line)
         )
       if not build_reason:
         build_reason = "Build failed; rerun with --verbose for compiler diagnostics"
       operation = f"Build {'verbose ' if verbose else ''}".strip()
-      self._log(f"{operation} status=failed error={build_reason}")
+      print(f"{operation} status=failed error={build_reason}")
       raise ValueError(build_reason) from None
     if verbose:
       try:
@@ -248,106 +259,123 @@ class PebbleAdapter:
             log_path=build_log_path,
             output_path=compile_database_path,
             platform="emery",
-            compiler_path=_PEBBLE_COMPILER_PATH,
         )
-        self._log(f"Compile database generated: {compile_database_path}")
+        print(f"Compile database generated: {compile_database_path}")
       except Exception as exc: # noqa: BLE001
-        self._log(f"No compile database generated: {exc}")
-    self._log_success(f"Build {'verbose ' if verbose else ''}".strip())
+        print(f"No compile database generated: {exc}")
+    print(f"Success: Build {'verbose ' if verbose else ''}".strip())
 
-  def set_battery(
-      self,
-      connection: PebbleConnection,
-      emulator: str,
-      percent: int,
-      charging: int,
-  ) -> None:
-    time.sleep(PEBBLE_SETTLE_DELAY)
+
+class PebbleEmulatorConnection(PebbleConnection):
+  monitor_port: int
+  transport: ManagedEmulatorTransport
+  emulator: str
+  logs: list[str]
+
+  def __init__(self, transport: ManagedEmulatorTransport, emu: str, logs: list[str]) -> None:
+    super().__init__(transport)
+    self.transport = transport
+    self.monitor_port = getattr(transport, "qemu_monitor_port", None)
+    self.emulator = emu
+    self.logs = logs
+
+  def run_sync(self) -> None:
+    try:
+      super().run_sync()
+    except Exception as exc:
+      if self.transport.connected and not isinstance(exc, OSError):
+        raise
+
+  def send_app_message(self, values: dict[int, int | str]) -> None:
+    service = None
+    ack_handle = None
+    nack_handle = None
+    try:
+      service = AppMessageService(super())
+      completed = threading.Event()
+      outcome: dict[str, tuple[object, ...]] = {}
+      transaction_id = -1
+
+      def handle_result(result: str, *args: object) -> None:
+        if args and args[0] == transaction_id:
+          outcome[result] = args
+          completed.set()
+
+      ack_handle = service.register_handler("ack", lambda *args: handle_result("ack", *args))
+      nack_handle = service.register_handler("nack", lambda *args: handle_result("nack", *args))
+      transaction_id = service.send_message(
+          PebbleProject().uuid,
+          {
+              key: CString(value) if isinstance(value, str) else Int32(value)
+              for key, value in values.items()
+          },
+      )
+      if not completed.wait(APP_MESSAGE_TIMEOUT_SECONDS):
+        raise TimeoutError(
+            f"AppMessage timed out waiting for emulator '{self.emulator}' acknowledgement"
+        )
+      if "nack" in outcome:
+        nack_args = outcome["nack"]
+        raise RuntimeError(f"AppMessage rejected by emulator '{self.emulator}': {nack_args}")
+    except Exception as exc:
+      self.logs.append(f"Failure: AppMessage {self.emulator}: {values}", exc)
+      raise
+    finally:
+      if service is not None:
+        if ack_handle is not None:
+          service.unregister_handler(ack_handle)
+        if nack_handle is not None:
+          service.unregister_handler(nack_handle)
+        service.shutdown()
+      time.sleep(PEBBLE_SETTLE_DELAY)
+    self.logs.append(f"Success: AppMessage {self.emulator}: {values}")
+
+  def set_battery(self, percent: int, charging: int) -> None:
     try:
       send_data_to_qemu(
-          connection.transport,
+          self.transport,
           QemuBattery(percent=percent, charging=charging),
       )
     except Exception as exc:
-      self._log_failure(f"Battery {emulator}: {percent}% charging={charging}", exc)
+      self.logs.append(
+          f"Failure: Battery {self.emulator}: {percent}% charging={charging}, Error: {exc}"
+      )
       raise
     finally:
       time.sleep(PEBBLE_SETTLE_DELAY)
-    self._log_success(f"Battery {emulator}: {percent}% charging={charging}")
+    self.logs.append(f"Success: Battery {self.emulator}: {percent}% charging={charging}")
 
-  def set_bluetooth(
-      self,
-      connection: PebbleConnection,
-      emulator: str,
-      connected: int,
-  ) -> bool:
+  def set_bluetooth(self, connected: int) -> bool:
     try:
-      time.sleep(PEBBLE_SETTLE_DELAY)
       send_data_to_qemu(
-          connection.transport,
+          self.transport,
           QemuBluetoothConnection(connected=(connected == 1)),
       )
     except Exception as exc:
-      self._log_failure(f"Bluetooth {emulator}: connected={connected}", exc)
+      self.logs.append(f"Failure: Bluetooth {self.emulator}: connected={connected}, Error: {exc}")
       raise
     finally:
       if not connected:
-        time.sleep(30) # bluetooth delay is long
+        time.sleep(PEBBLE_BLUETOOTH_DISCONNECT_TIMEOUT) # bluetooth delay is long
+      else:
+        time.sleep(PEBBLE_SETTLE_DELAY)
 
-    self._log_success(f"Bluetooth {emulator}: connected={connected}")
+    self.logs.append(f"Success: Bluetooth {self.emulator}: connected={connected}")
     return connected == 0
 
-  def restart_emulator_after_bluetooth_disconnect(self, emulator: str) -> None:
-    from qaharnessconfig import REPO_ROOT
-    info = get_emulator_info(emulator, sdk_manager.get_current_sdk())
-    if info is None:
-      return
-
-    pids_to_wait: list[int] = []
-    for key in ("qemu", "pypkjs", "websockify"):
-      pid = info.get(key, {}).get("pid")
-      if not pid:
-        continue
-      try:
-        os.kill(pid, signal.SIGTERM)
-        pids_to_wait.append(pid)
-      except OSError as exc:
-        if exc.errno != errno.ESRCH:
-          raise
-
-    deadline = time.time() + 5.0
-    for pid in pids_to_wait:
-      while time.time() < deadline:
-        try:
-          os.kill(pid, 0)
-        except OSError as exc:
-          if exc.errno == errno.ESRCH:
-            break
-        time.sleep(0.05)
-      else:
-        try:
-          os.kill(pid, signal.SIGKILL)
-        except OSError:
-          pass
-
-    update_emulator_info(emulator, info["version"], None)
-    self.install(emulator, REPO_ROOT / "build" / "at-a-glance.pbw")
-
-  def screenshot(self, emulator: str, output_path: Path) -> None:
+  def screenshot(self, output_path: Path) -> None:
     try:
       if not output_path.parent.exists():
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+      time.sleep(PEBBLE_SETTLE_DELAY)
       from PIL import Image
-
-      transport = ManagedEmulatorTransport(emulator)
-      monitor_port = getattr(transport, "qemu_monitor_port", None)
-      if not monitor_port:
-        raise RuntimeError(f"QEMU monitor port unavailable for emulator '{emulator}'")
-
-      with tempfile.TemporaryDirectory(prefix=f"qa-screenshot-{emulator}-") as temp_dir:
+      with tempfile.TemporaryDirectory(prefix=f"qa-screenshot-{self.emulator}-") as temp_dir:
         ppm_path = Path(temp_dir) / "screen.ppm"
-        with socket.create_connection(("127.0.0.1", int(monitor_port)), timeout=1.5) as monitor:
+        with socket.create_connection(
+            ("127.0.0.1", int(self.monitor_port)),
+            timeout=1.5,
+        ) as monitor:
           monitor.settimeout(1.5)
           try:
             monitor.recv(4096)
@@ -367,9 +395,6 @@ class PebbleAdapter:
         with Image.open(ppm_path) as image:
           image.convert("RGB").save(output_path)
     except Exception as exc:
-      self._log_failure(f"Screenshot {emulator}:\n{output_path}", exc)
+      self.logs.append(f"Failure: Screenshot {self.emulator}:\n{output_path}, Error: {exc}")
       raise
-    self._log_success(f"Screenshot {emulator}:\n{output_path}")
-
-  def close(self) -> None:
-    return
+    self.logs.append(f"Success: Screenshot {self.emulator}:\n{output_path}")
