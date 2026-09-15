@@ -93,7 +93,7 @@ class HarnessCorrectnessTests(unittest.TestCase):
     self.assertEqual(len(plan.steps), expected_steps)
     step = next(iter(plan.steps.values()))
     self.assertTrue(step.capture_screenshots)
-    self.assertTrue(plan.captured_screenshots is 0)
+    self.assertTrue(plan.captured_screenshots == 0)
 
   def test_location_scenario_loads_and_expands(self) -> None:
     location_plan = PLANS_ROOT / "archive" / "emery-location.scenario"
