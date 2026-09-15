@@ -117,7 +117,7 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
 | Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
 | Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
-| Plugged In | `GColorBlack` | `GColorWhite` | `GColorDarkGreen` | `GColorGreen` | `GColorDarkGreen` | `GColorGreen` |
+| Plugged In | `GColorBlack` | `GColorWhite` | `GColorIslamicGreen` | `GColorGreen` | `GColorIslamicGreen` | `GColorGreen` |
 | **STEPS** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
