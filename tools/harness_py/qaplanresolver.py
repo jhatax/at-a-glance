@@ -420,6 +420,7 @@ def print_plan(plan: PlanDefinition):
   divider = "=" * 80
   print(f"{divider}")
   print(f"Plan: {plan.name}")
+  print(f"Execution Configs: {len(plan.execution_configs)}")
   print(f"Steps to execute: {plan.step_count}")
   print(f"Expected screenshots: {plan.expected_screenshots}")
   print("Resolved execution plan:")
