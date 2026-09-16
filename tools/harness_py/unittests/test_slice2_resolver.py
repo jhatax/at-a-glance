@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
+import unittest
 from contextlib import redirect_stdout
 from io import StringIO
-import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from qaplanexecutor import resolve_and_execute_plan
+from qaplanexecutor_threaded import resolve_and_execute_plan_concurrently
 from qaplangrammar import ParseDiscard
 from qaplanresolver import (
     MemberDiscard,
@@ -109,9 +109,9 @@ class Slice2ResolverTests(unittest.TestCase):
         discarded=[ParseDiscard(1, "STEP health", "unsupported capability")],
     )
     with patch("qaplanresolver.load_and_validate_plan", return_value=plan), \
-         patch("qaplanexecutor.run_plan_execution", return_value=0) as execute, \
+         patch("qaplanexecutor_threaded.execute_plan_concurrently", return_value=0) as execute, \
          patch("builtins.input", return_value="yes") as operator_input:
-      result = resolve_and_execute_plan("force-scenario", "discarding")
+      result = resolve_and_execute_plan_concurrently("force-scenario", "discarding")
 
     self.assertEqual(result, 0)
     operator_input.assert_called_once_with()
@@ -126,9 +126,9 @@ class Slice2ResolverTests(unittest.TestCase):
     )
 
     with patch("qaplanresolver.load_and_validate_plan", return_value=plan), \
-         patch("qaplanexecutor.run_plan_execution", return_value=0) as execute, \
+         patch("qaplanexecutor_threaded.execute_plan_concurrently", return_value=0) as execute, \
          patch("builtins.input") as operator_input:
-      result = resolve_and_execute_plan("force-scenario", "clean")
+      result = resolve_and_execute_plan_concurrently("force-scenario", "clean")
 
     self.assertEqual(result, 0)
     operator_input.assert_not_called()

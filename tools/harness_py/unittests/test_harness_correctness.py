@@ -12,7 +12,6 @@ from qaharnessruntime import (
     ConsolidatedQARunOutputs,
     QAStepOutput,
     ScreenshotsContext,
-    build_step_outputs,
 )
 from qaplangrammar import QAPlanGrammar
 from qaplanparser import parse_scenario, parse_suite
@@ -133,9 +132,9 @@ class HarnessCorrectnessTests(unittest.TestCase):
   def test_pre_release_matrix_covers_every_supported_tuple(self) -> None:
     plan = load_and_validate_plan("pre-release-gate", PLANS_ROOT)
 
-    self.assertEqual(len(plan.execution_configs), 20)
-    self.assertEqual(len(plan.steps), 90)
-    self.assertEqual(plan.expected_screenshots, 180)
+    self.assertEqual(len(plan.execution_configs), 22)
+    self.assertEqual(len(plan.steps), 100)
+    self.assertEqual(plan.expected_screenshots, 200)
 
   def test_suite_aggregates_matrix_members(self) -> None:
     _discarded, members = parse_suite(FIXTURES_ROOT / "scenarios" / "run-them-all.suite", )
@@ -192,17 +191,23 @@ class HarnessCorrectnessTests(unittest.TestCase):
     first_step.captured_screenshots = 2
 
   def test_report_step_projection_matches_report_schema(self) -> None:
+    from qaplanexecutor_threaded import PlanExecutionState
     plan = load_and_validate_plan("canary", PLANS_ROOT)
     step = next(iter(plan.steps.values()))
-    rows = build_step_outputs(
-        plan,
-        [{
-            "step_result_id": step.step_id,
-            "status": "passed",
-            "screenshot_paths": [],
-        }],
+    exec_state = PlanExecutionState(
+        plan=plan,
+        step_results=[
+            {
+                "step_result_id": step.step_id,
+                "status": "passed",
+                "screenshot_paths": [],
+            }
+        ],
+        runtime=None,
+        results_q=None,
     )
-    row = rows[0]
+    exec_state.build_step_outputs()
+    row = exec_state.step_outputs[0]
     self.assertEqual(set(row.step_args), set(REPORT_STEP_SCHEMA[step.capability]))
     self.assertNotIn("emulator", row.step_args)
     self.assertNotIn("capture_screenshots", row.step_args)
