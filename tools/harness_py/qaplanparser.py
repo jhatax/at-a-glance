@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
 from collections.abc import Iterator
+from pathlib import Path
 from shlex import split
 
 from qaplangrammar import (
     AcceptedMember,
     MemberDiscard,
-    QAPlanGrammar,
     ParseDiscard,
     ParsedStep,
+    QAPlanGrammar,
     validate_slug,
 )
 
@@ -253,7 +253,7 @@ def parse_matrix_files(
     if len(tokens) != 1:
       raise ValueError(f"STEPS file entry takes one value at {path}:{line_number}")
     stem = tokens[0]
-    if not Path(stem).suffix == QAPlanGrammar.ACCEPTED_STEPS_SUFFIX:
+    if Path(stem).suffix != QAPlanGrammar.ACCEPTED_STEPS_SUFFIX:
       print(f"Invalid STEPS file entry '{stem}'")
       continue
     step_files.append(tokens[0])
