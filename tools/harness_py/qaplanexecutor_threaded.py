@@ -104,7 +104,7 @@ class PlanExecutionState:
               paths=result["screenshot_paths"],
           ),
       )
-      passed += 1 if (row.status == "passed") else 0
+      passed += (row.status == "passed")
       self.step_outputs.append(row)
 
     return passed
@@ -304,6 +304,10 @@ def stratify_steps_by_emulator(steps: dict[str, PlanStep]) -> dict[str, list[Pla
 
 
 def execute_plan_concurrently(plan: PlanDefinition) -> int:
+  # If there are no steps to execute
+  if not plan.steps:
+    return 0
+
   from datetime import datetime
   emulator_queues = stratify_steps_by_emulator(plan.steps)
   from qaharnessconfig import REPO_ROOT
