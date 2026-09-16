@@ -82,22 +82,22 @@ void substratum_renderer_draw_filled_bolt_in_frame(
 
   uint8_t stroke_width = 2;
   uint8_t offset = stroke_width;
-  uint8_t double_offset = offset << 1;
+  uint8_t quarter = WATCHFACE_ICON_CENTER_X >> 1;
   // Need 7-bolt points to form a path
   GPoint bolt_points[] = {
       substratum_renderer_scale_icon_x_y_in_frame(frame, WATCHFACE_ICON_CENTER_X + offset, offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, double_offset, WATCHFACE_ICON_CENTER_Y),
+      substratum_renderer_scale_icon_x_y_in_frame(frame, quarter, WATCHFACE_ICON_CENTER_Y + offset),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
           WATCHFACE_ICON_CENTER_X,
-          WATCHFACE_ICON_CENTER_Y),
+          WATCHFACE_ICON_CENTER_Y + offset),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
           WATCHFACE_ICON_CENTER_X - offset,
           WATCHFACE_ICON_GRID_HEIGHT - offset),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
-          WATCHFACE_ICON_GRID_WIDTH - double_offset,
+          WATCHFACE_ICON_CENTER_X + quarter,
           WATCHFACE_ICON_CENTER_Y - offset),
       substratum_renderer_scale_icon_x_y_in_frame(
           frame,
