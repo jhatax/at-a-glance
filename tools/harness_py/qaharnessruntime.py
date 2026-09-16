@@ -289,7 +289,7 @@ class ConsolidatedQARunOutputs:
         raise ValueError(f"Invalid or missing '{key}' in report")
 
     _output: Path = Path(data["output_folder"])
-    if not _output.name == data["run_id"]:
+    if _output.name != data["run_id"]:
       raise ValueError(f"Run-id and output_folder '{_output.name}' are non-canonical")
     _started_at: str = data["started_at"]
     if data["status"] not in ALLOWED_RESULTS:
@@ -321,7 +321,7 @@ class ConsolidatedQARunOutputs:
       step_ctx: QAStepOutput = QAStepOutput.from_dict(step_item)
       reconstructed_steps.append(step_ctx)
 
-    if not data["step_count"] == len(reconstructed_steps):
+    if data["step_count"] != len(reconstructed_steps):
       raise ValueError("Run outputs length is not equal to steps executed in report")
     expected_screenshots = sum(step.screenshot_ctx.expected for step in reconstructed_steps)
     captured_screenshots = sum(step.screenshot_ctx.captured for step in reconstructed_steps)
@@ -339,6 +339,7 @@ class ConsolidatedQARunOutputs:
         run_outputs=cast(dict[str, str], run_outputs_data),
         step_count=data["step_count"],
         step_outputs=reconstructed_steps,
+        inform_operator=None,
     )
 
   def print_closeout(self, log_path: Path, summary_path: Path) -> None:
