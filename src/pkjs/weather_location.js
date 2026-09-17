@@ -74,6 +74,7 @@ function createRefreshController(dependencies) {
           address.neighbourhood ||
           address.suburb ||
           address.village ||
+          address.borough ||
           address.town ||
           address.city ||
           address.county ||
