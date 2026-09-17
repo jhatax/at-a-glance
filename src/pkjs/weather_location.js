@@ -54,7 +54,7 @@ function createRefreshController(dependencies) {
 
   function fetchLocation(location) {
     var url =
-      'https://nominatim.openstreetmap.org/reverse?format=json&lat=' +
+      'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' +
       location.latitude +
       '&lon=' +
       location.longitude;
@@ -69,22 +69,22 @@ function createRefreshController(dependencies) {
       }
 
       try {
-        var response = JSON.parse(xhr.responseText);
-        var location = (
-          response.address.neighborhood ||
-          response.address.suburb ||
-          response.address.borough ||
-          response.address.village ||
-          response.address.town ||
-          response.address.city ||
-          response.address.county ||
+        var address = JSON.parse(xhr.responseText).address || {};
+        var whereami = (
+          address.neighbourhood ||
+          address.suburb ||
+          address.village ||
+          address.town ||
+          address.city ||
+          address.county ||
+          address.state ||
           'GPS'
         )
           .slice(0, MAX_LOCATION_STRING_LENGTH)
           .toUpperCase();
-        sendLocationToWatch(location);
+        sendLocationToWatch(whereami);
       } catch (e) {
-        console.log('Location fetch error: ' + JSON.stringify(e));
+        console.log('Location fetch error: ' + e);
       }
     };
     xhr.send();
