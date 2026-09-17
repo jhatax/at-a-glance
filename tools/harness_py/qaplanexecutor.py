@@ -35,13 +35,11 @@ class PlanExecutionState:
   def inform_operator(
       self,
       message: str,
-      log_only: bool = False,
       text_color: str = "",
   ) -> None:
     from textwrap import fill
     formatted = fill(f"{message}\n", width=80, subsequent_indent=" ")
-    if not log_only:
-      print(f"{text_color}{formatted}{ANSI_RESET}" if text_color else message)
+    print(f"{text_color}{formatted}{ANSI_RESET}" if text_color else message)
     with self.runtime.commands_log_path.open("a", encoding="utf-8") as handle:
       handle.write(message)
       handle.flush()
@@ -207,7 +205,6 @@ def execute_plan(plan: PlanDefinition) -> int:
   try:
     plan_state.inform_operator(
         message=f"QA Plan to execute:\n{plan.as_dict()}\n",
-        log_only=True,
         text_color=ANSI_CYAN,
     )
     from qaharnessconfig import REPO_ROOT

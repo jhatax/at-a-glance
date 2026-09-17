@@ -40,7 +40,6 @@ class PlanExecutionState:
   def log_adapter_message(
       self,
       message: str,
-      log_only: bool = False,
       text_color: str = ANSI_CYAN,
   ) -> None:
     from textwrap import fill
@@ -49,13 +48,11 @@ class PlanExecutionState:
   def inform_operator(
       self,
       message: str,
-      log_only: bool = False,
       text_color: str = "",
   ) -> None:
     from textwrap import fill
     formatted = fill(f"{message}\n", width=80, subsequent_indent=" ")
-    if not log_only:
-      print(f"{text_color}{formatted}{ANSI_RESET}" if text_color else message)
+    print(f"{text_color}{formatted}{ANSI_RESET}" if text_color else message)
     with self.runtime.commands_log_path.open("a", encoding="utf-8") as handle:
       handle.write(message)
       handle.flush()
@@ -283,7 +280,6 @@ def process_step_results(plan_state: PlanExecutionState, results_q: Queue[ToProc
                   width=80,
                   subsequent_indent=" ",
               ),
-              log_only=True,
               text_color=color
           )
           # 4. Save the step's result to be processed during finalize
@@ -335,47 +331,50 @@ def execute_plan_concurrently(plan: PlanDefinition) -> int:
   # Pass each thread the right context and execution function
   threads: list[Thread] = []
   pbw_path = REPO_ROOT / "build" / "at-a-glance.pbw"
-  for emulator, steps in emulator_queues.items():
-    plan_state.pebble.install_emulator(emulator, pbw_path)
-    emu_state = EmulatorExecutionState(
-        emulator=emulator,
-        pbw_path=pbw_path,
-        output_root=runtime.output_root,
-        screenshots_dir=runtime.screenshots_dir,
-        steps=steps,
-        results_q=results_q,
-        pebble=plan_state.pebble,
-    )
-    thread = Thread(
-        target=execute_emulator_steps,
-        args=(emu_state, ),
-        name=f"{emulator}-executor",
-    )
-    if thread:
-      threads.append(thread)
-      thread.start()
-    else:
-      raise RuntimeError(f"Thread couldn't be created to execute steps for '{emulator}'")
+  try:
+    for emulator, steps in emulator_queues.items():
+      plan_state.pebble.install_emulator(emulator, pbw_path)
+      emu_state = EmulatorExecutionState(
+          emulator=emulator,
+          pbw_path=pbw_path,
+          output_root=runtime.output_root,
+          screenshots_dir=runtime.screenshots_dir,
+          steps=steps,
+          results_q=results_q,
+          pebble=plan_state.pebble,
+      )
+      thread = Thread(
+          target=execute_emulator_steps,
+          args=(emu_state, ),
+          name=f"{emulator}-executor",
+      )
+      if thread:
+        threads.append(thread)
+        thread.start()
+      else:
+        raise RuntimeError(f"Thread couldn't be created to execute steps for '{emulator}'")
 
-  # Join all threads before you exit / return; also wait for all logs to be written
-  for thread in threads:
-    thread.join()
+  finally:
+    # Join all threads before you exit / return; also wait for all logs to be written
+    for thread in threads:
+      thread.join()
 
-  # Inform the results processor that there are no more results to process
-  results_q.put(TERMINUS)
+    # Inform the results processor that there are no more results to process
+    results_q.put(TERMINUS)
 
-  # Wait for the results queue and thread to terminate gracefully
-  results_q.join()
-  results_thread.join()
+    # Wait for the results queue and thread to terminate gracefully
+    results_q.join()
+    results_thread.join()
+
   plan_state.inform_operator(message=divider)
   plan.captured_screenshots = sum(step.captured_screenshots for step in plan.steps.values())
   end = datetime.now().astimezone()
-  start =datetime.strptime(plan_state.runtime.started_at, "%Y%m%dT%H%M%S").astimezone()
+  start = datetime.strptime(plan_state.runtime.started_at, "%Y%m%dT%H%M%S").astimezone()
   minutes, seconds = divmod(int((end - start).total_seconds()), 60)
   plan_state.inform_operator(
     message=(
-    f"Ended at: {end.strftime('%Y%m%dT%H%M%S')}"
-    f"Time elapsed: {minutes}:{seconds:02d}"
+      f"Ended at: {end.strftime('%Y%m%dT%H%M%S')}"
+      f"Time elapsed: {minutes}:{seconds:02d}"
     ),
     text_color=ANSI_CYAN,
   )
