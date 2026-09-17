@@ -34,7 +34,7 @@ The runtime setting source of truth is `WatchfaceSettings` in `src/modules/setti
 | 2. Temperature unit | `temp_unit` | `TEMP_UNIT` | `0` / `TEMP_UNIT_F` | `0` Fahrenheit, `1` Celsius | Yes | Refreshes climate text |
 | 3. Display mode | `display_mode` | `DISPLAY_MODE` | `0` / `DISPLAY_MODE_LIGHT_MONOCHROME` | `0`, `1` on B/W; `0`, `1`, `2`, `3` on color | Yes | Repaints watch face |
 | 4. Weather cadence | `weather_update_minutes` | `WEATHER_UPDATE_MINUTES` | `15` | `15`, `30`, `45`, `60` | Yes | Updates PKJS weather schedule |
-| 5. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `15` | `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
+| 5. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `30` | `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
 | 6. Steps goal | `steps_goal` | `STEPS_GOAL` | `10000` | `4000` through `32000` | Yes on `PBL_HEALTH` | Refreshes steps display |
 | 7. Battery orientation | `battery_orientation` | `BATTERY_ORIENTATION` | `0` / `BATTERY_ORIENTATION_HORIZONTAL` | `0` horizontal, `1` vertical | Yes | Relayouts battery presentation |
 
@@ -198,7 +198,7 @@ Refresh effects:
 | `TIME_FORMAT`            | `WATCHFACE_UPDATE_TIME`                                              |
 | `TEMP_UNIT`              | `WATCHFACE_UPDATE_CLIMATE`                                           |
 | `DISPLAY_MODE`           | `WATCHFACE_REPAINT`                                                  |
-| `BATTERY_ORIENTATION`    | `WATCHFACE_UPDATE_BATTERY_ORIENTATION`                                |
+| `BATTERY_ORIENTATION`    | `WATCHFACE_UPDATE_BATTERY_ORIENTATION`                               |
 | `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS                   |
 | `HR_SAMPLE_MINUTES`      | Persisted in C; HealthService sample period updated in `ataglance.c` |
 | `STEPS_GOAL`             | `WATCHFACE_UPDATE_HEALTH`                                            |
