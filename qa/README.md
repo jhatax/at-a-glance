@@ -1,6 +1,6 @@
 # QA Harness
 
-The QA harness validates At A Glance with named scenarios, Matrices, and suites. The public entrypoint is `../aag-build-qa.sh`.
+The QA harness validates _At A Glance_ with named scenarios, Matrices, and suites. The public entrypoint is `../aag-build-qa.sh`.
 
 ## Plan execution flow
 
@@ -39,6 +39,7 @@ The shell-to-Python handoff is one-way. Structured plan and run state stays in P
 ## Commands
 
 ```sh
+./aag-build-qa.sh --list-steps <name>
 ./aag-build-qa.sh --exec <name>
 ./aag-build-qa.sh --exec <name> --dry-run
 ./aag-build-qa.sh --exec <name> --force
@@ -48,7 +49,7 @@ The shell-to-Python handoff is one-way. Structured plan and run state stays in P
 ./aag-build-qa.sh --compare <run-a> [run-b ...]
 ```
 
-`--exec-plan` remains an accepted alias for `--exec`.
+`--exec-plan` is an accepted alias for `--exec`. `-ls` is an accepted alias for `--list-steps`, which is an alias for `--validate`.
 
 Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) to author plans. Use [Validation](../docs/Validation.md) to choose contributor validation paths.
 

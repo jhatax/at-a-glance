@@ -50,16 +50,23 @@ A Matrix is a filename-identified plan that reuses one or more `.steps` files ag
 
 - Matrix PREAMBLE: The only source of emulator, display, and screenshot policy.
 - Resolver: Reduces those values to supported execution tuples.
-- Steps files: Are parsed in reference order.
+- Steps files: Are parsed in reference order. Each file path is relative to the Matrix file.
 - Expansion: Applies the screenshot policy and expands every parsed step across the supported tuples.
 - `.tuples` files: Are not part of the grammar.
+
+Create a Matrix in this order:
+
+1. Write one or more reusable `.steps` files.
+2. Create the Matrix `PREAMBLE` and close it with `END`.
+3. Add a `STEPS` block after the preamble.
+4. List one `.steps` file path per line and close the block with `END`.
 
 Steps files contain only an `EXECUTE` block; lines before `EXECUTE` and after its `END` are ignored:
 
 ```text
 EXECUTE
   STEP weather temp=265 code=0 is_day=1
-  STEP battery level=80 charging=1
+  STEP battery level=80 charging=1 orientation=0
 END
 ```
 
@@ -84,8 +91,8 @@ A suite is ordered aggregation.
 
 - Lines containing `#` are ignored entirely. A `#` is never an inline comment marker.
 - The grammar vocabulary is explicit. Unsupported directives and non-grammar lines are ignored.
-- `PREAMBLE`, `EXECUTE`, and `MEMBERS` are blocks terminated by `END`.
-- Everything after a block's `END` is ignored.
+- `PREAMBLE`, `EXECUTE`, `STEPS`, and `MEMBERS` are blocks terminated by `END`.
+- A Scenario ends after its `EXECUTE` block. A Matrix `PREAMBLE` ends before its required `STEPS` block. A `.steps` file ends after its `EXECUTE` block. A Suite ends after its `MEMBERS` block.
 - `SCREENSHOTS` accepts `yes` or `no`.
 - `EMULATORS` accepts one or more supported emulator names: `aplite`, `basalt`, `chalk`, `diorite`, `emery`, `flint`, or `gabbro`.
 - `DISPLAYS` accepts one or more known display names: `white`, `black`, `celeste`, or `oxford`. `celeste` and `oxford` are supported only on `chalk`, `emery`, and `gabbro`.
@@ -102,11 +109,11 @@ Supported capabilities are `weather`, `battery`, `health`, `location`, `bluetoot
 | Capability | Arguments | Value constraints or notes |
 | --- | --- | --- |
 | `weather` | `temp`, `code`, `is_day` | `temp` is in celsius-tenths; `is_day` is `0` or `1`. |
-| `battery` | `level`, `charging` | `level` is `0` through `100`; `charging` is `0` or `1`. |
+| `battery` | `level`, `charging`, `orientation` | `level` is `0` through `100`; `charging` and `orientation` are `0` or `1`. |
 | `health` | `bpm`, `steps` | Health metric values are supplied as integers. |
 | `location` | `location` | `location` is text sent through the location AppMessage field. |
 | `bluetooth` | `connected` | `connected` is `0` or `1`. |
-| `all` | `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `location`, `connected` | Supplies weather, health, battery, location, and Bluetooth values; supported on health-capable emulators. |
+| `all` | `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `orientation`, `location`, `connected` | Supplies weather, health, battery, location, and Bluetooth values; supported on health-capable emulators. |
 
 Field rules:
 
@@ -121,8 +128,8 @@ Field rules:
 The order of `field=value` arguments is not strict. These two steps are equivalent:
 
 ```text
-STEP battery level=19 charging=0
-STEP battery charging=0 level=19
+STEP battery level=19 charging=0 orientation=0
+STEP battery orientation=0 charging=0 level=19
 ```
 
 Argument names and required-key membership determine the parsed step. The parser and report validation do not require a particular argument order. The resolver reads named fields when it constructs the typed step and computes its identity; no input ordering contract exists.
@@ -140,12 +147,12 @@ Fields are `temp`, `code`, and `is_day`.
 ### Battery
 
 ```text
-STEP battery level=<percent> charging=<0|1>
+STEP battery level=<percent> charging=<0|1> orientation=<0|1>
 ```
 
-Fields are `level` and `charging`.
+Fields are `level`, `charging`, and `orientation`.
 
-`level` accepts `0` through `100`. `charging` accepts `0` or `1`.
+`level` accepts `0` through `100`. `charging` and `orientation` accept `0` or `1`.
 
 ### Health
 
@@ -166,13 +173,13 @@ The field is `location`. The location text is sent to the watch through the loca
 ### All
 
 ```text
-STEP all bpm=101 steps=10500 level=90 charging=1 temp=300 code=1 is_day=0 location="San Francisco" connected=1
+STEP all bpm=101 steps=10500 level=90 charging=1 orientation=0 temp=300 code=1 is_day=0 location="San Francisco" connected=1
 ```
 
 `all` step:
 
 - Supplies weather, health, battery, location, and Bluetooth values in one step.
-- Requires `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `location`, and `connected`.
+- Requires `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `orientation`, `location`, and `connected`.
 - Runs on health-capable emulators: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
 
 ## Screenshot policy
@@ -242,4 +249,4 @@ Maintained canonical plans under `qa/plans/`:
 - `pre-push-gate`
 - `pre-release-gate`
 
-Reusable steps live in `smoke.steps`, `visual-refresh.steps`, and `pre-release.steps`. Focused capability scenarios remain available where they provide targeted coverage.
+Reusable steps live in `smoke.steps`, `smoke-battery.steps`, `visual-refresh.steps`, `pre-release.steps`, and `release-screenshots.steps`. Focused capability scenarios remain available where they provide targeted coverage.

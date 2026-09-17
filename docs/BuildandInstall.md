@@ -103,7 +103,14 @@ pebble wipe
 
 Automation harness:
 
-```text
+```sh
+./aag-build-qa.sh --kill <target>
+pebble wipe
+```
+
+Alternatively, to start afresh:
+
+```sh
 ./aag-build-qa.sh --nuclear
 ```
 
@@ -111,14 +118,14 @@ Automation harness:
 
 Watch install uses a phone's developer connection capability to sideload the watch face.
 
-```text
+```sh
 pebble build
 pebble install --phone <Developer Connection Server IP>
 ```
 
 Automation harness:
 
-```text
+```sh
 ./aag-build-qa.sh -bc
 ./aag-build-qa.sh -p <Developer Connection Server IP>
 ```
