@@ -210,38 +210,6 @@ static void deinit() {
   s_window = NULL;
 }
 
-// External API
-
-// Connect to the watch face's adapter to display received changes
-// using the established visual vocabulary.
-void ataglance_apply_received_data(
-    WatchfaceEventData* parsed) {
-  if (!parsed) {
-    return;
-  }
-
-  // Copy current settings over before retrieving them from storage.
-  // If there are any changes, apply them.
-  WatchfaceSettings previous_settings;
-  memcpy(&previous_settings, &s_settings, sizeof(WatchfaceSettings));
-
-  bool settings_changed = false;
-  watchface_apply_received_data(parsed, &s_settings, &settings_changed);
-
-  // The check for weather update interval is managed in JS directly
-  // You could be defensive here and send a message but it is redundant
-  if (settings_changed) {
-    // It is critical that you are deliberately frugal with writing to persisted storage
-    settings_save(&s_settings);
-  }
-
-#ifdef PBL_HEALTH
-  if (previous_settings.hr_sample_minutes != s_settings.hr_sample_minutes) {
-    health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
-  }
-#endif
-}
-
 int main() {
   init();
   app_event_loop();

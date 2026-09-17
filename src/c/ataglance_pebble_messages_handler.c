@@ -96,6 +96,9 @@ void inbox_received_handler(
 
   // Handle the entire message, always. No early returns
   if (find_the_canary(iter)) {
+    if (!settings) {
+      return;
+    }
     // Re-send the user's preference whenever PKJS synchronizes.
     send_loaded_weather_update_minutes(settings->weather_update_minutes);
   }
@@ -138,6 +141,41 @@ void handle_the_message(
 #endif
 
   ataglance_apply_received_data(&data);
+}
+
+// External API
+
+// Connect to the watch face's adapter to display received changes
+// using the established visual vocabulary.
+void ataglance_apply_received_data(
+    WatchfaceEventData* parsed) {
+  if (!parsed) {
+    return;
+  }
+
+  // Copy current settings over before retrieving them from storage.
+  // If there are any changes, apply them.
+  WatchfaceSettings* settings = (WatchfaceSettings*)app_message_get_context();
+  if (!settings) {
+    return;
+  }
+  WatchfaceSettings previous = *settings;
+
+  bool settings_changed = false;
+  watchface_apply_received_data(parsed, settings, &settings_changed);
+
+  // The check for weather update interval is managed in JS directly
+  // You could be defensive here and send a message but it is redundant
+  if (settings_changed) {
+    // It is critical that you are deliberately frugal with writing to persisted storage
+    settings_save(settings);
+  }
+
+#ifdef PBL_HEALTH
+  if (previous.hr_sample_minutes != settings->hr_sample_minutes) {
+    health_service_set_heart_rate_sample_period((uint16_t)settings->hr_sample_minutes * 60);
+  }
+#endif
 }
 
 void inbox_dropped_callback(
