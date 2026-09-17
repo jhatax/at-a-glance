@@ -254,9 +254,9 @@ static void architect_calculate_must_have_layout(
   };
 
   // Location text
-  current_row_y += (HELPER_MAX(ICON_HEIGHT, DATE_TEXT_HEIGHT) - FULL_OR_COMPACT(2, 1));
+  current_row_y += (HELPER_MAX(ICON_HEIGHT, DATE_TEXT_HEIGHT) - FULL_OR_COMPACT(3, 2));
   module_w = HELPER_SCALE_ROUND(face_width, LOCATION_TEXT_WIDTH_PERCENT, 100);
-  module_x = ((face_width - module_w) >> 1);
+  module_x = (face_width - module_w) >> 1;
   surface->location = (WatchfaceTextStratum){
       .frame = GRect(module_x, current_row_y, module_w, LOCATION_TEXT_HEIGHT),
       .alignment = GTextAlignmentCenter,
