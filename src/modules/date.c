@@ -38,25 +38,47 @@ void date_module_destroy() {
 
 void date_module_refresh(
     const ColorPalette* palette) {
-  // Every weekday is a constant char*
-  // The array of these weekdays is also a static constant
-  // Only this function needs to have visibility into this array
-  static const char* const c_weekdays[] = {"Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"};
+  static const char* const c_weekdays[] = {
+      "Su",
+      "Mo",
+      "Tu",
+      "We",
+      "Th",
+      "Fr",
+      "Sa",
+  };
+  static const char* const c_months[] = {
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+  };
 
   if (!s_date_layer || !palette) {
     return;
   }
-  time_t now = time(NULL);
+  const time_t now = time(NULL);
   struct tm* t = localtime(&now);
   if (!t) {
     return;
   }
 
-  snprintf(s_date_buffer, MAX_STR_LEN, "%s·", c_weekdays[t->tm_wday]);
-  uint8_t len = (uint8_t)strlen(s_date_buffer);
-  strftime(s_date_buffer + len, (ARRAY_LENGTH(s_date_buffer) - len), "%d·%b", t);
+  snprintf(
+      s_date_buffer,
+      MAX_STR_LEN,
+      "%s·%d·%s",
+      c_weekdays[t->tm_wday],
+      t->tm_mday,
+      c_months[t->tm_mon]);
 
-  // uppercase_date(s_date_buffer);
   substratum_renderer_update_text_layer(
       s_date_layer,
       s_date_buffer,
