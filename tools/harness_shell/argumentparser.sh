@@ -5,6 +5,11 @@ parse_args() {
   DRY_RUN=false
   FORCE=false
 
+  if [[ $# -eq 0 ]]; then
+    PARSE_ERROR_MESSAGE="No arguments specified"
+    return 1
+  fi
+
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -r | --runs)
@@ -16,7 +21,7 @@ parse_args() {
         COMMAND_TYPE="qa-inspection"
         COMMAND_ACTION="view-run"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="-v/--view requires exactly one run selector"
+          PARSE_ERROR_MESSAGE="$1 requires exactly one run selector"
           return 1
         fi
         COMMAND_ARGS=("$2")
@@ -36,9 +41,9 @@ parse_args() {
         ;;
       --validate | --list-steps | -ls)
         COMMAND_TYPE="qa-inspection"
-        COMMAND_ACTION="validate"
+        COMMAND_ACTION="dryrun"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="--validate requires a QA plan name, .scenario file, or .suite file"
+          PARSE_ERROR_MESSAGE="$1 requires a QA plan name, .scenario file, or .suite file"
           return 1
         fi
         COMMAND_ARGS=("$2")
@@ -83,7 +88,7 @@ parse_args() {
         COMMAND_TYPE="env-prep"
         COMMAND_ACTION="kill"
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="-k/--kill requires a comma-separated emulator list"
+          PARSE_ERROR_MESSAGE="$1 requires a comma-separated emulator list"
           return 1
         fi
         EMULATORS=(${(s:,:)2})
@@ -91,7 +96,7 @@ parse_args() {
         ;;
       --exec-plan | --exec)
         if [[ -z "${2:-}" || "${2:0:1}" == "-" ]]; then
-          PARSE_ERROR_MESSAGE="--qaplan requires a plan name to execute"
+          PARSE_ERROR_MESSAGE="$1 requires a plan name to execute"
           return 1
         fi
         COMMAND_TYPE="scenario-exec"
@@ -105,8 +110,8 @@ parse_args() {
         shift
         ;;
       -n | --dry-run)
-        if [[ "${FORCE}" == true ]]; then
-          PARSE_ERROR_MESSAGE="--force cannot be combined with -n/--dry-run"
+        if [[ "$FORCE" == true ]]; then
+          PARSE_ERROR_MESSAGE="$1 cannot be combined with -n/--dry-run"
           return 1
         fi
         DRY_RUN=true
@@ -114,7 +119,7 @@ parse_args() {
         ;;
       --force)
         if [[ "$DRY_RUN" == true ]]; then
-          PARSE_ERROR_MESSAGE="--force cannot be combined with -n/--dry-run"
+          PARSE_ERROR_MESSAGE="$1 cannot be combined with -n/--dry-run"
           return 1
         fi
         FORCE=true
@@ -143,7 +148,6 @@ parse_args() {
   done
 
   if [[ "$FORCE" == true ]]; then
-    COMMAND_TYPE="scenario-exec"
     COMMAND_ACTION="force-scenario"
   elif [[ "$DRY_RUN" == true ]]; then
     COMMAND_TYPE="qa-inspection"

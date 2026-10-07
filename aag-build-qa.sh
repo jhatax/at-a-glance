@@ -64,7 +64,7 @@ Options:
   --exec-plan --exec QA-PLAN
                           Validate and execute a named QA plan
   -n,  --dry-run          Print the resolved scenario execution plan and exit
-  --force                 Skip scenario execution confirmation
+  --force                 Execute plan without confirmation
 
   -h,  --help             Show this help menu
 EOF
@@ -73,6 +73,7 @@ EOF
 main() {
   parse_args "$@" || {
     local exit_code=$?
+    print_help >&2
     printf "Error: $PARSE_ERROR_MESSAGE\n" >&2
     return $exit_code
   }
