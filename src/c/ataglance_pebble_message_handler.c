@@ -140,19 +140,6 @@ void handle_the_message(
   parse_oneshot_health_data(iter, &data);
 #endif
 
-  ataglance_apply_received_data(&data);
-}
-
-// External API
-
-// Connect to the watch face's adapter to display received changes
-// using the established visual vocabulary.
-void ataglance_apply_received_data(
-    WatchfaceEventData* parsed) {
-  if (!parsed) {
-    return;
-  }
-
   // Copy current settings over before retrieving them from storage.
   // If there are any changes, apply them.
   WatchfaceSettings* settings = (WatchfaceSettings*)app_message_get_context();
@@ -161,12 +148,11 @@ void ataglance_apply_received_data(
   }
   WatchfaceSettings previous = *settings;
 
-  bool settings_changed = false;
-  watchface_apply_received_data(parsed, settings, &settings_changed);
+  watchface_apply_received_data(&data, settings);
 
   // The check for weather update interval is managed in JS directly
   // You could be defensive here and send a message but it is redundant
-  if (settings_changed) {
+  if (data.settings_changed) {
     // It is critical that you are deliberately frugal with writing to persisted storage
     settings_save(settings);
   }
