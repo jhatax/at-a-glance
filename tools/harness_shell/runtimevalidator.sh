@@ -30,18 +30,13 @@ validate_csv_values() {
 }
 
 validate_qa_inspection() {
-  if [[ "${COMMAND_ACTION}" != (view-run|compare|validate|dryrun) ]]; then
+  if [[ "${COMMAND_ACTION}" != (view-run|compare|dryrun) ]]; then
     validate_fail "unsupported qa-inspection action '${COMMAND_ACTION}'"
     return 1
   fi
 
-  if [[ "${COMMAND_ACTION}" == "validate" ]] && ((!${#COMMAND_ARGS[@]})); then
-    validate_fail "no QA plan specified to validate"
-    return 1
-  fi
-
-  if [[ "${COMMAND_ACTION}" == "dryrun" ]] && ((!${#COMMAND_ARGS[@]})); then
-    validate_fail "no scenario specified for dryrun"
+  if [[ "${COMMAND_ACTION}" == "dryrun" ]] && ((! ${#COMMAND_ARGS[@]})); then
+    validate_fail "no scenario specified for validation before execution"
     return 1
   fi
 
@@ -65,7 +60,7 @@ validate_env_prep() {
       return 1
     }
   fi
-  if [[ "${COMMAND_ACTION}" == "install-phone" ]] && ((!${#COMMAND_ARGS[@]})); then
+  if [[ "${COMMAND_ACTION}" == "install-phone" ]] && ((! ${#COMMAND_ARGS[@]})); then
     validate_fail "no usable LAN Developer Connection IP specified for phone-install"
     return 1
   fi
@@ -77,7 +72,7 @@ validate_scenario_exec() {
     return 1
   fi
 
-  if ((!${#COMMAND_ARGS[@]})); then
+  if ((! ${#COMMAND_ARGS[@]})); then
     validate_fail "no scenario specified to execute"
     return 1
   fi
