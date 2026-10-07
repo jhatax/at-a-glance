@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate compile_commands.json from a verbose Pebble build log.
 
 The Pebble build emits `runner [...]` lines that contain the raw compiler
@@ -14,9 +13,10 @@ import json
 import logging
 import re
 import shutil
-from dataclasses import dataclass
+from collections.abc import Iterable, Sequence
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, Sequence, TypeGuard
+from typing import TypeGuard
 
 LOGGER = logging.getLogger("gen_compile_commands")
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*m")
@@ -40,13 +40,6 @@ class CompileCommand:
   directory: str
   file: str
   arguments: list[str]
-
-  def to_json(self) -> dict[str, object]:
-    return {
-        "directory": self.directory,
-        "file": self.file,
-        "arguments": self.arguments,
-    }
 
 
 def configure_logging(verbose: bool) -> None:
@@ -145,8 +138,11 @@ def extract_build_directory(output_arg: str, project_root: Path) -> Path | None:
   return (project_root / build_path).resolve()
 
 
-def normalize_compile_arguments(args: Sequence[str], compiler_path: str,
-                                project_root: Path) -> tuple[list[str], Path]:
+def normalize_compile_arguments(
+    args: Sequence[str],
+    compiler_path: str,
+    project_root: Path,
+) -> tuple[list[str], Path]:
   """Remove output flags and return cleaned arguments plus build directory."""
 
   cleaned_args: list[str] = []
@@ -233,9 +229,8 @@ def iter_compile_commands(
 def write_compile_database(commands: Sequence[CompileCommand], output_path: Path) -> None:
   """Write the compile database to disk."""
 
-  payload = [command.to_json() for command in commands]
   with output_path.open("w", encoding="utf-8") as handle:
-    json.dump(payload, handle, indent=2)
+    json.dump([asdict(command) for command in commands], handle, indent=2)
     handle.write("\n")
 
 
