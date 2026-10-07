@@ -31,24 +31,15 @@ def _handle_kill(emulators: list[str]) -> int:
 
 def handle_plan_exec(action: str, plan_name: str) -> int:
   from qaplanexecutor_threaded import resolve_and_execute_plan_concurrently
-  # from qaplanexecutor import resolve_and_execute_plan
-  if action not in {"run-scenario", "force-scenario"}:
+  if action in {"run-scenario", "force-scenario"}:
+    return resolve_and_execute_plan_concurrently(action, plan_name)
+  else:
     raise ValueError(f"Unsupported scenario-exec action '{action}'")
-
-  return resolve_and_execute_plan_concurrently(action, plan_name)
-  # return resolve_and_execute_plan(action, plan_name)
 
 
 def handle_validate_plan(target: str) -> int:
   from qaplanresolver import load_and_validate_plan
-  if not load_and_validate_plan(target):
-    return 1
-  else:
-    return 0
-
-
-def handle_plan_dryrun(plan_name: str) -> int:
-  return handle_validate_plan(plan_name)
+  return 0 if load_and_validate_plan(target) else 1
 
 
 def handle_qa_inspection(args: argparse.Namespace) -> int:
@@ -57,10 +48,8 @@ def handle_qa_inspection(args: argparse.Namespace) -> int:
       return handle_view_run(args.run_selector)
     case "compare":
       return handle_compare_runs(args.run_selectors)
-    case "validate":
-      return handle_validate_plan(args.plan_name)
     case "dryrun":
-      return handle_plan_dryrun(args.plan_name)
+      return handle_validate_plan(args.plan_name)
     case _:
       return 1
 
@@ -80,9 +69,6 @@ def main(argv: list[str]) -> int:
     compare_inspection = qa_inspection_subparsers.add_parser("compare")
     compare_inspection.add_argument("run_selectors", nargs="+")
 
-    validate_inspection = qa_inspection_subparsers.add_parser("validate")
-    validate_inspection.add_argument("plan_name")
-
     dryrun_inspection = qa_inspection_subparsers.add_parser("dryrun")
     dryrun_inspection.add_argument("plan_name")
 
@@ -97,8 +83,8 @@ def main(argv: list[str]) -> int:
     install = subparsers.add_parser("install")
     install.add_argument("--emulators", nargs="+", required=True)
 
-    install = subparsers.add_parser("kill")
-    install.add_argument("--emulators", nargs="+", required=True)
+    kill = subparsers.add_parser("kill")
+    kill.add_argument("--emulators", nargs="+", required=True)
 
     args = parser.parse_args(argv)
 
