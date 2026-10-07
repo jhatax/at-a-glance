@@ -11,8 +11,8 @@ def render_report_top(runs: list[ConsolidatedQARunOutputs], heading: str) -> str
   lines = [
       heading,
       "",
-      "| Detail | " + " | ".join(f"Run-{i + 1} Output" for i in range(len(runs))) + " |",
-      "| --- | " + " | ".join("---:" for _ in runs) + " |",
+      f"| Detail | {" | ".join(f"Run-{i + 1} Output" for i in range(len(runs)))} |",
+      f"| --- | {" | ".join("---:" for _ in runs)} |",
       _row("**Date**", [_format_date(run.started_at) for run in runs]),
       _row("**Status**", [run.status for run in runs]),
       _row("**QA Plan Executed**", [f"`{run.plan}`" for run in runs]),
@@ -80,7 +80,7 @@ def _output_link(path: str) -> str:
 
 
 def _row(label: str, values: list[str]) -> str:
-  return "| " + " | ".join([label, *values]) + " |"
+  return f"| {" | ".join([label, *values])} |"
 
 
 def _format_date(value: str) -> str:

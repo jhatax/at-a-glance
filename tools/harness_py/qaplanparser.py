@@ -15,10 +15,11 @@ from qaplangrammar import (
 
 
 def _line_feed(path: Path) -> Iterator[tuple[int, str]]:
-  for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
-    line = raw_line.strip()
-    if line and "#" not in line:
-      yield line_number, line
+  with path.open(encoding="utf-8", newline="") as f:
+    for line_number, raw_line in enumerate(f, start=1):
+      line = raw_line.strip()
+      if line and "#" not in line:
+        yield line_number, line
 
 
 def _discard(line_number: int, source: str, reason: str) -> ParseDiscard:

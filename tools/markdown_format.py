@@ -117,7 +117,8 @@ def main() -> int:
     else:
       rewritten = reflow(original)
       if rewritten != original:
-        path.write_text(rewritten)
+        with path.open("w", encoding="utf-8") as handle:
+          handle.write(rewritten)
         print(path)
   if failures:
     print("\n".join(failures), file=sys.stderr)

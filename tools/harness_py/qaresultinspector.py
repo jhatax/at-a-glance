@@ -14,9 +14,10 @@ _initialized: bool = False
 
 
 def handle_compare_runs(run_selectors: list[str]) -> int:
-  print("=" * 80)
+  from qaplanexecutor_threaded import OUTPUT_SEPARATOR as divider
+  print(divider)
   report_path = _compare_runs(run_selectors)
-  print("=" * 80)
+  print(divider)
   print(f"Report available here:\n{report_path}")
   return 0
 
@@ -60,18 +61,19 @@ def _compare_runs(selectors: list[str]) -> Path:
     print(render_report_top(payloads, "# QA Summary Report"))
   else:
     print("== No report available, generating comparison and sharing file-path ==")
-    json_file = output_dir / "comparison.json"
-    json_file.write_text(
-        json.dumps({"runs": [payload.as_dict() for payload in payloads]}, indent=2) + "\n"
-    )
-    comp_path.write_text(render_report(payloads, "# QA Summary Report"), encoding="utf-8")
+    with output_dir / "comparison.json".open("w", encoding="utf-8") as handle:
+      json.dump({"runs": [payload.as_dict() for payload in payloads]}, handle, indent=2)
+      handle.write("\n")
 
+    with comp_path.open("w", encoding="utf-8") as handle:
+      handle.write(render_report(payloads, "# QA Summary Report"))
   return comp_path
 
 
 def write_summary_report(run_root: Path, summary_path: Path) -> None:
   run = _load_qarun(run_root)
-  summary_path.write_text(render_report([run], "# QA Summary Report"), encoding="utf-8")
+  with summary_path.open("w", encoding="utf-8") as handle:
+    handle.write(f"{render_report([run], "# QA Summary Report")}\n")
 
 
 def _view_run(selector: str) -> Path:

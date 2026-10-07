@@ -6,22 +6,24 @@ from pathlib import Path
 from queue import Queue
 from textwrap import fill
 from threading import Thread
-from typing import Any, cast
+from typing import Any, Final, cast
 
 from pebbleadapter import PebbleAdapter, PebbleEmulatorConnection
 from qaharnessruntime import (
-    ANSI_CYAN,
-    ANSI_GREEN,
-    ANSI_RED,
-    ANSI_RESET,
-    ConsolidatedQARunOutputs,
-    HarnessRuntime,
-    QAStepOutput,
-    RawStepResult,
-    ScreenshotsContext,
-    create_harness_runtime,
+  ANSI_CYAN,
+  ANSI_GREEN,
+  ANSI_RED,
+  ANSI_RESET,
+  ConsolidatedQARunOutputs,
+  HarnessRuntime,
+  QAStepOutput,
+  RawStepResult,
+  ScreenshotsContext,
+  create_harness_runtime,
 )
 from qaplanresolver import PlanDefinition, PlanStep
+
+OUTPUT_SEPARATOR: Final[str] = "=" * 80
 
 
 @dataclass
@@ -142,27 +144,24 @@ class PlanExecutionState:
     return int(not _passed) # exit_status is the inverse of True False in zsh
 
 
-@dataclass
+@dataclass(slots=True)
 class ToProcess(ABC):
-  type: str = field(init=False)
+  pass
 
-
-@dataclass
+@dataclass(slots=True)
 class ConcurrentStepResult(ToProcess):
   result: RawStepResult
   logs: list[str] = field(default_factory=list)
-  type: str = field(default="Concurrent Step Result", init=False)
 
 
-@dataclass
+@dataclass(slots=True)
 class QAHarnessUpdate(ToProcess):
   message: str
-  type: str = field(default="Pebble Log", init=False)
 
 
-@dataclass
+@dataclass(slots=True)
 class NoMoreResults(ToProcess):
-  type: str = field(default="Done", init=False)
+  message: str = field(default="Done", init=False)
 
 
 @dataclass
@@ -201,12 +200,11 @@ def _execute_emulator_step(
       "screenshot_paths": [],
       "step_number": step.step_number,
   }
-  divider = "=" * 80
   logs.append(
-      f"{divider}\n-- Attempting {step.step_number}/'{step.step_id}', "
+      f"{OUTPUT_SEPARATOR}\n-- Attempting {step.step_number}/'{step.step_id}', "
       f"Emulator: '{step.emulator}'\nType: '{step.capability}'\nArguments: '{step.as_dict()}'"
   )
-  logs.append(divider)
+  logs.append(OUTPUT_SEPARATOR)
 
   restart_required = False
   try:
@@ -312,7 +310,6 @@ def execute_plan_concurrently(plan: PlanDefinition) -> int:
   TERMINUS = NoMoreResults()
 
   runtime = create_harness_runtime(plan.expected_screenshots > 0)
-  divider = "=" * 80
   plan_state = PlanExecutionState(
       runtime=runtime,
       plan=plan,
@@ -366,7 +363,10 @@ def execute_plan_concurrently(plan: PlanDefinition) -> int:
     results_q.join()
     results_thread.join()
 
-  plan_state.inform_operator(message=divider)
+  plan_state.inform_operator(
+    message=OUTPUT_SEPARATOR,
+    text_color=ANSI_CYAN,
+  )
   plan.captured_screenshots = sum(step.captured_screenshots for step in plan.steps.values())
   end = datetime.now().astimezone()
   start = datetime.strptime(plan_state.runtime.started_at, "%Y%m%dT%H%M%S").astimezone()
@@ -379,7 +379,7 @@ def execute_plan_concurrently(plan: PlanDefinition) -> int:
     text_color=ANSI_CYAN,
   )
   plan_state.inform_operator(
-    message=divider,
+    message=OUTPUT_SEPARATOR,
     text_color=ANSI_CYAN,
   )
   PebbleAdapter.kill_emulators(emulator_queues)

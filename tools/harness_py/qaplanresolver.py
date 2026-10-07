@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from textwrap import fill
 from typing import Any
@@ -29,7 +29,7 @@ QA_MSG_ONESHOT_BPM = 10020
 QA_MSG_ONESHOT_STEPS = 10021
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ResolutionDiscard(DiscardedItem):
   capability: str
   execution_config: tuple[str, str]
@@ -58,13 +58,12 @@ class PlanDefinition:
     return len(self.steps)
 
   def as_dict(self) -> dict[str, Any]:
-    from dataclasses import asdict
     d: dict[str, Any] = asdict(self)
     d["path"] = str(self.path)
     return d
 
 
-@dataclass
+@dataclass(slots=True)
 class PlanStep(ABC):
   capability: str = field(init=False)
   emulator: str = field(kw_only=True)
@@ -89,7 +88,6 @@ class PlanStep(ABC):
     pass
 
   def as_dict(self) -> dict[str, Any]:
-    from dataclasses import asdict
     d: dict[str, Any] = asdict(self)
     for key in (
         "_step_id",
@@ -103,7 +101,7 @@ class PlanStep(ABC):
     return d
 
 
-@dataclass
+@dataclass(slots=True)
 class WeatherStep(PlanStep):
   temp: int
   code: int
@@ -154,7 +152,7 @@ class WeatherStep(PlanStep):
     return self._step_id
 
 
-@dataclass
+@dataclass(slots=True)
 class LocationStep(PlanStep):
   location: str
   capability: str = field(default="location", init=False)
@@ -199,7 +197,7 @@ class LocationStep(PlanStep):
     return self._step_id
 
 
-@dataclass
+@dataclass(slots=True)
 class BluetoothStep(PlanStep):
   connected: int
   capability: str = field(default="bluetooth", init=False)
@@ -242,7 +240,7 @@ class BluetoothStep(PlanStep):
     return self._step_id
 
 
-@dataclass
+@dataclass(slots=True)
 class BatteryStep(PlanStep):
   level: int
   charging: int
@@ -295,7 +293,7 @@ class BatteryStep(PlanStep):
     return self._step_id
 
 
-@dataclass
+@dataclass(slots=True)
 class HealthStep(PlanStep):
   bpm: int
   steps: int
@@ -342,7 +340,7 @@ class HealthStep(PlanStep):
     return self._step_id
 
 
-@dataclass
+@dataclass(slots=True)
 class AllForOneStep(PlanStep):
   bpm: int
   steps: int
@@ -417,7 +415,7 @@ class AllForOneStep(PlanStep):
 
 
 def print_plan(plan: PlanDefinition):
-  divider = "=" * 80
+  from qaplanexecutor_threaded import OUTPUT_SEPARATOR as divider
   print(f"{divider}")
   print(f"Plan: {plan.name}")
   print(f"Execution Configs: {len(plan.execution_configs)}")

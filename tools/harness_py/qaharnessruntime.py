@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Final, TypedDict, cast
 
-from qaharnessconfig import QARUNS_ROOT
 from qaplangrammar import QAPlanGrammar
 from qaplanresolver import create_step_for_capability
 
@@ -87,7 +86,7 @@ class RawStepResult(TypedDict):
   step_number: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ScreenshotsContext:
   expected: int
   captured: int
@@ -132,7 +131,7 @@ class ScreenshotsContext:
       raise ValueError("Captured screenshots mismatch with screenshots paths in report")
 
 
-@dataclass
+@dataclass(slots=True)
 class QAStepOutput:
   step_id: str
   capability: str
@@ -379,9 +378,13 @@ class ConsolidatedQARunOutputs:
   def emit_reports(self, log_path: Path, json_path: Path, summary_path: Path) -> None:
     from qareportrenderer import render_report
 
-    json_path.write_text(json.dumps(self.as_dict(), indent=2) + "\n", encoding="utf-8")
+    with json_path.open("w", encoding="utf-8") as handle:
+      json.dump(self.as_dict(), handle, indent=2)
+      handle.write("\n")
+
     try:
-      summary_path.write_text(render_report([self], "# QA Summary Report"), encoding="utf-8")
+      with summary_path.open("w", encoding="utf-8") as handle:
+        handle.write(render_report([self], "# QA Summary Report"))
     except OSError:
       # report.json is durable; view-run can regenerate summary.md.
       pass
@@ -395,13 +398,15 @@ class ConsolidatedQARunOutputs:
 def create_harness_runtime(capture_screenshots: bool) -> HarnessRuntime:
   from datetime import datetime
   started_at = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S")
+  from qaharnessconfig import QARUNS_ROOT
   output_root = QARUNS_ROOT / f"{started_at}-pid{os.getpid()}"
   commands_log_path = output_root / "commands.log"
   report_json_path = output_root / "report.json"
   report_md_path = output_root / "summary.md"
 
   output_root.mkdir(parents=True, exist_ok=True)
-  commands_log_path.write_text("", encoding="utf-8")
+  with commands_log_path.open("w", encoding="utf-8") as handle:
+    handle.write("")
   screenshots_dir = output_root / "screenshots"
   if capture_screenshots:
     screenshots_dir.mkdir(parents=True, exist_ok=True)

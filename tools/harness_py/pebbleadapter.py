@@ -30,7 +30,8 @@ def _load_pebble_tool() -> Path:
   if pebble is None:
     raise ImportError("Pebble Tool is not installed")
   pebble_path = Path(pebble)
-  interpreter = pebble_path.read_text(encoding="utf-8").splitlines()[0].removeprefix("#!").strip()
+  with pebble_path.open(encoding="utf-8") as f:
+    interpreter = f.readline().removeprefix("#!").strip()
   interpreter_path = shutil.which(interpreter.split()[0]) or interpreter.split()[0]
   site_packages = next(
       (
@@ -243,10 +244,8 @@ class PebbleAdapter:
     if build_exception is not None:
       build_reason = ""
       if capture_output:
-        build_reason = "\n".join(
-            line for line in build_log_path.read_text(encoding="utf-8").splitlines()
-            if compiler_error.match(line)
-        )
+        with build_log_path.open(encoding="utf-8") as handle:
+          build_reason = "\n".join(line for line in handle if compiler_error.match(line))
       if not build_reason:
         build_reason = "Build failed; rerun with --verbose for compiler diagnostics"
       operation = f"Build {'verbose ' if verbose else ''}".strip()

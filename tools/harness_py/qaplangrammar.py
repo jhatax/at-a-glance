@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Final
@@ -83,6 +84,8 @@ class QAPlanGrammar:
   SUPPORTED_CAPABILITIES: Final = SUPPORTED_CAPABILITIES
   GRAMMAR_VOCABULARY: Final = GRAMMAR_VOCABULARY
   SCREENSHOTS_POLICIES: Final = frozenset({"yes", "no"})
+  SUPPORTED_DISPLAYS: Final = frozenset({"white", "black", "celeste", "oxford"})
+  # take advantage of SUPPORT_MATRIX being a dictionary, so the keys() iterator is passed implicitly
   SUPPORTED_EMULATORS: Final = frozenset(SUPPORT_MATRIX)
   ACCEPTED_PLAN_TYPES: Final = MappingProxyType(
       {
@@ -148,6 +151,7 @@ class QAPlanGrammar:
     return emulator in cls.SUPPORT_MATRIX
 
   @classmethod
+  @cache
   def is_capability_supported_by_emulator(cls, capability: str, emulator: str) -> bool:
     return (
         emulator in cls.SUPPORT_MATRIX
@@ -156,35 +160,37 @@ class QAPlanGrammar:
 
   @classmethod
   def is_valid_display(cls, display: str) -> bool:
-    return any(display in support["displays"] for support in cls.SUPPORT_MATRIX.values())
+    return display in cls.SUPPORTED_DISPLAYS
 
   @classmethod
   def is_valid_display_for_emulator(cls, display: str, emulator: str) -> bool:
     return (emulator in cls.SUPPORT_MATRIX and display in cls.SUPPORT_MATRIX[emulator]["displays"])
 
 
+@dataclass(frozen=True, slots=True)
 class AcceptedItem:
   pass
 
 
+@dataclass(frozen=True, slots=True)
 class DiscardedItem:
   pass
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ParsedStep(AcceptedItem):
   capability: str
   fields: dict[str, str]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AcceptedMember(AcceptedItem):
   kind: str
   name: str
   path: Path
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ParseDiscard(DiscardedItem):
   line_number: int
   source: str
@@ -194,7 +200,7 @@ class ParseDiscard(DiscardedItem):
     return f"line {self.line_number}: {self.source} ({self.reason})"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MemberDiscard(DiscardedItem):
   kind: str
   name: str
