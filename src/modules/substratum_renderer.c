@@ -75,10 +75,15 @@ void substratum_renderer_draw_scaled_circle_in_frame(
 void substratum_renderer_draw_filled_bolt_in_frame(
     GContext* ctx,
     const GRect* frame,
+    GColor background,
     GColor fill_color) {
   if (!ctx || !frame) {
     return;
   }
+
+  // Remove any previous artifacts in the frame
+  graphics_context_set_fill_color(ctx, background);
+  graphics_fill_rect(ctx, *frame, 0, GCornerNone);
 
   uint8_t stroke_width = 2;
   uint8_t offset = stroke_width;
@@ -113,6 +118,11 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   GPath* path = gpath_create(&path_info);
 
   if (path) {
+#ifdef ATAGLANCE_DEBUG
+    // Draw a bounding box
+    graphics_context_set_stroke_color(ctx, gcolor_legible_over(background));
+    graphics_draw_rect(ctx, *frame);
+#endif
     graphics_context_set_fill_color(ctx, fill_color);
     graphics_context_set_stroke_color(ctx, fill_color);
     gpath_draw_filled(ctx, path);
@@ -125,11 +135,28 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   path = NULL;
 }
 
+void substratum_renderer_draw_bitmap_in_rect(
+    GContext* ctx,
+    const GBitmap* bmp,
+    const GRect* frame,
+    GColor foreground) {
+  if (!ctx || !bmp || !frame) {
+    return;
+  }
+
+#if ATAGLANCE_DEBUG
+  // Draw a bounding box
+  graphics_context_set_stroke_color(ctx, foreground);
+  graphics_draw_rect(ctx, *frame);
+#endif
+  graphics_draw_bitmap_in_rect(ctx, bmp, *frame);
+}
+
 void substratum_renderer_mark_info_outofrange(
     GContext* ctx,
     const GRect* frame,
-    GColor color,
-    GColor background) {
+    const GColor color,
+    const GColor background) {
   if (!ctx || !frame) {
     return;
   }

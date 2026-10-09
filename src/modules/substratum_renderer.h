@@ -55,14 +55,21 @@ void substratum_renderer_draw_scaled_circle_in_frame(
     int16_t y,
     int16_t r);
 
+void substratum_renderer_draw_bitmap_in_rect(
+    GContext* ctx,
+    const GBitmap* bmp,
+    const GRect* frame,
+    GColor foreground);
+
 // Use background color to draw a solid line before drawing a dashed-line
 void substratum_renderer_mark_info_outofrange(
     GContext* ctx,
     const GRect* frame,
-    GColor color,
-    GColor background);
+    const GColor color,
+    const GColor background);
 
 void substratum_renderer_draw_filled_bolt_in_frame(
     GContext* ctx,
     const GRect* frame,
+    GColor background,
     GColor fill_color);

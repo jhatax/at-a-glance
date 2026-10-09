@@ -125,11 +125,11 @@ static int16_t place_battery_bar_vertically(
       grect_inset(surface->battery.track, GEdgeInsets(BATTERY_TRACK_FILL_OFFSET));
 #endif
   // All icons sit right below time to the left of the battery bar
-  module_x = face_width - (BATTERY_TRACK_HEIGHT + ICON_TEXT_GAP + BATTERY_BOLT_WIDTH);
+  module_x = face_width - (BATTERY_TRACK_HEIGHT + BATTERY_BOLT_WIDTH);
   module_y = time->origin.y + time->size.h;
   surface->battery.bolt = GRect(module_x, module_y, BATTERY_BOLT_WIDTH, BATTERY_BOLT_HEIGHT);
 
-  module_x -= (BT_ICON_WIDTH + ICON_TEXT_GAP);
+  module_x -= (BT_ICON_WIDTH);
   surface->bt_icon = GRect(module_x, module_y, BT_ICON_WIDTH, BT_ICON_HEIGHT);
 
   return HELPER_MAX(BATTERY_BOLT_HEIGHT, BT_ICON_HEIGHT);
@@ -152,8 +152,7 @@ static int16_t place_battery_bar_horizontally(
   int16_t current_row_y = time->origin.y + time->size.h;
 
   // The BT icon is at the same Y coordinate as the battery band
-  surface->bt_icon =
-      GRect(module_x - BT_ICON_WIDTH - ICON_TEXT_GAP, current_row_y, BT_ICON_WIDTH, BT_ICON_WIDTH);
+  surface->bt_icon = GRect(module_x - BT_ICON_WIDTH, current_row_y, BT_ICON_WIDTH, BT_ICON_WIDTH);
   // Y2: Y1 + 1/2 (height_band - height_track)
   int16_t module_y = current_row_y + ((BATTERY_BAND_HEIGHT - BATTERY_TRACK_HEIGHT) >> 1);
   // Battery: Track first
@@ -170,7 +169,7 @@ static int16_t place_battery_bar_horizontally(
 
   // Add the bolt to the right of the battery track
   module_y = current_row_y;
-  module_x += battery_track_w + ICON_TEXT_GAP;
+  module_x += battery_track_w;
   surface->battery.bolt = GRect(module_x, module_y, BATTERY_BOLT_WIDTH, BATTERY_BOLT_HEIGHT);
 
   return BATTERY_BAND_HEIGHT;
@@ -233,10 +232,10 @@ static void architect_calculate_must_have_layout(
   module_x = X_MARGIN;
   surface->climate.icon = GRect(module_x, current_row_y, module_w, ICON_HEIGHT);
 
-  // Climate Text Width computed based on TEMP_X_PERCENT
+  // Climate Text Width computed based on CLIMATE_WIDTH_PERCENT
   module_x += (ICON_WIDTH + ICON_TEXT_GAP);
   // width split between climate and date is 35%:65% in favor of date
-  module_w = HELPER_SCALE_ROUND(x_end - module_x, TEMP_X_PERCENT, 100);
+  module_w = HELPER_SCALE_ROUND(x_end - module_x, CLIMATE_WIDTH_PERCENT, 100);
   surface->climate.text = (WatchfaceTextSubstratum){
       .frame = GRect(module_x, current_row_y, module_w, DATA_TEXT_HEIGHT),
       .alignment = GTextAlignmentLeft,

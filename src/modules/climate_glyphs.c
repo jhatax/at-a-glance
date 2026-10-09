@@ -754,6 +754,7 @@ void draw_climate_icon(
       substratum_renderer_draw_filled_bolt_in_frame(
           ctx,
           frame,
+          climate_palette->background,
           weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, climate_palette));
       break;
     case WEATHER_ICON_OUTOFRANGE:

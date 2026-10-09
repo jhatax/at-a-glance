@@ -50,12 +50,12 @@ static StepsPalette s_steps_palette = {0};
 
 static const StepsPalette c_dark_steps_palette = {
     .approaching = PBL_IF_COLOR_ELSE(GColorYellow, GColorWhite),
-    .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorWhite),
+    .achieved = PBL_IF_COLOR_ELSE(GColorBrightGreen, GColorWhite),
 };
 
 static const StepsPalette c_light_steps_palette = {
     .approaching = PBL_IF_COLOR_ELSE(GColorVividViolet, GColorBlack),
-    .achieved = PBL_IF_COLOR_ELSE(GColorGreen, GColorBlack),
+    .achieved = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack),
 };
 
 static void steps_update_palette(const ColorPalette* palette);
@@ -130,8 +130,12 @@ static void steps_icon_update_proc(
       }
     }
 
+    // Remove any previous artifacts
+    graphics_context_set_fill_color(ctx, s_steps_palette.background);
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
     graphics_context_set_compositing_mode(ctx, GCompOpSet);
-    graphics_draw_bitmap_in_rect(ctx, s_steps_bitmap, bounds);
+    substratum_renderer_draw_bitmap_in_rect(ctx, s_steps_bitmap, &bounds, s_steps_palette.normal);
 
     if (!s_steps_is_available) {
       // Send background color as well as outofrange color

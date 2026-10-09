@@ -115,7 +115,7 @@ static void bpm_icon_update_proc(
     }
 
     graphics_context_set_compositing_mode(ctx, GCompOpSet);
-    graphics_draw_bitmap_in_rect(ctx, s_bpm_bitmap, bounds);
+    substratum_renderer_draw_bitmap_in_rect(ctx, s_bpm_bitmap, &bounds, s_bpm_palette.normal);
 
     if (!s_bpm_is_valid) {
       substratum_renderer_mark_info_outofrange(
