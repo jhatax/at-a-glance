@@ -10,4 +10,5 @@ bool battery_module_create(
 void battery_module_destroy();
 void battery_module_refresh(
     const ColorPalette* palette,
-    WatchfaceBatteryStratum* battery);
+    WatchfaceBatteryStratum* battery,
+    void* battery_state);

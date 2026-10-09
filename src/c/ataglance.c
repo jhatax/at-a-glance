@@ -58,15 +58,12 @@ static void health_handler(
 
 static void battery_handler(
     BatteryChargeState state) {
-  (void)state;
-
-  // It is sufficient to set these values because they trigger a battery refresh
   WatchfaceEventData data = {
       .received = WATCHFACE_DATA_BATTERY_EVENT,
       .parsed = WATCHFACE_DATA_BATTERY_EVENT,
+      .event_context = &state,
   };
-  bool settings_changed = false;
-  watchface_apply_received_data(&data, &s_settings, &settings_changed);
+  watchface_apply_received_data(&data, &s_settings);
 }
 
 static void bt_handler(
@@ -75,9 +72,7 @@ static void bt_handler(
       .received = WATCHFACE_DATA_BLUETOOTH,
       .parsed = WATCHFACE_DATA_BLUETOOTH,
   };
-  // It is sufficient to set these values because they trigger a battery refresh
-  bool settings_changed = false;
-  watchface_apply_received_data(&data, &s_settings, &settings_changed);
+  watchface_apply_received_data(&data, &s_settings);
 }
 
 static void tick_handler(
@@ -95,8 +90,7 @@ static void tick_handler(
     data.parsed = (WatchfaceDataMask)(data.parsed | WATCHFACE_DATA_DATE_TICK);
   }
 
-  bool settings_changed = false;
-  watchface_apply_received_data(&data, &s_settings, &settings_changed);
+  watchface_apply_received_data(&data, &s_settings);
 }
 
 #ifdef PBL_HEALTH
@@ -104,16 +98,13 @@ static void health_handler(
     HealthEventType event,
     void* context) {
   (void)context;
-  // We ignore the event because we use any health update to update all health items
-  (void)event;
-
   // It is sufficient to set these values because they trigger a health refresh
   WatchfaceEventData data = {
       .received = WATCHFACE_DATA_HEALTH_EVENT,
       .parsed = WATCHFACE_DATA_HEALTH_EVENT,
+      .event_context = &event,
   };
-  bool settings_changed = false;
-  watchface_apply_received_data(&data, &s_settings, &settings_changed);
+  watchface_apply_received_data(&data, &s_settings);
 }
 #endif
 

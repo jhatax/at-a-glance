@@ -172,7 +172,11 @@ static void battery_bolt_update_proc(
     return;
   }
   GRect bounds = layer_get_bounds(layer);
-  substratum_renderer_draw_filled_bolt_in_frame(ctx, &bounds, s_battery_palette.pluggedin);
+  substratum_renderer_draw_filled_bolt_in_frame(
+      ctx,
+      &bounds,
+      s_battery_palette.background,
+      s_battery_palette.pluggedin);
 }
 
 bool battery_module_create(
@@ -230,7 +234,8 @@ void battery_module_destroy() {
 
 void battery_module_refresh(
     const ColorPalette* palette,
-    WatchfaceBatteryStratum* battery) {
+    WatchfaceBatteryStratum* battery,
+    void* battery_state) {
   if (!palette) {
     return;
   }
@@ -243,7 +248,8 @@ void battery_module_refresh(
     layer_set_frame(s_battery_track_layer, battery->track);
     layer_set_frame(s_battery_bolt_layer, battery->bolt);
   }
-  s_battery_state = battery_state_service_peek();
+  s_battery_state =
+      (battery_state) ? *((BatteryChargeState*)battery_state) : battery_state_service_peek();
   if (s_battery_bolt_layer) {
     layer_set_hidden(s_battery_bolt_layer, !(s_battery_state.is_plugged));
   }

@@ -50,6 +50,16 @@ typedef enum {
 enum { WATCHFACE_ONESHOT_MESSAGE_KEY_BPM = 10020, WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS = 10021 };
 #endif
 
+// Runtime supplies an atomic climate update packet. `is_complete` reflects
+// runtime-owned transport completeness; climate owns applying valid weather or
+// clearing stale weather when the packet is incomplete or domain-invalid.
+typedef struct {
+  bool is_complete;
+  int celsius_tenths;
+  int weather_condition;
+  int is_day;
+} ClimateUpdate;
+
 typedef struct {
   WatchfaceDataMask received;
   WatchfaceDataMask parsed;
@@ -61,6 +71,7 @@ typedef struct {
   int weather_update_minutes;
   int steps_goal;
   int battery_orientation;
+  bool settings_changed;
 
   // Climate data
   int temperature_celsius_tenths;
@@ -68,6 +79,8 @@ typedef struct {
   int is_day;
 
   char location[WATCHFACE_EVENT_LOCATION_BUFFER_SIZE];
+  void* event_context;
+  ClimateUpdate current_climate;
 
 #ifdef PBL_HEALTH
   int oneshot_bpm;
@@ -86,9 +99,10 @@ bool watchface_create(
     const WatchfaceSettings* settings);
 void watchface_destroy();
 void watchface_maybe_relayout(WatchfaceUpdateMask* refresh);
-void watchface_repaint();
-void watchface_refresh(WatchfaceUpdateMask updates);
+void watchface_repaint(const WatchfaceEventData* data);
+void watchface_refresh(
+    WatchfaceUpdateMask updates,
+    const WatchfaceEventData* data);
 void watchface_apply_received_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    bool* settings_changed);
+    WatchfaceEventData* data,
+    WatchfaceSettings* settings);

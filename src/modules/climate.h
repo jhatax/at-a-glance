@@ -18,16 +18,6 @@ enum {
 #define CLIMATE_CONDITION_IS_VALID(cond) \
   (HELPER_VALUE_IN_RANGE((cond), CLIMATE_CONDITION_MIN, CLIMATE_CONDITION_MAX))
 
-// Runtime supplies an atomic climate update packet. `is_complete` reflects
-// runtime-owned transport completeness; climate owns applying valid weather or
-// clearing stale weather when the packet is incomplete or domain-invalid.
-typedef struct {
-  bool is_complete;
-  int celsius_tenths;
-  int weather_condition;
-  int is_day;
-} ClimateUpdate;
-
 bool climate_module_create(
     Layer* root,
     const WatchfaceTextSubstratum* text,
@@ -36,9 +26,12 @@ bool climate_module_create(
     GFont text_font,
     GFont location_font);
 void climate_module_destroy();
-void climate_module_refresh(
+
+void climate_module_refresh_climate(
     const ColorPalette* palette,
-    const WatchfaceUpdateMask refreshed,
-    uint8_t temp_unit);
-void climate_module_set_weather(ClimateUpdate* update);
-void climate_module_set_location(const char* location);
+    uint8_t temp_unit,
+    const ClimateUpdate* update);
+
+void climate_module_refresh_location(
+    const ColorPalette* palette,
+    const char* location);

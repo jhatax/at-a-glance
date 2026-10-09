@@ -1,4 +1,3 @@
-#include "climate.h"
 #include "settings.h"
 #include "watchface.h"
 
@@ -11,27 +10,16 @@ static void apply_oneshot_health_data(
     WatchfaceUpdateMask* refresh);
 #endif
 
-static void apply_settings_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    WatchfaceUpdateMask* refresh,
-    bool* settings_changed);
-
-static void apply_weather_or_location_data(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh);
-
 static void apply_subscribed_service_updates(
     const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh);
 
 // Function definitions
 static void apply_settings_data(
-    const WatchfaceEventData* data,
+    WatchfaceEventData* data,
     WatchfaceSettings* settings,
-    WatchfaceUpdateMask* refresh,
-    bool* settings_changed) {
-  if (!data || !settings || !refresh || !settings_changed) {
+    WatchfaceUpdateMask* refresh) {
+  if (!data || !settings || !refresh) {
     return;
   }
 
@@ -42,7 +30,7 @@ static void apply_settings_data(
     if (settings_set_display_mode(settings, data->display_mode) &&
         (settings->display_mode != previous)) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_REPAINT);
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -51,7 +39,7 @@ static void apply_settings_data(
     if (settings_set_time_format(settings, data->time_format) &&
         (settings->time_format != previous)) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -59,7 +47,7 @@ static void apply_settings_data(
     previous = settings->temp_unit;
     if (settings_set_temp_unit(settings, data->temp_unit) && (settings->temp_unit != previous)) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -68,7 +56,7 @@ static void apply_settings_data(
     if (settings_set_battery_orientation(settings, data->battery_orientation) &&
         (settings->battery_orientation != previous)) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_BATTERY_ORIENTATION);
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -76,7 +64,7 @@ static void apply_settings_data(
     previous = settings->battery_orientation;
     if (settings_set_weather_update_minutes(settings, data->weather_update_minutes) &&
         (settings->weather_update_minutes != previous)) {
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -85,7 +73,7 @@ static void apply_settings_data(
     previous = settings->steps_goal;
     if (settings_set_steps_goal(settings, data->steps_goal) && (settings->steps_goal != previous)) {
       *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_HEALTH);
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 
@@ -93,7 +81,7 @@ static void apply_settings_data(
     previous = settings->hr_sample_minutes;
     if (settings_set_hr_sample_minutes(settings, data->hr_sample_minutes) &&
         (settings->hr_sample_minutes != previous)) {
-      *settings_changed = true;
+      data->settings_changed = true;
     }
   }
 #endif
@@ -102,26 +90,6 @@ static void apply_settings_data(
 static const WatchfaceDataMask c_weather_mask =
     WATCHFACE_DATA_TEMPERATURE | WATCHFACE_DATA_WEATHER_CONDITION | WATCHFACE_DATA_IS_DAY;
 
-static void maybe_apply_weather_update(
-    const WatchfaceEventData* data,
-    WatchfaceUpdateMask* refresh) {
-  // Data was received; should be refreshed
-  // If data couldn't be parsed, refresh will display "Unavailable state"
-  *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
-
-  WatchfaceDataMask weather_parsed = (WatchfaceDataMask)(data->parsed & c_weather_mask);
-
-  ClimateUpdate climate = {0};
-  if (weather_parsed == c_weather_mask) {
-    climate.is_complete = true;
-    climate.celsius_tenths = data->temperature_celsius_tenths;
-    climate.weather_condition = data->weather_condition;
-    climate.is_day = data->is_day;
-  }
-
-  climate_module_set_weather(&climate);
-}
-
 static void apply_location_data(
     const WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh) {
@@ -129,29 +97,37 @@ static void apply_location_data(
     return;
   }
 
-  WatchfaceDataMask received = (WatchfaceDataMask)(data->received & WATCHFACE_DATA_LOCATION);
-  if (received == WATCHFACE_DATA_NONE) {
-    return;
-  }
+  if (data->received & WATCHFACE_DATA_LOCATION) {
+    WatchfaceDataMask received = (WatchfaceDataMask)(data->received & WATCHFACE_DATA_LOCATION);
+    if (received == WATCHFACE_DATA_NONE) {
+      return;
+    }
 
-  // Data was received; should be refreshed
-  // If data couldn't be parsed, refresh will show blank location
-  *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_LOCATION);
-  climate_module_set_location(data->location);
+    // Data was received; should be refreshed
+    // If data couldn't be parsed, refresh will show blank location
+    *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_LOCATION);
+  }
 }
 
-static void apply_weather_or_location_data(
-    const WatchfaceEventData* data,
+static void apply_weather_data(
+    WatchfaceEventData* data,
     WatchfaceUpdateMask* refresh) {
   if (!data || !refresh) {
     return;
   }
   if (data->received & c_weather_mask) {
-    maybe_apply_weather_update(data, refresh);
-  }
+    // Data was received; should be refreshed
+    // If data couldn't be parsed, refresh will display "Unavailable state"
+    *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
 
-  if (data->received & WATCHFACE_DATA_LOCATION) {
-    apply_location_data(data, refresh);
+    WatchfaceDataMask weather_parsed = (WatchfaceDataMask)(data->parsed & c_weather_mask);
+
+    if (weather_parsed == c_weather_mask) {
+      data->current_climate.is_complete = true;
+      data->current_climate.celsius_tenths = data->temperature_celsius_tenths;
+      data->current_climate.weather_condition = data->weather_condition;
+      data->current_climate.is_day = data->is_day;
+    }
   }
 }
 
@@ -206,17 +182,17 @@ static void apply_oneshot_health_data(
 #endif
 
 void watchface_apply_received_data(
-    const WatchfaceEventData* data,
-    WatchfaceSettings* settings,
-    bool* settings_changed) {
-  if (!data || !settings || !settings_changed) {
+    WatchfaceEventData* data,
+    WatchfaceSettings* settings) {
+  if (!data || !settings) {
     return;
   }
 
   WatchfaceUpdateMask refresh = WATCHFACE_UPDATE_NONE;
 
-  apply_settings_data(data, settings, &refresh, settings_changed);
-  apply_weather_or_location_data(data, &refresh);
+  apply_settings_data(data, settings, &refresh);
+  apply_weather_data(data, &refresh);
+  apply_location_data(data, &refresh);
   apply_subscribed_service_updates(data, &refresh);
 
 #ifdef PBL_HEALTH
@@ -229,8 +205,8 @@ void watchface_apply_received_data(
   }
 
   if (refresh & WATCHFACE_REPAINT) {
-    watchface_repaint();
+    watchface_repaint(data);
   } else if (refresh != WATCHFACE_UPDATE_NONE) {
-    watchface_refresh(refresh);
+    watchface_refresh(refresh, data);
   }
 }

@@ -114,8 +114,10 @@ static void nobt_icon_update_proc(
   static GColor l_icon_color = GColorBlack;
   GColor background = s_surface.style.palette->background;
 
+  // Remove any previous artifacts
   graphics_context_set_fill_color(ctx, background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
   GColor maybe_color = s_surface.style.palette->outofrange_text;
   if (!HELPER_COLOR_EQUAL(l_icon_color, maybe_color)) {
     if (helper_replace_color_in_bitmap(s_nobt_icon, l_icon_color, maybe_color)) {
@@ -123,7 +125,11 @@ static void nobt_icon_update_proc(
     }
   }
   graphics_context_set_compositing_mode(ctx, GCompOpSet);
-  graphics_draw_bitmap_in_rect(ctx, s_nobt_icon, bounds);
+  substratum_renderer_draw_bitmap_in_rect(
+      ctx,
+      s_nobt_icon,
+      &bounds,
+      s_surface.style.palette->primary_text);
 
   substratum_renderer_mark_info_outofrange(ctx, &bounds, l_icon_color, background);
 }
@@ -278,7 +284,8 @@ bool watchface_create(
   }
 
   if (s_watchface_initialized) {
-    watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
+    WatchfaceEventData data = {0};
+    watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA, &data);
   }
   return s_watchface_initialized;
 }
@@ -358,21 +365,24 @@ void watchface_maybe_relayout(
   }
 }
 
-void watchface_repaint() {
+void watchface_repaint(
+    const WatchfaceEventData* data) {
   if (!s_wf_window || !s_wf_settings) {
     return;
   }
 
   // Re-style if needed
   watchface_load_and_apply_palette();
-  watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA);
+  watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA, data);
 }
 
 void watchface_refresh(
-    WatchfaceUpdateMask updates) {
-  if (!s_wf_window || !s_wf_settings || updates == WATCHFACE_UPDATE_NONE) {
+    WatchfaceUpdateMask updates,
+    const WatchfaceEventData* data) {
+  if (!s_wf_window || !s_wf_settings || updates == WATCHFACE_UPDATE_NONE || !data) {
     return;
   }
+
   // Treat s_strata_created_mask as the sole source of truth for stratum creation success.
   // Using any other mask will create a hidden dependency / source of drift
   // Three exceptions to settings propagation handled outside this function:
@@ -387,21 +397,18 @@ void watchface_refresh(
     time_module_refresh(s_surface.style.palette, s_wf_settings->time_format);
   }
   if ((updates & WATCHFACE_UPDATE_BATTERY) && (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
-    battery_module_refresh(s_surface.style.palette, &s_surface.battery);
+    battery_module_refresh(s_surface.style.palette, &s_surface.battery, data->event_context);
   }
   if (s_strata_created_mask & CLIMATE_STRATUM_MASK) {
     if (updates & WATCHFACE_UPDATE_CLIMATE) {
-      climate_module_refresh(
+      climate_module_refresh_climate(
           s_surface.style.palette,
-          WATCHFACE_UPDATE_CLIMATE,
-          s_wf_settings->temp_unit);
+          s_wf_settings->temp_unit,
+          &data->current_climate);
     }
 
     if (updates & WATCHFACE_UPDATE_LOCATION) {
-      climate_module_refresh(
-          s_surface.style.palette,
-          WATCHFACE_UPDATE_LOCATION,
-          s_wf_settings->temp_unit);
+      climate_module_refresh_location(s_surface.style.palette, data->location);
     }
   }
 
@@ -431,11 +438,33 @@ void watchface_refresh(
 
 #ifdef PBL_HEALTH
   if ((updates & WATCHFACE_UPDATE_HEALTH)) {
-    if (s_strata_created_mask & BPM_STRATUM_MASK) {
+    // Which value should be updated?
+    HealthEventType* type_ptr = ((HealthEventType*)data->event_context);
+    HealthEventType type = (type_ptr) ? *type_ptr : HealthEventSignificantUpdate;
+    bool update_bpm = false;
+    bool update_steps = false;
+
+    switch (type) {
+      case HealthEventSignificantUpdate:
+        update_bpm = update_steps = true;
+        break;
+      case HealthEventHeartRateUpdate:
+        update_bpm = true;
+        break;
+      case HealthEventMovementUpdate:
+        update_steps = true;
+        break;
+      case HealthEventSleepUpdate:
+      case HealthEventMetricAlert:
+      case HealthEventHRVUpdate:
+      default:
+        break;
+    }
+    if (update_bpm && s_strata_created_mask & BPM_STRATUM_MASK) {
       bpm_module_refresh(s_surface.style.palette);
     }
 
-    if (s_strata_created_mask & STEPS_STRATUM_MASK) {
+    if (update_steps && s_strata_created_mask & STEPS_STRATUM_MASK) {
       steps_module_refresh(s_surface.style.palette, s_wf_settings->steps_goal);
     }
   }
