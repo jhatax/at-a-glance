@@ -336,18 +336,18 @@ def parse_suite(
 
   discarded: list[MemberDiscard] = []
   discovered_members: list[AcceptedMember] = []
-  for member_kind, member_name in members:
-    member = (member_kind, member_name)
+  for _kind, _name in members:
+    member = (_kind, _name)
     if member in discovered:
       discarded.append(
           MemberDiscard(
-              kind=member_kind,
-              name=member_name,
+              kind=_kind,
+              name=_name,
               reason="Member was already discovered; cyclic or duplicate include",
           )
       )
       continue
-    member_path = path.parent / f"{member_name}.{member_kind}"
+    member_path = path.parent / f"{_name}.{_kind}"
     discovered[member] = member_path
-    discovered_members.append(AcceptedMember(kind=member_kind, name=member_name, path=member_path))
+    discovered_members.append(AcceptedMember(kind=_kind, name=_name, path=member_path))
   return discarded, discovered_members

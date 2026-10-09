@@ -193,7 +193,7 @@ class PebbleAdapter:
         time.sleep(APP_READY_DELAY_SECONDS)
         logs.append(f"Success: Install {emulator}: {pbw_path}")
       except Exception as exc:
-        logs.append(f"Failure: Install {emulator}: {pbw_path}", exc)
+        logs.append(f"Failure: Install {emulator}: {pbw_path}, Error: {exc}")
         raise
       finally:
         self.log_message("\n".join(logs))
@@ -317,7 +317,7 @@ class PebbleEmulatorConnection(PebbleConnection):
         nack_args = outcome["nack"]
         raise RuntimeError(f"AppMessage rejected by emulator '{self.emulator}': {nack_args}")
     except Exception as exc:
-      self.logs.append(f"Failure: AppMessage {self.emulator}: {values}", exc)
+      self.logs.append(f"Failure: AppMessage {self.emulator}: {values}, Error: '{exc}'")
       raise
     finally:
       if service is not None:
@@ -394,6 +394,6 @@ class PebbleEmulatorConnection(PebbleConnection):
         with Image.open(ppm_path) as image:
           image.convert("RGB").save(output_path)
     except Exception as exc:
-      self.logs.append(f"Failure: Screenshot {self.emulator}:\n{output_path}, Error: {exc}")
+      self.logs.append(f"Failure: Screenshot {self.emulator}: {output_path}, Error: {exc}")
       raise
-    self.logs.append(f"Success: Screenshot {self.emulator}:\n{output_path}")
+    self.logs.append(f"Success: Screenshot {self.emulator}: {output_path}")

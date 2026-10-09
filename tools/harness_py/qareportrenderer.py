@@ -43,7 +43,7 @@ def _render_report_outputs(runs: list[ConsolidatedQARunOutputs]) -> str:
   return "\n".join(lines)
 
 
-def render_report(runs: list[ConsolidatedQARunOutputs], heading: str) -> str:
+def generate_report(runs: list[ConsolidatedQARunOutputs], heading: str) -> str:
   if not runs:
     raise ValueError("You must specify at least one run to render into report")
   top = render_report_top(runs, heading)

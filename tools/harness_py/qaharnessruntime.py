@@ -376,7 +376,7 @@ class ConsolidatedQARunOutputs:
     self.inform_operator(output)
 
   def emit_reports(self, log_path: Path, json_path: Path, summary_path: Path) -> None:
-    from qareportrenderer import render_report
+    from qareportrenderer import generate_report
 
     with json_path.open("w", encoding="utf-8") as handle:
       json.dump(self.as_dict(), handle, indent=2)
@@ -384,7 +384,7 @@ class ConsolidatedQARunOutputs:
 
     try:
       with summary_path.open("w", encoding="utf-8") as handle:
-        handle.write(render_report([self], "# QA Summary Report"))
+        handle.write(f"{generate_report([self], '# QA Summary Report')}\n")
     except OSError:
       # report.json is durable; view-run can regenerate summary.md.
       pass

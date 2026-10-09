@@ -200,11 +200,13 @@ def _execute_emulator_step(
       "screenshot_paths": [],
       "step_number": step.step_number,
   }
+  logs.append(OUTPUT_SEPARATOR)
+  logs.append(f"Attempting: {step.step_number}/'{step.step_id}'")
   logs.append(
-      f"{OUTPUT_SEPARATOR}\n-- Attempting {step.step_number}/'{step.step_id}', "
-      f"Emulator: '{step.emulator}'\nType: '{step.capability}'\nArguments: '{step.as_dict()}'"
+    f"Emulator: '{step.emulator}', Type: '{step.capability}', Arguments: '{step.as_dict()}'"
   )
   logs.append(OUTPUT_SEPARATOR)
+
 
   restart_required = False
   try:
@@ -373,8 +375,7 @@ def execute_plan_concurrently(plan: PlanDefinition) -> int:
   minutes, seconds = divmod(int((end - start).total_seconds()), 60)
   plan_state.inform_operator(
     message=(
-      f"Ended at: {end.strftime('%Y%m%dT%H%M%S')}"
-      f"Time elapsed: {minutes}:{seconds:02d}"
+      f"Ended at: {end.strftime('%Y%m%dT%H%M%S')}, Time elapsed: {minutes}:{seconds:02d}"
     ),
     text_color=ANSI_CYAN,
   )

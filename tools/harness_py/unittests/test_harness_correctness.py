@@ -304,13 +304,12 @@ class HarnessCorrectnessTests(unittest.TestCase):
 
   def test_summary_report_matches_report_fixture(self) -> None:
     report_root = FIXTURES_ROOT / "reports" / "canary"
-    expected_summary = (report_root / "summary.md").read_text(encoding="utf-8")
+    expected = (report_root / "summary.md").read_text(encoding="utf-8").strip()
 
     with TemporaryDirectory() as temporary_directory:
       generated_summary = Path(temporary_directory) / "GeneratedReport.md"
-      write_summary_report(report_root, generated_summary)
-
-      self.assertEqual(generated_summary.read_text(encoding="utf-8"), expected_summary)
+      generated = write_summary_report(report_root, generated_summary).strip()
+      self.assertEqual(generated, expected)
 
   def test_report_rejects_screenshot_path_count_mismatch(self) -> None:
     with self.assertRaisesRegex(ValueError, "Captured screenshots mismatch"):

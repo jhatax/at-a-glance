@@ -1,24 +1,24 @@
 {
   "plan": "canary",
-  "started_at": "20260813T163754",
-  "output_folder": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970",
-  "run_id": "20260813T163754-pid63970",
+  "started_at": "20261008T213956",
+  "output_folder": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790",
+  "run_id": "20261008T213956-pid93790",
   "status": "passed",
   "resolved": {
     "expected_screenshots": 4,
     "captured_screenshots": 4
   },
   "run_outputs": {
-    "root": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970",
-    "commands_log": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/commands.log",
-    "report_json": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/report.json",
-    "summary_md": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/summary.md",
-    "screenshots_dir": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots"
+    "root": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790",
+    "commands_log": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/commands.log",
+    "report_json": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/report.json",
+    "summary_md": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/summary.md",
+    "screenshots_dir": "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/screenshots"
   },
   "step_count": 2,
   "step_outputs": [
     {
-      "step_id": "all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots",
+      "step_id": "all_emery_white_200_0_1_80_1_horizontal_8000_80_oakland_1_shots",
       "capability": "all",
       "status": "passed",
       "emulator": "emery",
@@ -27,20 +27,20 @@
         "bpm": 80,
         "steps": 8000,
         "level": 80,
-        "charging": 0,
-        "orientation": 0,
+        "charging": 1,
         "temp": 200,
         "code": 0,
         "is_day": 1,
         "location": "Oakland",
-        "connected": 1
+        "connected": 1,
+        "orientation": 0
       },
       "screenshot_ctx": {
         "expected": 2,
         "captured": 2,
         "paths": [
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots.png",
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_200_0_1_80_0_horizontal_8000_80_oakland_1_shots-2.png"
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/screenshots/all_emery_white_200_0_1_80_1_horizontal_8000_80_oakland_1_shots.png",
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/screenshots/all_emery_white_200_0_1_80_1_horizontal_8000_80_oakland_1_shots-2.png"
         ]
       }
     },
@@ -55,19 +55,19 @@
         "steps": 11000,
         "level": 85,
         "charging": 1,
-        "orientation": 1,
         "temp": 250,
         "code": 1,
         "is_day": 1,
         "location": "Oakland",
-        "connected": 0
+        "connected": 0,
+        "orientation": 1
       },
       "screenshot_ctx": {
         "expected": 2,
         "captured": 2,
         "paths": [
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots.png",
-          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20260813T163754-pid63970/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots-2.png"
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots.png",
+          "/Users/manomeht/Code/at-a-glance/qa/qa-runs/20261008T213956-pid93790/screenshots/all_emery_white_250_1_1_85_1_vertical_11000_110_oakland_0_shots-2.png"
         ]
       }
     }

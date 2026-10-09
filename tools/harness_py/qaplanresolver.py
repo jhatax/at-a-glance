@@ -521,7 +521,7 @@ def _expand_step_template(
               reason=(
                   f"Emulator '{emulator}' doesn't support capability "
                   f"'{template.capability}'"
-              ),
+              )
           )
       )
       continue

@@ -6,7 +6,7 @@ from typing import Final
 
 from qaharnessconfig import QA_ROOT, QARUNS_ROOT
 from qaharnessruntime import ConsolidatedQARunOutputs
-from qareportrenderer import render_report, render_report_top
+from qareportrenderer import generate_report, render_report_top
 
 COMPARISONS_ROOT: Final = QA_ROOT / "comparisons"
 MAX_COMPARISON_RUNS: Final = 5
@@ -66,14 +66,16 @@ def _compare_runs(selectors: list[str]) -> Path:
       handle.write("\n")
 
     with comp_path.open("w", encoding="utf-8") as handle:
-      handle.write(render_report(payloads, "# QA Summary Report"))
+      handle.write(f"{generate_report(payloads, '# QA Summary Report')}\n")
   return comp_path
 
 
-def write_summary_report(run_root: Path, summary_path: Path) -> None:
+def write_summary_report(run_root: Path, summary_path: Path) -> str:
   run = _load_qarun(run_root)
+  _report = f"{generate_report([run], '# QA Summary Report')}\n"
   with summary_path.open("w", encoding="utf-8") as handle:
-    handle.write(f"{render_report([run], "# QA Summary Report")}\n")
+    handle.write(_report)
+  return _report
 
 
 def _view_run(selector: str) -> Path:
