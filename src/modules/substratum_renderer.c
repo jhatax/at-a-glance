@@ -118,18 +118,30 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   GPath* path = gpath_create(&path_info);
 
   if (path) {
-#ifdef ATAGLANCE_DEBUG
-    // Draw a bounding box
+#if ATAGLANCE_DEBUG
+    // draw a bounding box
     graphics_context_set_stroke_color(ctx, gcolor_legible_over(background));
     graphics_draw_rect(ctx, *frame);
 #endif
-    graphics_context_set_fill_color(ctx, fill_color);
+    // draw the bolt
     graphics_context_set_stroke_color(ctx, fill_color);
-    gpath_draw_filled(ctx, path);
-    gpath_draw_outline(ctx, path);
-    gpath_move_to(path, GPoint(1, 0));
-    gpath_draw_filled(ctx, path);
     graphics_context_set_stroke_width(ctx, stroke_width);
+    gpath_draw_outline(ctx, path);
+
+    // fill the bolt
+    graphics_context_set_fill_color(ctx, fill_color);
+    gpath_draw_filled(ctx, path);
+
+    // move the bolt to the right by 1-pixel
+    gpath_move_to(path, GPoint(1, 0));
+
+    // draw an offset bolt
+    gpath_draw_outline(ctx, path);
+
+    // fill the offset bolt
+    gpath_draw_filled(ctx, path);
+
+    // release gpath resources
     gpath_destroy(path);
   }
   path = NULL;
