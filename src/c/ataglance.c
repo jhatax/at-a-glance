@@ -123,14 +123,14 @@ static void subscribe_to_services() {
     health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
   }
 #endif
+}
 
+static void initialize_mailboxes() {
   app_message_set_context(&s_settings);
   app_message_register_inbox_received(inbox_received_handler);
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  // This should be called immediately regardless of whether peeking at the
-  // pebble-kit connection returns true
   initialize_inbox_outbox(NULL);
 }
 
@@ -153,6 +153,11 @@ static void main_window_load(
 
   // 3. Subscribe to services
   subscribe_to_services();
+
+  // 4. Initialize inbox & outbox
+  initialize_mailboxes();
+
+  // set BT status
   bt_handler(connection_service_peek_pebble_app_connection());
 }
 
@@ -176,7 +181,10 @@ static void init() {
 
   window_set_window_handlers(
       s_window,
-      (WindowHandlers){.load = main_window_load, .unload = main_window_unload});
+      (WindowHandlers){
+          .load = main_window_load,
+          .unload = main_window_unload,
+      });
   window_stack_push(s_window, true);
 }
 
