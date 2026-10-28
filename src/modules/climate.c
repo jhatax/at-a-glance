@@ -44,9 +44,7 @@ static bool format_temperature(
     char* buf,
     size_t buflen,
     uint8_t temp_unit);
-static void climate_module_update_temperature(uint8_t temp_unit);
-static void climate_module_set_temperature(int celsius_tenths);
-static void climate_module_set_condition(int weather_condition);
+static void climate_module_refresh_watchface(uint8_t temp_unit);
 
 static const ClimatePalette c_dark_climate_palette = {
     .sun = PBL_IF_COLOR_ELSE(GColorChromeYellow, GColorWhite),
@@ -109,7 +107,7 @@ static bool format_temperature(
   return true;
 }
 
-static void climate_module_update_temperature(
+static void climate_module_refresh_watchface(
     uint8_t temp_unit) {
   if (!s_temperature_layer || !MODULE_PALETTE_LOADED(s_climate_palette)) {
     return;
@@ -145,13 +143,11 @@ static void climate_icon_update_proc(
   graphics_context_set_fill_color(ctx, s_climate_palette.background);
   graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-  int16_t condition = s_weather_condition;
-
   if (!s_climate_is_available) {
-    condition = CLIMATE_CONDITION_OUTOFRANGE;
+    s_weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
   }
 
-  draw_climate_icon(ctx, &bounds, condition, s_is_day, &s_climate_palette);
+  draw_climate_icon(ctx, &bounds, s_weather_condition, s_is_day, &s_climate_palette);
 }
 
 static void climate_module_update_weather(
@@ -267,7 +263,7 @@ void climate_module_refresh_climate(
 
   climate_module_update_palette(palette);
   climate_module_update_weather(update);
-  climate_module_update_temperature(temp_unit);
+  climate_module_refresh_watchface(temp_unit);
 }
 
 void climate_module_refresh_location(

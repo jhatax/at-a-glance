@@ -39,12 +39,14 @@ void inbox_received_handler(
     return;
   }
   WatchfaceSettings* settings = (WatchfaceSettings*)context;
+#ifdef PBL_HEALTH
+  uint8_t prev_hr_sampling = settings->hr_sample_minutes;
+#endif
+
   if (!settings) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage context should never be NULL");
     return;
   }
-  WatchfaceSettings previous = *settings;
-
   if (parse_ready_sentinel(iter)) {
     return;
   }
@@ -83,7 +85,7 @@ void inbox_received_handler(
 
 #ifdef PBL_HEALTH
   // Change HR-Sample Minutes per user's preference
-  if (previous.hr_sample_minutes != settings->hr_sample_minutes) {
+  if (prev_hr_sampling != settings->hr_sample_minutes) {
     health_service_set_heart_rate_sample_period((uint16_t)settings->hr_sample_minutes * 60);
   }
 #endif
