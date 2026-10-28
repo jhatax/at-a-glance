@@ -15,8 +15,7 @@ function sendPebbleMessage(payload, success, failure) {
 }
 
 var sendAppMessage = createAppMessageQueue(sendPebbleMessage);
-var sendWeatherMessage = createAppMessageQueue(sendPebbleMessage);
-var sendLocationMessage = sendWeatherMessage;
+var sendClimateMessage = createAppMessageQueue(sendPebbleMessage);
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -58,8 +57,7 @@ function applyWeatherUpdateMinutes(minutes) {
 
 var clay = new Clay(clayConfig);
 var refresh = createRefreshController({
-  sendWeatherMessage: sendWeatherMessage,
-  sendLocationMessage: sendLocationMessage,
+  sendClimateMessage: sendClimateMessage,
 });
 
 Pebble.addEventListener('showConfiguration', function () {
