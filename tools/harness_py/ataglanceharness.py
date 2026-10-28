@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from qaresultinspector import handle_compare_runs, handle_view_run
 
 def _handle_build(verbose: bool, log_path: str | None) -> int:
   from pebbleadapter import PebbleAdapter
+  from qaharnessconfig import REPO_ROOT
+  os.chdir(REPO_ROOT)
   PebbleAdapter.build(verbose, Path(log_path) if log_path else None)
   return 0
 
@@ -30,6 +33,9 @@ def _handle_kill(emulators: list[str]) -> int:
 
 
 def handle_plan_exec(action: str, plan_name: str) -> int:
+  from qaharnessconfig import REPO_ROOT
+  os.chdir(REPO_ROOT)
+
   from qaplanexecutor_threaded import resolve_and_execute_plan_concurrently
   if action in {"run-scenario", "force-scenario"}:
     return resolve_and_execute_plan_concurrently(action, plan_name)

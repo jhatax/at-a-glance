@@ -294,6 +294,7 @@ class PebbleEmulatorConnection(PebbleConnection):
       completed = threading.Event()
       outcome: dict[str, tuple[object, ...]] = {}
       transaction_id = -1
+      from qaharnessconfig import REPO_ROOT
 
       def handle_result(result: str, *args: object) -> None:
         if args and args[0] == transaction_id:
@@ -303,7 +304,7 @@ class PebbleEmulatorConnection(PebbleConnection):
       ack_handle = service.register_handler("ack", lambda *args: handle_result("ack", *args))
       nack_handle = service.register_handler("nack", lambda *args: handle_result("nack", *args))
       transaction_id = service.send_message(
-          PebbleProject().uuid,
+          PebbleProject(str(REPO_ROOT)).uuid,
           {
               key: CString(value) if isinstance(value, str) else Int32(value)
               for key, value in values.items()
