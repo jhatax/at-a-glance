@@ -68,12 +68,11 @@ Editor support includes:
 - Harness tests
 - Explicit emulator QA
 
-Regenerate `compile_commands.json` from a fresh build when editor diagnostics are stale. Do not edit compiler flags by hand.
+Regenerate `compile_commands.json` with `./aag-build-qa.sh --build-clean` when editor diagnostics are stale. This clean verbose build captures the compiler commands needed by clangd.
 
 The npm commands provide the same repeatable local checks outside the editor:
 
 ```sh
-npm run lint
 npm run format:check
 npm run docs:check
 npm run test:harness
@@ -81,10 +80,12 @@ npm run test:native
 npm run check
 ```
 
+`npm run check` formats source files before running checks and tests. Review its changes before staging.
+
 Use one harness test or test class when narrowing a change:
 
 ```sh
-npm run test:harness:focused -- test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
+PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
 ```
 
 Documentation formatting commands:
@@ -97,21 +98,21 @@ The checked-in hooks have these responsibilities:
 
 - Pre-commit:
   - Format staged files.
-  - Run staged JavaScript linting.
+  - Format staged JavaScript with Prettier.
   - Check Markdown.
   - Run `npm run test:harness` and `npm run test:native`.
   - Do not launch emulators.
 - Pre-push:
   - Run the harness and native C unit tests.
   - Build the watchface.
-  - Execute the screenshot-producing `pre-push-gate` suite.
-- Pre-push visual QA: `./aag-build-qa.sh --exec pre-push-gate --force`
+  - The visual QA invocation is currently commented out.
+- Manual pre-push visual QA: `./aag-build-qa.sh --exec pre-push-gate --force`
 - Pre-release QA: `./aag-build-qa.sh --exec pre-release-gate`
 - Validation guidance: Use the named plans documented by [Validation](Validation.md) when broader runtime evidence is required.
 
 ## Source And Runtime Discipline
 
-- Keep ownership explicit: lifecycle, services, persistence, AppMessage, and dispatch belong to `src/c/ataglance.c`; runtime facts belong to `watchface_runtime_boundary.c`; the live surface and feature lifecycle belong to `watchface.c`; feature modules own their layers, source state, refresh, and destruction.
+- Keep ownership explicit: `src/c/ataglance.c` owns lifecycle, service subscriptions, settings loading, and callback registration. Its private message adapter owns tuple parsing, transport, changed-settings saves, and heart-rate cadence updates. `watchface_runtime_boundary.c` interprets events; `watchface.c` owns the live surface and feature lifecycle; feature modules own their layers, source state, refresh, and destruction.
 - Keep feature APIs narrow. Do not pass watchface or layout structs by value, retain `WatchfaceSurface*` in feature modules, or make a feature depend on a broader global update type when a narrower input exists.
 - Use fixed-size buffers, `snprintf`, integer geometry, capability guards, and paired resource cleanup. Keep allocation, network, JSON, heavy formatting, and layout calculations out of layer update procedures.
 - Render through `watchface_refresh()`. Palette changes repaint; new data targets the affected strata. Required text updates must not depend on optional icons.
@@ -171,8 +172,6 @@ The pre-commit hook is the final local gate, not a replacement for a build, emul
 
 ## Read Next
 
-- [BuildandInstall](BuildandInstall.md) for build, install, recovery, and compile-database operations.
-- [Validation](Validation.md) for validation-path selection and evidence.
 - [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and lifecycle.
 - [SettingsandConfiguration](SettingsandConfiguration.md) for settings and message contracts.
 - [QA README](../qa/README.md) for harness operation and artifacts.

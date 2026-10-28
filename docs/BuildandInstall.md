@@ -1,6 +1,6 @@
 # Build and Install
 
-This document is the current source of truth for _At A Glance_ build, installation, and editor-tooling support.
+This document describes _At A Glance_ build, installation, and editor tooling. Live scripts define command behavior.
 
 Use this document to understand:
 
@@ -51,21 +51,30 @@ Use [QA README](../qa/README.md) for operating the QA harness and [QAHarnessImpl
 
 ### Pebble Tool SDK/Waf
 
-Python invokes the installed Pebble Tool build and compile-commands APIs through `PebbleAdapter`.
+`PebbleAdapter` invokes Pebble Tool's Waf runner. The repository's compile-database helper extracts compiler commands from the verbose build log.
 
 ```text
 ./aag-build-qa.sh --build
   -> ataglanceharness.py build
        -> PebbleAdapter.build()
-            -> Pebble Tool BuildCommand
+            -> Pebble Tool SDKProjectCommand._waf()
             -> configure project
             -> build platform outputs
             -> emit PBW and per-platform artifacts under build/
-       -> Pebble Tool CompileCommandsCommand when verbose
-            -> emit compile_commands.json at the project root
+            -> compilerdbgenerator.generate_compile_database() when verbose
+                 -> extract Emery compiler commands from build.log
+                 -> write compile_commands.json at the project root
 ```
 
-Pebble Tool handles project dependencies as part of its build command.
+Install JavaScript dependencies with `npm install` before building. The harness invokes Waf configure and build directly.
+
+For clangd, use a clean verbose build so the log includes compiler commands:
+
+```sh
+./aag-build-qa.sh --build-clean
+```
+
+`--build-verbose` captures an incremental build. If no source compiles, the log may contain no entries for `compile_commands.json`. Compile-database generation does not determine build success.
 
 Verbose build behavior:
 

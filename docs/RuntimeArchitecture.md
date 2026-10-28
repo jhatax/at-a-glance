@@ -1,6 +1,6 @@
 # Runtime Architecture
 
-This is the current source of truth for _At A Glance's_ runtime architecture: execution flow, ownership, boundaries, lifecycle, and source organization.
+This document maps _At A Glance's_ runtime execution, ownership, boundaries, and lifecycle. Live source defines current behavior.
 
 ## Adjacent
 
@@ -19,7 +19,7 @@ Layers have been implemented to satisfy visual display and runtime-architecture 
 - `layout_architect.c` => Prepares the surface - `layout_stylist.c` => Associates styles and fonts with visual channels
 
 4. Watch face tiles: `time, date, battery, climate, steps, bpm` => display information and state
-   - `climate` also owns the optional centered location text and its source buffer.
+   - `climate` also owns the centered location text and its source buffer.
 
 ### Core Concepts
 
@@ -52,7 +52,8 @@ ataglance.c
                  -> layout_watchface_load_custom_fonts(...)
                  -> feature_module_create(root, prepared surface strata...)
                  -> require date, time, battery, climate, and horizontal-rule strata to succeed
-                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
+                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA, &data)
+                      -> data is a zeroed event; weather and location use initial source state
             -> subscribe tick, battery, connection, and health services
             -> register AppMessage callbacks
             -> app_message_open(...)
@@ -66,23 +67,21 @@ service callback in ataglance.c
   -> build WatchfaceEventData
   -> watchface_apply_received_data()
 
-AppMessage inbox handler
-  -> parse WatchfaceEventData
-  -> ataglance_apply_received_data()
-       -> watchface_apply_received_data()
-       -> apply_setting_data(...)
-            -> mutate settings for time format, temp unit, display mode, battery orientation, and steps goal
+AppMessage inbox handler in ataglance_pebble_message_handler.c
+  -> parse WatchfaceEventData through ataglance_pebble_message_parser.c
+  -> watchface_apply_received_data(&data, settings)
+       -> apply_settings_data(...)
+            -> mutate settings for time format, temp unit, display mode, battery orientation, weather cadence, HR cadence, and steps goal
             -> accumulate targeted refresh mask
             -> mark repaint only for a valid display-mode change
-       -> apply_weather_or_location_data(...)
-            -> push complete or unavailable climate state
+       -> apply_weather_data(...)
+            -> mark current_climate.received when any weather tuple arrives
+            -> mark current_climate.complete when all three weather fields parse
             -> request climate refresh when any weather field was received
-            -> copy the bounded location payload into climate source state
+       -> apply_location_data(...)
             -> request the location text refresh
        -> apply_subscribed_service_updates(...)
             -> translate tick, battery, and health callbacks into refresh masks
-       -> apply_health_setting_data(...)
-            -> mutate HR sample setting only
        -> apply_oneshot_health_data(...)
             -> queue one-shot BPM/steps overrides
             -> request health refresh
@@ -91,12 +90,12 @@ AppMessage inbox handler
                  -> recalculate battery, charging-bolt, and Bluetooth frames
                  -> request battery, Bluetooth-layout, and horizontal-rule updates
        -> if repaint
-            -> watchface_repaint()
+            -> watchface_repaint(&data)
                  -> layout_watchface_update_palette(&surface.style, display_mode)
                  -> window_set_background_color(...)
-                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA)
+                 -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA, &data)
        -> else if refresh mask != WATCHFACE_UPDATE_NONE
-            -> watchface_refresh(mask)
+            -> watchface_refresh(mask, &data)
                  -> refresh only the addressed strata that were created
 ```
 
@@ -106,12 +105,11 @@ AppMessage inbox handler
 AppMessage inbox handler
   -> return if the JS_READY sentinel is detected
   -> parse settings, weather, location, health settings, and one-shot health tuples
-  -> ataglance_apply_received_data(&data)
-       -> watchface_apply_received_data(&data, &settings)
+  -> watchface_apply_received_data(&data, settings)
   -> if any persisted setting changed
-       -> settings_save(&settings)
+       -> settings_save(settings)
   -> if hr_sample_minutes changed
-       -> apply_hr_sample_period()
+       -> health_service_set_heart_rate_sample_period(...)
 ```
 
 ### 4. Weather-cadence scheduling
@@ -156,13 +154,15 @@ Current visual placement, palette, and typography are evidenced as screenshots i
 
 ## Stylist
 
-- `layout_watchface_update_palette()` resolves palette and font selection.
+- `layout_watchface_update_palette()` resolves the palette; font initialization and loading select fonts by role.
 - Owns display-mode styling decisions.
 - Delegates strata / information styling to modules.
 
 ## Watchface Runtime
 
-- `ataglance.c` owns Pebble lifecycle, services, persistent settings, AppMessage parsing, and transport dispatch.
+- `ataglance.c` owns Pebble lifecycle, service subscriptions, settings loading, and callback registration.
+- `ataglance_pebble_message_parser.c` parses raw AppMessage tuples into event data.
+- `ataglance_pebble_message_handler.c` owns transport callbacks and opening, delegates parsed events, saves changed settings, and applies heart-rate cadence changes.
 - `watchface_runtime_boundary.c` interprets runtime events, mutates settings and domain state, and decides repaint versus refresh.
 - `watchface.c` owns the live `WatchfaceSurface`, feature-module lifecycle, and visual dispatch.
 - `watchface_apply_received_data()` is the single runtime ingress for watchface updates.
@@ -178,7 +178,8 @@ Two classes of strata have been defined: required strata are [`time`, `battery`,
 
 Additionally,
 
-- Time, date, and climate require their text layers.
+- Time and date require their text layers.
+- Climate requires temperature and location text layers; its condition icon is optional.
 - Battery requires its track and procedurally drawn charging-bolt layers.
 - Horizontal rule requires its dedicated layer.
 - Optional icons never gate required text updates.
@@ -207,11 +208,11 @@ watchface_create()
 
 ```text
 service callback or AppMessage callback
-  -> ataglance.c parses raw Pebble input
+  -> service adapter builds event data, or the message parser parses tuples
   -> watchface_runtime_boundary.c validates and interprets runtime facts
   -> optional module source-state setter
        -> module stores source state only
-  -> watchface_refresh(mask)
+  -> watchface_refresh(mask, &data)
        -> module_refresh(active palette, narrow runtime inputs)
             -> read current source state or Pebble service state
             -> derive render text, icon, progress, and live colors locally
@@ -232,7 +233,7 @@ watchface_destroy()
 
 - Text-only modules such as date and time own a text layer and refresh text from time/date state plus the active palette.
 - Service-backed modules such as battery, BPM, and steps read Pebble service state during refresh, then map that source state to text, progress, icon, or live colors.
-- Transport-backed modules such as climate receive weather and optional location source state through setters, then render temperature, glyph, and location text during refresh.
+- Climate refresh accepts `ClimateUpdate` and location refresh accepts `LocationUpdate`. Each refresh applies received data to module-owned source state before rendering. Repaints and unit changes preserve source state when no new data arrived.
 - QA-only one-shot health setters queue a single source-state override that is consumed by the next health refresh and cleared during module or watch face teardown.
 
 ### Module boundaries
@@ -254,7 +255,7 @@ watchface_create()
   -> steps_module_create(root, text substratum, icon substratum, progress frame, font)
        -> require root, text, progress frame, and font
        -> create required steps text layer
-       -> initialize source state, goal, threshold, icon color cache, and one-shot state
+       -> initialize goal, threshold, icon color cache, and one-shot state
        -> if icon substratum exists
             -> load RESOURCE_ID_WALK bitmap
             -> create optional icon layer with steps_icon_update_proc
@@ -268,7 +269,7 @@ watchface_create()
 **Steps refresh flow**
 
 ```text
-watchface_refresh(WATCHFACE_UPDATE_HEALTH)
+watchface_refresh(WATCHFACE_UPDATE_HEALTH, &data)
   -> steps_module_refresh(active palette, settings.steps_goal)
        -> store current steps goal
        -> calculate approaching-goal threshold at 70 percent
@@ -304,7 +305,7 @@ steps_progress_update_proc()
 
 ```text
 pebble send-app-message ... 10021=<steps>
-  -> ataglance.c parses WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS
+  -> ataglance_pebble_message_handler.c parses WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS
   -> watchface_runtime_boundary.c calls steps_module_oneshot_set_steps()
   -> next steps_module_refresh()
        -> consumes queued value
@@ -321,7 +322,7 @@ watchface_destroy()
        -> destroy WALK bitmap
        -> destroy icon layer
        -> destroy progress layer
-       -> clear text buffer, source state, palette, colors, goal, and one-shot state
+       -> clear text buffer, palette, colors, goal, and one-shot state
 ```
 
 The steps module demonstrates the intended boundary:
@@ -348,33 +349,33 @@ The steps module demonstrates the intended boundary:
 `ataglance.c` is the Pebble container and service adapter. The private C message adapter owns AppMessage parsing, sizing, opening, and callbacks. Responsibilities are split as follows:
 
 1. the message parser translates raw tuples into `WatchfaceEventData`;
-2. the message handler owns AppMessage transport and delegates parsed data;
-3. `ataglance.c` owns lifecycle, persistence triggers, and service callbacks;
+2. the message handler owns AppMessage transport, delegates parsed data, and saves changed settings;
+3. `ataglance.c` owns lifecycle, settings loading, and service callbacks;
 4. `watchface_apply_received_data()` owns runtime interpretation.
 
 ### Inbound AppMessage coverage
 
 - **Settings tuples**: time format, temperature unit, display mode, battery orientation, weather cadence, heart-rate cadence, and steps goal.
 - **Weather tuples**: temperature, weather condition, and `is_day`.
-- **Location tuple**: optional current-location text from PKJS; an empty value clears the location text.
+- **Location tuple**: current-location text from PKJS; an empty value renders `---`.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
 ### PKJS AppMessage sends
 
 - The C runtime sends no application AppMessages.
-- PKJS uses independent serialized lanes:
-  - Weather
-  - Location
-  - Control
-- Each lane retries failed `Pebble.sendAppMessage()` calls with bounded timer backoff.
-- Lane separation prevents a stalled weather or location send from blocking settings and control traffic.
+- PKJS uses two independent serialized queues: settings/control and combined weather/location.
+- Each queue retries a failed `Pebble.sendAppMessage()` up to five times, with delays of one through five seconds.
+- A pending climate send does not block settings and control traffic.
 
 Settings, Clay field mapping, generated message-key numbering, PKJS normalization, and persistence rules are owned by [SettingsandConfiguration](SettingsandConfiguration.md). This section owns only the architecture-level transport route.
 
 ### Climate-specific transport behavior
 
-- The phone companion requests current weather from Open-Meteo on the configured cadence. If geolocation or either network request fails, PKJS logs the failure and leaves the watch's current weather/location state unchanged.
-- PKJS sends the resolved location text through `MAYBE_CURRENT_LOCATION`; the runtime passes it to `climate.c`, which owns the location buffer and text layer.
+- `weather_location.js` owns geolocation, Open-Meteo weather requests, and OpenStreetMap reverse geocoding on the configured cadence.
+- Weather and reverse-geocoding requests run concurrently. `Promise.all()` waits for both and sends one payload containing `TEMPERATURE`, `WEATHER_CONDITION`, `IS_DAY`, and `MAYBE_CURRENT_LOCATION`.
+- If geolocation fails or either current-location request rejects, PKJS clears its saved coordinates and sends one unavailable payload: temperature `0`, condition `-1`, `is_day` `-1`, and an empty location string. Network requests and geolocation use a two-minute timeout; geolocation may reuse a position up to 30 minutes old.
+- Responses for superseded coordinates are rejected; their failures do not clear the current location.
+- `climate.c` owns the location buffer and text layer. A received empty or malformed location renders `---`; a repaint without a location tuple preserves the buffer.
 - Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.
 - Weather tuple flow:
@@ -382,6 +383,7 @@ Settings, Clay field mapping, generated message-key numbering, PKJS normalizatio
   2. The runtime applies complete climate state only when temperature, condition, and `is_day` are all parsed.
   3. `climate.c` validates the parsed domain values.
   4. Incomplete or invalid packets clear prior weather state and render the unavailable vocabulary.
+  5. A refresh without new weather data preserves the prior weather values.
 
 ## Lifecycle Priorities
 

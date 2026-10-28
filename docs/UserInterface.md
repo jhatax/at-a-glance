@@ -11,7 +11,7 @@ This document records the current UI of _At A Glance_. It is the reference for t
 
 ### On Device
 
-Current device screenshots are checked in under `docs/assets/screenshots/`. Together with the palettes, typography, and glyph realization tables below, they provide evidence for legibility, placement, and compatibility across supported devices.
+Checked-in device screenshots are under `docs/assets/screenshots/`. The tables below describe live source; the images show the states captured when they were taken.
 
 |  |  |  |
 | :-: | :-: | :-: |
@@ -66,14 +66,14 @@ The `layout_stylist` selects fonts by display class (compact or full) and font r
 - On color-capable watches, four modes are available.
 - On monochrome-capable watches, two monochrome-specific modes are available.
 - Each mode uses a defined palette to render text, icons, and convey state.
-- Click the Back button three times to cycle display modes.
+- Select the display mode in the phone's Clay settings page.
 - The watch repaints immediately when the mode changes.
 
 This satisfies the invariant that choices are available on all devices.
 
 ### Display Mode Palette Characteristics
 
-The combined palette for each mode satisfies the design invariant of perceptual fluency. Colors within each palette are mutually exclusive to satisfy, "one visual channel, one responsibility", visual invariant.
+Each display mode selects a primary palette and module palettes. Modules share normal and unavailable text colors and add colors for their own states.
 
 There are five sub-palettes that harmonize together to maximize contrast and convey state.
 
@@ -108,36 +108,36 @@ There are five sub-palettes that harmonize together to maximize contrast and con
 | **PRIMARY** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Primary text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range text | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Out-of-Range text | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` |
 | Date | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
 | Time | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorOxfordBlue` | `GColorCeleste` |
 | **BATTERY** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Track | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` |
 | Normal (`>50`) | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
+| Medium (`21-50`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorYellow` | `GColorVividViolet` | `GColorYellow` |
 | Critical (`<=20`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
-| Plugged In | `GColorBlack` | `GColorWhite` | `GColorIslamicGreen` | `GColorGreen` | `GColorIslamicGreen` | `GColorGreen` |
+| Plugged In | `GColorBlack` | `GColorWhite` | `GColorIslamicGreen` | `GColorBrightGreen` | `GColorIslamicGreen` | `GColorBrightGreen` |
 | **STEPS** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Approaching (`>70%` of goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
-| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorGreen` | `GColorIslamicGreen` | `GColorGreen` | `GColorIslamicGreen` |
+| Out-of-Range | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` |
+| Approaching (`>=70%` of goal, below goal) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorYellow` | `GColorVividViolet` | `GColorYellow` |
+| Achieved (`>= goal`) | `GColorBlack` | `GColorWhite` | `GColorIslamicGreen` | `GColorBrightGreen` | `GColorIslamicGreen` | `GColorBrightGreen` |
 | **CLIMATE** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
+| Out-of-Range | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` |
 | Sun | `GColorBlack` | `GColorWhite` | `GColorWindsorTan` | `GColorChromeYellow` | `GColorWindsorTan` | `GColorChromeYellow` |
-| Cold | `GColorBlack` | `GColorWhite` | `GColorCobaltBlue` | `GColorMintGreen` | `GColorCobaltBlue` | `GColorMintGreen` |
+| Cold | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorWhite` | `GColorDarkGray` | `GColorWhite` |
 | Cloud | `GColorBlack` | `GColorWhite` | `GColorBlue` | `GColorElectricBlue` | `GColorBlue` | `GColorElectricBlue` |
-| Clear Ring (night) | `GColorLightGray` | `GColorLightGray` | `GColorLightGray` | `GColorBabyBlueEyes` | `GColorLightGray` | `GColorBabyBlueEyes` |
-| Clear Fill | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
+| Clear Ring (night) | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorBabyBlueEyes` | `GColorDarkGray` | `GColorBabyBlueEyes` |
+| Clear Fill | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorBabyBlueEyes` | `GColorLightGray` | `GColorBabyBlueEyes` |
 | **HEART-RATE BPM** |  |  |  |  |  |  |
 | Background | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorCeleste` | `GColorOxfordBlue` |
 | Normal | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` |
-| Out-of-Range | `GColorBlack` | `GColorWhite` | `GColorBlack` | `GColorWhite` | `GColorDarkGray` | `GColorLightGray` |
-| Elevated (`>=100`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorIcterine` | `GColorVividViolet` | `GColorIcterine` |
+| Out-of-Range | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` | `GColorDarkGray` | `GColorLightGray` |
+| Elevated (`100-119`) | `GColorBlack` | `GColorWhite` | `GColorVividViolet` | `GColorYellow` | `GColorVividViolet` | `GColorYellow` |
 | Critical (`>=120`) | `GColorBlack` | `GColorWhite` | `GColorRed` | `GColorRed` | `GColorRed` | `GColorRed` |
 
 ## Current Icon Sizes

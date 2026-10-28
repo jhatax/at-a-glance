@@ -57,14 +57,14 @@ Before release, validation should cover:
 - successful build
 - supported emulator behavior
 - settings defaults and applied values
-- three-click Back-button display-mode changes and repaint behavior
+- Clay display-mode changes and repaint behavior
 - weather, battery, battery orientation, health, and display-mode behavior
 - screenshot evidence for visual review
 - manual config-page review
 - manual hardware-install check when release confidence requires it
 - known limitations or unchecked items
 
-`pre-release-gate` is the canonical pre-release QA plan that comprehensively validates watch face code paths.
+`pre-release-gate` is the canonical pre-release QA plan for representative runtime states. The operator also checks the settings page, restart behavior, and phone-driven weather/location flow.
 
 ```
 ./aag-build-qa.sh --exec pre-release-gate
@@ -76,10 +76,10 @@ Before release, validation should cover:
 
 Out-of-the-box targets:
 
-- `canary`: One screenshot-free integrated `all` step on Emery for fast plan/execution confidence.
+- `canary`: Two screenshot-enabled integrated `all` steps on Emery, covering both battery orientations and connected/disconnected states.
 - `qa-smoke`: Matrix-driven six-surface integrated smoke coverage for Emery, Chalk, and Flint in white and black display modes.
 - `visual-refresh`: Matrix-driven screenshot-producing visual checks across the same six surfaces, including charging, connectivity, day/night, sleet, and clear-weather states.
-- `pre-push-gate`: Suite aggregation of the `visual-refresh` Matrix.
+- `pre-push-gate`: Suite aggregation of the `visual-refresh` Matrix and `smoke-bluetooth` scenario.
 - `pre-release-gate`: Matrix-driven representative pre-release validation across every supported emulator/display tuple, with screenshot evidence and manual signoff.
 
 Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and compare past qa runs, and validate qa plans for correctness.
@@ -115,7 +115,7 @@ Typical evidence includes:
 - `commands.log`
 - `screenshots/`, when screenshots are enabled
 
-Bluetooth steps request two screenshots: one before changing the connection state and one after.
+Bluetooth and `all` steps request two screenshots: one before changing the connection state and one after.
 
 To view prior qa plan execution results:
 
@@ -144,7 +144,7 @@ pebble send-app-message --emulator emery --int 10013=0
 pebble send-app-message --emulator gabbro --int 10013=1
 ```
 
-Confirm horizontal default, live relayout without watchface teardown, and persistence after restart. Apply battery percentages and charging state in both orientations.
+Confirm horizontal default on rectangular displays, vertical default on round displays, live relayout without watchface teardown, and persistence after restart. Apply battery percentages and charging state in both orientations.
 
 #### Weather And Display Mode
 
@@ -161,9 +161,25 @@ pebble send-app-message --emulator emery --int 10006=2
 
 Use [SettingsandConfiguration](SettingsandConfiguration.md) for the message-key catalog and transport contract.
 
+Key `10005` tests the watch's persisted cadence only. Change the interval through Clay to exercise the phone's polling schedule, then restart PKJS to check the saved preference.
+
+#### Weather And Location State
+
+```sh
+pebble send-app-message --emulator emery --int 10002=265 10003=0 10004=1 --string 10011=OAKLAND
+pebble send-app-message --emulator emery --int 10006=1
+pebble send-app-message --emulator emery --int 10001=1
+pebble send-app-message --emulator emery --int 10002=265
+pebble send-app-message --emulator emery --int 10002=0 10003=-1 10004=-1 --string '10011='
+```
+
+Confirm that palette and unit changes preserve received weather and location. The combined unavailable payload must show unavailable weather and `---` for location. A partial weather packet must invalidate prior weather. Manual messages exercise C ingress; use the phone companion to check combined request success, failure, timeout, and superseded-location handling.
+
 #### One-Shot Health
 
 One-shot health keys are QA-oriented runtime overrides. They affect the next health refresh only.
+
+BPM overrides accept `1` through `220`; steps overrides accept `1` through `100000`. An out-of-range value clears the queued override and refreshes from HealthService. It does not force an unavailable reading.
 
 ```sh
 pebble send-app-message --emulator emery --int 10020=72

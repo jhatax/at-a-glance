@@ -7,7 +7,7 @@ This ontology indexes the irreducible knowledge domains for the _At A Glance_ do
 1. One first-class concept has one canonical home.
 2. The documentation set is complete when its first-class concepts have one clear owner.
 
-Document purpose, sub-concepts, relationships, navigation, and document-addition rules belong in [DocumentationContracts](DocumentationContracts.md).
+Document purpose, sub-concepts, navigation contracts, and document-addition rules belong in [DocumentationContracts](DocumentationContracts.md). This document owns the relationship graph.
 
 ## Canonical Knowledge Domains
 

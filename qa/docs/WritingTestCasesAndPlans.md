@@ -95,7 +95,7 @@ A suite is ordered aggregation.
 - A Scenario ends after its `EXECUTE` block. A Matrix `PREAMBLE` ends before its required `STEPS` block. A `.steps` file ends after its `EXECUTE` block. A Suite ends after its `MEMBERS` block.
 - `SCREENSHOTS` accepts `yes` or `no`.
 - `EMULATORS` accepts one or more supported emulator names: `aplite`, `basalt`, `chalk`, `diorite`, `emery`, `flint`, or `gabbro`.
-- `DISPLAYS` accepts one or more known display names: `white`, `black`, `celeste`, or `oxford`. `celeste` and `oxford` are supported only on `chalk`, `emery`, and `gabbro`.
+- `DISPLAYS` accepts one or more known display names: `white`, `black`, `celeste`, or `oxford`. `celeste` and `oxford` are supported on `basalt`, `chalk`, `emery`, and `gabbro`.
 - `STEP` declares one capability and its fields.
 - `INCLUDE SCENARIO`, `INCLUDE MATRIX`, and `INCLUDE SUITE` are legal only in `MEMBERS`.
 - Suites contain only `MEMBERS`; preamble, execute, and other blocks in a suite are ignored.
@@ -181,13 +181,14 @@ STEP all bpm=101 steps=10500 level=90 charging=1 orientation=0 temp=300 code=1 i
 - Supplies weather, health, battery, location, and Bluetooth values in one step.
 - Requires `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `orientation`, `location`, and `connected`.
 - Runs on health-capable emulators: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
+- Sends weather, location, health, orientation, and display mode in one AppMessage, sets battery state through the emulator, then changes Bluetooth state.
 
 ## Screenshot policy
 
 Screenshot policy:
 
 - `SCREENSHOTS yes`: Sets `capture_screenshots` on every expanded step.
-- Expected counts: Ordinary screenshot-enabled capabilities expect one image. Bluetooth expects two because it captures before and after the connection-state change.
+- Expected counts: Weather, battery, health, and location expect one image. Bluetooth and `all` expect two because they capture before and after the connection-state change.
 - `SCREENSHOTS no`: Gives each step an expected count of zero.
 - Policy ownership: Screenshot policy is not a property of a `STEP` or `.steps` file. It is applied at Matrix or scenario expansion time.
 - Captured counts: Start at zero and increment when execution captures a screenshot.

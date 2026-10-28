@@ -13,13 +13,13 @@ The goal is a display that feels _precise, neutral, obvious, and available at a 
 |  |  |  |
 | :-: | :-: | :-: |
 | <b><img src="docs/assets/screenshots/at-a-glance-emery-blackonwhite.png" alt="Emery Black on White" width="160"><br>Emery: Black on White</b> | <b><img src="docs/assets/screenshots/at-a-glance-emery-whiteonblack.png" alt="Emery White on Black" width="160"><br>Emery: White on Black</b> | <b><img src="docs/assets/screenshots/at-a-glance-chalk-celeste.png" alt="Chalk Clear as Celeste" width="160"><br>Chalk: Clear as Celeste</b> |
-| <b><img src="docs/assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="docs/assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on BLack" width="130"><br>Flint: White on Black</b> | <b><img src="docs/assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
+| <b><img src="docs/assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="docs/assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black" width="130"><br>Flint: White on Black</b> | <b><img src="docs/assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
 
 ## Installation
 
 - [Pebble App Store: At A Glance](https://apps.repebble.com/7727666da5c84c259b3a70b3)
 
-- To build from source:
+- To get the source, clone the repository, then follow [Build](#build):
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
@@ -32,12 +32,13 @@ cd at-a-glance
 pebble install --phone YOUR_PHONE_IP
 ```
 
-`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app, which must be `192.168.x.x` or `10.x.x.x`.
+`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app.
 
 ## Features
 
 - Dominant time in 12H/24H format
 - Weather condition and temperature from Open-Meteo
+- Current location from OpenStreetMap reverse geocoding
 - Date shown beside weather and temperature
 - Battery status track with plugged-in bolt
 - Steps, progress, and configurable daily goal (if Pebble Health is available)
@@ -51,15 +52,15 @@ pebble install --phone YOUR_PHONE_IP
 - Temperature unit: Fahrenheit or Celsius
 - Weather updates: 15, 30, 45, or 60 minutes
 - Display mode: platform-appropriate light, dark, and color palettes
-- Battery orientation: centered horizontal or right-margin vertical; geometry-relevant default
+- Battery orientation: centered horizontal or right-margin vertical; horizontal by default on rectangular displays and vertical on round displays
 - Heart rate sampling: 10, 15, 30, 60, or 120 minutes
 - Steps goal: presets from `4,000` to `20,000`, with custom override support from `4,000` to `32,000`
 
-Configuration is powered by Rebble Clay and opens from the Pebble mobile app. Settings are persisted on the watch.
+Configuration is powered by Rebble Clay and opens from the Pebble mobile app. Clay saves preferences on the phone, and the watch persists its runtime settings. Weather and location require phone location access and an internet connection.
 
 ## Supported Platforms
 
-This watch face is compatible with all Pebble smartwatch models.
+The manifest targets `aplite`, `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`. Health features depend on platform support.
 
 ## Build
 

@@ -112,8 +112,9 @@ qaplanexecutor_threaded.py
 **Screenshot behavior**
 
 - Typed `PlanStep` objects own capability dispatch through `run()`.
-- Weather, battery, health, location, Bluetooth, and `all` steps call their corresponding `PebbleAdapter` operation.
-- Bluetooth captures once before changing connection state and once after.
+- Typed steps call `PebbleEmulatorConnection` operations for AppMessage, battery, Bluetooth, and screenshot capture.
+- Bluetooth and `all` capture once before changing connection state and once after. Other screenshot-enabled steps capture once.
+- A Bluetooth disconnect requests an emulator restart after the step's connection closes, before the next step in that lane.
 
 **Adapter and executor boundaries**
 

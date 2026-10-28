@@ -1,6 +1,6 @@
 # QA Harness
 
-The QA harness validates _At A Glance_ with named scenarios, Matrices, and suites. The public entrypoint is `../aag-build-qa.sh`.
+The QA harness validates _At A Glance_ with named scenarios, Matrices, and suites. Run `./aag-build-qa.sh` from the repository root.
 
 ## Plan execution flow
 
@@ -29,7 +29,7 @@ aag-build-qa.sh
        -> ataglanceharness.py
             -> qaplanparser.py
             -> qaplanresolver.py
-            -> qaplanexecutor.py
+            -> qaplanexecutor_threaded.py
             -> qaharnessruntime.py
             -> qareportrenderer.py
 ```
@@ -70,6 +70,8 @@ Each run is stored under `qa/qa-runs/<run-id>/`:
 - Plan validation prints executable steps first, followed by discarded items. Discards require operator confirmation before execution.
 - `commands.log` contains operator-visible command and execution records.
 - `screenshots/` contains captured screenshots when the selected plan requests them.
+
+Screenshot-enabled weather, battery, health, and location steps expect one image. Bluetooth and `all` steps expect two images, before and after changing connection state. A passed step confirms that its operations completed and its screenshot count matched; the operator reviews visual correctness.
 
 Comparisons are stored under `qa/comparisons/`. When generated, `comparison.json` and `comparison.md` are derived from the selected runs’ canonical `report.json` files, with each step's pass/fail result shown per run.
 

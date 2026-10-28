@@ -1,6 +1,6 @@
 # Watchface Implementation Flow
 
-This document is the current source of truth for the watch face implementation flow. It maps implementation files, shared headers, and their relationships. Use the dedicated product, architecture, and build documents for runtime behavior, product rules, visual rules, and build/validation policy.
+This document maps watch face implementation files, shared headers, and their relationships. Live source defines current behavior. Use the product, architecture, and build documents for their contracts.
 
 ## Adjacent
 
@@ -53,8 +53,11 @@ package.json
 |               |
 |               src/pkjs/index.js ──────────────────> package.json message keys
 |               - Clay bootstrap                    - generated message key symbols
-|               - geolocation, location text, and unavailable-state fallback
-|               - weather refresh requests, appmessage packaging
+|               - saved Clay preferences and settings/control sends
+|               src/pkjs/weather_location.js
+|               - geolocation, parallel weather/location requests, combined payload
+|               src/pkjs/app_message_queue.js
+|               - independent control and climate queues with bounded retries
 V               ────────────────────────────────────────────────────────────────────
 wscript
 - source globs -  JS bundle
@@ -65,16 +68,22 @@ wscript
 src/c/ataglance.c ────────────────────────────────> watchface.h
 - Pebble app lifecycle adapter                     - public runtime ingress
 - window ownership                                 - WatchfaceEventData
-- settings load/save                               - update masks
+- settings load                                    - update masks
 - service subscriptions                            - runtime-visible transport keys
-- AppMessage parsing
+- AppMessage callback registration
 - WatchfaceEventData dispatch
+        |
+        +-> ataglance_pebble_message_handler.c
+        |   - inbox/outbox callbacks and transport opening
+        |   - changed-settings persistence and HR cadence side effects
+        |       -> ataglance_pebble_message_parser.c
+        |          - tuple parsing and received/parsed masks
         |
         v
 watchface_runtime_boundary.c ─────────────────────> settings.h
 - runtime event & message adapter                  - settings defaults
 - settings mutation                                - persisted settings shape
-- weather and optional location ingress application - validation vocabulary
+- weather and location ingress application          - validation vocabulary
 - one-shot health ingress application
 - repaint-versus-refresh decision
         |
@@ -118,7 +127,7 @@ feature modules ─────────────────────�
         - orientation-aware track rendering
      4. climate.c                                  climate.h
         - climate_glyphs.c                         - climate_glyphs.h
-        - optional location text and source buffer
+        - location text and source buffer
      5. steps.c                                    steps.h
      6. bpm.c                                      bpm.h
         +─────────────────────────────────────────+
@@ -131,8 +140,11 @@ substratum_renderer.c ───────────────────�
         |
         v
 helper.c ────────────────────────────────────────> helper.h
-- tuple parsing                                    - shared utility macros
-- bitmap palette helpers
+- bitmap palette helpers                           - shared utility macros
+helper_tuple_parsing.c
+- typed tuple conversion
+helper_computations.c
+- shared computation helpers
 ────────────────────────────────────────────────────────────────────────────
 ```
 
@@ -142,7 +154,8 @@ helper.c ───────────────────────�
 - Watchface vocabulary: `watchface_components.h`, `watchface_layout.h`, `layout_surface.h`, `layout_style.h`
 - Diagnostics: `watchface_debug.h`
 - Module contracts: `date.h`, `time.h`, `battery.h`, `climate.h`, `climate_glyphs.h`, `steps.h`, `bpm.h`
-- Shared helpers: `substratum_renderer.h`, `helper.h`
+- Private message adapter: `ataglance_messages_adapter.h`, `ataglance_message_parser.h`
+- Shared helpers: `substratum_renderer.h`, `helper.h`, `helper_tuple_parsing.h`, `helper_computations.h`
 
 **Notes**
 
@@ -152,7 +165,7 @@ helper.c ───────────────────────�
 ### Core runtime relationship
 
 ```text
-ataglance.c adapts Pebble callbacks and AppMessage tuples into WatchfaceEventData
+ataglance.c builds service events; the private message adapter parses AppMessage tuples
   -> watchface_runtime_boundary.c decides what changed
   -> watchface.c owns the live surface and dispatches create/repaint/refresh
   -> layout delegates prepare geometry and style

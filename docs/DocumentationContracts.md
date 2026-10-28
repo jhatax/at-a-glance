@@ -1,6 +1,6 @@
 # Documentation Contracts
 
-Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every document in this documentation system.
+This document defines each document's purpose, sub-concepts, and navigation contract.
 
 ## Documentation Details and Connections
 
@@ -18,7 +18,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Sub-concepts:** Documentation invariants; canonical knowledge domains; relationship graph.
 
-**Connections:** [DocumentationOntology](DocumentationOntology.md) owns canonical-domain classification; this document owns the relationship map.
+**Connections:** [DocumentationOntology](DocumentationOntology.md) owns canonical-domain classification and the relationship graph. This document owns each document's navigation contract.
 
 ### 3. DocumentationContracts (this)
 
@@ -88,7 +88,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Guides contributors from repository setup through build, validation, review, formatting, and commit. It provides the working discipline that keeps product, source, and documentation changes traceable.
 
-**Sub-concepts:** GitHub checkout; prerequisites; Pebble SDK; environment verification; Git hook setup; first build; IDE support; build/install/QA automation; C guidelines; runtime logs; debugging; glyph development; repository maintenance; review discipline; formatters; pre-commit; documentation management; decision-log use.
+**Sub-concepts:** GitHub checkout; prerequisites; environment verification; Git hook setup; editor checks; source discipline; glyph development; review discipline; formatters; pre-commit; documentation management; decision-log use.
 
 **Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA_Readme](../qa/README.md).
 
@@ -104,7 +104,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Defines how contributors choose a validation path and what evidence each path produces. It keeps signoff with the operator while making build, runtime, settings, visual, and release checks repeatable.
 
-**Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather; display mode; one-shot health; config page; debug builds.
+**Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather and location; display mode; one-shot health; config page; debug builds.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA_Readme](../qa/README.md).
 

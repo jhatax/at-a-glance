@@ -35,7 +35,7 @@ Immediate identifiability satisfies automatic perception.
 - Icons identify information and support recognition.
 - Numbers quantify values.
 - Text-only metrics are acceptable when an icon cannot be created or does not fit the platform.
-- Icon-only metrics are not acceptable.
+- Weather, steps, and heart rate retain text when their icons are absent. Battery level uses a progress track and a charging mark.
 - Every icon and glyph must work in black and white.
 - Identifiability matters at watch scale, not only in enlarged mockups or editor views.
 
@@ -122,14 +122,14 @@ A shared watch face **stack** anchors information to stable locations across all
 ### Palettes
 
 - Organize color decisions using hierarchical palettes.
-- Select colors in each palette as a whole; do not convey different states or information with the same color.
+- Select colors in each palette as a whole. Keep state colors consistent within each metric.
 - Each palette uses consistent vocabulary for current metric state.
 - State changes remain visible on monochrome devices or when richer palettes are unavailable.
 - If palette resolution fails, the display must degrade to a simple black-and-white presentation rather than hiding data.
 
 ## Absence Language
 
-1. Out-of-range data uses a unique color and icon indicator that doesn't create alarm or demand attention.
+1. Unavailable numeric data uses `---` and a slashed icon when present. Color reinforces absence where the palette supports it.
 2. Do not use question marks, exclamation points, or pause bars (play/pause) for out-of-range data.
 3. Prefer bold slashes that start slightly above the canceled glyph and end slightly below it.
 
@@ -138,7 +138,7 @@ A shared watch face **stack** anchors information to stable locations across all
 Icons identify every metric: heart rate, walking steps, battery or power state, and weather conditions.
 
 - Text carries values; icons identify the metric.
-- Progress and state cues support the metric, but they do not replace text.
+- Weather and health text carry numeric values. Battery progress carries charge level.
 - Metric marks should use familiar metaphors that read immediately at watch scale.
 - Weather glyphs should be condition-first and use clouds only when they improve recognition.
 - Battery and power state must remain identifiable without relying on color alone.
