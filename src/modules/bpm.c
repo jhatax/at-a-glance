@@ -150,8 +150,7 @@ static void update_bpm() {
 
   if (s_oneshot_bpm_is_set) {
     bpm_to_render = s_oneshot_bpm;
-    s_oneshot_bpm_is_set = false;
-    s_oneshot_bpm = BPM_INVALID;
+    bpm_module_oneshot_clear_bpm();
   }
 
   // Save this state unconditionally
@@ -255,8 +254,7 @@ void bpm_module_oneshot_set_bpm(
     s_oneshot_bpm = bpm;
     s_oneshot_bpm_is_set = true;
   } else {
-    s_oneshot_bpm = BPM_INVALID;
-    s_oneshot_bpm_is_set = false;
+    bpm_module_oneshot_clear_bpm();
   }
 }
 

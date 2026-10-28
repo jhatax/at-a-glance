@@ -243,10 +243,11 @@ static void update_steps() {
 
   // If there is a one-shot steps value, overwrite the retrieved sum of steps
   if (s_oneshot_steps_is_set) {
-    steps = s_oneshot_steps;
-    is_available = STEPS_IN_RANGE(s_oneshot_steps);
-    s_oneshot_steps_is_set = false;
-    s_oneshot_steps = STEPS_INVALID;
+    if (STEPS_IN_RANGE(s_oneshot_steps)) {
+      steps = s_oneshot_steps;
+      is_available = true;
+    }
+    steps_module_oneshot_clear_steps();
   }
 
   apply_steps_value(steps, is_available);
@@ -271,8 +272,6 @@ bool steps_module_create(
   }
 
   // Symmetry with destroy
-  s_steps_is_available = false;
-  s_steps = STEPS_INVALID;
   steps_module_oneshot_clear_steps();
 
   // The walking bitmap ships with black foreground pixels. Seed the
@@ -348,8 +347,6 @@ void steps_module_destroy() {
 
   s_steps_buffer[0] = '\0';
 
-  s_steps = STEPS_INVALID;
-  s_steps_is_available = false;
   // Symmetry with create
   steps_module_oneshot_clear_steps();
 
@@ -378,8 +375,7 @@ void steps_module_oneshot_set_steps(
     s_oneshot_steps = steps;
     s_oneshot_steps_is_set = true;
   } else {
-    s_oneshot_steps = STEPS_INVALID;
-    s_oneshot_steps_is_set = false;
+    steps_module_oneshot_clear_steps();
   }
 }
 
