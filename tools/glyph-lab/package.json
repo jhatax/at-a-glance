@@ -12,6 +12,7 @@
     "displayName": "Glyph Lab",
     "uuid": "C4F9090C-0348-4A1A-90A2-EE6F575EED35",
     "sdkVersion": "3",
+    "enableMultiJS": true,
     "targetPlatforms": [
       "emery",
       "gabbro",
