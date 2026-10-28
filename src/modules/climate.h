@@ -34,4 +34,4 @@ void climate_module_refresh_climate(
 
 void climate_module_refresh_location(
     const ColorPalette* palette,
-    const char* location);
+    const LocationUpdate* location);

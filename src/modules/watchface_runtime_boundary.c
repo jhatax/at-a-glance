@@ -61,7 +61,7 @@ static void apply_settings_data(
   }
 
   if (data->parsed & WATCHFACE_DATA_WEATHER_UPDATE_MINUTES) {
-    previous = settings->battery_orientation;
+    previous = settings->weather_update_minutes;
     if (settings_set_weather_update_minutes(settings, data->weather_update_minutes) &&
         (settings->weather_update_minutes != previous)) {
       data->settings_changed = true;
@@ -98,13 +98,8 @@ static void apply_location_data(
   }
 
   if (data->received & WATCHFACE_DATA_LOCATION) {
-    WatchfaceDataMask received = (WatchfaceDataMask)(data->received & WATCHFACE_DATA_LOCATION);
-    if (received == WATCHFACE_DATA_NONE) {
-      return;
-    }
-
     // Data was received; should be refreshed
-    // If data couldn't be parsed, refresh will show blank location
+    // If data couldn't be parsed, refresh will show out of range text
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_LOCATION);
   }
 }
@@ -116,14 +111,13 @@ static void apply_weather_data(
     return;
   }
   if (data->received & c_weather_mask) {
+    data->current_climate.received = true;
     // Data was received; should be refreshed
     // If data couldn't be parsed, refresh will display "Unavailable state"
     *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_CLIMATE);
-
     WatchfaceDataMask weather_parsed = (WatchfaceDataMask)(data->parsed & c_weather_mask);
-
     if (weather_parsed == c_weather_mask) {
-      data->current_climate.is_complete = true;
+      data->current_climate.complete = true;
       data->current_climate.celsius_tenths = data->temperature_celsius_tenths;
       data->current_climate.weather_condition = data->weather_condition;
       data->current_climate.is_day = data->is_day;

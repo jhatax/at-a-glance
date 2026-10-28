@@ -367,7 +367,7 @@ void watchface_maybe_relayout(
 
 void watchface_repaint(
     const WatchfaceEventData* data) {
-  if (!s_wf_window || !s_wf_settings) {
+  if (!s_wf_window || !s_wf_settings || !data) {
     return;
   }
 
@@ -408,7 +408,7 @@ void watchface_refresh(
     }
 
     if (updates & WATCHFACE_UPDATE_LOCATION) {
-      climate_module_refresh_location(s_surface.style.palette, data->location);
+      climate_module_refresh_location(s_surface.style.palette, &(data->pin));
     }
   }
 
@@ -460,11 +460,11 @@ void watchface_refresh(
       default:
         break;
     }
-    if (update_bpm && s_strata_created_mask & BPM_STRATUM_MASK) {
+    if (update_bpm && (s_strata_created_mask & BPM_STRATUM_MASK)) {
       bpm_module_refresh(s_surface.style.palette);
     }
 
-    if (update_steps && s_strata_created_mask & STEPS_STRATUM_MASK) {
+    if (update_steps && (s_strata_created_mask & STEPS_STRATUM_MASK)) {
       steps_module_refresh(s_surface.style.palette, s_wf_settings->steps_goal);
     }
   }

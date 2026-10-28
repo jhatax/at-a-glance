@@ -147,12 +147,13 @@ void parse_weather_and_location_data(
       WATCHFACE_DATA_WEATHER_CONDITION,
       &data->weather_condition);
   parse_int_tuple(iter, MESSAGE_KEY_IS_DAY, data, WATCHFACE_DATA_IS_DAY, &data->is_day);
-
+  data->pin.received = false;
   parse_string_tuple(
       iter,
       MESSAGE_KEY_MAYBE_CURRENT_LOCATION,
       data,
       WATCHFACE_DATA_LOCATION,
-      data->location,
-      ARRAY_LENGTH(data->location));
+      data->pin.name,
+      ARRAY_LENGTH(data->pin.name));
+  data->pin.received = data->received & WATCHFACE_DATA_LOCATION;
 }

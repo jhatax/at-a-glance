@@ -32,7 +32,7 @@ static Layer* s_climate_icon_layer = NULL;
 static TextLayer* s_temperature_layer = NULL;
 static TextLayer* s_location_layer = NULL;
 static char s_temperature_buffer[MAX_TEMPERATURE_STR_LEN] = {0};
-static char s_location_buffer[CLIMATE_LOCATION_BUFFER_SIZE] = {0};
+static char s_location_buffer[CLIMATE_LOCATION_BUFFER_SIZE] = WATCHFACE_OUTOFRANGE_TEXT;
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_OUTOFRANGE;
 static int16_t s_weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
 static bool s_is_day = false;
@@ -160,7 +160,7 @@ static void climate_module_update_weather(
   int celsius_tenths = update->celsius_tenths;
   int weather_condition = update->weather_condition;
   int is_day = update->is_day;
-  if (!update->is_complete || !(TEMPERATURE_IS_VALID(celsius_tenths)) ||
+  if (!update->complete || !(TEMPERATURE_IS_VALID(celsius_tenths)) ||
       !(CLIMATE_CONDITION_IS_VALID(weather_condition)) || !(VALID_IS_DAY(is_day))) {
     APP_LOG(
         APP_LOG_LEVEL_WARNING,
@@ -262,21 +262,28 @@ void climate_module_refresh_climate(
   }
 
   climate_module_update_palette(palette);
-  climate_module_update_weather(update);
+  if (update->received) {
+    climate_module_update_weather(update);
+  }
   climate_module_refresh_watchface(temp_unit);
 }
 
 void climate_module_refresh_location(
     const ColorPalette* palette,
-    const char* location) {
-  if (!palette) {
+    const LocationUpdate* location) {
+  if (!palette || !location) {
     return;
   }
 
   climate_module_update_palette(palette);
   if (s_location_layer) {
-    const char* loc = (location && location[0]) ? location : WATCHFACE_OUTOFRANGE_TEXT;
-    snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", loc);
+    if (location->received) {
+      // Location text was received and needs to be displayed
+      const char* name = location->name;
+      const char* loc = (name && name[0]) ? name : WATCHFACE_OUTOFRANGE_TEXT;
+      snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", loc);
+    }
+    // No location data was received; this is invoked by a repaint
     bool no_location =
         !(strncmp(s_location_buffer, WATCHFACE_OUTOFRANGE_TEXT, strlen(WATCHFACE_OUTOFRANGE_TEXT)));
     substratum_renderer_update_text_layer(

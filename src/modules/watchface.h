@@ -54,11 +54,17 @@ enum { WATCHFACE_ONESHOT_MESSAGE_KEY_BPM = 10020, WATCHFACE_ONESHOT_MESSAGE_KEY_
 // runtime-owned transport completeness; climate owns applying valid weather or
 // clearing stale weather when the packet is incomplete or domain-invalid.
 typedef struct {
-  bool is_complete;
+  bool complete : 1;
+  bool received : 1;
   int celsius_tenths;
   int weather_condition;
   int is_day;
 } ClimateUpdate;
+
+typedef struct {
+  char name[WATCHFACE_EVENT_LOCATION_BUFFER_SIZE];
+  bool received : 1;
+} LocationUpdate;
 
 typedef struct {
   WatchfaceDataMask received;
@@ -71,14 +77,14 @@ typedef struct {
   int weather_update_minutes;
   int steps_goal;
   int battery_orientation;
-  bool settings_changed;
+  bool settings_changed : 1;
 
   // Climate data
   int temperature_celsius_tenths;
   int weather_condition;
   int is_day;
 
-  char location[WATCHFACE_EVENT_LOCATION_BUFFER_SIZE];
+  LocationUpdate pin;
   void* event_context;
   ClimateUpdate current_climate;
 
