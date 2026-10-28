@@ -132,15 +132,6 @@ void substratum_renderer_draw_filled_bolt_in_frame(
     graphics_context_set_fill_color(ctx, fill_color);
     gpath_draw_filled(ctx, path);
 
-    // move the bolt to the right by 1-pixel
-    gpath_move_to(path, GPoint(1, 0));
-
-    // draw an offset bolt
-    gpath_draw_outline(ctx, path);
-
-    // fill the offset bolt
-    gpath_draw_filled(ctx, path);
-
     // release gpath resources
     gpath_destroy(path);
   }
