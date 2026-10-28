@@ -106,6 +106,8 @@ After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and `STEPS_GOAL_C
 
 Weather cadence is also applied in PKJS. When Clay returns `WEATHER_UPDATE_MINUTES`, PKJS updates the weather schedule and asks for a weather refresh.
 
+PKJS owns the weather schedule. On the `ready` event, it reads `WEATHER_UPDATE_MINUTES` from Clay's `clay-settings` entry in `localStorage`. Missing, unreadable, or invalid saved settings use the 15-minute default. The watch ignores the standalone `JS_READY` message.
+
 ## AppMessage And Message-Key Contract
 
 `package.json` owns the manifest-backed message-key list.
@@ -166,7 +168,6 @@ init()
   -> watchface_create(window, &s_settings)
        -> module_create(params, relevant_loaded_setting)
   -> open AppMessage
-  -> send loaded WEATHER_UPDATE_MINUTES to PKJS
 ```
 
 ### Settings receipt

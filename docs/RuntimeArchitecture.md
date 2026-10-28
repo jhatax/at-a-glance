@@ -104,8 +104,7 @@ AppMessage inbox handler
 
 ```text
 AppMessage inbox handler
-  -> detect optional JS_READY synchronization sentinel
-  -> send persisted WEATHER_UPDATE_MINUTES when JS_READY is received
+  -> return if the JS_READY sentinel is detected
   -> parse settings, weather, location, health settings, and one-shot health tuples
   -> ataglance_apply_received_data(&data)
        -> watchface_apply_received_data(&data, &settings)
@@ -115,21 +114,23 @@ AppMessage inbox handler
        -> apply_hr_sample_period()
 ```
 
-### 4. Weather-cadence synchronization:
+### 4. Weather-cadence scheduling
 
 ```text
 src/pkjs/index.js ready
-  -> start weather/location refresh at the 15-minute default
-  -> enqueue JS_READY through the control AppMessage lane
+  -> read Clay's clay-settings entry from localStorage
+  -> parse WEATHER_UPDATE_MINUTES, using 15 minutes if missing, unreadable, or invalid
+  -> enqueue standalone JS_READY through the control AppMessage lane
+  -> start weather/location refresh at the selected interval
 
-AppMessage inbox handler in ataglance.c
-  -> detect JS_READY
-  -> enqueue persisted WEATHER_UPDATE_MINUTES through the C outbox
+AppMessage inbox handler in ataglance_pebble_message_handler.c
+  -> return when JS_READY is detected
 
-src/pkjs/index.js appmessage handler
-  -> receive the persisted cadence
+src/pkjs/index.js webviewclosed handler
+  -> Clay saves the submitted settings in localStorage
+  -> parse WEATHER_UPDATE_MINUTES
   -> applyWeatherUpdateMinutes(minutes)
-  -> reschedule weather/location polling from the watch-loaded value
+  -> refresh and reschedule weather/location polling if the interval changes
 ```
 
 ## Prepared Surface
@@ -344,7 +345,7 @@ The steps module demonstrates the intended boundary:
 
 ## AppMessage Runtime Coverage
 
-`ataglance.c` is the Pebble container and service adapter. The private C message adapter owns AppMessage parsing, sizing, opening, callbacks, and the watch-to-phone cadence synchronization send. Responsibilities are split as follows:
+`ataglance.c` is the Pebble container and service adapter. The private C message adapter owns AppMessage parsing, sizing, opening, and callbacks. Responsibilities are split as follows:
 
 1. the message parser translates raw tuples into `WatchfaceEventData`;
 2. the message handler owns AppMessage transport and delegates parsed data;
@@ -358,9 +359,9 @@ The steps module demonstrates the intended boundary:
 - **Location tuple**: optional current-location text from PKJS; an empty value clears the location text.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
-### Outbound AppMessage coverage
+### PKJS AppMessage sends
 
-- When PKJS sends `JS_READY`, the watch sends the persisted `WEATHER_UPDATE_MINUTES` value back through the C outbox so the phone-side weather polling schedule resumes from watch storage.
+- The C runtime sends no application AppMessages.
 - PKJS uses independent serialized lanes:
   - Weather
   - Location

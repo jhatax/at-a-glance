@@ -64,7 +64,7 @@ Defines the contract -- purpose, sub-concepts, connections -- fulfilled by every
 
 **Purpose:** Describes the current runtime structure and ownership boundaries. It follows initialization, event, settings, module, palette, transport, capability, and lifecycle flows through the watch face.
 
-**Sub-concepts:** Conceptual layers; initialization flow; runtime event flow; settings persistence; weather-cadence sync; prepared surface; architect; stylist; runtime owner; module lifecycle; required strata; module boundaries; steps module; palette resolution; capability guards; AppMessage coverage; lifecycle priorities.
+**Sub-concepts:** Conceptual layers; initialization flow; runtime event flow; settings persistence; weather-cadence scheduling; prepared surface; architect; stylist; runtime owner; module lifecycle; required strata; module boundaries; steps module; palette resolution; capability guards; AppMessage coverage; lifecycle priorities.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 
