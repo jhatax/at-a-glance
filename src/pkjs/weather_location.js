@@ -37,19 +37,27 @@ function createRefreshController(dependencies) {
       {
         TEMPERATURE: Math.round(celsius * 10),
         WEATHER_CONDITION: weatherCode,
-        IS_DAY: isDay ? 1 : 0,
+        IS_DAY: isDay,
       },
       null,
       function (e) {
-        console.log('AtAGlance: Weather send failed: ' + e.error);
+        console.log('AtAGlance: Weather send failed: (' + e.code + '): ' + e.message);
       }
     );
   }
 
-  function sendLocationToWatch(location) {
-    dependencies.sendLocationMessage({ MAYBE_CURRENT_LOCATION: location }, null, function (e) {
-      console.log('AtAGlance: Location update failed: ' + e.error);
-    });
+  function sendLocation(location, pos) {
+    if (!isCurrentLocation(pos)) {
+      return;
+    }
+
+    dependencies.sendLocationMessage(
+      { MAYBE_CURRENT_LOCATION: location ? location : '' },
+      null,
+      function (e) {
+        console.log('AtAGlance: Location update failed: (' + e.code + '): ' + e.message);
+      }
+    );
   }
 
   function fetchLocation(location) {
@@ -83,9 +91,9 @@ function createRefreshController(dependencies) {
         )
           .slice(0, MAX_LOCATION_STRING_LENGTH)
           .toUpperCase();
-        sendLocationToWatch(whereami);
+        sendLocation(whereami, location);
       } catch (e) {
-        console.log('Location fetch error: ' + e);
+        console.log('Location fetch error: (' + e.code + '): ' + e.message);
       }
     };
     xhr.send();
@@ -118,12 +126,12 @@ function createRefreshController(dependencies) {
           sendWeather(
             data.current.temperature_2m,
             data.current.weather_code,
-            data.current.is_day === 1,
+            data.current.is_day,
             location
           );
         }
       } catch (e) {
-        console.log('Weather fetch error: ' + JSON.stringify(e));
+        console.log('Weather fetch error: (' + e.code + '): ' + e.message);
       }
     };
     xhr.send();
@@ -134,12 +142,18 @@ function createRefreshController(dependencies) {
     fetchLocation(location);
   }
 
+  function clearWeatherAndLocation() {
+    lastKnownLocation = null;
+    sendWeather(0, -1, 0, null);
+    sendLocation(null, lastKnownLocation);
+  }
+
   function requestLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      clearWeatherAndLocation();
       return;
     }
 
-    // Request ordering; discard a response that's older than the current request
     navigator.geolocation.getCurrentPosition(
       function (pos) {
         if (isSameLocation(pos)) {
@@ -153,7 +167,8 @@ function createRefreshController(dependencies) {
         refreshClimateAndLocation(lastKnownLocation);
       },
       function (e) {
-        console.log('Geolocation error: ' + JSON.stringify(e));
+        console.log('Geolocation error: (' + e.code + '): ' + e.message);
+        clearWeatherAndLocation();
       },
       { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
     );

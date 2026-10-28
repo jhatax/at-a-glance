@@ -14,9 +14,9 @@ function sendPebbleMessage(payload, success, failure) {
   Pebble.sendAppMessage(payload, success, failure);
 }
 
-var sendWeatherMessage = createAppMessageQueue(sendPebbleMessage);
-var sendLocationMessage = createAppMessageQueue(sendPebbleMessage);
 var sendAppMessage = createAppMessageQueue(sendPebbleMessage);
+var sendWeatherMessage = createAppMessageQueue(sendPebbleMessage);
+var sendLocationMessage = sendWeatherMessage;
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -66,16 +66,6 @@ Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
 });
 
-Pebble.addEventListener('appmessage', function (e) {
-  if (!e || !e.payload) {
-    return;
-  }
-
-  if (typeof e.payload[messageKeys.WEATHER_UPDATE_MINUTES] === 'number') {
-    applyWeatherUpdateMinutes(e.payload[messageKeys.WEATHER_UPDATE_MINUTES]);
-  }
-});
-
 Pebble.addEventListener('webviewclosed', function (e) {
   if (!e || !e.response) {
     return;
@@ -93,12 +83,19 @@ Pebble.addEventListener('webviewclosed', function (e) {
       console.log('Sent config data to Pebble');
     },
     function (e) {
-      console.log('Config sent failed with error: ' + JSON.stringify(e));
+      console.log('Config sent failed with error: (' + e.code + '): ' + e.message);
     }
   );
 });
 
 Pebble.addEventListener('ready', function () {
+  var savedSettings = null;
+  try {
+    savedSettings = JSON.parse(localStorage.getItem('clay-settings'));
+  } catch (e) {
+    console.log('Saved weather settings could not be loaded: ' + e.message);
+  }
+
   sendAppMessage({ JS_READY: 1 });
-  refresh.start(WEATHER_UPDATE_MINUTES_DEFAULT);
+  refresh.start(parseWeatherUpdateMinutes(savedSettings));
 });
