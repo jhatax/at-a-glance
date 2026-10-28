@@ -27,60 +27,6 @@
 #define MESSAGE_SEND_RETRY_MS 1000
 #define MAX_ATTEMPTS 6
 
-static uint8_t s_pending_weather_update_minutes = 0;
-static uint8_t s_weather_sync_attempts = 0;
-static AppTimer* s_weather_sync_retry_timer = NULL;
-
-static void send_pending_weather_update_minutes();
-
-static void retry_pending_weather_update_minutes(
-    void* context) {
-  (void)context;
-  s_weather_sync_retry_timer = NULL;
-  ++s_weather_sync_attempts;
-  send_pending_weather_update_minutes();
-}
-
-static void schedule_weather_sync_retry(
-    void) {
-  // Return if the number of retries has been exceeded or there is a timer already inflight
-  if (s_weather_sync_retry_timer || s_weather_sync_attempts > MAX_ATTEMPTS) {
-    return;
-  }
-
-  s_weather_sync_retry_timer = app_timer_register(
-      MESSAGE_SEND_RETRY_MS * s_weather_sync_attempts,
-      retry_pending_weather_update_minutes,
-      NULL);
-}
-
-static void send_pending_weather_update_minutes() {
-  DictionaryIterator* out_iter = NULL;
-  AppMessageResult result = app_message_outbox_begin(&out_iter);
-  if (result != APP_MSG_OK || !out_iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox begin failed: result=%d", result);
-    schedule_weather_sync_retry();
-    return;
-  }
-
-  DictionaryResult dict_result = dict_write_int32(
-      out_iter,
-      MESSAGE_KEY_WEATHER_UPDATE_MINUTES,
-      s_pending_weather_update_minutes);
-  if (dict_result != DICT_OK) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
-    schedule_weather_sync_retry();
-    return;
-  }
-
-  result = app_message_outbox_send();
-  if (result != APP_MSG_OK) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox send failed: result=%d", result);
-    schedule_weather_sync_retry();
-    return;
-  }
-}
-
 void inbox_received_handler(
     DictionaryIterator* iter,
     void* context) {
@@ -88,76 +34,55 @@ void inbox_received_handler(
     return;
   }
 
+  if (!iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
+    return;
+  }
   WatchfaceSettings* settings = (WatchfaceSettings*)context;
-  if (!iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
-    return;
-  }
-
-  // Handle the entire message, always. No early returns
-  if (find_the_canary(iter)) {
-    if (!settings) {
-      return;
-    }
-    // Re-send the user's preference whenever PKJS synchronizes.
-    send_loaded_weather_update_minutes(settings->weather_update_minutes);
-  }
-
-  handle_the_message(iter);
-}
-
-void send_loaded_weather_update_minutes(
-    uint8_t minutes) {
-  if (s_weather_sync_retry_timer) {
-    app_timer_cancel(s_weather_sync_retry_timer);
-    s_weather_sync_retry_timer = NULL;
-  }
-
-  s_pending_weather_update_minutes = minutes;
-  s_weather_sync_attempts = 1;
-  send_pending_weather_update_minutes();
-}
-
-bool find_the_canary(
-    DictionaryIterator* iter) {
-  return parse_ready_sentinel(iter);
-}
-
-void handle_the_message(
-    DictionaryIterator* iter) {
-  if (!iter) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage inbox received NULL iterator");
-    return;
-  }
-
-  WatchfaceEventData data = {0};
-
-  parse_settings_data(iter, &data);
-  parse_weather_and_location_data(iter, &data);
-
-#ifdef PBL_HEALTH
-  parse_health_settings_data(iter, &data);
-  parse_oneshot_health_data(iter, &data);
-#endif
-
-  // Copy current settings over before retrieving them from storage.
-  // If there are any changes, apply them.
-  WatchfaceSettings* settings = (WatchfaceSettings*)app_message_get_context();
   if (!settings) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "AppMessage context should never be NULL");
     return;
   }
   WatchfaceSettings previous = *settings;
 
+  if (parse_ready_sentinel(iter)) {
+    return;
+  }
+
+  // This was more than the JS_READY message
+  WatchfaceEventData data = {0};
+  parse_settings_data(iter, &data);
+  parse_weather_and_location_data(iter, &data);
+
+#ifdef PBL_HEALTH
+  // Parse one-shot health data
+  parse_int_tuple(
+      iter,
+      WATCHFACE_ONESHOT_MESSAGE_KEY_BPM,
+      &data,
+      WATCHFACE_DATA_ONESHOT_BPM,
+      &data.oneshot_bpm);
+  parse_int_tuple(
+      iter,
+      WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS,
+      &data,
+      WATCHFACE_DATA_ONESHOT_STEPS,
+      &data.oneshot_steps);
+#endif
+
+  // A side-effect of applying settings to the pointer is that if settings change,
+  // the app_message_context is changed under the covers. This is a hidden benefit.
   watchface_apply_received_data(&data, settings);
 
-  // The check for weather update interval is managed in JS directly
-  // You could be defensive here and send a message but it is redundant
+  // The check for weather update interval is managed in JS directly, so sending an app
+  // message to PKJS is redundant.
   if (data.settings_changed) {
     // It is critical that you are deliberately frugal with writing to persisted storage
     settings_save(settings);
   }
 
 #ifdef PBL_HEALTH
+  // Change HR-Sample Minutes per user's preference
   if (previous.hr_sample_minutes != settings->hr_sample_minutes) {
     health_service_set_heart_rate_sample_period((uint16_t)settings->hr_sample_minutes * 60);
   }
@@ -178,7 +103,6 @@ void outbox_failed_callback(
   (void)iterator;
   (void)context;
   APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
-  schedule_weather_sync_retry();
 }
 
 void outbox_sent_callback(
@@ -186,11 +110,6 @@ void outbox_sent_callback(
     void* context) {
   (void)iterator;
   (void)context;
-  s_weather_sync_attempts = 0;
-  if (s_weather_sync_retry_timer) {
-    app_timer_cancel(s_weather_sync_retry_timer);
-    s_weather_sync_retry_timer = NULL;
-  }
 }
 
 uint32_t app_message_inbox_size() {

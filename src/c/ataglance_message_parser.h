@@ -42,11 +42,3 @@ void parse_settings_data(
 void parse_weather_and_location_data(
     DictionaryIterator* iter,
     WatchfaceEventData* data);
-#ifdef PBL_HEALTH
-void parse_health_settings_data(
-    DictionaryIterator* iter,
-    WatchfaceEventData* data);
-void parse_oneshot_health_data(
-    DictionaryIterator* iter,
-    WatchfaceEventData* data);
-#endif

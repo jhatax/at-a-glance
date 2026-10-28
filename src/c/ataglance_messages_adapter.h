@@ -27,8 +27,6 @@ void initialize_inbox_outbox(void* context);
 void inbox_received_handler(
     DictionaryIterator* iter,
     void* context);
-bool find_the_canary(DictionaryIterator* iter);
-void handle_the_message(DictionaryIterator* iter);
 void inbox_dropped_callback(
     AppMessageResult reason,
     void* context);
@@ -39,4 +37,3 @@ void outbox_failed_callback(
 void outbox_sent_callback(
     DictionaryIterator* iterator,
     void* context);
-void send_loaded_weather_update_minutes(uint8_t minutes);

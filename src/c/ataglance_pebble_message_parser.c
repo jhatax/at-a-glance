@@ -114,6 +114,16 @@ void parse_settings_data(
       data,
       WATCHFACE_DATA_BATTERY_ORIENTATION,
       &data->battery_orientation);
+
+#ifdef PBL_HEALTH
+  parse_int_tuple(
+      iter,
+      MESSAGE_KEY_HR_SAMPLE_MINUTES,
+      data,
+      WATCHFACE_DATA_HR_SAMPLE_MINUTES,
+      &data->hr_sample_minutes);
+  parse_int_tuple(iter, MESSAGE_KEY_STEPS_GOAL, data, WATCHFACE_DATA_STEPS_GOAL, &data->steps_goal);
+#endif
 }
 
 void parse_weather_and_location_data(
@@ -146,41 +156,3 @@ void parse_weather_and_location_data(
       data->location,
       ARRAY_LENGTH(data->location));
 }
-
-#ifdef PBL_HEALTH
-void parse_health_settings_data(
-    DictionaryIterator* iter,
-    WatchfaceEventData* data) {
-  if (!iter || !data) {
-    return;
-  }
-  parse_int_tuple(
-      iter,
-      MESSAGE_KEY_HR_SAMPLE_MINUTES,
-      data,
-      WATCHFACE_DATA_HR_SAMPLE_MINUTES,
-      &data->hr_sample_minutes);
-  parse_int_tuple(iter, MESSAGE_KEY_STEPS_GOAL, data, WATCHFACE_DATA_STEPS_GOAL, &data->steps_goal);
-}
-
-void parse_oneshot_health_data(
-    DictionaryIterator* iter,
-    WatchfaceEventData* data) {
-  if (!iter || !data) {
-    return;
-  }
-
-  parse_int_tuple(
-      iter,
-      WATCHFACE_ONESHOT_MESSAGE_KEY_BPM,
-      data,
-      WATCHFACE_DATA_ONESHOT_BPM,
-      &data->oneshot_bpm);
-  parse_int_tuple(
-      iter,
-      WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS,
-      data,
-      WATCHFACE_DATA_ONESHOT_STEPS,
-      &data->oneshot_steps);
-}
-#endif
