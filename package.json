@@ -44,6 +44,9 @@
       "location",
       "health"
     ],
+    "usesPermissions": [
+      "Location"
+    ],
     "messageKeys": [
       "TIME_FORMAT",
       "TEMP_UNIT",
