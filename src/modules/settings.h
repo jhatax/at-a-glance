@@ -49,6 +49,7 @@ typedef enum {
   WEATHER_UPDATE_MINUTES_MAX = WEATHER_UPDATE_MINUTES_60,
   WEATHER_UPDATE_MINUTES_DEFAULT = WEATHER_UPDATE_MINUTES_15,
   WEATHER_UPDATE_MINUTES_MIN = WEATHER_UPDATE_MINUTES_15,
+  WEATHER_UPDATE_LCM = 15,
 } WeatherUpdateMinutes;
 
 enum {
@@ -66,9 +67,9 @@ enum {
 #define HR_SAMPLE_MINUTES_VALID(value) \
   ((HELPER_VALUE_IN_RANGE((value), HR_SAMPLE_MINUTES_MIN, HR_SAMPLE_MINUTES_MAX)))
 #define STEPS_GOAL_VALID(value) (HELPER_VALUE_IN_RANGE((value), STEPS_GOAL_MIN, STEPS_GOAL_MAX))
-#define WEATHER_UPDATE_MINUTES_VALID(value)                                                   \
-  (HELPER_VALUE_IN_RANGE((value), WEATHER_UPDATE_MINUTES_MIN, WEATHER_UPDATE_MINUTES_MAX)) && \
-      (!((value) % 15))
+#define WEATHER_UPDATE_MINUTES_VALID(value)                                                  \
+  (HELPER_VALUE_IN_RANGE((value), WEATHER_UPDATE_MINUTES_MIN, WEATHER_UPDATE_MINUTES_MAX) && \
+   !((value) % WEATHER_UPDATE_LCM))
 
 typedef struct {
   // Add persisted fields at the bottom

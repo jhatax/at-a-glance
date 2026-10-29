@@ -48,6 +48,7 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Prototype shortcuts | Replace prototype shortcuts before release when they bypass established ownership. | [Contributing](Contributing.md) |
 | Horizontal-rule ownership | `watchface` owns the horizontal rule as a dedicated layer with explicit lifecycle and targeted refresh. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
 | Frugal settings persistence | Persist settings only when a validated persisted field changes. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Settings validation | Sanitize on initial load; reject invalid live updates and retain the current valid value. | [SettingsandConfiguration](SettingsandConfiguration.md#runtime-mutation) |
 | Orientation refresh | Orientation changes target battery, Bluetooth-icon layout, and horizontal rule; connection handling remains separate. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Dirty versus refresh | `layer_mark_dirty()` schedules a layer redraw; application refresh masks separately control state reads, frame application, visibility, and alerts. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Battery-orientation state | Settings own the preference, prepared strata carry orientation, and the battery module retains its drawing state. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |

@@ -9,7 +9,11 @@ const STEPS_GOAL_MIN = 4000;
 const STEPS_GOAL_DEFAULT = 10000;
 const STEPS_GOAL_MAX = 32000;
 
+// 15-minute default
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+
+// Max-update interval is 6-hours
+const WEATHER_UPDATE_MINUTES_MAX = 6 * 60;
 function sendPebbleMessage(payload, success, failure) {
   Pebble.sendAppMessage(payload, success, failure);
 }
@@ -27,11 +31,11 @@ function clampStepsGoal(goal) {
   return goal;
 }
 
-function parseStepsGoal(rawSettings) {
+function calculateStepsGoal(settings) {
   var goal = STEPS_GOAL_DEFAULT;
-  if (rawSettings) {
-    var presetGoal = parseInt(rawSettings.STEPS_GOAL_PRESET, 10);
-    var customGoal = parseInt(rawSettings.STEPS_GOAL_CUSTOM, 10);
+  if (settings) {
+    var presetGoal = parseInt(settings[messageKeys.STEPS_GOAL_PRESET], 10);
+    var customGoal = parseInt(settings[messageKeys.STEPS_GOAL_CUSTOM], 10);
 
     if (!isNaN(customGoal)) {
       goal = clampStepsGoal(customGoal);
@@ -44,18 +48,19 @@ function parseStepsGoal(rawSettings) {
 }
 
 // Return the default value if setting is invalid or irretrievable
-function parseWeatherUpdateMinutes(rawSettings) {
-  var toreturn = rawSettings
-    ? parseInt(rawSettings.WEATHER_UPDATE_MINUTES, 10)
-    : WEATHER_UPDATE_MINUTES_DEFAULT;
-  return isNaN(toreturn) ? WEATHER_UPDATE_MINUTES_DEFAULT : toreturn;
+function validateWeatherUpdateMinutes(input) {
+  var toReturn = parseInt(input, 10);
+  toReturn = isNaN(toReturn) ? WEATHER_UPDATE_MINUTES_DEFAULT : toReturn;
+  return toReturn <= WEATHER_UPDATE_MINUTES_MAX ? toReturn : WEATHER_UPDATE_MINUTES_MAX;
 }
 
 function applyWeatherUpdateMinutes(minutes) {
   refresh.setIntervalMinutes(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
 }
 
-var clay = new Clay(clayConfig);
+var clay = new Clay(clayConfig, null, {
+  autoHandleEvents: false,
+});
 var refresh = createRefreshController({
   sendClimateMessage: sendClimateMessage,
 });
@@ -69,12 +74,19 @@ Pebble.addEventListener('webviewclosed', function (e) {
     return;
   }
 
+  // Retrieves settings as a dictionary with message_keys
+  // Ready to send via Pebble's app message to the watch face
+  // so, messageKeys.KEY_NAME
   var dict = clay.getSettings(e.response);
-  var rawSettings = clay.getSettings(e.response, false);
-  dict[messageKeys.STEPS_GOAL] = parseStepsGoal(rawSettings);
+
+  // Retrieves settings as a dictionary with the actual key names
+
+  dict[messageKeys.STEPS_GOAL] = calculateStepsGoal(dict);
+  dict[messageKeys.WEATHER_UPDATE_MINUTES] = validateWeatherUpdateMinutes(
+    dict[messageKeys.WEATHER_UPDATE_MINUTES]
+  );
   delete dict[messageKeys.STEPS_GOAL_PRESET];
   delete dict[messageKeys.STEPS_GOAL_CUSTOM];
-  applyWeatherUpdateMinutes(parseWeatherUpdateMinutes(rawSettings));
   sendAppMessage(
     dict,
     function () {
@@ -84,16 +96,20 @@ Pebble.addEventListener('webviewclosed', function (e) {
       console.log('Config sent failed with error: (' + e.code + '): ' + e.message);
     }
   );
+  applyWeatherUpdateMinutes(dict[messageKeys.WEATHER_UPDATE_MINUTES]);
 });
 
 Pebble.addEventListener('ready', function () {
   var savedSettings = null;
+  var minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
   try {
+    sendAppMessage({ JS_READY: 1 });
     savedSettings = JSON.parse(localStorage.getItem('clay-settings'));
+    minutes = savedSettings
+      ? validateWeatherUpdateMinutes(savedSettings.WEATHER_UPDATE_MINUTES)
+      : WEATHER_UPDATE_MINUTES_DEFAULT;
   } catch (e) {
-    console.log('Saved weather settings could not be loaded: ' + e.message);
+    console.log('Ready Event Handler failed due to error: ' + e.message);
   }
-
-  sendAppMessage({ JS_READY: 1 });
-  refresh.start(parseWeatherUpdateMinutes(savedSettings));
+  refresh.start(minutes);
 });

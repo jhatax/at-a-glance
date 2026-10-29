@@ -11,19 +11,27 @@ typedef struct {
 #define ARRAY_LENGTH(array) (sizeof(array) / sizeof((array)[0]))
 
 typedef enum {
-  TUPLE_INT,
-  TUPLE_CSTRING,
-  TUPLE_BYTES,
+  TUPLE_BYTE_ARRAY = 0,
+  TUPLE_CSTRING = 1,
+  TUPLE_UINT = 2,
+  TUPLE_INT = 3,
 } TupleType;
 
-typedef struct {
-  int32_t int32;
-  const char* cstring;
-} TupleValue;
-
-typedef struct {
-  TupleType type;
-  TupleValue* value;
+// Match the SDK's serialized tuple layout, including inline variable-length data.
+typedef struct __attribute__((__packed__)) {
+  uint32_t key;
+  TupleType type : 8;
+  uint16_t length;
+  union {
+    uint8_t data[0];
+    char cstring[0];
+    uint8_t uint8;
+    uint16_t uint16;
+    uint32_t uint32;
+    int8_t int8;
+    int16_t int16;
+    int32_t int32;
+  } value[];
 } Tuple;
 
 #define GColorClear ((GColor){.argb = 0})

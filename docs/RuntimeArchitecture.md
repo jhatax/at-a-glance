@@ -119,7 +119,7 @@ src/pkjs/index.js ready
   -> read Clay's clay-settings entry from localStorage
   -> parse WEATHER_UPDATE_MINUTES, using 15 minutes if missing, unreadable, or invalid
   -> enqueue standalone JS_READY through the control AppMessage lane
-  -> start weather/location refresh at the selected interval
+  -> refresh weather/location immediately and start polling at the selected interval
 
 AppMessage inbox handler in ataglance_pebble_message_handler.c
   -> return when JS_READY is detected
@@ -128,7 +128,7 @@ src/pkjs/index.js webviewclosed handler
   -> Clay saves the submitted settings in localStorage
   -> parse WEATHER_UPDATE_MINUTES
   -> applyWeatherUpdateMinutes(minutes)
-  -> refresh and reschedule weather/location polling if the interval changes
+  -> replace the polling timer if the interval changes; refresh after the new interval elapses
 ```
 
 ## Prepared Surface

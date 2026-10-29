@@ -186,10 +186,9 @@ static void climate_module_update_weather(
       APP_LOG(APP_LOG_LEVEL_WARNING, "Weather condition invalid: value=%d", weather_condition);
       weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
     }
-
     s_weather_condition = weather_condition;
 
-    // Is it really the day or is it night?
+    // Is it day or night?
     s_is_day = (is_day == 1);
   }
 }

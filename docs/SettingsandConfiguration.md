@@ -90,9 +90,9 @@ Clay presents `BATTERY_ORIENTATION` as “Battery orientation:” with “Centra
 
 ### PKJS Normalization
 
-PKJS sends most Clay-backed settings directly after Clay maps their keys.
+PKJS sends most Clay-backed settings directly after Clay maps their keys with the exception of the following:
 
-Steps goal is different:
+**1. Steps goal**
 
 ```text
 STEPS_GOAL_CUSTOM valid
@@ -107,11 +107,25 @@ else
   -> send STEPS_GOAL_DEFAULT
 ```
 
-After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` from the outbound dictionary. C should not budget AppMessage inbox space for those two Clay-only inputs.
+After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` from the outbound dictionary. Therefore, C should not budget AppMessage inbox space for those two Clay-only inputs.
 
-When Clay returns `WEATHER_UPDATE_MINUTES`, PKJS applies the interval. A changed interval triggers an immediate weather/location refresh and replaces the timer. An unchanged running interval keeps its timer.
+**2. Weather Update Minutes & Scheduling**
 
-PKJS owns the weather schedule. On the `ready` event, it reads `WEATHER_UPDATE_MINUTES` from Clay's `clay-settings` entry in `localStorage`. Missing or unreadable settings, an unparseable interval, or a nonpositive interval use the 15-minute default. The refresh controller accepts any positive parsed interval; C separately accepts only `15`, `30`, `45`, or `60`. The watch ignores `JS_READY` and sends no cadence synchronization message to PKJS. PKJS sends readiness in its own message because a parseable `JS_READY` tuple makes the C handler return before processing other tuples.
+PKJS owns the weather schedule and applies `WEATHER_UPDATE_MINUTES`.
+
+When the user specifies a new schedule:
+
+- An unchanged running interval keeps its timer.
+- A changed interval replaces the timer; the next weather/location refresh occurs after the new interval elapses.
+
+On first startup:
+
+- On the `ready` event, it reads `WEATHER_UPDATE_MINUTES` from Clay's `clay-settings` entry in `localStorage`.
+- Missing or unreadable settings, an unparseable interval, or a nonpositive interval use the 15-minute default.
+- The refresh controller accepts any positive parsed interval; C separately accepts only `15`, `30`, `45`, or `60`.
+- PKJS sends `JS_READY` and doesn't wait for an `ack`, akin to a UDP packet.
+- Upon receipt of JS_READY` tuple, the C handler returns before processing other tuples.
+- After `JS_READY` is sent, `refreshNow()` runs immediately & a weather update cadence is scheduled.
 
 ## AppMessage And Message-Key Contract
 
@@ -136,9 +150,11 @@ Current manifest-backed keys:
 | 13  | `JS_READY`               | `10012`              | PKJS readiness control          |
 | 14  | `BATTERY_ORIENTATION`    | `10013`              | Runtime setting                 |
 
-Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
+**Notes**
 
-Generated C and JS artifacts may list keys in sorted-name order. That listing order is not the numeric assignment rule. Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
+- Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
+- Generated C and JS artifacts may list keys in sorted-name order; unless you explicitly set keys.
+- Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
 
 **Rules**
 
@@ -156,7 +172,7 @@ The current one-shot health keys are runtime-only constants:
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_BPM`   | `10020`    | One-shot BPM override   |
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS` | `10021`    | One-shot steps override |
 
-These are not Clay settings, not manifest-backed keys, and not persisted. They exist for focused QA and are consumed once by the health refresh path.
+These are one-shot, QA-oriented settings that are not persisted. Therefore, no watch-face and companion app interaction should use these keys.
 
 [Validation](Validation.md) owns the operational command examples for these keys. This document references them only to keep the settings, data, and QA payloads separate.
 
@@ -191,6 +207,8 @@ inbox_received_handler(iter, context)
 
 ## Runtime mutation
 
+Sanitize settings on initial load. Reject invalid live updates and retain the current valid value.
+
 ```text
 watchface_apply_received_data()
   -> validate setting values
@@ -200,15 +218,15 @@ watchface_apply_received_data()
 
 Refresh effects:
 
-| Setting                  | Runtime action                                                       |
-| ------------------------ | -------------------------------------------------------------------- |
-| `TIME_FORMAT`            | `WATCHFACE_UPDATE_TIME`                                              |
-| `TEMP_UNIT`              | `WATCHFACE_UPDATE_CLIMATE`                                           |
-| `DISPLAY_MODE`           | `WATCHFACE_REPAINT`                                                  |
-| `BATTERY_ORIENTATION`    | `WATCHFACE_UPDATE_BATTERY_ORIENTATION`                               |
-| `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS                   |
-| `HR_SAMPLE_MINUTES`      | Persisted in C; HealthService sample period updated in `ataglance_pebble_message_handler.c` |
-| `STEPS_GOAL`             | `WATCHFACE_UPDATE_HEALTH`                                            |
+| Setting | Runtime action |
+| --- | --- |
+| `TIME_FORMAT` | `WATCHFACE_UPDATE_TIME` |
+| `TEMP_UNIT` | `WATCHFACE_UPDATE_CLIMATE` |
+| `DISPLAY_MODE` | `WATCHFACE_REPAINT` |
+| `BATTERY_ORIENTATION` | `WATCHFACE_UPDATE_BATTERY_ORIENTATION` |
+| `WEATHER_UPDATE_MINUTES` | Persisted in C; schedule update is managed in PKJS |
+| `HR_SAMPLE_MINUTES` | Persisted in C; HealthService sample period updated in `ataglance_pebble_message_handler.c` |
+| `STEPS_GOAL` | `WATCHFACE_UPDATE_HEALTH` |
 
 Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct only when a validated persisted field changes. Stored settings are sanitized on load.
 

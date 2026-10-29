@@ -4,8 +4,8 @@ const MAX_LOCATION_STRING_LENGTH = 15;
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
 
 function createRefreshController(dependencies) {
-  var currentUpdateInterval = -1;
-  var updateIntervalHandle = null;
+  var waitInterval = -1;
+  var waitIntervalHandle = null;
   var lastKnownLocation = null;
 
   if (!dependencies || typeof dependencies.sendClimateMessage !== 'function') {
@@ -77,7 +77,11 @@ function createRefreshController(dependencies) {
         }
 
         try {
-          var address = JSON.parse(xhr.responseText).address || {};
+          var address = JSON.parse(xhr.responseText).address;
+          if (!address) {
+            reject("Couldn't retrieve valid location during lookup");
+            return;
+          }
           resolve({
             MAYBE_CURRENT_LOCATION: (
               address.neighbourhood ||
@@ -88,7 +92,7 @@ function createRefreshController(dependencies) {
               address.city ||
               address.county ||
               address.state ||
-              ''
+              'GPS'
             )
               .slice(0, MAX_LOCATION_STRING_LENGTH)
               .toUpperCase(),
@@ -153,7 +157,7 @@ function createRefreshController(dependencies) {
     sendMessage({
       TEMPERATURE: 0,
       WEATHER_CONDITION: -1,
-      IS_DAY: -1,
+      IS_DAY: 0,
       MAYBE_CURRENT_LOCATION: '',
     });
   }
@@ -206,28 +210,36 @@ function createRefreshController(dependencies) {
     );
   }
 
-  function refreshNow() {
+  function fetchNow() {
+    // we use lastKnownLocation if available; we always retrieve location info,
+    // regardless of whether lastKnownLocation is known. Here's why:
+    // - on startup:
+    //   - lastKnownLocation is `null`, so, we need to request it.
+    // - when available:
+    //   - we use it to refreshClimateAndLocation **& ALSO** check if location has changed.
+    // if requestLocation succeeds, refreshClimateAndLocation is invoke IFF location has changed.
+    // this is why we have a check that discards info retrieved for a stale location.
     if (lastKnownLocation) {
       refreshClimateAndLocation(lastKnownLocation);
     }
     requestLocation();
   }
 
-  function scheduleUpdates() {
-    if (updateIntervalHandle !== null) {
-      clearInterval(updateIntervalHandle);
-      updateIntervalHandle = null;
+  function fetchThenWait() {
+    if (waitIntervalHandle !== null) {
+      clearInterval(waitIntervalHandle);
+      waitIntervalHandle = null;
     }
-    updateIntervalHandle = setInterval(refreshNow, currentUpdateInterval * 60 * 1000);
+    waitIntervalHandle = setInterval(fetchNow, waitInterval * 60 * 1000);
   }
   function setIntervalMinutes(minutes) {
     var isValid = typeof minutes === 'number' && minutes > 0;
     var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
-    var changed = currentUpdateInterval !== nextInterval;
-    if (changed || updateIntervalHandle === null) {
-      currentUpdateInterval = nextInterval;
-      refreshNow();
-      scheduleUpdates();
+    var changed = waitInterval !== nextInterval;
+    if (changed || waitIntervalHandle === null) {
+      waitInterval = nextInterval;
+      fetchNow();
+      fetchThenWait();
     }
   }
 

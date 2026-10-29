@@ -15,14 +15,14 @@ typedef struct {
 
 static BatteryPalette s_battery_palette = {0};
 
-static GRect s_battery_track = {0};
-static GRect s_battery_fill = {0};
-static GRect s_battery_bolt = {0};
+static GRect s_battery_track = GRectZero;
+static GRect s_battery_fill = GRectZero;
+static GRect s_battery_bolt = GRectZero;
 static Layer* s_battery_track_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
 
 static BatteryChargeState s_battery_state = {0};
-static bool s_cached_is_vertical = false;
+static bool s_battery_is_vertical = false;
 
 static const BatteryPalette c_dark_battery_palette = {
     .track = GColorDarkGray,
@@ -89,23 +89,22 @@ static void battery_bolt_update_proc(
     GContext* ctx);
 
 #ifdef PBL_ROUND
+static const int16_t pie_slice = HELPER_SCALE_ROUND(BATTERY_BAR_SIZE_PERCENT, 180, 100);
+static const uint16_t deg_offset = (180 - pie_slice) >> 1;
+static const uint16_t bottom = 180 - deg_offset;
+
 static void update_round_vertical_track_fill(
     Layer* layer,
     GContext* ctx,
     const int16_t charge_percent) {
-  (void)layer;
-  const GColor fill_color = calculate_battery_color(charge_percent);
-
   // Let's calculate the top and bottom angle if this were to be a full battery
-  const int16_t pie_slice = HELPER_SCALE_ROUND(BATTERY_BAR_SIZE_PERCENT, 180, 100);
-  const uint16_t deg_offset = (180 - pie_slice) >> 1;
-  const uint16_t bottom = 180 - deg_offset;
   uint16_t top = deg_offset;
   // Erase the battery background so that the latest percent is displayed
   graphics_context_set_fill_color(ctx, s_battery_palette.track);
+  GRect battery_track = layer_get_bounds(layer);
   graphics_fill_radial(
       ctx,
-      s_battery_track,
+      battery_track,
       GOvalScaleModeFitCircle,
       BATTERY_TRACK_HEIGHT,
       DEG_TO_TRIGANGLE(top),
@@ -114,10 +113,10 @@ static void update_round_vertical_track_fill(
   // Now fill the inside of the track up to the charge width.
   // Calculate the top based on the current charge_percent
   top += HELPER_SCALE_ROUND(pie_slice, (100 - charge_percent), 100);
-  graphics_context_set_fill_color(ctx, fill_color);
+  graphics_context_set_fill_color(ctx, calculate_battery_color(charge_percent));
   graphics_fill_radial(
       ctx,
-      s_battery_fill,
+      grect_inset(battery_track, GEdgeInsets(BATTERY_TRACK_FILL_OFFSET)),
       GOvalScaleModeFitCircle,
       BATTERY_FILL_HEIGHT,
       DEG_TO_TRIGANGLE(top),
@@ -137,7 +136,7 @@ static void battery_track_update_proc(
   int16_t h = 0;
   // Set y, w, h for each orientation => x is the same
   const int16_t charge_percent = s_battery_state.charge_percent;
-  if (s_cached_is_vertical) {
+  if (s_battery_is_vertical) {
 #ifdef PBL_ROUND
     // If it is a round device that needs a vertical battery,
     // call the update function for round devices and return to caller
@@ -189,7 +188,7 @@ bool battery_module_create(
   s_battery_track = battery->track;
   s_battery_fill = battery->fill;
   s_battery_bolt = battery->bolt;
-  s_cached_is_vertical = battery->is_vertical;
+  s_battery_is_vertical = battery->is_vertical;
 
   s_battery_track_layer = layer_create(s_battery_track);
   if (!s_battery_track_layer) {
@@ -229,7 +228,7 @@ void battery_module_destroy() {
   s_battery_track = GRectZero;
   s_battery_fill = GRectZero;
   s_battery_bolt = GRectZero;
-  s_cached_is_vertical = false;
+  s_battery_is_vertical = false;
 }
 
 void battery_module_refresh(
@@ -241,8 +240,8 @@ void battery_module_refresh(
   }
   battery_update_palette(palette);
   // The orientation has changed; update our state variables and reset layer frames
-  if (s_cached_is_vertical != battery->is_vertical) {
-    s_cached_is_vertical = battery->is_vertical;
+  if (s_battery_is_vertical != battery->is_vertical) {
+    s_battery_is_vertical = battery->is_vertical;
     s_battery_fill = battery->fill;
     s_battery_track = battery->track;
     layer_set_frame(s_battery_track_layer, battery->track);

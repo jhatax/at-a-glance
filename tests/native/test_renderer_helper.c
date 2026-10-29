@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "../src/modules/helper.h"
 #include "../src/modules/substratum_computations.h"
 #include "test_framework.h"
@@ -62,29 +64,69 @@ int test_helper_colors(
 
 int test_helper_tuple_parsing(
     void) {
-  TupleValue integer_value = {.int32 = 1234};
-  Tuple integer_tuple = {.type = TUPLE_INT, .value = &integer_value};
+  uint8_t storage[sizeof(Tuple) + 8] = {0};
+  Tuple* tuple = (Tuple*)storage;
   int parsed = 0;
 
-  TEST_CHECK(helper_tuple_to_int(&integer_tuple, &parsed));
-  TEST_CHECK(parsed == 1234);
+  const struct {
+    uint16_t length;
+    uint8_t bytes[4];
+    int32_t expected;
+  } integer_cases[] = {
+      {1, {0x00, 0xA5, 0xA5, 0xA5}, 0},
+      {1, {0x01, 0xA5, 0xA5, 0xA5}, 1},
+      {1, {0x7F, 0xA5, 0xA5, 0xA5}, INT8_MAX},
+      {1, {0x80, 0xA5, 0xA5, 0xA5}, INT8_MIN},
+      {1, {0xFF, 0xA5, 0xA5, 0xA5}, -1},
+      {2, {0x00, 0x00, 0xA5, 0xA5}, 0},
+      {2, {0x01, 0x00, 0xA5, 0xA5}, 1},
+      {2, {0xFF, 0x7F, 0xA5, 0xA5}, INT16_MAX},
+      {2, {0x00, 0x80, 0xA5, 0xA5}, INT16_MIN},
+      {2, {0xFF, 0xFF, 0xA5, 0xA5}, -1},
+      {4, {0x00, 0x00, 0x00, 0x00}, 0},
+      {4, {0x01, 0x00, 0x00, 0x00}, 1},
+      {4, {0xFF, 0xFF, 0xFF, 0x7F}, INT32_MAX},
+      {4, {0x00, 0x00, 0x00, 0x80}, INT32_MIN},
+      {4, {0xFF, 0xFF, 0xFF, 0xFF}, -1},
+  };
+
+  // Nonzero bytes after short values expose reads beyond the declared width.
+  tuple->type = TUPLE_INT;
+  for (size_t i = 0; i < ARRAY_LENGTH(integer_cases); ++i) {
+    tuple->length = integer_cases[i].length;
+    memcpy(tuple->value, integer_cases[i].bytes, sizeof(integer_cases[i].bytes));
+    TEST_CHECK(helper_tuple_to_int(tuple, &parsed));
+    TEST_CHECK(parsed == integer_cases[i].expected);
+  }
+
+  const uint16_t invalid_lengths[] = {0, 3, 5};
+  for (size_t i = 0; i < ARRAY_LENGTH(invalid_lengths); ++i) {
+    tuple->length = invalid_lengths[i];
+    parsed = 1234;
+    TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
+    TEST_CHECK(parsed == 1234);
+  }
 
   const char* text = "32767";
-  TupleValue string_value = {.cstring = text};
-  Tuple string_tuple = {.type = TUPLE_CSTRING, .value = &string_value};
-  TEST_CHECK(helper_tuple_to_int(&string_tuple, &parsed));
+  tuple->type = TUPLE_CSTRING;
+  tuple->length = strlen(text) + 1;
+  memcpy(tuple->value->cstring, text, tuple->length);
+  TEST_CHECK(helper_tuple_to_int(tuple, &parsed));
   TEST_CHECK(parsed == 32767);
 
   const char* invalid_texts[] = {"", "-1", "12x", "32768"};
   for (size_t i = 0; i < ARRAY_LENGTH(invalid_texts); ++i) {
-    string_value.cstring = invalid_texts[i];
-    TEST_CHECK(!helper_tuple_to_int(&string_tuple, &parsed));
+    tuple->length = strlen(invalid_texts[i]) + 1;
+    memcpy(tuple->value->cstring, invalid_texts[i], tuple->length);
+    TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
   }
 
-  Tuple wrong_type = {.type = TUPLE_BYTES, .value = &integer_value};
-  TEST_CHECK(!helper_tuple_to_int(&wrong_type, &parsed));
+  tuple->type = TUPLE_BYTE_ARRAY;
+  TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
+  tuple->type = TUPLE_UINT;
+  TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
   TEST_CHECK(!helper_tuple_to_int(NULL, &parsed));
-  TEST_CHECK(!helper_tuple_to_int(&integer_tuple, NULL));
+  TEST_CHECK(!helper_tuple_to_int(tuple, NULL));
 
   return 0;
 }

@@ -46,7 +46,12 @@ static void settings_sanitize(
     settings->display_mode = DISPLAY_MODE_DEFAULT;
   }
   if (!WEATHER_UPDATE_MINUTES_VALID(settings->weather_update_minutes)) {
-    settings->weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
+    uint8_t update = HELPER_CLAMP_TO_RANGE(
+        settings->weather_update_minutes,
+        WEATHER_UPDATE_MINUTES_MIN,
+        WEATHER_UPDATE_MINUTES_MAX);
+    update -= (update % WEATHER_UPDATE_LCM);
+    settings->weather_update_minutes = update;
   }
   if (!BATTERY_ORIENTATION_VALID(settings->battery_orientation)) {
     settings->battery_orientation = BATTERY_ORIENTATION_DEFAULT;
@@ -179,12 +184,7 @@ bool settings_set_hr_sample_minutes(
 bool settings_set_steps_goal(
     WatchfaceSettings* settings,
     int goal) {
-  if (!settings) {
-    return false;
-  }
-  if (!STEPS_GOAL_VALID(goal)) {
-    settings->steps_goal = STEPS_GOAL_DEFAULT;
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings reset STEPS_GOAL to default. Received: %d", goal);
+  if (!settings || !STEPS_GOAL_VALID(goal)) {
     return false;
   }
 

@@ -12,9 +12,19 @@ bool helper_tuple_to_int(
 
   switch (tuple->type) {
     case TUPLE_INT:
-      *value = (int)tuple->value->int32;
-      return true;
-
+      switch (tuple->length) {
+        case 1:
+          *value = tuple->value->int8;
+          return true;
+        case 2:
+          *value = tuple->value->int16;
+          return true;
+        case 4:
+          *value = tuple->value->int32;
+          return true;
+        default:
+          return false;
+      }
     case TUPLE_CSTRING: {
       const char* text = tuple->value->cstring;
       int parsed = 0;
