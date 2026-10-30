@@ -292,7 +292,6 @@ void climate_module_refresh_location(
       const char* loc = (name && name[0]) ? name : WATCHFACE_OUTOFRANGE_TEXT;
       snprintf(s_location_buffer, ARRAY_LENGTH(s_location_buffer), "%s", loc);
     }
-    // No location data was received; this is invoked by a repaint
     bool no_location =
         !(strncmp(s_location_buffer, WATCHFACE_OUTOFRANGE_TEXT, strlen(WATCHFACE_OUTOFRANGE_TEXT)));
     substratum_renderer_update_text_layer(
