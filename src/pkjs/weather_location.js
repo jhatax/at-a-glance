@@ -163,66 +163,59 @@ function createRefreshController(dependencies) {
   }
 
   function refreshClimateAndLocation(location) {
-    Promise.all([fetchWeather(location), fetchLocation(location)])
-      .then(function (results) {
-        var weather = results[0];
-        var locationData = results[1];
-        sendMessage({
-          TEMPERATURE: weather.TEMPERATURE,
-          WEATHER_CONDITION: weather.WEATHER_CONDITION,
-          IS_DAY: weather.IS_DAY,
-          MAYBE_CURRENT_LOCATION: locationData.MAYBE_CURRENT_LOCATION,
-        });
-      })
-      .catch(function (error) {
-        if (!isCurrentLocation(location)) {
-          return;
-        }
-
-        console.log('Failed to gather climate & location data collectively.\n' + error);
-        clearWeatherAndLocation();
+    return Promise.all([fetchWeather(location), fetchLocation(location)]).then(function (results) {
+      var weather = results[0];
+      var locationData = results[1];
+      sendMessage({
+        TEMPERATURE: weather.TEMPERATURE,
+        WEATHER_CONDITION: weather.WEATHER_CONDITION,
+        IS_DAY: weather.IS_DAY,
+        MAYBE_CURRENT_LOCATION: locationData.MAYBE_CURRENT_LOCATION,
       });
+    });
   }
 
   function requestLocation() {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      clearWeatherAndLocation();
-      return;
-    }
+    return new Promise(function (resolve, reject) {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) {
+        reject("Couldn't retrieve geolocation");
+        return;
+      }
 
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        if (isSameLocation(pos)) {
-          return;
-        }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (isSameLocation(pos)) {
+            resolve(lastKnownLocation);
+            return;
+          }
 
-        lastKnownLocation = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        };
-        refreshClimateAndLocation(lastKnownLocation);
-      },
-      function (e) {
-        console.log('Geolocation error: (' + e.code + '): ' + e.message);
-        clearWeatherAndLocation();
-      },
-      { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
-    );
+          lastKnownLocation = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          };
+          resolve(lastKnownLocation);
+        },
+        (e) => reject('Geolocation error: (' + e.code + '): ' + e.message),
+        { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
+      );
+    });
   }
 
   function fetchNow() {
-    // we use lastKnownLocation if available; we always retrieve location info,
-    // regardless of whether lastKnownLocation is known. Here's why:
-    // - on startup:
-    //   - lastKnownLocation is `null`, so, we need to request it.
-    // - when available:
-    //   - we use it to refreshClimateAndLocation **& ALSO** check if location has changed.
-    // if requestLocation succeeds, refreshClimateAndLocation is invoke IFF location has changed.
-    // this is why we have a check that discards info retrieved for a stale location.
-    if (lastKnownLocation) {
-      refreshClimateAndLocation(lastKnownLocation);
-    }
-    requestLocation();
+    var requested = null;
+    requestLocation()
+      .then((location) => {
+        requested = location;
+        return refreshClimateAndLocation(requested);
+      })
+      .catch((error) => {
+        if (requested && !isCurrentLocation(requested)) {
+          return;
+        }
+
+        console.log('Failed to gather location, climate info.\n' + error);
+        clearWeatherAndLocation();
+      });
   }
 
   function fetchThenWait() {
@@ -230,6 +223,7 @@ function createRefreshController(dependencies) {
       clearInterval(waitIntervalHandle);
       waitIntervalHandle = null;
     }
+    fetchNow();
     waitIntervalHandle = setInterval(fetchNow, waitInterval * 60 * 1000);
   }
   function setIntervalMinutes(minutes) {
@@ -238,15 +232,12 @@ function createRefreshController(dependencies) {
     var changed = waitInterval !== nextInterval;
     if (changed || waitIntervalHandle === null) {
       waitInterval = nextInterval;
-      fetchNow();
       fetchThenWait();
     }
   }
 
   return {
-    start: function (minutes) {
-      setIntervalMinutes(minutes);
-    },
+    start: (minutes) => setIntervalMinutes(minutes),
     setIntervalMinutes: setIntervalMinutes,
   };
 }
