@@ -71,5 +71,6 @@ void substratum_renderer_mark_info_outofrange(
 void substratum_renderer_draw_filled_bolt_in_frame(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     GColor background,
     GColor fill_color);

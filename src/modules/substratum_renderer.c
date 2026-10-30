@@ -75,9 +75,10 @@ void substratum_renderer_draw_scaled_circle_in_frame(
 void substratum_renderer_draw_filled_bolt_in_frame(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     GColor background,
     GColor fill_color) {
-  if (!ctx || !frame) {
+  if (!ctx || !frame || !bolt) {
     return;
   }
 
@@ -88,54 +89,66 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   uint8_t stroke_width = 2;
   uint8_t offset = stroke_width;
   uint8_t quarter = WATCHFACE_ICON_CENTER_X >> 1;
-  // Need 7-bolt points to form a path
-  GPoint bolt_points[] = {
-      substratum_renderer_scale_icon_x_y_in_frame(frame, WATCHFACE_ICON_CENTER_X + offset, offset),
-      substratum_renderer_scale_icon_x_y_in_frame(frame, quarter, WATCHFACE_ICON_CENTER_Y + offset),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X,
-          WATCHFACE_ICON_CENTER_Y + offset),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X - offset,
-          WATCHFACE_ICON_GRID_HEIGHT - offset),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X + quarter,
-          WATCHFACE_ICON_CENTER_Y - offset),
-      substratum_renderer_scale_icon_x_y_in_frame(
-          frame,
-          WATCHFACE_ICON_CENTER_X,
-          WATCHFACE_ICON_CENTER_Y - offset),
-      bolt_points[0],
+
+  if (!bolt->initialized) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "Initializing bolt array");
+
+    GPoint* points = bolt->bolt_points;
+    points[0] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X + offset,
+        offset);
+    points[1] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X + offset,
+        offset);
+    points[2] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        quarter,
+        WATCHFACE_ICON_CENTER_Y + offset);
+    points[3] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X,
+        WATCHFACE_ICON_CENTER_Y + offset);
+    points[4] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X - offset,
+        WATCHFACE_ICON_GRID_HEIGHT - offset);
+    points[5] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X + quarter,
+        WATCHFACE_ICON_CENTER_Y - offset);
+    points[6] = substratum_renderer_scale_icon_x_y_in_frame(
+        frame,
+        WATCHFACE_ICON_CENTER_X,
+        WATCHFACE_ICON_CENTER_Y - offset);
+    points[7] = points[0];
+
+    bolt->initialized = true;
+    bolt->path.points = bolt->bolt_points;
+    bolt->path.num_points = ARRAY_LENGTH(bolt->bolt_points);
   };
 
-  GPathInfo path_info = (GPathInfo){
-      .num_points = ARRAY_LENGTH(bolt_points),
-      .points = bolt_points,
-  };
-  GPath* path = gpath_create(&path_info);
-
-  if (path) {
+  if (bolt->initialized) {
 #if ATAGLANCE_DEBUG
     // draw a bounding box
     graphics_context_set_stroke_color(ctx, gcolor_legible_over(background));
     graphics_draw_rect(ctx, *frame);
 #endif
-    // draw the bolt
-    graphics_context_set_stroke_color(ctx, fill_color);
-    graphics_context_set_stroke_width(ctx, stroke_width);
-    gpath_draw_outline(ctx, path);
-
     // fill the bolt
     graphics_context_set_fill_color(ctx, fill_color);
-    gpath_draw_filled(ctx, path);
+    gpath_draw_filled(ctx, &(bolt->path));
 
-    // release gpath resources
-    gpath_destroy(path);
+    // feather the bolt outline
+    graphics_context_set_stroke_color(ctx, fill_color);
+    graphics_context_set_stroke_width(ctx, stroke_width);
+    gpath_draw_outline(ctx, &(bolt->path));
+
+    bolt->path.offset = GPoint(0, 1);
+    // feather the offset bolt's outline
+    gpath_draw_outline(ctx, &(bolt->path));
+    bolt->path.offset = (GPoint){0};
   }
-  path = NULL;
 }
 
 void substratum_renderer_draw_bitmap_in_rect(

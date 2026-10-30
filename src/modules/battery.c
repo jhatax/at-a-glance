@@ -20,6 +20,7 @@ static GRect s_battery_fill = GRectZero;
 static GRect s_battery_bolt = GRectZero;
 static Layer* s_battery_track_layer = NULL;
 static Layer* s_battery_bolt_layer = NULL;
+static WatchfaceBolt s_charging_bolt = {0};
 
 static BatteryChargeState s_battery_state = {0};
 static bool s_battery_is_vertical = false;
@@ -174,6 +175,7 @@ static void battery_bolt_update_proc(
   substratum_renderer_draw_filled_bolt_in_frame(
       ctx,
       &bounds,
+      &s_charging_bolt,
       s_battery_palette.background,
       s_battery_palette.pluggedin);
 }
@@ -204,6 +206,7 @@ bool battery_module_create(
   if (s_battery_bolt_layer) {
     layer_set_update_proc(s_battery_bolt_layer, battery_bolt_update_proc);
     layer_add_child(root, s_battery_bolt_layer);
+    s_charging_bolt = (WatchfaceBolt){0};
   } else {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create battery bolt layer");
     return false;
@@ -217,12 +220,12 @@ void battery_module_destroy() {
     layer_destroy(s_battery_bolt_layer);
     s_battery_bolt_layer = NULL;
   }
+  s_charging_bolt = (WatchfaceBolt){0};
 
   if (s_battery_track_layer) {
     layer_destroy(s_battery_track_layer);
     s_battery_track_layer = NULL;
   }
-
   s_battery_state = (BatteryChargeState){0};
   s_battery_palette = (BatteryPalette){0};
   s_battery_track = GRectZero;

@@ -685,6 +685,7 @@ static WeatherIconKind get_weather_icon_kind(
 void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     int16_t weather_condition,
     bool is_day,
     const ClimatePalette* climate_palette) {
@@ -754,6 +755,7 @@ void draw_climate_icon(
       substratum_renderer_draw_filled_bolt_in_frame(
           ctx,
           frame,
+          bolt,
           climate_palette->background,
           weather_color_for_kind(WEATHER_ICON_THUNDERSTORM, climate_palette));
       break;

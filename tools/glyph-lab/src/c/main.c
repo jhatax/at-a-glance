@@ -1,5 +1,5 @@
-#include "../../../src/modules/helper_computations.h"
 #include "glyph_lab_glyphs.h"
+#include "modules/helper_computations.h"
 
 #define GLYPH_COL_COUNT 2
 #define GLYPH_ROW_COUNT 2
@@ -157,6 +157,8 @@ static void draw_cell_label(
       NULL);
 }
 
+static WatchfaceBolt s_bolt = {0};
+
 static void draw_glyph_cell(
     GContext* ctx,
     const GRect* cell_frame,
@@ -185,7 +187,7 @@ static void draw_glyph_cell(
       cell_frame->size.w - 4,
       LABEL_HEIGHT);
 
-  glyph_lab_draw_climate_icon(ctx, &icon_frame, cell->weather_code, cell->is_day, palette);
+  glyph_lab_draw_climate_icon(ctx, &icon_frame, &s_bolt, cell->weather_code, cell->is_day, palette);
   draw_cell_label(ctx, &label_frame, palette, cell->label);
 }
 
@@ -245,6 +247,7 @@ static void up_click_handler(
   (void)ctx;
 
   s_page_index = (s_page_index + GLYPH_PAGE_COUNT - 1) % GLYPH_PAGE_COUNT;
+  s_bolt = (WatchfaceBolt){0};
   mark_canvas_dirty();
 }
 
@@ -255,6 +258,7 @@ static void down_click_handler(
   (void)ctx;
 
   s_page_index = (s_page_index + 1) % GLYPH_PAGE_COUNT;
+  s_bolt = (WatchfaceBolt){0};
   mark_canvas_dirty();
 }
 

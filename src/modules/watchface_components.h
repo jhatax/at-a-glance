@@ -6,6 +6,7 @@
 
 #define WATCHFACE_OUTOFRANGE_TEXT "---"
 #define WATCHFACE_UNINITIALIZED_TEXT_COLOR GColorWhite
+#define BOLT_POINT_COUNT 8
 
 typedef GRect WatchfaceFrame;
 
@@ -40,6 +41,12 @@ typedef struct {
   WatchfaceFrame bolt;
   bool is_vertical;
 } WatchfaceBatteryStratum;
+
+typedef struct {
+  GPath path;
+  GPoint bolt_points[BOLT_POINT_COUNT];
+  bool initialized;
+} WatchfaceBolt;
 
 typedef struct {
   int16_t face_width;

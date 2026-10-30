@@ -14,6 +14,7 @@ void glyph_lab_select_palette(
 void glyph_lab_draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     int16_t weather_condition,
     bool is_day,
     const ColorPalette* palette);

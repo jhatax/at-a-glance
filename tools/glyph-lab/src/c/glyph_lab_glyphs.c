@@ -1,7 +1,7 @@
 #include "glyph_lab_glyphs.h"
 
-#include "../../../src/modules/climate_glyphs.h"
-#include "../../../src/modules/helper_computations.h"
+#include "modules/climate_glyphs.h"
+#include "modules/helper_computations.h"
 
 bool glyph_lab_glyphs_init() { return true; }
 
@@ -35,13 +35,10 @@ void glyph_lab_select_palette(
         .is_light_mode = true,
         .background =
             PBL_IF_COLOR_ELSE(palette_index == 3 ? GColorWhite : GColorCeleste, GColorWhite),
-        .background_layer_background =
-            PBL_IF_COLOR_ELSE(palette_index == 3 ? GColorWhite : GColorCeleste, GColorWhite),
-        .background_layer_rule = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
         .primary_text = GColorBlack,
         .outofrange_text = PBL_IF_COLOR_ELSE(GColorDarkGray, GColorBlack),
-        .date = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
-        .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
+        .date_text = PBL_IF_COLOR_ELSE(GColorOxfordBlue, GColorBlack),
+        .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorBlack),
     };
     return;
   }
@@ -50,19 +47,17 @@ void glyph_lab_select_palette(
       .is_light_mode = false,
       .background =
           PBL_IF_COLOR_ELSE(palette_index == 2 ? GColorBlack : GColorOxfordBlue, GColorBlack),
-      .background_layer_background =
-          PBL_IF_COLOR_ELSE(palette_index == 2 ? GColorBlack : GColorOxfordBlue, GColorBlack),
-      .background_layer_rule = GColorWhite,
       .primary_text = GColorWhite,
       .outofrange_text = PBL_IF_COLOR_ELSE(GColorLightGray, GColorWhite),
-      .date = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
-      .time = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
+      .date_text = PBL_IF_COLOR_ELSE(GColorCeleste, GColorWhite),
+      .time_text = PBL_IF_COLOR_ELSE(GColorOrange, GColorWhite),
   };
 }
 
 void glyph_lab_draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     int16_t weather_condition,
     bool is_day,
     const ColorPalette* palette) {
@@ -83,5 +78,5 @@ void glyph_lab_draw_climate_icon(
       .clear_fill = climate_palette.clear_fill,
   };
 
-  draw_climate_icon(ctx, frame, weather_condition, is_day, &climate_palette);
+  draw_climate_icon(ctx, frame, bolt, weather_condition, is_day, &climate_palette);
 }

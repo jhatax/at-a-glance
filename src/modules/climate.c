@@ -36,6 +36,7 @@ static char s_location_buffer[CLIMATE_LOCATION_BUFFER_SIZE] = WATCHFACE_OUTOFRAN
 static int16_t s_temp_celsius_tenths = WEATHER_TEMP_OUTOFRANGE;
 static int16_t s_weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
 static bool s_is_day = false;
+static WatchfaceBolt s_lightning_bolt = {0};
 
 static ClimatePalette s_climate_palette = {0};
 
@@ -147,7 +148,13 @@ static void climate_icon_update_proc(
     s_weather_condition = CLIMATE_CONDITION_OUTOFRANGE;
   }
 
-  draw_climate_icon(ctx, &bounds, s_weather_condition, s_is_day, &s_climate_palette);
+  draw_climate_icon(
+      ctx,
+      &bounds,
+      &s_lightning_bolt,
+      s_weather_condition,
+      s_is_day,
+      &s_climate_palette);
 }
 
 static void climate_module_update_weather(
@@ -223,6 +230,8 @@ bool climate_module_create(
 
     if (!s_climate_icon_layer) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to create climate condition icon");
+    } else {
+      s_lightning_bolt = (WatchfaceBolt){0};
     }
   }
 
@@ -233,6 +242,7 @@ void climate_module_destroy() {
   if (s_climate_icon_layer) {
     layer_destroy(s_climate_icon_layer);
     s_climate_icon_layer = NULL;
+    s_lightning_bolt = (WatchfaceBolt){0};
   }
   if (s_temperature_layer) {
     text_layer_destroy(s_temperature_layer);

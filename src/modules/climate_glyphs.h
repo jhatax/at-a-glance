@@ -2,6 +2,8 @@
 
 #include <pebble.h>
 
+#include "watchface_components.h"
+
 // Fully-resolved climate colors consumed by the glyph renderer.
 typedef struct {
   GColor background;
@@ -17,6 +19,7 @@ typedef struct {
 void draw_climate_icon(
     GContext* ctx,
     const GRect* frame,
+    WatchfaceBolt* bolt,
     int16_t weather_condition,
     bool is_day,
     const ClimatePalette* climate_palette);
