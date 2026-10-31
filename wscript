@@ -1,6 +1,7 @@
 # -*- mode: python; -*-
 
 import os.path
+import zipfile
 
 top = '.'
 out = 'build'
@@ -12,6 +13,15 @@ def options(ctx):
 
 def configure(ctx):
     ctx.load('pebble_sdk')
+
+
+def create_publish_bundle(task):
+    with zipfile.ZipFile(task.inputs[0].abspath()) as source:
+        with zipfile.ZipFile(task.outputs[0].abspath(), 'w') as target:
+            target.comment = source.comment
+            for entry in source.infolist():
+                if entry.filename != 'pebble-js-app.js.map':
+                    target.writestr(entry, source.read(entry))
 
 
 def build(ctx):
@@ -61,3 +71,8 @@ def build(ctx):
         ]),
         js_entry_file='src/pkjs/index.js',
     )
+
+    bundle = ctx.path.get_bld().make_node(ctx.env.BUNDLE_NAME)
+    ctx(rule=create_publish_bundle,
+        source=bundle,
+        target=bundle.change_ext('-publish.pbw'))

@@ -8,6 +8,7 @@ Use this document to understand:
 - canonical build flow
 - compile database generation
 - install flow
+- publishing
 - editor-tooling contract
 - build-stage ownership
 
@@ -61,6 +62,7 @@ Use [QA README](../qa/README.md) for operating the QA harness and [QAHarnessImpl
             -> configure project
             -> build platform outputs
             -> emit PBW and per-platform artifacts under build/
+            -> create a -publish.pbw copy without the JavaScript source map
             -> compilerdbgenerator.generate_compile_database() when verbose
                  -> extract Emery compiler commands from build.log
                  -> write compile_commands.json at the project root
@@ -82,6 +84,21 @@ Verbose build behavior:
 - Failure log: Append the Python traceback to `build.log`.
 - Operator output: Show only extracted compiler diagnostics in the console and QA log.
 - Non-verbose builds: Do not create `build.log`; use the harness failure path without exposing a Python traceback.
+
+## Publishing
+
+Run the normal build to produce both PBW files:
+
+```sh
+./aag-build-qa.sh --build
+```
+
+- `build/at-a-glance.pbw` contains the JavaScript bundle and source map for local development.
+- `build/at-a-glance-publish.pbw` is the upload artifact. It excludes only `pebble-js-app.js.map`; every other archive entry matches the original PBW.
+
+`wscript` creates the publish copy after the original PBW is built. The local `build/pebble-js-app.js.map` remains available to `pebble logs`.
+
+Complete [release validation](Validation.md#release-validation), then upload `build/at-a-glance-publish.pbw` to the app store.
 
 ## Current Install Flow
 

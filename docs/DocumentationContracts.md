@@ -94,9 +94,9 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 ### 12. BuildandInstall
 
-**Purpose:** Describes build, compile-database, emulator-install, device-install, and recovery flows. It keeps build-stage ownership and editor tooling separate from product and QA semantics.
+**Purpose:** Describes build, compile-database, emulator-install, device-install, recovery, and publishing flows. It keeps build-stage ownership and editor tooling separate from product and QA semantics.
 
-**Sub-concepts:** Build goals; build rules; tooling surface; Pebble build; compile database; emulator install; harness install; emulator recovery; phone install; build artifacts.
+**Sub-concepts:** Build goals; build rules; tooling surface; Pebble build; compile database; emulator install; harness install; emulator recovery; phone install; build artifacts; publish PBW; local source map retention.
 
 **Connections:** Adjacent: [Contributing](Contributing.md), [Validation](Validation.md). Read next: none.
 

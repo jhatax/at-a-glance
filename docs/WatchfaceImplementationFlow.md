@@ -61,6 +61,7 @@ package.json
 V               ────────────────────────────────────────────────────────────────────
 wscript
 - source globs -  JS bundle
+- publish PBW copy without the JavaScript source map
 - optional ATAGLANCE_DEBUG hook ──────────────────> watchface_debug.h
         |                                           - debug-gate normalization
         v <────────────    Pebble OS   ────────────>
