@@ -2,7 +2,7 @@
   "name": "AtAGlance",
   "author": "Manoj Mehta",
   "description": "Get all the info you need, with a glance at your Pebble.",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "keywords": [
     "pebble",
     "watchface"
@@ -16,7 +16,8 @@
     "format:clang": "clang-format -i src/c/*.[ch] src/modules/*.[ch]",
     "test:harness": "PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest discover -s tools/harness_py/unittests -p 'test_*.py'",
     "test:native": "tests/native/run.sh",
-    "check": "npm run format && npm run docs:check && npm run test:harness && npm run test:native",
+    "test:js": "node --test tests/js/*.test.js",
+    "check": "npm run format && npm run docs:check && npm run test:harness && npm run test:native && npm run test:js",
     "compile": "uv run --python 3.13 python -m compileall tools/"
   },
   "dependencies": {

@@ -11,20 +11,25 @@ const location_request_options = {
 
 function createRefreshController(sendClimateMessage) {
   var waitInterval = -1;
-  var waitIntervalHandle = null;
+  var waitTimeoutHandle = null;
   var lastKnownLocation = null;
-  var requestQueue = new ClimateLocationRequestQueue();
+  var lastKnownLookup = null;
+  var requestChain = new ClimateLocationRequestQueue();
 
   if (!sendClimateMessage || typeof sendClimateMessage !== 'function') {
     throw new Error('Refresh controller requires weather and location senders');
   }
 
-  function isSameLocation(pos) {
-    return (
-      lastKnownLocation &&
-      lastKnownLocation.latitude === pos.coords.latitude &&
-      lastKnownLocation.longitude === pos.coords.longitude
-    );
+  function isSameLocation(coords) {
+    // If the user hasn't moved more than 1km, treat it as the same
+    const pos_tolerance = 0.02;
+
+    if (lastKnownLocation) {
+      var latDiff = Math.abs(lastKnownLocation.latitude - coords.latitude);
+      var lonDiff = Math.abs(lastKnownLocation.longitude - coords.longitude);
+    }
+
+    return lastKnownLocation && latDiff < pos_tolerance && lonDiff < pos_tolerance;
   }
 
   function sendMessage(payload) {
@@ -67,6 +72,11 @@ function createRefreshController(sendClimateMessage) {
         '&lon=' +
         location.longitude;
 
+      if (isSameLocation(location) && lastKnownLookup) {
+        resolve({ MAYBE_CURRENT_LOCATION: lastKnownLookup });
+        return;
+      }
+
       var xhr = createXHRForPKJS('Location', url, reject);
       xhr.onload = function () {
         if (xhr.status !== 200) {
@@ -80,21 +90,25 @@ function createRefreshController(sendClimateMessage) {
             reject("Couldn't retrieve valid location during lookup");
             return;
           }
-          resolve({
-            MAYBE_CURRENT_LOCATION: (
-              address.neighbourhood ||
-              address.suburb ||
-              address.village ||
-              address.borough ||
-              address.town ||
-              address.city ||
-              address.county ||
-              address.state ||
-              'GPS'
-            )
-              .slice(0, MAX_LOCATION_STRING_LENGTH)
-              .toUpperCase(),
-          });
+          if (!isSameLocation(location)) {
+            // location has changed, need to reject this promise
+            reject('Location changed during lookup');
+            return;
+          }
+          lastKnownLookup = (
+            address.neighbourhood ||
+            address.suburb ||
+            address.village ||
+            address.borough ||
+            address.town ||
+            address.city ||
+            address.county ||
+            address.state ||
+            'GPS'
+          )
+            .slice(0, MAX_LOCATION_STRING_LENGTH)
+            .toUpperCase();
+          resolve({ MAYBE_CURRENT_LOCATION: lastKnownLookup });
         } catch (e) {
           reject('Location fetch error: (' + e.code + '): ' + e.message);
         }
@@ -145,8 +159,9 @@ function createRefreshController(sendClimateMessage) {
     });
   }
 
-  function clearWeatherAndLocation() {
+  function clearClimateAndLocation() {
     lastKnownLocation = null;
+    lastKnownLookup = null;
     sendMessage({
       TEMPERATURE: 0,
       WEATHER_CONDITION: -1,
@@ -177,15 +192,18 @@ function createRefreshController(sendClimateMessage) {
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          if (isSameLocation(pos)) {
+          if (isSameLocation(pos.coords)) {
             resolve(lastKnownLocation);
             return;
           }
 
+          // You are setting lastKnownLocation to a new value
           lastKnownLocation = {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
           };
+          // Therefore, set the lastKnownLookup to null so that it is retrieved
+          lastKnownLookup = null;
           resolve(lastKnownLocation);
         },
         (e) => reject('Geolocation error: (' + e.code + '): ' + e.message),
@@ -195,38 +213,47 @@ function createRefreshController(sendClimateMessage) {
   }
 
   function fetch() {
-    requestQueue.enqueue(requestLocation, refreshClimateAndLocation, clearWeatherAndLocation);
+    return requestChain.execute(
+      requestLocation,
+      refreshClimateAndLocation,
+      clearClimateAndLocation
+    );
   }
 
-  function fetchThenWait() {
-    if (waitIntervalHandle !== null) {
-      clearInterval(waitIntervalHandle);
-      waitIntervalHandle = null;
+  function fetchWaitRepeat() {
+    if (waitTimeoutHandle) {
+      clearTimeout(waitTimeoutHandle);
+      waitTimeoutHandle = null;
     }
-    fetch();
-    waitIntervalHandle = setInterval(fetch, waitInterval * 60 * 1000);
+    fetch().then(() => {
+      if (waitTimeoutHandle) {
+        clearTimeout(waitTimeoutHandle);
+        waitTimeoutHandle = null;
+      }
+      waitTimeoutHandle = setTimeout(fetchWaitRepeat, waitInterval * 60 * 1000);
+    });
   }
 
-  function setIntervalMinutes(minutes) {
+  function startRefresh(minutes) {
     var isValid = typeof minutes === 'number' && minutes > 0;
     var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
     var changed = waitInterval !== nextInterval;
-    if (changed || waitIntervalHandle === null) {
+    if (changed || waitTimeoutHandle === null) {
       waitInterval = nextInterval;
-      fetchThenWait();
+      fetchWaitRepeat();
     }
   }
 
-  return setIntervalMinutes;
+  return startRefresh;
 }
 
 class ClimateLocationRequestQueue {
   constructor() {
-    this.queue = Promise.resolve();
+    this.chain = Promise.resolve();
   }
 
-  enqueue(coords, get, clear) {
-    this.queue = this.queue
+  execute(coords, get, clear) {
+    this.chain = this.chain
       .then(function () {
         return coords().then((location) => {
           return get(location);
@@ -236,7 +263,7 @@ class ClimateLocationRequestQueue {
         console.log('Failed to gather location, climate info.\n' + error);
         clear();
       });
-    return this.queue;
+    return this.chain;
   }
 }
 

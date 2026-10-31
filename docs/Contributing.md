@@ -77,10 +77,13 @@ npm run format:check
 npm run docs:check
 npm run test:harness
 npm run test:native
+npm run test:js
 npm run check
 ```
 
 `npm run check` formats source files before running checks and tests. Review its changes before staging.
+
+`npm run test:js` uses Node's built-in test runner. The tests in `tests/js/` load PKJS source with isolated GPS, network, and timer mocks. They require no Pebble build, emulator, network connection, or real timer delays.
 
 Use one harness test or test class when narrowing a change:
 
@@ -100,12 +103,11 @@ The checked-in hooks have these responsibilities:
   - Format staged files.
   - Format staged JavaScript with Prettier.
   - Check Markdown.
-  - Run `npm run test:harness` and `npm run test:native`.
+  - Run `npm run test:harness`, `npm run test:native`, and `npm run test:js`.
   - Do not launch emulators.
 - Pre-push:
-  - Run the harness and native C unit tests.
+  - Run the harness, native C, and JavaScript unit tests.
   - Build the watchface.
-  - The visual QA invocation is currently commented out.
 - Manual pre-push visual QA: `./aag-build-qa.sh --exec pre-push-gate --force`
 - Pre-release QA: `./aag-build-qa.sh --exec pre-release-gate`
 - Validation guidance: Use the named plans documented by [Validation](Validation.md) when broader runtime evidence is required.

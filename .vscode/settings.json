@@ -47,7 +47,7 @@
   "python.testing.unittestArgs": ["-v", "-s", "tools/harness_py/unittests", "-p", "test*.py"],
   "python.testing.autoTestDiscoverOnSaveEnabled": true,
   "shellformat.useEditorConfig": true,
-  "editor.defaultFoldingRangeProvider": "xaver.clang-format",
+  "editor.defaultFoldingRangeProvider": null,
   "notebook.defaultFormatter": null,
   "editor.bracketPairColorization.independentColorPoolPerBracketType": true,
   "editor.codeActions.triggerOnFocusChange": true,
@@ -63,5 +63,7 @@
   "notebook.formatOnSave.enabled": true,
   "clangd.path": "/usr/bin/clangd",
   "clangd.onConfigChanged": "restart",
-  "yapf.importStrategy": "useBundled"
+  "yapf.importStrategy": "useBundled",
+  "ruff.importStrategy": "useBundled",
+  "ruff.lineLength": 100
 }
