@@ -55,15 +55,13 @@ function validateWeatherUpdateMinutes(input) {
 }
 
 function applyWeatherUpdateMinutes(minutes) {
-  refresh.setIntervalMinutes(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
+  startRefresh(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
 }
 
 var clay = new Clay(clayConfig, null, {
   autoHandleEvents: false,
 });
-var refresh = createRefreshController({
-  sendClimateMessage: sendClimateMessage,
-});
+var startRefresh = createRefreshController(sendClimateMessage);
 
 Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
@@ -111,5 +109,5 @@ Pebble.addEventListener('ready', function () {
   } catch (e) {
     console.log('Ready Event Handler failed due to error: ' + e.message);
   }
-  refresh.start(minutes);
+  startRefresh(minutes);
 });

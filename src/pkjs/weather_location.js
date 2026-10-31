@@ -1,19 +1,22 @@
-const REQUEST_TIMEOUT = 2 * 60 * 1000;
-const GEO_REQUEST_AGE = 30 * 60 * 1000;
+const REQUEST_TIMEOUT = 15 * 1000;
+const GEO_REQUEST_AGE = 10 * 60 * 1000;
 const MAX_LOCATION_STRING_LENGTH = 15;
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
 
-function createRefreshController(dependencies) {
+const location_request_options = {
+  timeout: REQUEST_TIMEOUT,
+  maximumAge: GEO_REQUEST_AGE,
+  enableHighAccuracy: false,
+};
+
+function createRefreshController(sendClimateMessage) {
   var waitInterval = -1;
   var waitIntervalHandle = null;
   var lastKnownLocation = null;
+  var requestQueue = new ClimateLocationRequestQueue();
 
-  if (!dependencies || typeof dependencies.sendClimateMessage !== 'function') {
+  if (!sendClimateMessage || typeof sendClimateMessage !== 'function') {
     throw new Error('Refresh controller requires weather and location senders');
-  }
-
-  function isCurrentLocation(location) {
-    return location === lastKnownLocation;
   }
 
   function isSameLocation(pos) {
@@ -28,7 +31,7 @@ function createRefreshController(dependencies) {
     if (!payload) {
       return;
     }
-    dependencies.sendClimateMessage(payload, null, function (e) {
+    sendClimateMessage(payload, null, function (e) {
       console.log(
         'AtAGlance: Climate, Location Payload send failed: (' + e.code + '): ' + e.message
       );
@@ -66,11 +69,6 @@ function createRefreshController(dependencies) {
 
       var xhr = createXHRForPKJS('Location', url, reject);
       xhr.onload = function () {
-        if (!isCurrentLocation(location)) {
-          reject('Out of order fetch; location has changed');
-          return;
-        }
-
         if (xhr.status !== 200) {
           reject('HTTP request failed: status ' + xhr.status);
           return;
@@ -116,11 +114,6 @@ function createRefreshController(dependencies) {
 
       var xhr = createXHRForPKJS('Weather', url, reject);
       xhr.onload = function () {
-        if (!isCurrentLocation(location)) {
-          reject('Out of order fetch; location has changed');
-          return;
-        }
-
         if (xhr.status !== 200) {
           reject('HTTP request failed: status ' + xhr.status);
           return;
@@ -196,26 +189,13 @@ function createRefreshController(dependencies) {
           resolve(lastKnownLocation);
         },
         (e) => reject('Geolocation error: (' + e.code + '): ' + e.message),
-        { timeout: REQUEST_TIMEOUT, maximumAge: GEO_REQUEST_AGE }
+        location_request_options
       );
     });
   }
 
-  function fetchNow() {
-    var requested = null;
-    requestLocation()
-      .then((location) => {
-        requested = location;
-        return refreshClimateAndLocation(requested);
-      })
-      .catch((error) => {
-        if (requested && !isCurrentLocation(requested)) {
-          return;
-        }
-
-        console.log('Failed to gather location, climate info.\n' + error);
-        clearWeatherAndLocation();
-      });
+  function fetch() {
+    requestQueue.enqueue(requestLocation, refreshClimateAndLocation, clearWeatherAndLocation);
   }
 
   function fetchThenWait() {
@@ -223,9 +203,10 @@ function createRefreshController(dependencies) {
       clearInterval(waitIntervalHandle);
       waitIntervalHandle = null;
     }
-    fetchNow();
-    waitIntervalHandle = setInterval(fetchNow, waitInterval * 60 * 1000);
+    fetch();
+    waitIntervalHandle = setInterval(fetch, waitInterval * 60 * 1000);
   }
+
   function setIntervalMinutes(minutes) {
     var isValid = typeof minutes === 'number' && minutes > 0;
     var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
@@ -236,10 +217,27 @@ function createRefreshController(dependencies) {
     }
   }
 
-  return {
-    start: (minutes) => setIntervalMinutes(minutes),
-    setIntervalMinutes: setIntervalMinutes,
-  };
+  return setIntervalMinutes;
+}
+
+class ClimateLocationRequestQueue {
+  constructor() {
+    this.queue = Promise.resolve();
+  }
+
+  enqueue(coords, get, clear) {
+    this.queue = this.queue
+      .then(function () {
+        return coords().then((location) => {
+          return get(location);
+        });
+      })
+      .catch((error) => {
+        console.log('Failed to gather location, climate info.\n' + error);
+        clear();
+      });
+    return this.queue;
+  }
 }
 
 module.exports = {
