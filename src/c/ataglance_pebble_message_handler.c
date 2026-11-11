@@ -27,6 +27,61 @@
 #define MESSAGE_SEND_RETRY_MS 1000
 #define MAX_ATTEMPTS 6
 
+static uint8_t s_weather_sync_attempts = 0;
+static AppTimer* s_weather_sync_retry_timer = NULL;
+
+static void try_handshake(void* context);
+
+static void schedule_retry_ack() {
+  // Return if the number of retries has been exceeded or there is a timer already inflight
+  if (s_weather_sync_retry_timer || s_weather_sync_attempts >= MAX_ATTEMPTS) {
+    return;
+  }
+
+  s_weather_sync_retry_timer =
+      app_timer_register(MESSAGE_SEND_RETRY_MS * s_weather_sync_attempts, try_handshake, NULL);
+}
+
+static void try_handshake(
+    void* context) {
+  (void)context;
+  s_weather_sync_retry_timer = NULL;
+  // Record this as an attempt
+  ++s_weather_sync_attempts;
+
+  DictionaryIterator* out_iter = NULL;
+  AppMessageResult result = app_message_outbox_begin(&out_iter);
+  if (result != APP_MSG_OK || !out_iter) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox begin failed: result=%d", result);
+    schedule_retry_ack();
+    return;
+  }
+
+  DictionaryResult dict_result = dict_write_uint8(out_iter, MESSAGE_KEY_SENTINEL, 1);
+  if (dict_result != DICT_OK) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence dict write failed: result=%d", dict_result);
+    schedule_retry_ack();
+    return;
+  }
+
+  result = app_message_outbox_send();
+  if (result != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather cadence outbox send failed: result=%d", result);
+    schedule_retry_ack();
+    return;
+  }
+}
+
+static void ack_sentinel() {
+  if (s_weather_sync_retry_timer) {
+    app_timer_cancel(s_weather_sync_retry_timer);
+    s_weather_sync_retry_timer = NULL;
+  }
+
+  s_weather_sync_attempts = 0;
+  try_handshake(NULL);
+}
+
 void inbox_received_handler(
     DictionaryIterator* iter,
     void* context) {
@@ -48,10 +103,11 @@ void inbox_received_handler(
     return;
   }
   if (parse_ready_sentinel(iter)) {
-    return;
+    ack_sentinel();
   }
 
-  // This was more than the JS_READY message
+  // Sometimes, PKJS can coalesce messages, so don't assume
+  // that the sentinel is being sent as its own message
   WatchfaceEventData data = {0};
   parse_settings_data(iter, &data);
   parse_weather_and_location_data(iter, &data);
@@ -105,6 +161,7 @@ void outbox_failed_callback(
   (void)iterator;
   (void)context;
   APP_LOG(APP_LOG_LEVEL_ERROR, "AppMessage outbox failed: reason=%d", reason);
+  schedule_retry_ack();
 }
 
 void outbox_sent_callback(
@@ -112,6 +169,11 @@ void outbox_sent_callback(
     void* context) {
   (void)iterator;
   (void)context;
+  s_weather_sync_attempts = 0;
+  if (s_weather_sync_retry_timer) {
+    app_timer_cancel(s_weather_sync_retry_timer);
+    s_weather_sync_retry_timer = NULL;
+  }
 }
 
 uint32_t app_message_inbox_size() {
@@ -130,7 +192,7 @@ uint32_t app_message_inbox_size() {
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
   // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
-  // 11. JS_READY | 10012 | sizeof(int32_t)
+  // 11. SENTINEL | 10012 | sizeof(int32_t)
   // 12. BATTERY_ORIENTATION | 10013 | APP_MESSAGE_CONFIG_VALUE_SIZE
   //
   // One-shot-only tuples:

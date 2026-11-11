@@ -46,7 +46,17 @@
       "health"
     ],
     "usesPermissions": [
-      "Location"
+      "Location",
+      "Health",
+      {
+        "name": "Internet",
+        "parameters": {
+          "domains": [
+            "open-meteo.com",
+            "openstreetmap.org"
+          ]
+        }
+      }
     ],
     "messageKeys": [
       "TIME_FORMAT",
@@ -61,7 +71,7 @@
       "STEPS_GOAL_PRESET",
       "STEPS_GOAL_CUSTOM",
       "MAYBE_CURRENT_LOCATION",
-      "JS_READY",
+      "SENTINEL",
       "BATTERY_ORIENTATION"
     ],
     "resources": {

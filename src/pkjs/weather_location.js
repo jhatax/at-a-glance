@@ -2,6 +2,7 @@ const REQUEST_TIMEOUT = 15 * 1000;
 const GEO_REQUEST_AGE = 10 * 60 * 1000;
 const MAX_LOCATION_STRING_LENGTH = 15;
 const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
+const WEATHER_UPDATE_MINUTES_MAX = 60;
 
 const location_request_options = {
   timeout: REQUEST_TIMEOUT,
@@ -9,15 +10,16 @@ const location_request_options = {
   enableHighAccuracy: false,
 };
 
-function createRefreshController(sendClimateMessage) {
+function createRefreshController(updateClimateLocation) {
   var waitInterval = -1;
   var waitTimeoutHandle = null;
   var lastKnownLocation = null;
   var lastKnownLookup = null;
+  var lastKnownClimate = null;
   var requestChain = new ClimateLocationRequestQueue();
 
-  if (!sendClimateMessage || typeof sendClimateMessage !== 'function') {
-    throw new Error('Refresh controller requires weather and location senders');
+  if (!updateClimateLocation || typeof updateClimateLocation !== 'function') {
+    throw new Error('Refresh controller requires weather and location sender to watchface');
   }
 
   function isSameLocation(coords) {
@@ -36,7 +38,7 @@ function createRefreshController(sendClimateMessage) {
     if (!payload) {
       return;
     }
-    sendClimateMessage(payload, null, function (e) {
+    updateClimateLocation(payload, null, function (e) {
       console.log(
         'AtAGlance: Climate, Location Payload send failed: (' + e.code + '): ' + e.message
       );
@@ -64,7 +66,7 @@ function createRefreshController(sendClimateMessage) {
 
     return xhr;
   }
-  function fetchLocation(location) {
+  function reverseGPS(location) {
     return new Promise(function (resolve, reject) {
       var url =
         'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' +
@@ -73,7 +75,7 @@ function createRefreshController(sendClimateMessage) {
         location.longitude;
 
       if (isSameLocation(location) && lastKnownLookup) {
-        resolve({ MAYBE_CURRENT_LOCATION: lastKnownLookup });
+        resolve(lastKnownLookup);
         return;
       }
 
@@ -95,7 +97,7 @@ function createRefreshController(sendClimateMessage) {
             reject('Location changed during lookup');
             return;
           }
-          lastKnownLookup = (
+          var lookup = (
             address.neighbourhood ||
             address.suburb ||
             address.village ||
@@ -108,7 +110,7 @@ function createRefreshController(sendClimateMessage) {
           )
             .slice(0, MAX_LOCATION_STRING_LENGTH)
             .toUpperCase();
-          resolve({ MAYBE_CURRENT_LOCATION: lastKnownLookup });
+          resolve(lookup);
         } catch (e) {
           reject('Location fetch error: (' + e.code + '): ' + e.message);
         }
@@ -117,7 +119,7 @@ function createRefreshController(sendClimateMessage) {
     });
   }
 
-  function fetchWeather(location) {
+  function fetchClimate(location) {
     return new Promise(function (resolve, reject) {
       var url =
         'https://api.open-meteo.com/v1/forecast?latitude=' +
@@ -162,6 +164,7 @@ function createRefreshController(sendClimateMessage) {
   function clearClimateAndLocation() {
     lastKnownLocation = null;
     lastKnownLookup = null;
+    lastKnownClimate = null;
     sendMessage({
       TEMPERATURE: 0,
       WEATHER_CONDITION: -1,
@@ -170,15 +173,30 @@ function createRefreshController(sendClimateMessage) {
     });
   }
 
-  function refreshClimateAndLocation(location) {
-    return Promise.all([fetchWeather(location), fetchLocation(location)]).then(function (results) {
-      var weather = results[0];
-      var locationData = results[1];
+  function oneShotCachedClimateAndLocation() {
+    if (lastKnownClimate && lastKnownLookup) {
       sendMessage({
-        TEMPERATURE: weather.TEMPERATURE,
-        WEATHER_CONDITION: weather.WEATHER_CONDITION,
-        IS_DAY: weather.IS_DAY,
-        MAYBE_CURRENT_LOCATION: locationData.MAYBE_CURRENT_LOCATION,
+        TEMPERATURE: lastKnownClimate.TEMPERATURE,
+        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
+        IS_DAY: lastKnownClimate.IS_DAY,
+        MAYBE_CURRENT_LOCATION: lastKnownLookup,
+      });
+    }
+  }
+
+  function refreshClimateAndLocation(location) {
+    return Promise.all([fetchClimate(location), reverseGPS(location)]).then(function (results) {
+      lastKnownClimate = results[0];
+      lastKnownLookup = results[1];
+      if (!lastKnownClimate || !lastKnownLookup) {
+        clearClimateAndLocation();
+        return;
+      }
+      sendMessage({
+        TEMPERATURE: lastKnownClimate.TEMPERATURE,
+        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
+        IS_DAY: lastKnownClimate.IS_DAY,
+        MAYBE_CURRENT_LOCATION: lastKnownLookup,
       });
     });
   }
@@ -235,12 +253,16 @@ function createRefreshController(sendClimateMessage) {
   }
 
   function startRefresh(minutes) {
-    var isValid = typeof minutes === 'number' && minutes > 0;
+    var isValid =
+      typeof minutes === 'number' && minutes > 0 && minutes <= WEATHER_UPDATE_MINUTES_MAX;
     var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
     var changed = waitInterval !== nextInterval;
     if (changed || waitTimeoutHandle === null) {
       waitInterval = nextInterval;
       fetchWaitRepeat();
+    } else {
+      // Interval unchanged and waitTimeoutHandle is valid
+      oneShotCachedClimateAndLocation();
     }
   }
 

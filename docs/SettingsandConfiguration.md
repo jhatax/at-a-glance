@@ -115,17 +115,18 @@ PKJS owns the weather schedule and applies `WEATHER_UPDATE_MINUTES`.
 
 When the user specifies a new schedule:
 
-- An unchanged running interval keeps its timer.
-- A changed interval replaces the timer; the next weather/location refresh occurs after the new interval elapses.
+- An unchanged interval with an active timer keeps that timer and resends the cached climate/location pair when both values are available.
+- A changed interval or a missing timer starts a refresh immediately. After the request completes, PKJS schedules the next refresh at the selected interval.
 
-On first startup:
+Startup and resynchronization use `SENTINEL=1` in both directions:
 
-- On the `ready` event, it reads `WEATHER_UPDATE_MINUTES` from Clay's `clay-settings` entry in `localStorage`.
-- Missing or unreadable settings, an unparseable interval, or a nonpositive interval use the 15-minute default.
-- The refresh controller accepts any positive parsed interval; C separately accepts only `15`, `30`, `45`, or `60`.
-- PKJS sends `JS_READY` and doesn't wait for an `ack`, akin to a UDP packet.
-- Upon receipt of JS_READY` tuple, the C handler returns before processing other tuples.
-- After `JS_READY` is sent, `refreshNow()` runs immediately & a weather update cadence is scheduled.
+- On `ready`, PKJS sends the sentinel through the settings/control queue and waits for C's acknowledgment before starting climate/location polling.
+- C creates the watchface before registering callbacks and opening AppMessage. On receipt of a sentinel, C sends `SENTINEL=1` back to PKJS and continues parsing the other tuples in the message.
+- C allows six acknowledgment send attempts. Failed attempts retry after one through five seconds; successful delivery resets the retry state.
+- On C's acknowledgment, PKJS reads `WEATHER_UPDATE_MINUTES` from Clay's `clay-settings` entry in `localStorage` and calls the refresh controller. Repeated acknowledgments use the same restart-or-cached-response behavior described above.
+- Missing or unreadable settings, an unparseable interval, or an interval outside the controller's range use the 15-minute default. The controller accepts positive numeric intervals up to 60 minutes; Clay and C use `15`, `30`, `45`, or `60`.
+
+Climate and reverse-geocoding requests run concurrently. PKJS updates `lastKnownClimate` and `lastKnownLookup` together only after both promises resolve. A missing result clears the cached fields and sends unavailable data. Geolocation failure or a rejected request also clears the caches and sends unavailable data. The combined payload contract belongs to PKJS; C continues to accept weather and location tuples independently.
 
 ## AppMessage And Message-Key Contract
 
@@ -147,7 +148,7 @@ Current manifest-backed keys:
 | 10  | `STEPS_GOAL_PRESET`      | `10009`              | Clay-only input                 |
 | 11  | `STEPS_GOAL_CUSTOM`      | `10010`              | Clay-only input                 |
 | 12  | `MAYBE_CURRENT_LOCATION` | `10011`              | Optional location data          |
-| 13  | `JS_READY`               | `10012`              | PKJS readiness control          |
+| 13  | `SENTINEL`               | `10012`              | PKJS readiness and C acknowledgment |
 | 14  | `BATTERY_ORIENTATION`    | `10013`              | Runtime setting                 |
 
 **Notes**
@@ -196,7 +197,7 @@ main_window_load(window)
 ```text
 inbox_received_handler(iter, context)
   -> retain the previous heart-rate cadence on PBL_HEALTH
-  -> return if a JS_READY sentinel is detected
+  -> acknowledge SENTINEL when present, then continue parsing
   -> parse settings tuples
   -> parse weather and location tuples
   -> parse one-shot health tuples on PBL_HEALTH

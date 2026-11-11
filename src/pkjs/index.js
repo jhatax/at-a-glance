@@ -18,8 +18,8 @@ function sendPebbleMessage(payload, success, failure) {
   Pebble.sendAppMessage(payload, success, failure);
 }
 
-var sendAppMessage = createAppMessageQueue(sendPebbleMessage);
-var sendClimateMessage = createAppMessageQueue(sendPebbleMessage);
+var updateUser = createAppMessageQueue(sendPebbleMessage);
+var updateClimateLocation = createAppMessageQueue(sendPebbleMessage);
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -54,17 +54,23 @@ function validateWeatherUpdateMinutes(input) {
   return toReturn <= WEATHER_UPDATE_MINUTES_MAX ? toReturn : WEATHER_UPDATE_MINUTES_MAX;
 }
 
-function applyWeatherUpdateMinutes(minutes) {
-  startRefresh(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
-}
-
 var clay = new Clay(clayConfig, null, {
   autoHandleEvents: false,
 });
-var startRefresh = createRefreshController(sendClimateMessage);
+var startRefresh = createRefreshController(updateClimateLocation);
 
 Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('appmessage', function (e) {
+  if (!e || !e.payload) {
+    return;
+  }
+  if (e.payload.SENTINEL && e.payload.SENTINEL === 1) {
+    // Synchronization completed; start refresh
+    start();
+  }
 });
 
 Pebble.addEventListener('webviewclosed', function (e) {
@@ -77,15 +83,13 @@ Pebble.addEventListener('webviewclosed', function (e) {
   // so, messageKeys.KEY_NAME
   var dict = clay.getSettings(e.response);
 
-  // Retrieves settings as a dictionary with the actual key names
-
   dict[messageKeys.STEPS_GOAL] = calculateStepsGoal(dict);
   dict[messageKeys.WEATHER_UPDATE_MINUTES] = validateWeatherUpdateMinutes(
     dict[messageKeys.WEATHER_UPDATE_MINUTES]
   );
   delete dict[messageKeys.STEPS_GOAL_PRESET];
   delete dict[messageKeys.STEPS_GOAL_CUSTOM];
-  sendAppMessage(
+  updateUser(
     dict,
     function () {
       console.log('Sent config data to Pebble');
@@ -94,20 +98,28 @@ Pebble.addEventListener('webviewclosed', function (e) {
       console.log('Config sent failed with error: (' + e.code + '): ' + e.message);
     }
   );
-  applyWeatherUpdateMinutes(dict[messageKeys.WEATHER_UPDATE_MINUTES]);
+  var minutes = dict[messageKeys.WEATHER_UPDATE_MINUTES];
+  startRefresh(isNaN(minutes) ? WEATHER_UPDATE_MINUTES_DEFAULT : minutes);
 });
 
-Pebble.addEventListener('ready', function () {
+function start() {
   var savedSettings = null;
   var minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
   try {
-    sendAppMessage({ JS_READY: 1 });
     savedSettings = JSON.parse(localStorage.getItem('clay-settings'));
     minutes = savedSettings
       ? validateWeatherUpdateMinutes(savedSettings.WEATHER_UPDATE_MINUTES)
       : WEATHER_UPDATE_MINUTES_DEFAULT;
   } catch (e) {
-    console.log('Ready Event Handler failed due to error: ' + e.message);
+    console.log('Parsing Clay Settings returned error: ' + e.message);
   }
   startRefresh(minutes);
+}
+
+Pebble.addEventListener('ready', function () {
+  try {
+    updateUser({ SENTINEL: 1 });
+  } catch (e) {
+    console.log('Ready Event Handler failed due to error: ' + e.message);
+  }
 });

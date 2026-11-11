@@ -75,7 +75,7 @@ bool parse_ready_sentinel(
     DictionaryIterator* iter) {
   if (iter) {
     int ready = 0;
-    Tuple* tuple = dict_find(iter, MESSAGE_KEY_JS_READY);
+    Tuple* tuple = dict_find(iter, MESSAGE_KEY_SENTINEL);
     if (tuple && helper_tuple_to_int(tuple, &ready)) {
       return true;
     }

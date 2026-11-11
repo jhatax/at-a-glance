@@ -34,11 +34,28 @@ Use the narrowest path that proves the change.
 | Documentation only | Read the touched docs for contradictions and run Markdown/link checks when practical. |
 | Build tooling | Run the affected build or compile-database path. |
 | Runtime C change | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
+| PKJS climate/location change | Run the JavaScript tests, then exercise the changed path with PKJS and the emulator or phone companion. |
 | Settings, AppMessage, or persistence | Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
 | UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, confirm the mode changes and the watch repaints. |
 | Release candidate | Run the release scenario path and complete manual signoff. |
 
 If a validation path cannot be run, state the gap explicitly in the closeout.
+
+## JavaScript Tests
+
+Run the PKJS tests from the repository root with Node.js installed:
+
+```sh
+npm run test:js
+```
+
+To run only the climate/location tests:
+
+```sh
+node --test tests/js/weather_location.test.js
+```
+
+The tests use Node's built-in test runner and one shared harness in `tests/js/harness.js`. Each test gets an isolated environment running the production entry point, refresh controller, and message queues. The harness supplies Pebble events, storage, geolocation, network responses, message sends, and timers; Clay is stubbed. Tests cover JS sentinel handling, cached resync, polling, location reuse, movement, failures, timeouts, late responses, and interval changes. Validate C acknowledgment behavior and actual AppMessage delivery separately with the emulator or phone companion.
 
 ## Operator Evidence Review Expectations
 

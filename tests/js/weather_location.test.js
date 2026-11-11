@@ -1,134 +1,12 @@
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
-const { join } = require('node:path');
 const { test } = require('node:test');
-const { runInNewContext } = require('node:vm');
-
-const sourcePath = join(__dirname, '../../src/pkjs/weather_location.js');
-const source = readFileSync(sourcePath, 'utf8');
-const originalLocation = { latitude: 37, longitude: -122 };
-const movedLocation = { latitude: 37.05, longitude: -122 };
-const weatherResponse = {
-  current: { temperature_2m: 20, weather_code: 0, is_day: 1 },
-};
-
-// Let the production promise chain finish without advancing the mocked timers.
-function settlePromises() {
-  return new Promise(setImmediate);
-}
-
-function createHarness() {
-  const positions = [];
-  const requests = [];
-  const messages = [];
-  const timers = new Map();
-  let nextTimerId = 1;
-
-  class MockXMLHttpRequest {
-    open(method, url) {
-      this.url = url;
-      this.kind = new URL(url).hostname === 'nominatim.openstreetmap.org' ? 'lookup' : 'weather';
-      this.completed = false;
-    }
-
-    setRequestHeader() {}
-
-    send() {
-      requests.push(this);
-    }
-  }
-
-  const context = {
-    module: { exports: {} },
-    console: { log() {} },
-    navigator: {
-      geolocation: {
-        getCurrentPosition(success, failure) {
-          positions.push({ success, failure });
-        },
-      },
-    },
-    XMLHttpRequest: MockXMLHttpRequest,
-    setTimeout(callback, delay) {
-      const id = nextTimerId++;
-      timers.set(id, { callback, delay });
-      return id;
-    },
-    clearTimeout(id) {
-      timers.delete(id);
-    },
-  };
-
-  runInNewContext(source, context, { filename: sourcePath });
-  const start = context.module.exports.createRefreshController((payload) => {
-    messages.push({ ...payload });
-  });
-
-  function position(coords = originalLocation) {
-    const request = positions.shift();
-    assert.ok(request, 'Expected a pending GPS request');
-    request.success({ coords });
-  }
-
-  function request(kind) {
-    // An older lookup may still be pending in the late-response tests.
-    const pending = requests.filter((item) => item.kind === kind && !item.completed);
-    assert.ok(pending.length, `Expected a pending ${kind} request`);
-    return pending[pending.length - 1];
-  }
-
-  function respond(target, body, status = 200) {
-    assert.equal(target.completed, false, 'Request already completed');
-    target.completed = true;
-    target.status = status;
-    target.responseText = typeof body === 'string' ? body : JSON.stringify(body);
-    target.onload();
-  }
-
-  function fail(kind, event = 'onerror') {
-    const target = request(kind);
-    target.completed = true;
-    target.status = 0;
-    target[event]();
-  }
-
-  async function tick() {
-    assert.equal(timers.size, 1, 'Expected exactly one scheduled refresh');
-    const [id, timer] = timers.entries().next().value;
-    timers.delete(id);
-    timer.callback();
-    await settlePromises();
-  }
-
-  async function completeRefresh(coords = originalLocation, name = 'City A') {
-    position(coords);
-    await settlePromises();
-    respond(request('weather'), weatherResponse);
-    if (name !== null) {
-      respond(request('lookup'), { address: { city: name } });
-    }
-    await settlePromises();
-  }
-
-  function requestCount(kind) {
-    return requests.filter((item) => item.kind === kind).length;
-  }
-
-  return {
-    start,
-    positions,
-    requests,
-    messages,
-    timers,
-    position,
-    request,
-    respond,
-    fail,
-    tick,
-    completeRefresh,
-    requestCount,
-  };
-}
+const {
+  createHarness,
+  settlePromises,
+  originalLocation,
+  movedLocation,
+  weatherResponse,
+} = require('./harness');
 
 test('startup fetches weather and location before scheduling the next refresh', async () => {
   const harness = createHarness();
@@ -333,3 +211,110 @@ test('HTTP lookup failure clears the display and schedules another refresh', asy
   assert.equal(harness.messages.at(-1).WEATHER_CONDITION, -1);
   assert.equal(harness.timers.size, 1);
 });
+
+test('resync resends the cached pair without replacing the timer or fetching', async () => {
+  const harness = createHarness();
+  harness.start(30);
+  await settlePromises();
+  await harness.completeRefresh();
+  const timer = [...harness.timers.entries()][0];
+  const payload = harness.messages[0];
+  const requestCount = harness.requests.length;
+
+  harness.start(30);
+  await settlePromises();
+
+  assert.deepEqual(harness.messages, [payload, payload]);
+  assert.equal(harness.positions.length, 0);
+  assert.equal(harness.requests.length, requestCount);
+  assert.equal(harness.timers.size, 1);
+  assert.equal(harness.timers.get(timer[0]), timer[1]);
+});
+
+for (const failure of ['weather', 'lookup']) {
+  test(`resync after ${failure} failure cannot resend the previous pair`, async () => {
+    const harness = createHarness();
+    harness.start(15);
+    await settlePromises();
+    await harness.completeRefresh();
+    await harness.tick();
+    harness.position(movedLocation);
+    await settlePromises();
+    const pending = harness.request(failure === 'weather' ? 'lookup' : 'weather');
+    harness.fail(failure);
+    await settlePromises();
+    const timer = [...harness.timers.entries()][0];
+
+    // The other request may still complete after Promise.all has rejected.
+    harness.respond(
+      pending,
+      failure === 'weather' ? { address: { city: 'City B' } } : weatherResponse
+    );
+    await settlePromises();
+    harness.start(15);
+    await settlePromises();
+
+    assert.deepEqual(harness.messages, [
+      { TEMPERATURE: 200, WEATHER_CONDITION: 0, IS_DAY: 1, MAYBE_CURRENT_LOCATION: 'CITY A' },
+      { TEMPERATURE: 0, WEATHER_CONDITION: -1, IS_DAY: 0, MAYBE_CURRENT_LOCATION: '' },
+    ]);
+    assert.equal(harness.positions.length, 0);
+    assert.equal(harness.requests.length, 4);
+    assert.equal(harness.timers.size, 1);
+    assert.equal(harness.timers.get(timer[0]), timer[1]);
+  });
+}
+
+test('a late climate response cannot overwrite the newer cached pair on resync', async () => {
+  const harness = createHarness();
+  harness.start(15);
+  await settlePromises();
+  harness.position();
+  await settlePromises();
+  const oldWeather = harness.request('weather');
+
+  // Resync queues another attempt while the first attempt is still running.
+  harness.start(15);
+  harness.fail('lookup');
+  await settlePromises();
+  await harness.completeRefresh(movedLocation, 'City B');
+  harness.respond(oldWeather, {
+    current: { temperature_2m: 5, weather_code: 3, is_day: 0 },
+  });
+  await settlePromises();
+  assert.equal(harness.messages.length, 2);
+
+  harness.start(15);
+  await settlePromises();
+
+  const expected = {
+    TEMPERATURE: 200,
+    WEATHER_CONDITION: 0,
+    IS_DAY: 1,
+    MAYBE_CURRENT_LOCATION: 'CITY B',
+  };
+  assert.deepEqual(harness.messages.slice(1), [expected, expected]);
+  assert.equal(harness.positions.length, 0);
+  assert.equal(harness.requests.length, 4);
+  assert.equal(harness.timers.size, 1);
+});
+
+for (const [minutes, expected] of [
+  [60, 60],
+  [61, 15],
+  [0, 15],
+  [-15, 15],
+  [NaN, 15],
+  [Infinity, 15],
+]) {
+  test(`interval ${minutes} schedules refreshes every ${expected} minutes`, async () => {
+    const harness = createHarness();
+    harness.start(minutes);
+    await settlePromises();
+    await harness.completeRefresh();
+
+    assert.equal(harness.messages.length, 1);
+    assert.equal(harness.timers.size, 1);
+    assert.equal(harness.timers.values().next().value.delay, expected * 60 * 1000);
+  });
+}

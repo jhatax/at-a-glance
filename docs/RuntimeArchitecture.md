@@ -54,10 +54,10 @@ ataglance.c
                  -> require date, time, battery, climate, and horizontal-rule strata to succeed
                  -> watchface_refresh(WATCHFACE_UPDATE_ALL_STRATA, &data)
                       -> data is a zeroed event; weather and location use initial source state
-            -> subscribe tick, battery, connection, and health services
             -> register AppMessage callbacks
             -> app_message_open(...)
                  -> retry open with AppTimer only if opening fails
+            -> subscribe tick, battery, connection, and health services
 ```
 
 ### 2. Runtime event flow
@@ -103,7 +103,7 @@ AppMessage inbox handler in ataglance_pebble_message_handler.c
 
 ```text
 AppMessage inbox handler
-  -> return if the JS_READY sentinel is detected
+  -> acknowledge SENTINEL when present, then continue parsing
   -> parse settings, weather, location, health settings, and one-shot health tuples
   -> watchface_apply_received_data(&data, settings)
   -> if any persisted setting changed
@@ -116,20 +116,33 @@ AppMessage inbox handler
 
 ```text
 src/pkjs/index.js ready
-  -> read Clay's clay-settings entry from localStorage
-  -> parse WEATHER_UPDATE_MINUTES, using 15 minutes if missing, unreadable, or invalid
-  -> enqueue standalone JS_READY through the control AppMessage lane
-  -> refresh weather/location immediately and start polling at the selected interval
+  -> enqueue SENTINEL=1 through the settings/control queue
+  -> wait for C's acknowledgment before starting climate/location polling
 
 AppMessage inbox handler in ataglance_pebble_message_handler.c
-  -> return when JS_READY is detected
+  -> receive SENTINEL after watchface creation and AppMessage opening
+  -> send SENTINEL=1 back to PKJS, retrying failed sends
+  -> continue parsing other tuples
+
+src/pkjs/index.js appmessage handler
+  -> receive SENTINEL=1 from C
+  -> read Clay's clay-settings entry from localStorage
+  -> parse WEATHER_UPDATE_MINUTES and call startRefresh(minutes)
 
 src/pkjs/index.js webviewclosed handler
   -> Clay saves the submitted settings in localStorage
-  -> parse WEATHER_UPDATE_MINUTES
-  -> applyWeatherUpdateMinutes(minutes)
-  -> replace the polling timer if the interval changes; refresh after the new interval elapses
+  -> normalize and enqueue settings
+  -> call startRefresh(minutes)
+
+weather_location.js startRefresh(minutes)
+  -> use 15 minutes if the interval is invalid or outside 0 < minutes <= 60
+  -> if the interval changed or the timer is missing
+       -> request climate/location immediately through the request queue
+       -> schedule the next refresh after the request completes
+  -> otherwise keep the timer and resend the cached pair when both values are available
 ```
+
+[SettingsandConfiguration](SettingsandConfiguration.md) owns the sentinel handshake, retry limits, and cadence contract.
 
 ## Prepared Surface
 
@@ -360,9 +373,9 @@ The steps module demonstrates the intended boundary:
 - **Location tuple**: current-location text from PKJS; an empty value renders `---`.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
-### PKJS AppMessage sends
+### AppMessage sends
 
-- The C runtime sends no application AppMessages.
+- C acknowledges the PKJS readiness sentinel with `SENTINEL=1` after the watchface has been created. The handler owns bounded acknowledgment retries.
 - PKJS uses two independent serialized queues: settings/control and combined weather/location.
 - Each queue retries a failed `Pebble.sendAppMessage()` up to five times, with delays of one through five seconds.
 - A pending climate send does not block settings and control traffic.
@@ -372,9 +385,10 @@ Settings, Clay field mapping, generated message-key numbering, PKJS normalizatio
 ### Climate-specific transport behavior
 
 - `weather_location.js` owns geolocation, Open-Meteo weather requests, and OpenStreetMap reverse geocoding on the configured cadence.
-- Weather and reverse-geocoding requests run concurrently. `Promise.all()` waits for both and sends one payload containing `TEMPERATURE`, `WEATHER_CONDITION`, `IS_DAY`, and `MAYBE_CURRENT_LOCATION`.
-- If geolocation fails or either current-location request rejects, PKJS clears its saved coordinates and sends one unavailable payload: temperature `0`, condition `-1`, `is_day` `-1`, and an empty location string. Network requests and geolocation use a two-minute timeout; geolocation may reuse a position up to 30 minutes old.
-- Responses for superseded coordinates are rejected; their failures do not clear the current location.
+- Weather and reverse-geocoding requests run concurrently. `Promise.all()` waits for both, updates the climate and lookup caches together, and sends one payload containing `TEMPERATURE`, `WEATHER_CONDITION`, `IS_DAY`, and `MAYBE_CURRENT_LOCATION`. Individual request callbacks do not update these caches.
+- If geolocation fails, either request rejects, or either resolved result is missing, PKJS clears its coordinates and climate/location caches. It sends one unavailable payload: temperature `0`, condition `-1`, `is_day` `0`, and an empty location string. Network requests and geolocation use a 15-second timeout; geolocation may reuse a position up to 10 minutes old.
+- Refresh attempts run through a serialized promise chain. Reverse-geocoding responses for superseded coordinates are rejected. A late response from a failed attempt cannot publish a cached pair.
+- PKJS owns combined climate/location delivery. C parses weather and location independently and accepts partial messages.
 - `climate.c` owns the location buffer and text layer. A received empty or malformed location renders `---`; a repaint without a location tuple preserves the buffer.
 - Temperature is sent to the watch in Celsius tenths and rendered according to settings.
 - `weather_code` and `is_day` are sent to C for glyph selection.

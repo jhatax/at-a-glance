@@ -27,3 +27,4 @@ src/modules/.vscode/settings.json
 implementation_plans/
 tools/harness_py_refactor
 .npm-cache
+sync-test.sh
