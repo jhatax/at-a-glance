@@ -53,7 +53,7 @@ package.json
 |               |
 |               src/pkjs/index.js ──────────────────> package.json message keys
 |               - Clay bootstrap                    - generated message key symbols
-|               - saved Clay preferences and settings/control sends
+|               - JS_READY announcement, REFRESH handling, and settings/control sends
 |               src/pkjs/weather_location.js
 |               - geolocation, parallel weather/location requests, combined payload
 |               src/pkjs/app_message_queue.js
@@ -74,11 +74,11 @@ src/c/ataglance.c ────────────────────�
 - AppMessage callback registration
 - WatchfaceEventData dispatch
         |
-        +-> ataglance_pebble_message_handler.c
-        |   - inbox/outbox callbacks and transport opening
+        +-> ataglance_comms_handler.c
+        |   - inbox/outbox callbacks, transport opening, and C refresh scheduling/retries
         |   - changed-settings persistence and HR cadence side effects
-        |       -> ataglance_pebble_message_parser.c
-        |          - tuple parsing and received/parsed masks
+        |       -> ataglance_message_parser.c
+        |          - typed tuple conversion and received/parsed masks
         |
         v
 watchface_runtime_boundary.c ─────────────────────> settings.h
@@ -142,8 +142,6 @@ substratum_renderer.c ───────────────────�
         v
 helper.c ────────────────────────────────────────> helper.h
 - bitmap palette helpers                           - shared utility macros
-helper_tuple_parsing.c
-- typed tuple conversion
 helper_computations.c
 - shared computation helpers
 ────────────────────────────────────────────────────────────────────────────
@@ -155,8 +153,8 @@ helper_computations.c
 - Watchface vocabulary: `watchface_components.h`, `watchface_layout.h`, `layout_surface.h`, `layout_style.h`
 - Diagnostics: `watchface_debug.h`
 - Module contracts: `date.h`, `time.h`, `battery.h`, `climate.h`, `climate_glyphs.h`, `steps.h`, `bpm.h`
-- Private message adapter: `ataglance_messages_adapter.h`, `ataglance_message_parser.h`
-- Shared helpers: `substratum_renderer.h`, `helper.h`, `helper_tuple_parsing.h`, `helper_computations.h`
+- Private message adapter: `ataglance_comms_adapter.h`, `ataglance_message_parser.h`
+- Shared helpers: `substratum_renderer.h`, `helper.h`, `helper_computations.h`
 
 **Notes**
 

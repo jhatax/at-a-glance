@@ -28,7 +28,7 @@ cc \
   -MJ "$compile_fragment" \
   "$test_dir/test_renderer_helper.c" \
   "$test_dir/test_runner.c" \
-  "$repo_dir/src/modules/helper_tuple_parsing.c" \
+  "$repo_dir/src/c/ataglance_message_parser.c" \
   "$repo_dir/src/modules/substratum_computations.c" \
   "$linker_flags" \
   -o "$output"

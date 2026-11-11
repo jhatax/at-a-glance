@@ -71,8 +71,9 @@
       "STEPS_GOAL_PRESET",
       "STEPS_GOAL_CUSTOM",
       "MAYBE_CURRENT_LOCATION",
-      "SENTINEL",
-      "BATTERY_ORIENTATION"
+      "JS_READY",
+      "BATTERY_ORIENTATION",
+      "REFRESH"
     ],
     "resources": {
       "media": [

@@ -1,6 +1,6 @@
 #include <pebble.h>
 
-#include "ataglance_messages_adapter.h"
+#include "ataglance_comms_adapter.h"
 #include "modules/settings.h"
 #include "modules/watchface.h"
 
@@ -38,6 +38,10 @@ static WatchfaceSettings s_settings = {0};
 #ifdef PBL_HEALTH
 static bool s_health_events_subscribed = false;
 #endif
+
+// Timers for synchronization with PKJS
+static AppTimer* s_retry_timer = NULL;
+static AppTimer* s_refresh_timer = NULL;
 
 // Lifecycle
 static void init();
@@ -115,11 +119,10 @@ static void subscribe_to_services() {
   connection_service_subscribe((ConnectionHandlers){.pebble_app_connection_handler = bt_handler});
 
 #ifdef PBL_HEALTH
-  bool health_available = health_service_events_subscribe(health_handler, NULL);
-  if (!health_available) {
+  s_health_events_subscribed = health_service_events_subscribe(health_handler, NULL);
+  if (!s_health_events_subscribed) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Health service subscription failed");
   } else {
-    s_health_events_subscribed = true;
     health_service_set_heart_rate_sample_period((uint16_t)s_settings.hr_sample_minutes * 60);
   }
 #endif
@@ -131,7 +134,7 @@ static void initialize_mailboxes() {
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  initialize_inbox_outbox(NULL);
+  initialize_inbox_outbox(&s_refresh_timer, &s_retry_timer);
 }
 
 static void main_window_load(
@@ -152,6 +155,8 @@ static void main_window_load(
   }
 
   // 3. Initialize inbox & outbox
+  s_refresh_timer = NULL;
+  s_retry_timer = NULL;
   initialize_mailboxes();
 
   // 4. Subscribe to services
@@ -164,15 +169,25 @@ static void main_window_load(
 static void main_window_unload(
     Window* window) {
   (void)window;
+  tick_timer_service_unsubscribe();
+  battery_state_service_unsubscribe();
+  app_message_deregister_callbacks();
+  connection_service_unsubscribe();
+#ifdef PBL_HEALTH
+  if (s_health_events_subscribed) {
+    health_service_events_unsubscribe();
+    s_health_events_subscribed = false;
+  }
+#endif
+  // Cancel timers for refresh and retry
+  if (s_refresh_timer) app_timer_cancel(s_refresh_timer);
+  if (s_retry_timer) app_timer_cancel(s_retry_timer);
+  s_refresh_timer = NULL;
+  s_retry_timer = NULL;
   watchface_destroy();
 }
 
 static void init() {
-// Create the window before initializing app state and services.
-#ifdef PBL_HEALTH
-  s_health_events_subscribed = false;
-#endif
-
   s_window = window_create();
   if (!s_window) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to create main window");
@@ -192,16 +207,6 @@ static void deinit() {
   if (!s_window) {
     return;
   }
-  tick_timer_service_unsubscribe();
-  battery_state_service_unsubscribe();
-  app_message_deregister_callbacks();
-  connection_service_unsubscribe();
-#ifdef PBL_HEALTH
-  if (s_health_events_subscribed) {
-    health_service_events_unsubscribe();
-    s_health_events_subscribed = false;
-  }
-#endif
   // We do not need to write settings to persist storage here because of two reasons:
   // 1. If they were changed, they were persisted already
   // 2. If they are defaults, they will be reconstructed upon init

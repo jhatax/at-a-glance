@@ -1,11 +1,11 @@
 #include <string.h>
 
-#include "../src/modules/helper.h"
-#include "../src/modules/substratum_computations.h"
+#include "c/ataglance_message_parser.h"
+#include "modules/helper.h"
+#include "modules/substratum_computations.h"
 #include "test_framework.h"
 
-int test_helper_ranges(
-    void) {
+int test_helper_ranges() {
   TEST_CHECK(HELPER_VALUE_IN_RANGE(0, 0, 10));
   TEST_CHECK(HELPER_VALUE_IN_RANGE(10, 0, 10));
   TEST_CHECK(!HELPER_VALUE_IN_RANGE(-1, 0, 10));
@@ -31,8 +31,7 @@ int test_helper_ranges(
   return 0;
 }
 
-int test_helper_math(
-    void) {
+int test_helper_math() {
   TEST_CHECK(HELPER_MAX(3, 7) == 7);
   TEST_CHECK(HELPER_MAX(-4, -9) == -4);
   TEST_CHECK(HELPER_MIN(3, 7) == 3);
@@ -51,8 +50,7 @@ int test_helper_math(
   return 0;
 }
 
-int test_helper_colors(
-    void) {
+int test_helper_colors() {
   GColor white = {.argb = 0xFF};
   GColor same_white = {.argb = 0xFF};
   GColor black = {.argb = 0x00};
@@ -62,8 +60,7 @@ int test_helper_colors(
   return 0;
 }
 
-int test_helper_tuple_parsing(
-    void) {
+int test_helper_tuple_parsing() {
   uint8_t storage[sizeof(Tuple) + 8] = {0};
   Tuple* tuple = (Tuple*)storage;
   int parsed = 0;
@@ -95,7 +92,7 @@ int test_helper_tuple_parsing(
   for (size_t i = 0; i < ARRAY_LENGTH(integer_cases); ++i) {
     tuple->length = integer_cases[i].length;
     memcpy(tuple->value, integer_cases[i].bytes, sizeof(integer_cases[i].bytes));
-    TEST_CHECK(helper_tuple_to_int(tuple, &parsed));
+    TEST_CHECK(tuple_to_int(tuple, &parsed));
     TEST_CHECK(parsed == integer_cases[i].expected);
   }
 
@@ -103,7 +100,7 @@ int test_helper_tuple_parsing(
   for (size_t i = 0; i < ARRAY_LENGTH(invalid_lengths); ++i) {
     tuple->length = invalid_lengths[i];
     parsed = 1234;
-    TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
+    TEST_CHECK(!tuple_to_int(tuple, &parsed));
     TEST_CHECK(parsed == 1234);
   }
 
@@ -111,28 +108,27 @@ int test_helper_tuple_parsing(
   tuple->type = TUPLE_CSTRING;
   tuple->length = strlen(text) + 1;
   memcpy(tuple->value->cstring, text, tuple->length);
-  TEST_CHECK(helper_tuple_to_int(tuple, &parsed));
+  TEST_CHECK(tuple_to_int(tuple, &parsed));
   TEST_CHECK(parsed == 32767);
 
   const char* invalid_texts[] = {"", "-1", "12x", "32768"};
   for (size_t i = 0; i < ARRAY_LENGTH(invalid_texts); ++i) {
     tuple->length = strlen(invalid_texts[i]) + 1;
     memcpy(tuple->value->cstring, invalid_texts[i], tuple->length);
-    TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
+    TEST_CHECK(!tuple_to_int(tuple, &parsed));
   }
 
   tuple->type = TUPLE_BYTE_ARRAY;
-  TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
+  TEST_CHECK(!tuple_to_int(tuple, &parsed));
   tuple->type = TUPLE_UINT;
-  TEST_CHECK(!helper_tuple_to_int(tuple, &parsed));
-  TEST_CHECK(!helper_tuple_to_int(NULL, &parsed));
-  TEST_CHECK(!helper_tuple_to_int(tuple, NULL));
+  TEST_CHECK(!tuple_to_int(tuple, &parsed));
+  TEST_CHECK(!tuple_to_int(NULL, &parsed));
+  TEST_CHECK(!tuple_to_int(tuple, NULL));
 
   return 0;
 }
 
-int test_substratum_computations(
-    void) {
+int test_substratum_computations() {
   GSize reference = {.w = 28, .h = 28};
   GSize compact = {.w = 18, .h = 18};
   GSize tall = {.w = 18, .h = 24};

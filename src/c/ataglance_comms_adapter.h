@@ -2,8 +2,6 @@
 
 #include <pebble.h>
 
-#include "modules/watchface.h"
-
 /*
  * Header invariants:
  *
@@ -19,11 +17,10 @@
  *   Tuple parsing has its own header and implementation so that parsing and
  *   transport handling stay distinct.
  */
-// Apply changes
-void ataglance_apply_received_data(WatchfaceEventData* parsed);
-
 // Inbox-Outbox handling
-void initialize_inbox_outbox(void* context);
+void initialize_inbox_outbox(
+    AppTimer** refresh_interval,
+    AppTimer** retry_interval);
 void inbox_received_handler(
     DictionaryIterator* iter,
     void* context);

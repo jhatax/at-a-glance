@@ -387,7 +387,7 @@ void watchface_refresh(
   // Using any other mask will create a hidden dependency / source of drift
   // Three exceptions to settings propagation handled outside this function:
   // 1. display_mode: watchface_repaint reloads the palette
-  // 2. weather_update_minutes: index.js in the handler for web-view closed
+  // 2. weather_update_minutes: ataglance_comms_handler.c schedules refresh requests
   // 3. hr_sample_minutes: ataglance.c does this when settings are subscribed or
   // changed on devices with health capability.
   if ((updates & WATCHFACE_UPDATE_DATE) && (s_strata_created_mask & DATE_STRATUM_MASK)) {

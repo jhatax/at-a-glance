@@ -145,14 +145,6 @@ function createHarness({ savedSettings = null } = {}) {
     target[event]();
   }
 
-  async function tick() {
-    assert.equal(timers.size, 1, 'Expected exactly one scheduled refresh');
-    const [id, timer] = timers.entries().next().value;
-    timers.delete(id);
-    timer.callback();
-    await settlePromises();
-  }
-
   async function completeRefresh(coords = originalLocation, name = 'City A') {
     position(coords);
     await settlePromises();
@@ -167,13 +159,19 @@ function createHarness({ savedSettings = null } = {}) {
     return requests.filter((item) => item.kind === kind).length;
   }
 
+  function emit(name, event) {
+    assert.ok(listeners.has(name), `Missing ${name} listener`);
+    listeners.get(name)(event);
+  }
+
+  async function refresh() {
+    emit('appmessage', { payload: { REFRESH: 1 } });
+    await settlePromises();
+  }
+
   return {
-    // Direct controller calls share the same instance used by Pebble events.
-    start: (minutes) => context.startRefresh(minutes),
-    emit(name, event) {
-      assert.ok(listeners.has(name), `Missing ${name} listener`);
-      listeners.get(name)(event);
-    },
+    emit,
+    refresh,
     positions,
     requests,
     messages,
@@ -182,7 +180,6 @@ function createHarness({ savedSettings = null } = {}) {
     request,
     respond,
     fail,
-    tick,
     completeRefresh,
     requestCount,
   };

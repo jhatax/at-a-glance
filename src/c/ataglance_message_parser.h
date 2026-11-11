@@ -42,3 +42,12 @@ void parse_settings_data(
 void parse_weather_and_location_data(
     DictionaryIterator* iter,
     WatchfaceEventData* data);
+
+bool tuple_to_int(
+    Tuple* tuple,
+    int* value);
+
+bool tuple_to_string(
+    Tuple* tuple,
+    char* value,
+    uint8_t max_len);

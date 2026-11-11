@@ -55,7 +55,7 @@ To run only the climate/location tests:
 node --test tests/js/weather_location.test.js
 ```
 
-The tests use Node's built-in test runner and one shared harness in `tests/js/harness.js`. Each test gets an isolated environment running the production entry point, refresh controller, and message queues. The harness supplies Pebble events, storage, geolocation, network responses, message sends, and timers; Clay is stubbed. Tests cover JS sentinel handling, cached resync, polling, location reuse, movement, failures, timeouts, late responses, and interval changes. Validate C acknowledgment behavior and actual AppMessage delivery separately with the emulator or phone companion.
+The tests use Node's built-in test runner and one shared harness in `tests/js/harness.js`. Each test gets an isolated environment running the production entry point, refresh controller, and message queues. The harness supplies Pebble events, storage, geolocation, network responses, message sends, and timers; Clay is stubbed. Tests cover JS_READY and REFRESH handling, requests without JS cadence timers, fresh climate fetches, location reuse, movement, failures, timeouts, and late responses. Validate C scheduling, retry behavior, and actual AppMessage delivery separately with the emulator or phone companion.
 
 ## Operator Evidence Review Expectations
 
@@ -178,7 +178,7 @@ pebble send-app-message --emulator emery --int 10006=2
 
 Use [SettingsandConfiguration](SettingsandConfiguration.md) for the message-key catalog and transport contract.
 
-Key `10005` tests the watch's persisted cadence only. Change the interval through Clay to exercise the phone's polling schedule, then restart PKJS to check the saved preference.
+Key `10005` changes the watch's persisted cadence and starts a refresh when the accepted value differs. Change the interval through Clay to exercise the full settings path, then restart the watchface to check the saved cadence.
 
 #### Weather And Location State
 

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct {
   uint8_t argb;
@@ -34,6 +35,29 @@ typedef struct __attribute__((__packed__)) {
   } value[];
 } Tuple;
 
+typedef struct DictionaryIterator DictionaryIterator;
+typedef struct Window Window;
+
+Tuple* dict_find(
+    const DictionaryIterator* iter,
+    const uint32_t key);
+
+// Manifest-backed keys referenced by the production parser.
+enum {
+  MESSAGE_KEY_TIME_FORMAT = 10000,
+  MESSAGE_KEY_TEMP_UNIT = 10001,
+  MESSAGE_KEY_TEMPERATURE = 10002,
+  MESSAGE_KEY_WEATHER_CONDITION = 10003,
+  MESSAGE_KEY_IS_DAY = 10004,
+  MESSAGE_KEY_WEATHER_UPDATE_MINUTES = 10005,
+  MESSAGE_KEY_DISPLAY_MODE = 10006,
+  MESSAGE_KEY_MAYBE_CURRENT_LOCATION = 10011,
+  MESSAGE_KEY_JS_READY = 10012,
+  MESSAGE_KEY_BATTERY_ORIENTATION = 10013,
+};
+
+#define APP_LOG(...) ((void)0)
+
 #define GColorClear ((GColor){.argb = 0})
 #define GColorWhite ((GColor){.argb = 0xFF})
 
@@ -60,6 +84,7 @@ typedef struct {
   ((GRect){.origin = GPoint((x_value), (y_value)), .size = (GSize){.w = (w_value), .h = (h_value)}})
 
 #define PBL_IF_ROUND_ELSE(round_value, rectangular_value) (rectangular_value)
+#define PBL_IF_RECT_ELSE(rectangular_value, round_value) (rectangular_value)
 
 typedef void* GFont;
 

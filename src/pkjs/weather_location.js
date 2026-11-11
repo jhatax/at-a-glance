@@ -1,8 +1,6 @@
 const REQUEST_TIMEOUT = 15 * 1000;
 const GEO_REQUEST_AGE = 10 * 60 * 1000;
 const MAX_LOCATION_STRING_LENGTH = 15;
-const WEATHER_UPDATE_MINUTES_DEFAULT = 15;
-const WEATHER_UPDATE_MINUTES_MAX = 60;
 
 const location_request_options = {
   timeout: REQUEST_TIMEOUT,
@@ -11,8 +9,6 @@ const location_request_options = {
 };
 
 function createRefreshController(updateClimateLocation) {
-  var waitInterval = -1;
-  var waitTimeoutHandle = null;
   var lastKnownLocation = null;
   var lastKnownLookup = null;
   var lastKnownClimate = null;
@@ -66,6 +62,7 @@ function createRefreshController(updateClimateLocation) {
 
     return xhr;
   }
+
   function reverseGPS(location) {
     return new Promise(function (resolve, reject) {
       var url =
@@ -173,17 +170,6 @@ function createRefreshController(updateClimateLocation) {
     });
   }
 
-  function oneShotCachedClimateAndLocation() {
-    if (lastKnownClimate && lastKnownLookup) {
-      sendMessage({
-        TEMPERATURE: lastKnownClimate.TEMPERATURE,
-        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
-        IS_DAY: lastKnownClimate.IS_DAY,
-        MAYBE_CURRENT_LOCATION: lastKnownLookup,
-      });
-    }
-  }
-
   function refreshClimateAndLocation(location) {
     return Promise.all([fetchClimate(location), reverseGPS(location)]).then(function (results) {
       lastKnownClimate = results[0];
@@ -230,43 +216,11 @@ function createRefreshController(updateClimateLocation) {
     });
   }
 
-  function fetch() {
-    return requestChain.execute(
-      requestLocation,
-      refreshClimateAndLocation,
-      clearClimateAndLocation
-    );
+  function fetchUpdate() {
+    requestChain.execute(requestLocation, refreshClimateAndLocation, clearClimateAndLocation);
   }
 
-  function fetchWaitRepeat() {
-    if (waitTimeoutHandle) {
-      clearTimeout(waitTimeoutHandle);
-      waitTimeoutHandle = null;
-    }
-    fetch().then(() => {
-      if (waitTimeoutHandle) {
-        clearTimeout(waitTimeoutHandle);
-        waitTimeoutHandle = null;
-      }
-      waitTimeoutHandle = setTimeout(fetchWaitRepeat, waitInterval * 60 * 1000);
-    });
-  }
-
-  function startRefresh(minutes) {
-    var isValid =
-      typeof minutes === 'number' && minutes > 0 && minutes <= WEATHER_UPDATE_MINUTES_MAX;
-    var nextInterval = isValid ? minutes : WEATHER_UPDATE_MINUTES_DEFAULT;
-    var changed = waitInterval !== nextInterval;
-    if (changed || waitTimeoutHandle === null) {
-      waitInterval = nextInterval;
-      fetchWaitRepeat();
-    } else {
-      // Interval unchanged and waitTimeoutHandle is valid
-      oneShotCachedClimateAndLocation();
-    }
-  }
-
-  return startRefresh;
+  return fetchUpdate;
 }
 
 class ClimateLocationRequestQueue {
@@ -276,7 +230,7 @@ class ClimateLocationRequestQueue {
 
   execute(coords, get, clear) {
     this.chain = this.chain
-      .then(function () {
+      .then(() => {
         return coords().then((location) => {
           return get(location);
         });
