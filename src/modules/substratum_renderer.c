@@ -91,8 +91,6 @@ void substratum_renderer_draw_filled_bolt_in_frame(
   uint8_t quarter = WATCHFACE_ICON_CENTER_X >> 1;
 
   if (!bolt->initialized) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "Initializing bolt array");
-
     GPoint* points = bolt->bolt_points;
     points[0] = substratum_renderer_scale_icon_x_y_in_frame(
         frame,
