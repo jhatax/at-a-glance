@@ -151,13 +151,13 @@ static void main_window_load(
     return;
   }
 
-  // 3. Subscribe to services
-  subscribe_to_services();
-
-  // 4. Initialize inbox & outbox
+  // 3. Initialize inbox & outbox
   initialize_mailboxes();
 
-  // set BT status
+  // 4. Subscribe to services
+  subscribe_to_services();
+
+  // 5. set BT status
   bt_handler(connection_service_peek_pebble_app_connection());
 }
 
