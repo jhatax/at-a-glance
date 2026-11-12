@@ -243,6 +243,12 @@ static void try_refresh(
   // Record this as an attempt
   ++s_weather_sync_attempts;
 
+  // Don't try if BLE connection isn't available; schedule an attempt in the future.
+  if (!connection_service_peek_pebble_app_connection()) {
+    schedule_retry(context);
+    return;
+  }
+
   DictionaryIterator* out_iter = NULL;
   AppMessageResult result = app_message_outbox_begin(&out_iter);
   if (result != APP_MSG_OK || !out_iter) {
