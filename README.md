@@ -17,22 +17,14 @@ The goal is a display that feels _precise, neutral, obvious, and available at a 
 
 ## Installation
 
-- [Pebble App Store: At A Glance](https://apps.repebble.com/7727666da5c84c259b3a70b3)
+Install from the [Pebble App Store](https://apps.repebble.com/7727666da5c84c259b3a70b3).
 
-- To get the source, clone the repository, then follow [Build](#build):
+To build from source, clone the repository and follow [Build](#build):
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
 cd at-a-glance
 ```
-
-- If you've built it locally:
-
-```sh
-pebble install --phone YOUR_PHONE_IP
-```
-
-`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app.
 
 ## Features
 
@@ -46,7 +38,7 @@ pebble install --phone YOUR_PHONE_IP
 - Display modes for monochrome and color devices
 - Settings page on the connected phone
 
-## Personalization options:
+## Personalization Options
 
 - Time format: 24-hour or 12-hour
 - Temperature unit: Fahrenheit or Celsius
@@ -77,6 +69,14 @@ pebble build
 ```
 
 ## Install
+
+Install a local build on a watch:
+
+```sh
+pebble install --phone YOUR_PHONE_IP
+```
+
+`YOUR_PHONE_IP` is the Developer Connection Server IP shown by the Pebble mobile app.
 
 Install on an emulator after building:
 

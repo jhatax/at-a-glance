@@ -1,13 +1,6 @@
 # QA Harness Implementation Flow
 
-This document records the live Python runtime flow.
-
-- Operator entry point: [QA README](../README.md).
-- This document: Owns the implementation map.
-- Handoffs: Each phase has one owner, one input contract, and one output contract.
-- Phase table: Shows the conceptual flow.
-- Command-handoff table: Names the live functions.
-- Report contract: Records the canonical output boundary.
+This document traces QA plan parsing, resolution, concurrent execution, and report generation through the live Python source. Each handoff identifies its owner, inputs, outputs, and failure behavior.
 
 ## Adjacent
 
@@ -36,7 +29,7 @@ This document records the live Python runtime flow.
 | Parse | `ataglanceharness.py` | `qaplanparser.py` | Plan path | Grammar values, `ParsedStep` list, and parser discards | Parser grammar, block boundaries, source order, and include references |
 | Resolve | `ataglanceharness.py` | `qaplanresolver.py` | Parsed document | `PlanDefinition` with identity-keyed `PlanStep` objects | Resolver expansion, concrete fields, screenshot directives, expected counts, de-duplication |
 | Execute | `ataglanceharness.py` | `qaplanexecutor_threaded.py` and `pebbleadapter.py` | `PlanDefinition` | Per-step results, buffered logs, and captured screenshot paths | Concurrent executor scheduling and result collection; adapter transport and evidence |
-| Finalize | `qaplanexecutor_threaded.py` | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts, accumulated results, and runtime paths | `report.json`, `summary.md`, terminal closeout | Runtime aggregation/serialization; renderer Markdown |
+| Finalize | `qaplanexecutor_threaded.py` | `qaharnessruntime.py` and `qareportrenderer.py` | Plan facts, accumulated results, and runtime paths | `report.json`, `summary.md`, terminal closeout | Executor result aggregation; runtime serialization; renderer Markdown |
 
 ### Parse
 
@@ -51,8 +44,7 @@ qaplanresolver.py
   parsed plan values -> supported (emulator, display) tuples
   tuples + parsed steps + screenshot policy -> executable PlanStep objects
 
-Parser does not create PlanStep objects, access Pebble, execute commands, or
-write reports.
+The parser stops at grammar records and discards.
 ```
 
 ### Resolve
@@ -93,8 +85,10 @@ ataglanceharness.py
 qaplanexecutor_threaded.py
   -> enumerate the canonical PlanDefinition.steps sequence and assign step_number
   -> group steps by emulator while preserving each lane's source order
-  -> create one worker thread for each emulator
-  -> install each emulator before starting its worker
+  -> create output paths, PlanExecutionState, and the result-processor thread
+  -> for each emulator
+       -> install the watchface
+       -> start one worker thread
   -> each worker executes its assigned steps serially
        -> create one connection for the step
        -> PlanStep.run()
@@ -127,13 +121,14 @@ qaplanexecutor_threaded.py
 ### Finalize
 
 ```text
-qaharnessruntime.py
-  -> create HarnessRuntime output paths before execution
-  -> build QAStepOutput rows from the original PlanDefinition and raw step results
-  -> build one ConsolidatedQARunOutputs value
-  -> write report.json
-  -> render summary.md
-  -> print closeout information
+qaplanexecutor_threaded.py
+  -> PlanExecutionState.finalize()
+       -> build QAStepOutput rows from PlanDefinition and raw results
+       -> build one ConsolidatedQARunOutputs value
+       -> call emit_reports() in qaharnessruntime.py
+            -> write report.json
+            -> render summary.md
+            -> print closeout information when summary.md exists
 
 qareportrenderer.py
   -> render Markdown from typed report objects
@@ -141,8 +136,9 @@ qareportrenderer.py
   -> supply step results for summary.md and comparison.md
 
 qaresultinspector.py
-  -> load report.json for view and compare
-  -> create derived Markdown only when it is absent
+  -> view: reuse summary.md or load report.json to regenerate it
+  -> compare: load the selected report.json files
+       -> reuse comparison.md or create derived JSON and Markdown
 ```
 
 **Report context contents**
@@ -177,13 +173,15 @@ qaresultinspector.py
 ```text
 PlanDefinition
   -> qaplanexecutor_threaded.py records RawStepResult values
-  -> qaharnessruntime.py builds ConsolidatedQARunOutputs and QAStepOutput values
-  -> report.json
+  -> PlanExecutionState.finalize() builds typed step and run outputs
+  -> qaharnessruntime.py serializes report.json
   -> qareportrenderer.py
   -> summary.md or comparison.md
 ```
 
 `report.json` is the durable source of truth. Markdown is output-only and is never read to recover execution facts.
+
+`run_id` equals the output folder name. View and compare preserve captured facts; they do not execute watchface steps.
 
 ## Validation gates
 

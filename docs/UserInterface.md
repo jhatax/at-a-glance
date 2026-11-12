@@ -1,6 +1,6 @@
 # User Interface
 
-This document records the current UI of _At A Glance_. It is the reference for the implemented stack, typography, palettes, icon sizes, glyph realization, and screenshot status.
+This document records how _At A Glance_ implements the visual vocabulary: information placement, typography, palettes, icon sizes, glyphs, and captured screenshots. Live source defines the current implementation.
 
 ## Adjacent
 
@@ -9,26 +9,26 @@ This document records the current UI of _At A Glance_. It is the reference for t
 
 ## Visual Evidence
 
-### On Device
+### Watch face
 
-Checked-in device screenshots are under `docs/assets/screenshots/`. The tables below describe live source; the images show the states captured when they were taken.
+Checked-in screenshots are under `docs/assets/screenshots/`. The tables below describe live source; the images show the states captured when they were taken.
 
 |  |  |  |
 | :-: | :-: | :-: |
 | <b><img src="assets/screenshots/at-a-glance-emery-blackonwhite.png" alt="Emery Black on White" width="160"><br>Emery: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-emery-whiteonblack.png" alt="Emery White on Black" width="160"><br>Emery: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-chalk-celeste.png" alt="Chalk Clear as Celeste" width="160"><br>Chalk: Clear as Celeste</b> |
 | <b><img src="assets/screenshots/at-a-glance-aplite-blackonwhite.png" alt="Aplite Black on White" width="130"><br>Aplite: Black on White</b> | <b><img src="assets/screenshots/at-a-glance-flint-whiteonblack.png" alt="Flint White on Black" width="130"><br>Flint: White on Black</b> | <b><img src="assets/screenshots/at-a-glance-gabbro-nightinoxford.png" alt="Gabbro Night in Oxford" width="160"><br>Gabbro: Night in Oxford</b> |
 
-Glyph validation is covered in [Contributing](Contributing.md). Prioritize it when glyphs are modified or introduced.
+[Contributing](Contributing.md) describes the glyph-development workflow. [Validation](Validation.md) defines the required evidence for visual changes.
 
 ### Settings
 
-The current Clay settings page is captured here as interface evidence only. The settings contract, defaults, valid ranges, AppMessage keys, PKJS normalization, and persistence rules live in [SettingsandConfiguration](SettingsandConfiguration.md).
+The captured Clay page shows the settings interface. [SettingsandConfiguration](SettingsandConfiguration.md) owns defaults, valid ranges, message keys, normalization, and persistence.
 
 <img src="assets/screenshots/at-a-glance-settings.png" alt="At A Glance settings page" width="320"/>
 
 ## Current Visual Stack
 
-The current stack and information hierarchy is shared across display families and geometries:
+The information hierarchy remains consistent across display families. Health-capable targets add steps and heart-rate context:
 
 ```text
 top steps context
@@ -59,35 +59,19 @@ The `layout_stylist` selects fonts by display class (compact or full) and font r
 | <b>Text (Steps, Temp., etc.)</b> | `FONT_KEY_GOTHIC_18_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_24_BOLD` | `RESOURCE_ID_FONT_DATE_TEXT_20` |
 | <b>Location</b> | `FONT_KEY_GOTHIC_14` | `RESOURCE_ID_FONT_DATE_TEXT_15` | `FONT_KEY_GOTHIC_18` | `RESOURCE_ID_FONT_LOCATION_17` |
 
-- Font selection depends on role, display class, and platform.
-
 ## Supported Display Modes
 
-- On color-capable watches, four modes are available.
-- On monochrome-capable watches, two monochrome-specific modes are available.
-- Each mode uses a defined palette to render text, icons, and convey state.
-- Select the display mode in the phone's Clay settings page.
-- The watch repaints immediately when the mode changes.
-
-This satisfies the invariant that choices are available on all devices.
+Color watches offer four modes: Black on White, White on Black, Clear as Celeste, and Night in Oxford. Monochrome watches offer Black on White and White on Black. Selecting a different mode in Clay requests a watchface repaint.
 
 ### Display Mode Palette Characteristics
 
-Each display mode selects a primary palette and module palettes. Modules share normal and unavailable text colors and add colors for their own states.
-
-There are five sub-palettes that harmonize together to maximize contrast and convey state.
-
-1. Primary Display
-2. Module: Battery
-3. Module: BPM
-4. Module: Climate
-5. Module: Steps
+`layout_stylist.c` selects the base palette. Battery, BPM, climate, and steps derive module palettes from it. Modules copy the base background and normal text colors, copy the unavailable color where needed, and add feature-specific state colors.
 
 ### Realization of Shared Visual Identity
 
-1. On Monochrome hardware, light and dark palettes are mirror images of one another.
-2. Palette pairs ({mono-light, mono-dark}, {color-light, color-dark}) have {time+date text, background} in one swapped with their opposite metric in the other.
-3. Module displays define `normal` and `unknown` that mirror values from the active primary display palette.
+- Light and dark modes swap the time/date colors with the background color.
+- Module `normal` colors follow base primary text. Module `outofrange` colors follow base out-of-range text.
+- State colors depend on display capability and the light/dark palette. Color hardware retains colored metric-state cues even in Black on White and White on Black modes.
 
 ### Consolidated Color Palettes for Display Modes
 
@@ -201,18 +185,19 @@ Climate glyphs are procedural and drawn in the climate icon frame. The current p
 - Drizzle uses three heavier staggered marks.
 - Rain uses slanted rain marks; heavy rain uses longer marks.
 - Snow uses a procedural snowflake with six spokes, chevrons, and a center dot.
-- Sleet combines cloud, snowflake, and rain marks.
+- Sleet drizzle combines a cloud, a snowflake, and rain marks. Heavy sleet uses a cloud and two snowflakes.
 - Showers combine a cloud with rain marks while keeping precipitation separate from the cloud baseline.
-- Snow showers combine a cloud with a snowflake while keeping precipitation visually separate from the cloud shape.
+- Snow showers use three separated snowflakes. Small snowflake frames use fewer details to preserve recognition.
 - Thunderstorm uses the shared filled bolt primitive.
 - Out-of-range weather draws a cloud with the shared absence slash.
 
-### Out-of-range Visual Identification: Left-to-Right Diagonal Slash
+### Unavailable-state slash
 
 Out-of-range metric and weather states use a shared diagonal slash. The slash is drawn from the 28x28 design-space diagonal with three line segments and a 2px stroke, then scaled to the active icon frame.
 
 ## Read Next
 
+- [RuntimeArchitecture](RuntimeArchitecture.md) for the runtime ownership and update flows behind this display.
 - [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) for implementation flow, source responsibilities, and interconnections.
 - [SettingsandConfiguration](SettingsandConfiguration.md) for the settings catalog.
 - [Validation](Validation.md) for validation contract, scenarios, and visual review evidence.

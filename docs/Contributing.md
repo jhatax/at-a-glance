@@ -1,6 +1,6 @@
 # Contributing
 
-This document is the contributor workflow for _At A Glance_: prepare the repository, make a narrow source or documentation change, validate the affected path, and submit evidence with the change.
+Use this workflow to prepare the repository, make a focused change, validate the affected path, and provide review evidence.
 
 ## Adjacent
 
@@ -10,7 +10,7 @@ This document is the contributor workflow for _At A Glance_: prepare the reposit
 
 ## Prepare The Repository
 
-Clone the repository, install its JavaScript dependencies, and initialize the checked-in Git hook:
+Clone the repository, install JavaScript dependencies, and enable the checked-in Git hooks:
 
 ```sh
 git clone https://github.com/jhatax/at-a-glance.git
@@ -70,7 +70,7 @@ Editor support includes:
 
 Regenerate `compile_commands.json` with `./aag-build-qa.sh --build-clean` when editor diagnostics are stale. This clean verbose build captures the compiler commands needed by clangd.
 
-The npm commands provide the same repeatable local checks outside the editor:
+Run local checks from the repository root:
 
 ```sh
 npm run format:check
@@ -88,7 +88,7 @@ npm run check
 Use one harness test or test class when narrowing a change:
 
 ```sh
-PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
+PYTHONPATH=tools/harness_py uv run --python 3.13 python -m unittest unittests.test_harness_correctness.HarnessCorrectnessTests.test_named_scenario_loads_and_expands
 ```
 
 Documentation formatting commands:
@@ -112,19 +112,20 @@ The checked-in hooks have these responsibilities:
 - Pre-release QA: `./aag-build-qa.sh --exec pre-release-gate`
 - Validation guidance: Use the named plans documented by [Validation](Validation.md) when broader runtime evidence is required.
 
+Pre-commit restages the full contents of files that were staged when the hook started. Review those files before committing.
+
 ## Source And Runtime Discipline
 
-- Keep ownership explicit: `src/c/ataglance.c` owns lifecycle, service subscriptions, settings loading, and callback registration. Its private message adapter owns tuple parsing, transport, changed-settings saves, and heart-rate cadence updates. `watchface_runtime_boundary.c` interprets events; `watchface.c` owns the live surface and feature lifecycle; feature modules own their layers, source state, refresh, and destruction.
+- Follow the ownership boundaries in [RuntimeArchitecture](RuntimeArchitecture.md) and the source map in [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md). Review those boundaries before moving behavior between files.
 - Keep feature APIs narrow. Do not pass watchface or layout structs by value, retain `WatchfaceSurface*` in feature modules, or make a feature depend on a broader global update type when a narrower input exists.
 - Use fixed-size buffers, `snprintf`, integer geometry, capability guards, and paired resource cleanup. Keep allocation, network, JSON, heavy formatting, and layout calculations out of layer update procedures.
 - Render through `watchface_refresh()`. Palette changes repaint; new data targets the affected strata. Required text updates must not depend on optional icons.
-- Read [RuntimeArchitecture](RuntimeArchitecture.md) and [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) before changing ownership or lifecycle boundaries.
 
 ## C, JavaScript, And Tooling Rules
 
 For C and headers, use the repository `.clang-format`, keep lines at or below 100 characters where practical, and prefer direct auditable code. Check existing helpers before introducing a new abstraction.
 
-For PebbleKit JS, keep the runtime-compatible CommonJS style, validate AppMessage payloads, guard optional APIs, and keep network and fallback behavior explicit. Prettier covers the JavaScript and JSON source surface.
+For PebbleKit JS, use runtime-compatible CommonJS modules, validate AppMessage payloads, guard optional APIs, and handle network failures explicitly. Prettier formats JavaScript and JSON.
 
 For Python and shell changes, use the repository YAPF and shfmt configuration. Keep the shell-to-Python QA handoff narrow: zsh owns environment preparation, and Python owns harness plan state, execution, reports, and screenshots.
 
@@ -144,14 +145,12 @@ For broad glyph exploration, use `glyph-lab` before production porting:
 
 Documentation rules:
 
-- Give each document one independent question.
-- Give each document one canonical owner.
-- Give each document one clear audience.
+- Give each document one independent question, canonical purpose, and clear audience.
 - Use [DocumentationOntology](DocumentationOntology.md) to route concepts.
 - Use [DocumentationContracts](DocumentationContracts.md) to maintain `Adjacent`, `Read Next`, and ownership metadata.
 - Link to the canonical document instead of duplicating its content.
 
-Keep Markdown prose paragraphs on logical lines so the editor or viewport controls visual wrapping. Preserve structural breaks for headings, lists, tables, blockquotes, code fences, and intentional hard breaks.
+Keep each prose paragraph on one logical line so the editor controls wrapping. Preserve structural breaks for headings, lists, tables, blockquotes, code fences, and intentional hard breaks.
 
 For QA grammar, resolver, execution, or report changes:
 

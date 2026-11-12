@@ -1,23 +1,8 @@
 # Settings and Configuration
 
-This document covers settings, configuration transport, message-key mapping, persistence, and validation for _At A Glance_. Use this document to understand:
+This document defines settings, defaults, valid values, message keys, persistence, and runtime effects for _At A Glance_. It traces a preference from Clay through PKJS and AppMessage to the watch.
 
-- the canonical setting catalog
-- settings defaults
-- valid ranges and enums
-- Clay field mapping
-- `messageKeys` linkage
-- PKJS normalization rules
-- persisted-vs-ephemeral distinction
-- runtime side effects
-- validation obligations when a setting changes
-
-**Key implementation details**
-
-- Settings flow to and from the Clay configuration page through PKJS.
-- `ataglance.c` loads settings during window creation. The message handler saves changed settings after runtime application.
-- Settings are transported using AppMessage, then parsed and interpreted in C.
-- Display is updated with information as long as it is within range.
+`ataglance.c` loads persisted settings before creating the watchface. The runtime validates incoming settings; the communications handler saves accepted changes and applies service side effects.
 
 ## Adjacent
 
@@ -47,7 +32,7 @@ Clay also exposes two settings-page inputs that are not canonical runtime settin
 
 PKJS collapses these two Clay inputs into the canonical `STEPS_GOAL` value before sending settings to C.
 
-The settings catalog does not include weather data, location data, or one-shot health override keys. Those are AppMessage payloads, not persisted user settings.
+Weather, location, and one-shot health overrides are transient AppMessage data. They stay outside the persisted settings catalog.
 
 ## Source Of Truth Map
 
@@ -82,15 +67,13 @@ Pebble showConfiguration event
   -> Pebble.sendAppMessage(dict)
 ```
 
-The current settings page is shown here as evidence of the configuration surface, not as the visual specification:
-
-![At A Glance settings page](assets/screenshots/at-a-glance-settings.png)
+[UserInterface](UserInterface.md#settings) shows the captured settings page.
 
 Clay presents `BATTERY_ORIENTATION` as “Battery orientation:” with “Central bar” for horizontal and “Right Margin” for vertical. Capability-filtered fields default to horizontal on rectangular displays and vertical on round displays. Saved preferences override these defaults.
 
 ### PKJS Normalization
 
-PKJS sends most Clay-backed settings directly after Clay maps their keys with the exception of the following:
+Clay maps form fields to numeric message keys. PKJS normalizes steps goal and weather cadence before sending the dictionary.
 
 **1. Steps goal**
 
@@ -107,7 +90,7 @@ else
   -> send STEPS_GOAL_DEFAULT
 ```
 
-After computing `STEPS_GOAL`, PKJS deletes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` from the outbound dictionary. Therefore, C should not budget AppMessage inbox space for those two Clay-only inputs.
+PKJS removes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` after computing `STEPS_GOAL`. Only the canonical goal crosses the boundary, so inbox sizing excludes those two Clay inputs.
 
 **2. Weather Update Minutes & Scheduling**
 
@@ -116,9 +99,10 @@ C owns the weather schedule and uses its persisted `WEATHER_UPDATE_MINUTES` valu
 Startup and refresh requests use separate keys:
 
 - On `ready`, PKJS sends `JS_READY=1` through the settings/control queue and waits for a request.
-- C creates the watchface before registering callbacks and opening AppMessage. On receipt of `JS_READY`, C sends `REFRESH=1` and continues parsing other tuples in the message.
+- C creates the watchface before registering callbacks and opening AppMessage. On receipt of `JS_READY`, C starts a refresh attempt and continues parsing other tuples in the message.
 - Each `REFRESH=1` queues one climate/location request in JS. Weather is fetched again; a reverse-geocoded location may be reused while coordinates remain within the location tolerance.
-- C allows six send attempts, with retry delays of one through five seconds. Successful delivery resets the retry state and schedules the next C cycle. Exhausted attempts also schedule the next cycle.
+- C checks the phone app connection before each attempt. While disconnected, it skips the outbox and schedules a retry. These checks count toward the same six-attempt limit as failed sends.
+- Retry delays run from one through five seconds. Successful delivery resets the retry state and schedules the next C cycle. Exhausted attempts also schedule the next cycle, which checks the connection again.
 - C schedules the next request independently of whether JS retrieves or delivers climate/location successfully. PKJS has no periodic refresh timer.
 - An accepted interval change starts a refresh immediately and replaces the C cadence timer. An unchanged interval leaves the schedule alone.
 
@@ -151,7 +135,7 @@ Current manifest-backed keys:
 **Notes**
 
 - Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
-- Generated C and JS artifacts may list keys in sorted-name order; unless you explicitly set keys.
+- Generated artifacts may list names alphabetically; numeric IDs still follow manifest order.
 - Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
 
 **Rules**
@@ -170,7 +154,7 @@ The current one-shot health keys are runtime-only constants:
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_BPM`   | `10020`    | One-shot BPM override   |
 | `WATCHFACE_ONESHOT_MESSAGE_KEY_STEPS` | `10021`    | One-shot steps override |
 
-These are one-shot, QA-oriented settings that are not persisted. Therefore, no watch-face and companion app interaction should use these keys.
+These keys provide transient QA overrides. Production PKJS does not send them.
 
 [Validation](Validation.md) owns the operational command examples for these keys. This document references them only to keep the settings, data, and QA payloads separate.
 
@@ -229,33 +213,14 @@ Refresh effects:
 
 Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct only when a validated persisted field changes. Stored settings are sanitized on load.
 
-## Validation Requirements
-
-When a setting changes, validate the whole path that changed.
-
-Minimum checks:
-
-- `package.json` `messageKeys` order still matches expected numeric IDs.
-- `src/pkjs/config.json` exposes the intended Clay field and capability filter.
-- `src/pkjs/index.js` sends the intended canonical key.
-- `src/c/ataglance_message_parser.c` parses the tuple.
-- `src/c/ataglance_comms_handler.c` budgets the inbox size and applies save/service side effects.
-- `src/modules/settings.h` defines the default and valid range.
-- `src/modules/settings.c` sanitizes persisted data correctly.
-- `src/modules/watchface_runtime_boundary.c` validates and mutates the setting.
-- The runtime refresh or repaint effect matches the setting's intended scope.
-- Manual QA commands and harness helpers use the current numeric mapping.
-
-Read [BuildandInstall](BuildandInstall.md) for build and install flows and associated commands, and [Validation](Validation.md) for emulator validation (using `pebble` commands or the watch face's QA harness).
-
 ## Change Checklist
 
-For any settings change:
+For a settings change, reconcile the affected owners and validate the complete path:
 
 - Update `package.json` only when the AppMessage key set changes.
-- Regenerate and inspect generated message-key output after key changes.
-- Update `src/pkjs/config.json` for settings-page shape changes.
-- Update `src/pkjs/index.js` for Clay normalization or refresh-request handling changes.
+- Regenerate message-key output after key changes and confirm IDs match manual QA commands and harness helpers.
+- Check `src/pkjs/config.json` fields, defaults, options, and capability filters.
+- Check `src/pkjs/index.js` normalization, canonical outbound keys, and refresh-request handling.
 - Update `src/modules/settings.h` and `src/modules/settings.c` for defaults, validation, persisted shape, or sanitization changes.
 - Update `src/c/ataglance_message_parser.c` for tuple parsing.
 - Update `src/c/ataglance_comms_handler.c` for inbox sizing, save triggers, or cadence side effects.
@@ -264,7 +229,8 @@ For any settings change:
 - Update [SettingsandConfiguration](SettingsandConfiguration.md).
 - Update [Validation](Validation.md) only when validation flow changes.
 - Update [UserInterface](UserInterface.md) only when visible settings evidence or visual consequences change.
-- Run the relevant build and validation path, or record the validation gap.
+- Verify defaults, invalid live values, stored-value sanitization, persistence after restart, and the intended refresh or repaint scope.
+- Run the relevant build and validation path, or record the validation gap. Use [BuildandInstall](BuildandInstall.md) for commands and [Validation](Validation.md) for runtime checks.
 
 ## Read Next
 

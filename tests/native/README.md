@@ -6,4 +6,4 @@ Run the native test loop with:
 tests/native/run.sh
 ```
 
-The harness is intentionally dependency-free. Tests compile the production helper source against only the Pebble types required by its tested contracts.
+The tests compile the production tuple parser and computation helpers against a small Pebble header stub. They run locally without a Pebble build or emulator. [Validation](../../docs/Validation.md) owns the broader validation paths.

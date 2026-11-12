@@ -126,8 +126,10 @@ src/pkjs/index.js ready
 AppMessage inbox handler in ataglance_comms_handler.c
   -> receive JS_READY after watchface creation and AppMessage opening
   -> request_refresh(context)
-       -> send REFRESH=1 to PKJS
-       -> retry failed sends up to six total attempts
+       -> check the phone app connection before each attempt
+       -> if disconnected, schedule a retry without opening the outbox
+       -> if connected, send REFRESH=1 to PKJS
+       -> allow six total attempts, including disconnected checks and failed sends
        -> after delivery succeeds or attempts are exhausted, schedule the next C cycle
   -> continue parsing other tuples
 

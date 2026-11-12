@@ -1,88 +1,79 @@
 # Documentation Ontology
 
-This ontology indexes the irreducible knowledge domains for the _At A Glance_ documentation set.
+Use this map to find the canonical document for each _At A Glance_ question and follow the related reading path.
+
+## Adjacent
+
+- [DocumentationContracts](DocumentationContracts.md) defines document purposes, scope, and navigation rules.
 
 ## Ontology Invariants
 
 1. One first-class concept has one canonical home.
 2. The documentation set is complete when its first-class concepts have one clear owner.
 
-Document purpose, sub-concepts, navigation contracts, and document-addition rules belong in [DocumentationContracts](DocumentationContracts.md). This document owns the relationship graph.
+This document owns the domain map and relationship graph. [DocumentationContracts](DocumentationContracts.md) owns document scope and the procedure for changing the set.
 
 ## Canonical Knowledge Domains
 
-Translation of guardrails: Before placing content, classify the knowledge using these first-class concepts:
+Place each concept in its canonical home. Other documents link to that home and explain only the context their readers need.
 
-| Concept | Canonical Home |
-| :-- | :-- |
-| Product entry point | [Watchface_Readme](../README.md) |
-| <b>Prescriptive Documents</b> |  |
-| Product intent | [Design](Design.md) |
-| Product invariants | [ProductInvariants](ProductInvariants.md) |
-| Visual vocabulary | [VisualVocabulary](VisualVocabulary.md) |
-| <b>Implementation & Evidentiary Documents</b> |  |
-| Watchface implementation flow | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
-| Visual evidence | [UserInterface](UserInterface.md) |
-| Runtime architecture | [RuntimeArchitecture](RuntimeArchitecture.md) |
-| Settings and configuration | [SettingsandConfiguration](SettingsandConfiguration.md) |
-| Contributor workflow | [Contributing](Contributing.md) |
-| Build & Install system | [BuildandInstall](BuildandInstall.md) |
-| <b>Validation & QA Documents</b> |  |
-| Validation system | [Validation](Validation.md) |
-| QA harness operations | [QA_Readme](../qa/README.md) |
-| QA test cases and plans | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) |
-| QA implementation flow | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) |
-| <b>Governance Documents</b> |  |
-| Documentation routing | [DocumentationOntology](DocumentationOntology.md) |
-| Documentation contracts | [DocumentationContracts](DocumentationContracts.md) |
-| Engineering decisions | [RAID Log](RAID_LOG.md) |
+| Question | Canonical home | Class |
+| --- | --- | --- |
+| What is the product, and how do I get it? | [README](../README.md) | Entry point |
+| Why does the product exist? | [Design](Design.md) | Prescriptive |
+| What must remain true as it evolves? | [ProductInvariants](ProductInvariants.md) | Prescriptive |
+| How do visual channels carry meaning? | [VisualVocabulary](VisualVocabulary.md) | Prescriptive |
+| What does the current interface implement? | [UserInterface](UserInterface.md) | Evidence |
+| Who owns runtime behavior and lifecycle? | [RuntimeArchitecture](RuntimeArchitecture.md) | Implementation |
+| Which files implement those responsibilities? | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) | Implementation |
+| How do settings reach and affect the watch? | [SettingsandConfiguration](SettingsandConfiguration.md) | Implementation |
+| How do I make and review a change? | [Contributing](Contributing.md) | Workflow |
+| How do I build, install, and prepare a release artifact? | [BuildandInstall](BuildandInstall.md) | Workflow |
+| What validation and evidence does a change need? | [Validation](Validation.md) | Validation |
+| How do I operate the QA harness? | [QA README](../qa/README.md) | QA operations |
+| How do I write scenarios, Matrices, and suites? | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) | QA grammar |
+| How does the QA harness execute and report? | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) | QA implementation |
+| Where does a documentation concept belong? | [DocumentationOntology](DocumentationOntology.md) | Governance |
+| How do document scope and navigation stay consistent? | [DocumentationContracts](DocumentationContracts.md) | Governance |
+| Which engineering decisions shaped the project? | [RAID Log](RAID_LOG.md) | Decision record |
 
 ## Document Relationship Graph
 
 ```mermaid
-graph TD
-  L1 ~~~ L2 ~~~ L3 ~~~ L4 ~~~ L5 ~~~ L6
+flowchart TD
+  entry["README"] --> ui
+  entry --> build
 
-  subgraph L1 ["<b>Design & Motivation</b>"]
-    p1["Design"] ==> p2["Product Invariants"]
-    p2 ==> p3["Visual Vocabulary"]
+  subgraph product["Product meaning and evidence"]
+    design["Design"] --> invariants["Product Invariants"]
+    invariants --> vocabulary["Visual Vocabulary"] --> ui["User Interface"]
   end
 
-  subgraph L2 ["<b>User Adoption</b>"]
-    p3 ==> u1
-    p3 ==> u2
-    u1["User Interface"] ==> u3
-    u2["Settings & Config"] ==> u3
-    u3["README"]
+  subgraph implementation["Runtime and source"]
+    runtime["Runtime Architecture"] --> source["Watchface Implementation Flow"]
+    settings["Settings and Configuration"] --> runtime
   end
+  ui --> runtime
+  ui --> settings
 
-  subgraph L3 ["<b>Implementation</b>"]
-    p2 ==> i1["Runtime Architecture"] ==> i2["Watchface Flow"]
+  subgraph workflow["Change and validate"]
+    contribute["Contributing"] --> build["Build and Install"] --> validate["Validation"]
+    validate --> qa["QA README"] --> plans["Writing Test Cases and Plans"]
+    plans --> execution["QA Harness Implementation Flow"]
   end
+  source --> contribute
 
-
-  subgraph L4 ["<b>Contributor Workflows</b>"]
-    u3 ==> c1
-    i2 ==> c1
-    c1["Contributing"] ==> c2["Build & Install"] ==> c3["Validation"]
+  subgraph governance["Documentation and decisions"]
+    ontology["Documentation Ontology"] --> contracts["Documentation Contracts"] --> raid["RAID Log"]
   end
-
-  subgraph L5 ["<b>Validation & QA</b>"]
-    c3 ==> q1
-    q1["QA Readme"] ==> q2["Test Cases & Plans"] ==> q3["QA Harness Flow"]
-  end
-
-  subgraph L6 ["<b>Documentation Governance</b>"]
-    p2 ==> d1
-    d1["Docs Ontology"] ==> d2["Docs Contracts"] ==> d3["RAID Log"]
-  end
+  raid --> contribute
 ```
 
-The graph shows the primary conceptual progression through the documentation set. It is not a complete rendering of every document link. Each document's `Adjacent` and `Read Next` sections remain the complete navigation and relationship contract; the graph selects the most meaningful directional connections and omits secondary links to keep the map readable.
+Arrows show primary reading paths. Each document's `Adjacent` and `Read Next` sections provide its local navigation; [DocumentationContracts](DocumentationContracts.md) records those connections.
 
 ## Emergent Properties
 
-The following are not first-class concepts because they carry no unique knowledge:
+These topics stay within the canonical documents above:
 
 - Product Identity
 - Shared DNA
@@ -92,4 +83,8 @@ The following are not first-class concepts because they carry no unique knowledg
 - Typography
 - Platform Adaptation
 
-They may appear where useful, but they stay embedded in the documents above until one of them needs an independent question, audience, and maintenance surface.
+Give a topic its own document only when it has an independent question, audience, and maintenance need.
+
+## Read Next
+
+- [Contributing](Contributing.md) for applying these ownership rules during a change.

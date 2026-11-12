@@ -26,7 +26,7 @@ This file records settled QA harness decisions; do not reopen them without new c
 
 ## Execution and Pebble integration
 
-- The connection lifecycle is owned by `_connection()` and all connection call sites use its context manager.
+- The connection lifecycle is owned by `PebbleAdapter.create_connection()` and all connection call sites use its context manager.
 - Pebble transport exception suppression is accepted because this harness validates watchface behavior, not Pebble transport reliability.
 - Fixed synthetic waits are accepted because Pebble provides no completion notification for these operations.
 - Screenshot capture is best effort and follows the official Pebble Tool behavior.
@@ -53,3 +53,7 @@ This file records settled QA harness decisions; do not reopen them without new c
 - Compiler logs stream directly into `iter_compile_commands()` rather than being materialized as a list.
 - Dependency-free inspection imports must not require Pebble Tool initialization.
 - Small readability cleanups are accepted when they remove redundant syntax or dead scaffolding without changing behavior.
+
+## Read Next
+
+- [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) for the current functions and handoffs that implement these decisions.

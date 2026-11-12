@@ -1,10 +1,14 @@
 # Documentation Contracts
 
-This document defines each document's purpose, sub-concepts, and navigation contract.
+This document defines each document's purpose, scope, and navigation contract. Use it when changing a document or adding one to the set.
+
+## Adjacent
+
+- [DocumentationOntology](DocumentationOntology.md) maps questions to canonical documents and shows reading paths.
 
 ## Documentation Details and Connections
 
-### 1. Watchface_Readme
+### 1. README
 
 **Purpose:** Introduces _At A Glance_ to a new user. It provides the shortest path to screenshots, features, installation, and source build.
 
@@ -14,15 +18,15 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 ### 2. DocumentationOntology
 
-**Purpose:** Defines the canonical home for each knowledge domain. It keeps the corpus connected through ownership, document class, and navigation rules.
+**Purpose:** Maps reader questions to canonical documents and shows the primary reading paths.
 
 **Sub-concepts:** Documentation invariants; canonical knowledge domains; relationship graph.
 
-**Connections:** [DocumentationOntology](DocumentationOntology.md) owns canonical-domain classification and the relationship graph. This document owns each document's navigation contract.
+**Connections:** Adjacent: [DocumentationContracts](DocumentationContracts.md). Read next: [Contributing](Contributing.md).
 
 ### 3. DocumentationContracts (this)
 
-**Purpose:** Defines the purpose, sub-concepts, and navigation contract for every document. It gives contributors the durable procedure for adding a document without weakening the documentation system.
+**Purpose:** Defines document scope and navigation, and the procedure for adding or changing a canonical document.
 
 **Sub-concepts:** Document purpose; concept boundaries; canonical ownership; adjacent documents; read-next documents; document-addition procedure; contract rules.
 
@@ -48,7 +52,7 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Purpose:** Defines the visual rules used to satisfy the product invariants. It assigns responsibilities to channels and establishes recognition, composition, glyph, stroke, color, display-mode, and out-of-range rules.
 
-**Sub-concepts:** Visual channels; immediate identifiability; surface composition; glyph and icon selection; icon recognizability; silhouette; climate glyphs; stroke and simplification; stable footprint; color as state support; display modes; palettes; typography; progress bars; unavailable states; visual validation.
+**Sub-concepts:** Visual channels; immediate identifiability; surface composition; glyph and icon selection; icon recognizability; silhouette; climate glyphs; stroke and simplification; stable footprint; color as state support; display modes; palettes; progress tracks; unavailable states; visual validation.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md). Read next: [UserInterface](UserInterface.md).
 
@@ -56,15 +60,15 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Purpose:** Records the current visual realization of the watch face. It provides the evidence layer for stack order, geometry, typography, palettes, icons, glyphs, and settings presentation.
 
-**Sub-concepts:** Device screenshots; settings screenshot; visual stack; information placement; typography; color and palettes; progress tracks; icon frames; glyph inventory; weather glyphs; location text; out-of-range slash.
+**Sub-concepts:** Captured screenshots; settings screenshot; visual stack; information placement; typography; color and palettes; progress tracks; icon frames; glyph inventory; weather glyphs; location text; out-of-range slash.
 
-**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
+**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 
 ### 8. RuntimeArchitecture
 
 **Purpose:** Describes the current runtime structure and ownership boundaries. It follows initialization, event, settings, module, palette, transport, capability, and lifecycle flows through the watch face.
 
-**Sub-concepts:** Conceptual layers; initialization flow; runtime event flow; settings persistence; weather-cadence scheduling; prepared surface; architect; stylist; runtime owner; module lifecycle; required strata; module boundaries; steps module; palette resolution; capability guards; AppMessage coverage; lifecycle priorities.
+**Sub-concepts:** Runtime ownership; initialization; event flow; settings side effects; weather-cadence scheduling; app teardown; prepared surface; architect; stylist; module lifecycle; required strata; module boundaries; steps example; palette resolution; capability guards; AppMessage coverage.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Validation](Validation.md).
 
@@ -90,13 +94,13 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Sub-concepts:** GitHub checkout; prerequisites; environment verification; Git hook setup; editor checks; source discipline; glyph development; review discipline; formatters; pre-commit; documentation management; decision-log use.
 
-**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA_Readme](../qa/README.md).
+**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA README](../qa/README.md).
 
 ### 12. BuildandInstall
 
 **Purpose:** Describes build, compile-database, emulator-install, device-install, recovery, and publishing flows. It keeps build-stage ownership and editor tooling separate from product and QA semantics.
 
-**Sub-concepts:** Build goals; build rules; tooling surface; Pebble build; compile database; emulator install; harness install; emulator recovery; phone install; build artifacts; publish PBW; local source map retention.
+**Sub-concepts:** Build entry points; tooling owners; Waf build flow; compile database; emulator install; harness install; emulator recovery; phone install; build artifacts; publish PBW; local source map retention.
 
 **Connections:** Adjacent: [Contributing](Contributing.md), [Validation](Validation.md). Read next: none.
 
@@ -106,9 +110,9 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather and location; display mode; one-shot health; config page; debug builds.
 
-**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA_Readme](../qa/README.md).
+**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA README](../qa/README.md).
 
-### 14. QA_Readme
+### 14. QA README
 
 **Purpose:** Explains how to operate the QA harness and inspect its artifacts. It presents the public command flow, shell/Python boundary, run outputs, and correctness-test command.
 
@@ -122,7 +126,7 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Sub-concepts:** Scenario example; Matrix example; suite example; reusable steps files; plan hierarchy; step construction; scenario construction; Matrix construction; suite construction; file shapes; grammar vocabulary; grammar rules; capabilities; required fields; value ranges; emulator support; unordered field arguments; weather; battery; health; Bluetooth; all; screenshot policy; identity and de-duplication; fixtures.
 
-**Connections:** Adjacent: [QA_Readme](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
+**Connections:** Adjacent: [QA README](../qa/README.md), [Validation](Validation.md). Read next: [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md).
 
 ### 16. QAHarnessImplementationFlow
 
@@ -130,9 +134,9 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 **Sub-concepts:** Implementation guardrails; four runtime phases; parser handoff; shared line iterator; resolver handoff; support matrix; accepted and discarded items; typed step dispatch; executor handoff; finalization handoff; function ownership; Pebble adapter boundary; canonical JSON report; Markdown rendering; inspection and comparison; harness-specific validation gates.
 
-**Connections:** Adjacent: [QA_Readme](../qa/README.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [Validation](Validation.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md).
+**Connections:** Adjacent: [QA README](../qa/README.md), [Settled decisions](../qa/settled-decisions.md), [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md), [Validation](Validation.md). Read next: [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md).
 
-### 17. RAIDLog
+### 17. RAID Log
 
 **Purpose:** Records the durable decisions, active risks, assumptions, and issues that shaped the watch face. It preserves historical reasoning while routing current behavior back to its canonical source and contract document.
 
@@ -144,7 +148,7 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 
 1. State the document's independent question in one sentence.
 2. Assign one canonical purpose and list the sub-concepts it owns.
-3. Classify the document as prescriptive, evidentiary, or implementation.
+3. Choose its document class from [DocumentationOntology](DocumentationOntology.md).
 4. Identify immediate conceptual neighbors under `Adjacent`.
 5. Identify documents that apply or demonstrate its ideas under `Read Next`.
 6. Keep `Adjacent` and `Read Next` mutually exclusive.
@@ -163,3 +167,7 @@ This document defines each document's purpose, sub-concepts, and navigation cont
 - `Adjacent` names immediate conceptual neighbors.
 - `Read Next` names documents that apply or demonstrate the current document's ideas.
 - Navigation links use repository-relative targets and visible document names.
+
+## Read Next
+
+- [Contributing](Contributing.md) for the documentation-change and review workflow.

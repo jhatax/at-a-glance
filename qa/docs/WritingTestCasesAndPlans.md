@@ -1,6 +1,6 @@
 # Writing Test Cases And Plans
 
-This document describes the plan grammar used by the QA harness.
+Use this grammar to write QA scenarios, reusable step files, Matrices, and suites. Validate a plan before executing it.
 
 ## Adjacent
 
@@ -52,7 +52,6 @@ A Matrix is a filename-identified plan that reuses one or more `.steps` files ag
 - Resolver: Reduces those values to supported execution tuples.
 - Steps files: Are parsed in reference order. Each file path is relative to the Matrix file.
 - Expansion: Applies the screenshot policy and expands every parsed step across the supported tuples.
-- `.tuples` files: Are not part of the grammar.
 
 Create a Matrix in this order:
 
@@ -82,7 +81,7 @@ END
 
 A suite is ordered aggregation.
 
-- Suite contents: Members only. Suites have no screenshot policy, emulator list, display list, or step entries.
+- Suite contents: Member references. Each leaf scenario or Matrix owns its screenshot policy, emulators, displays, and steps.
 - Members: Scenarios, Matrices, or nested suites.
 - Resolution: Each member is resolved independently, preserving its own tuples and screenshot policy.
 - Result: Executable steps are merged into the suite's identity-keyed plan collection.
@@ -99,7 +98,7 @@ A suite is ordered aggregation.
 - `STEP` declares one capability and its fields.
 - `INCLUDE SCENARIO`, `INCLUDE MATRIX`, and `INCLUDE SUITE` are legal only in `MEMBERS`.
 - Suites contain only `MEMBERS`; preamble, execute, and other blocks in a suite are ignored.
-- Include cycles are ignored; a previously discovered Suite, Scenario, or Matrix is not added again.
+- Repeated and cyclic include references are recorded as discards; each member is traversed once.
 - A scenario or Matrix must have at least one executable step; a suite must have at least one member.
 
 ## Steps and arguments
@@ -118,23 +117,22 @@ Supported capabilities are `weather`, `battery`, `health`, `location`, `bluetoot
 Field rules:
 
 - Every supported field is required.
-- Unknown fields are rejected.
-- Duplicate fields are rejected.
+- Unknown, missing, or duplicate fields produce parser discards.
 - The parser keeps values as strings.
 - The parser owns grammar checks.
 - The resolver converts values to execution types and discards a step when typed construction rejects them.
 - Specify strings containing spaces with quotes.
 
-The order of `field=value` arguments is not strict. These two steps are equivalent:
+The order of `field=value` arguments is flexible. These two steps are equivalent:
 
 ```text
 STEP battery level=19 charging=0 orientation=0
 STEP battery orientation=0 charging=0 level=19
 ```
 
-Argument names and required-key membership determine the parsed step. The parser and report validation do not require a particular argument order. The resolver reads named fields when it constructs the typed step and computes its identity; no input ordering contract exists.
+Argument names determine the parsed fields. The resolver reads named fields to construct a typed step and compute its identity.
 
-`DISPLAYS` owns display selection for the entire scenario. The resolver uses the support matrix to discard displays unsupported by each requested emulator; display is never a STEP field.
+`DISPLAYS` selects displays for a scenario or Matrix. The resolver discards display/emulator combinations outside the support matrix. Steps inherit display selection from the plan.
 
 ### Weather
 
@@ -170,6 +168,14 @@ STEP location location=<text>
 
 The field is `location`. The location text is sent to the watch through the location AppMessage field.
 
+### Bluetooth
+
+```text
+STEP bluetooth connected=<0|1>
+```
+
+The field is `connected`. Screenshot-enabled steps capture the state before and after the connection change.
+
 ### All
 
 ```text
@@ -181,7 +187,7 @@ STEP all bpm=101 steps=10500 level=90 charging=1 orientation=0 temp=300 code=1 i
 - Supplies weather, health, battery, location, and Bluetooth values in one step.
 - Requires `temp`, `code`, `is_day`, `bpm`, `steps`, `level`, `charging`, `orientation`, `location`, and `connected`.
 - Runs on health-capable emulators: `basalt`, `chalk`, `diorite`, `emery`, `flint`, and `gabbro`.
-- Sends weather, location, health, orientation, and display mode in one AppMessage, sets battery state through the emulator, then changes Bluetooth state.
+- Sets battery state through the emulator, sends weather, location, health, orientation, and display mode in one AppMessage, then changes Bluetooth state.
 
 ## Screenshot policy
 
@@ -190,9 +196,9 @@ Screenshot policy:
 - `SCREENSHOTS yes`: Sets `capture_screenshots` on every expanded step.
 - Expected counts: Weather, battery, health, and location expect one image. Bluetooth and `all` expect two because they capture before and after the connection-state change.
 - `SCREENSHOTS no`: Gives each step an expected count of zero.
-- Policy ownership: Screenshot policy is not a property of a `STEP` or `.steps` file. It is applied at Matrix or scenario expansion time.
+- Policy ownership: The resolver applies the scenario or Matrix policy when expanding steps.
 - Captured counts: Start at zero and increment when execution captures a screenshot.
-- Identity: Expected and captured counts are not identity inputs. The stable `shots` marker is included only when screenshots are required.
+- Identity: The stable `shots` marker records that screenshots are required. Expected and captured counts stay outside the identity.
 
 ## Identity and de-duplication
 
@@ -206,7 +212,7 @@ parsed step
   -> skip equal identities
 ```
 
-Identity includes capability, concrete execution values, emulator, display, and the optional `shots` marker. Scenario names and screenshot counts are not identity inputs.
+Identity includes capability, concrete execution values, emulator, display, and the optional `shots` marker. Equal steps from different scenarios share an identity.
 
 Discard and validation behavior:
 
@@ -247,7 +253,8 @@ Maintained canonical plans under `qa/plans/`:
 - `canary`
 - `qa-smoke`
 - `visual-refresh`
+- `smoke-bolt`
 - `pre-push-gate`
 - `pre-release-gate`
 
-Reusable steps live in `smoke.steps`, `smoke-battery.steps`, `visual-refresh.steps`, `pre-release.steps`, and `release-screenshots.steps`. Focused capability scenarios remain available where they provide targeted coverage.
+Reusable steps live in `smoke.steps`, `smoke-battery.steps`, `visual-refresh.steps`, `pre-release.steps`, and `release-screenshots.steps`. Use `./aag-build-qa.sh --plans` for the current plan list.

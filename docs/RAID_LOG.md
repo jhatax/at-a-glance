@@ -33,13 +33,13 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Platform geometry | Reuse the architect/stylist architecture while giving each target intentional geometry instead of uniformly scaling another device class. | [UserInterface](UserInterface.md) |
 | Lifecycle failure | Keep the established Pebble lifecycle behavior unless fresh evidence reveals a crash, leak, or teardown defect. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Display default | Light mode is the product and Clay default. | [SettingsandConfiguration](SettingsandConfiguration.md) |
-| Health configuration | Keep shared health settings visible while clearly limiting their effect to health-capable targets. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Health configuration | Clay filters health settings by capability; C health paths remain feature-guarded. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Text geometry | Field widths and heights follow role, font, and target geometry; there is no uniform-width invariant. | [UserInterface](UserInterface.md) |
 | Shared bolt | Charging and thunderstorm may reuse a low-level bolt primitive without sharing product semantics. | [VisualVocabulary](VisualVocabulary.md) |
 | Glyph validation | Validate non-trivial glyph work with representative emulators and visual evidence before production use. | [Contributing](Contributing.md) |
 | Tiny snowflakes | Reduce topology in mini frames instead of forcing large-frame detail. | [UserInterface](UserInterface.md) |
 | Palette reference | The consolidated UI palette table follows active module palette code. | [UserInterface](UserInterface.md) |
-| Weather/location absence | Geolocation failure sends no replacement weather or location; there is no fixed-location fallback. | [RuntimeArchitecture](RuntimeArchitecture.md) |
+| Weather/location absence | Failed retrieval clears both fields through one unavailable payload; there is no fixed-location fallback. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Location presentation | Production PKJS limits locations to 15 characters and renders them uppercase; direct AppMessage and QA inputs may retain case. | [UserInterface](UserInterface.md) |
 | Battery presentation | Battery state is rendered as a track rather than percentage text. | [UserInterface](UserInterface.md) |
 | Build access | Direct `pebble build` remains a first-class operator flow; the harness is optional automation. | [BuildandInstall](BuildandInstall.md) |
@@ -53,7 +53,7 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Dirty versus refresh | `layer_mark_dirty()` schedules a layer redraw; application refresh masks separately control state reads, frame application, visibility, and alerts. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Battery-orientation state | Settings own the preference, prepared strata carry orientation, and the battery module retains its drawing state. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
 | Vertical battery geometry | Rectangular targets use nested rectangles; round targets use nested chords. Both occupy 72 percent and drain downward. | [UserInterface](UserInterface.md) |
-| Battery-orientation setting | Clay key `10013` selects horizontal or vertical battery presentation . | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Battery-orientation setting | Clay key `10013` selects horizontal or vertical battery presentation. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Charging indication | The procedural bolt is the required charging indicator; color remains supporting information. | [UserInterface](UserInterface.md) |
 | Editor include policy | `Completion.HeaderInsertion: Never` leaves include changes under developer control. | [`.clangd`](../.clangd) |
 

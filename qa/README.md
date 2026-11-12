@@ -1,6 +1,6 @@
 # QA Harness
 
-The QA harness validates _At A Glance_ with named scenarios, Matrices, and suites. Run `./aag-build-qa.sh` from the repository root.
+Use the QA harness to run named scenarios, Matrices, and suites against Pebble emulators and inspect their results. Run `./aag-build-qa.sh` from the repository root.
 
 ## Plan execution flow
 
@@ -34,7 +34,7 @@ aag-build-qa.sh
             -> qareportrenderer.py
 ```
 
-The shell-to-Python handoff is one-way. Structured plan and run state stays in Python after the handoff; it is not serialized back into zsh.
+After handoff, Python owns plan state, execution, and reports. Shell receives the process status. [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) maps the functions and failure paths.
 
 ## Commands
 
@@ -53,13 +53,7 @@ The shell-to-Python handoff is one-way. Structured plan and run state stays in P
 
 Use [WritingTestCasesAndPlans](docs/WritingTestCasesAndPlans.md) to author plans. Use [Validation](../docs/Validation.md) to choose contributor validation paths.
 
-## Boundary
-
-Boundary contract:
-
-- Shell: Prepare the environment and hand one validated command to Python.
-- Python: Own the selected QA operation from plan loading through execution or inspection and report output.
-- Implementation details: See [QAHarnessImplementationFlow](docs/QAHarnessImplementationFlow.md) for ownership, typed handoffs, and failure behavior.
+Plan validation prints executable steps, then discarded items. Discards trigger an execution prompt even with `--force`.
 
 ## Run artifacts
 
@@ -67,7 +61,6 @@ Each run is stored under `qa/qa-runs/<run-id>/`:
 
 - `report.json` is the canonical report.
 - `summary.md` is rendered from `report.json` and shows each step's pass/fail result.
-- Plan validation prints executable steps first, followed by discarded items. Discards require operator confirmation before execution.
 - `commands.log` contains operator-visible command and execution records.
 - `screenshots/` contains captured screenshots when the selected plan requests them.
 
@@ -75,18 +68,9 @@ Screenshot-enabled weather, battery, health, and location steps expect one image
 
 Comparisons are stored under `qa/comparisons/`. When generated, `comparison.json` and `comparison.md` are derived from the selected runs’ canonical `report.json` files, with each step's pass/fail result shown per run.
 
-The only run identity invariant is that `run_id` equals the output folder name.
-
 ## Build and compile database
 
-Build behavior:
-
-- Commands: Use [BuildandInstall](../docs/BuildandInstall.md).
-- Environment: The harness routes build requests through the Pebble Tool environment.
-- Compile database: Verbose builds may generate an optional `compile_commands.json`.
-- Build result: Failure to produce compile-database entries does not change the build result.
-
-Verbose builds write complete output and any Python traceback to `build.log`. Console and QA-log failures show only extracted compiler diagnostics. Non-verbose builds do not create `build.log` and use the normal harness failure path.
+The harness builds through Pebble Tool. Verbose builds may also generate `compile_commands.json`; missing compiler entries do not change the build result. [BuildandInstall](../docs/BuildandInstall.md) owns build commands, logs, diagnostics, and editor setup.
 
 ## Tests
 

@@ -1,6 +1,6 @@
 # Validation
 
-This document is the contributor-facing entry point for validating _At A Glance_. It explains what validation is for, which validation path to use, and what evidence a change should produce.
+Use this document to choose a validation path for a change and identify the evidence to inspect before committing or releasing it.
 
 ## Adjacent
 
@@ -10,12 +10,7 @@ This document is the contributor-facing entry point for validating _At A Glance_
 
 ## Validation Goals
 
-The validation layer helps you confirm that watch face changes continue to satisfy architecture and visual invariants. Core capabilities:
-
-1. exercise runtime paths affected by a change
-2. capture evidence for inspection
-3. make release checks repeatable
-4. keep visual signoff explicit and human-owned
+Exercise the changed path, capture repeatable evidence, and inspect the result. A build, packet send, or passed harness step confirms only what that check observes. The operator owns visual and release signoff.
 
 ## Validation Invariants
 
@@ -59,7 +54,7 @@ The tests use Node's built-in test runner and one shared harness in `tests/js/ha
 
 ## Operator Evidence Review Expectations
 
-The operator should validate the following before committing a change:
+Report the following with a change:
 
 - what changed
 - which validation path ran
@@ -83,7 +78,7 @@ Before release, validation should cover:
 
 `pre-release-gate` is the canonical pre-release QA plan for representative runtime states. The operator also checks the settings page, restart behavior, and phone-driven weather/location flow.
 
-```
+```sh
 ./aag-build-qa.sh --exec pre-release-gate
 ```
 
@@ -99,7 +94,7 @@ Out-of-the-box targets:
 - `pre-push-gate`: Suite aggregation of the `visual-refresh` Matrix and `smoke-bluetooth` scenario.
 - `pre-release-gate`: Matrix-driven representative pre-release validation across every supported emulator/display tuple, with screenshot evidence and manual signoff.
 
-Use the `aag-build-qa.sh` entry point to execute defined qa plans, review and compare past qa runs, and validate qa plans for correctness.
+Use `aag-build-qa.sh` to validate and execute plans, then inspect or compare results.
 
 ```sh
 ./aag-build-qa.sh --exec canary
@@ -123,23 +118,7 @@ Use `--dry-run` with a qa plan to inspect the resolved execution plan without cr
 
 Use `--force` only after reviewing the resolved execution plan. If validation discards any plan items, the harness requires confirmation and ignores `--force`.
 
-QA runs write evidence under: `qa/qa-runs/<run-id>/`
-
-Typical evidence includes:
-
-- `summary.md`
-- `report.json`
-- `commands.log`
-- `screenshots/`, when screenshots are enabled
-
-Bluetooth and `all` steps request two screenshots: one before changing the connection state and one after.
-
-To view prior qa plan execution results:
-
-```sh
-./aag-build-qa.sh --runs
-./aag-build-qa.sh --view <run-id>
-```
+Runs write evidence under `qa/qa-runs/<run-id>/`. Inspect the canonical `report.json`, derived `summary.md`, `commands.log`, and requested screenshots. Bluetooth and `all` steps capture before and after the connection change. [QA README](../qa/README.md) owns artifact and inspection details.
 
 ### 2. Using the `pebble` emulator
 
@@ -165,7 +144,7 @@ Confirm horizontal default on rectangular displays, vertical default on round di
 
 #### Weather And Display Mode
 
-Weather and display-mode validation use AppMessage. The operational command examples below intentionally use numeric keys because they exercise the same watch ingress used by runtime validation.
+These commands send test data directly to the watch using numeric message keys:
 
 ```sh
 pebble send-app-message --emulator emery --int 10002=700 10003=95 10004=0
@@ -180,6 +159,8 @@ Use [SettingsandConfiguration](SettingsandConfiguration.md) for the message-key 
 
 Key `10005` changes the watch's persisted cadence and starts a refresh when the accepted value differs. Change the interval through Clay to exercise the full settings path, then restart the watchface to check the saved cadence.
 
+Check refresh behavior with the phone app disconnected: C must skip the outbox and use the existing retry schedule. Reconnect during retries and confirm the next attempt sends the request. If all six attempts occur while disconnected, confirm another attempt occurs after the selected refresh interval.
+
 #### Weather And Location State
 
 ```sh
@@ -190,7 +171,7 @@ pebble send-app-message --emulator emery --int 10002=265
 pebble send-app-message --emulator emery --int 10002=0 10003=-1 10004=-1 --string '10011='
 ```
 
-Confirm that palette and unit changes preserve received weather and location. The combined unavailable payload must show unavailable weather and `---` for location. A partial weather packet must invalidate prior weather. Manual messages exercise C ingress; use the phone companion to check combined request success, failure, timeout, and superseded-location handling.
+Confirm that palette and unit changes preserve received weather and location. The combined unavailable payload must show unavailable weather and `---` for location. A partial weather packet must invalidate prior weather. Manual messages exercise C ingress; use the phone companion to check combined request success, failure, timeout, and late-response handling.
 
 #### One-Shot Health
 
@@ -226,4 +207,4 @@ Use this path when layer bounds, glyph bounds, or debug-only runtime evidence wo
 
 ## Read Next
 
-- [QA_Readme](../qa/README.md) for QA commands, plans, and artifacts.
+- [QA README](../qa/README.md) for QA commands, plans, and artifacts.

@@ -1,6 +1,6 @@
 # Watchface Implementation Flow
 
-This document maps watch face implementation files, shared headers, and their relationships. Live source defines current behavior. Use the product, architecture, and build documents for their contracts.
+Use this map to find the source files and headers that implement the runtime responsibilities. [RuntimeArchitecture](RuntimeArchitecture.md) owns behavior and lifecycle; this document maps those contracts to files.
 
 ## Adjacent
 
@@ -14,13 +14,7 @@ This document maps watch face implementation files, shared headers, and their re
 
 ## Feature and Documentation Organization
 
-Three major folders:
-
-1. ./src: Watch face features, modules, surfaces, and adapters
-2. ./resources: Fonts, icons, and images
-3. ./docs: Watch face documentation
-
-All paths in sub-sections are relative to repository home.
+Paths below are relative to the repository root. `src/` contains runtime code, `resources/` contains fonts and images, and `docs/` contains the watchface documentation.
 
 ### Feature Source
 
@@ -72,6 +66,7 @@ src/c/ataglance.c ────────────────────�
 - settings load                                    - update masks
 - service subscriptions                            - runtime-visible transport keys
 - AppMessage callback registration
+- refresh/retry timer lifetime
 - WatchfaceEventData dispatch
         |
         +-> ataglance_comms_handler.c
@@ -94,7 +89,7 @@ watchface.c ──────────────────────�
 - layout/style delegation                          - substrata · strata
 - module manager                                   - WatchfaceSurface vocabulary
 - root-owned Bluetooth and horizontal-rule layers
-- event and visual dispatcher                      - large-display vocabulary
+- visual update dispatcher                        - large-display vocabulary
 - create/destroy order
 - repaint/refresh routing
 - battery-orientation relayout dispatch
@@ -173,7 +168,7 @@ ataglance.c builds service events; the private message adapter parses AppMessage
 
 ## Debug Source Placement
 
-Setting `ATAGLANCE_DEBUG` to 1/0 and flipping/unflipping the comment in `wscript` enables and disables `DEBUG` mode for the watch face:
+The optional `ATAGLANCE_DEBUG=1` definition in `wscript` enables watchface diagnostics. Comment it out for normal builds.
 
 - `src/modules/watchface_debug.h` **owns debug-gate normalization only**, with `wscript` as the build-time enable point.
 - `wscript` owns the optional build-time define.

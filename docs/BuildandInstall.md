@@ -1,16 +1,6 @@
 # Build and Install
 
-This document describes _At A Glance_ build, installation, and editor tooling. Live scripts define command behavior.
-
-Use this document to understand:
-
-- build goals
-- canonical build flow
-- compile database generation
-- install flow
-- publishing
-- editor-tooling contract
-- build-stage ownership
+Use this document to build _At A Glance_, install it on an emulator or watch, generate editor compiler data, and prepare the upload artifact.
 
 ## Adjacent
 
@@ -19,34 +9,19 @@ Use this document to understand:
 
 ## Build Automation
 
-Build tooling exists to:
-
-1. provide one public entrypoint for build, installation, and recovery operations
-1. build the watch face deterministically
-1. facilitate the developer experience via `compile_commands.json`
-1. install the watch face on emulators
-1. install the watch face on a Pebble through Developer Connection
-1. stay narrow enough that the tooling layer does not become a second project
-
-The watch face is the product. The build layer is supporting infrastructure. It must remain direct, auditable, and sustainable.
-
-### Core Rules
-
-- Keep build tooling separate from watch face runtime logic.
-- Do not redefine product semantics that belong in product or UI docs.
-- Keep build, compile database, and install responsibilities explicit.
+`pebble build` builds the watchface directly. `./aag-build-qa.sh` provides build, installation, and recovery operations, with optional verbose output and compile-database generation. Both use the Pebble SDK toolchain.
 
 ## Current Tooling Surface
 
-The current build layer is made up of:
+Build responsibilities:
 
-- the Pebble Tool SDK and local SDK toolchain;
-- `aag-build-qa.sh` for the public build and install entrypoint;
-- `tools/harness_py/ataglanceharness.py` for Python build and emulator-install dispatch;
-- `tools/harness_py/pebbleadapter.py` for Pebble Tool SDK/Waf builds and libpebble2 emulator operations;
-- `build.log` and `compile_commands.json` as optional verbose-build artifacts.
+- Pebble Tool and the SDK: Compiler, Waf, and platform tooling.
+- `aag-build-qa.sh`: Public build, install, and recovery commands.
+- `tools/harness_py/ataglanceharness.py`: Python command dispatch.
+- `tools/harness_py/pebbleadapter.py`: Waf builds and libpebble2 emulator operations.
+- `build.log` and `compile_commands.json`: Optional verbose-build artifacts.
 
-Use [QA README](../qa/README.md) for operating the QA harness and [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) for its implementation details. This document owns the build, installation, recovery, and compile-database contract.
+Use [QA README](../qa/README.md) to run plans and inspect results. [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) maps the QA execution code.
 
 ## Current Build Flow
 
@@ -106,16 +81,18 @@ Complete [release validation](Validation.md#release-validation), then upload `bu
 
 Supported emulators: emery | flint | chalk | gabbro | aplite | diorite | basalt
 
+The examples use `emery`; substitute the target you want to install or recover.
+
 ```sh
 pebble build
-./aag-build-qa.sh --install <target>
+./aag-build-qa.sh --install emery
 ```
 
 Automation harness:
 
 ```sh
 ./aag-build-qa.sh --build
-./aag-build-qa.sh --install <target>
+./aag-build-qa.sh --install emery
 ```
 
 ### Emulator Recovery
@@ -130,7 +107,7 @@ pebble wipe
 Automation harness:
 
 ```sh
-./aag-build-qa.sh --kill <target>
+./aag-build-qa.sh --kill emery
 pebble wipe
 ```
 
@@ -140,18 +117,18 @@ Alternatively, to start afresh:
 ./aag-build-qa.sh --nuclear
 ```
 
-### Watch / device Install
+### Watch Install
 
-Watch install uses a phone's developer connection capability to sideload the watch face.
+Replace `YOUR_PHONE_IP` with the Developer Connection Server IP shown in the Pebble mobile app.
 
 ```sh
 pebble build
-pebble install --phone <Developer Connection Server IP>
+pebble install --phone YOUR_PHONE_IP
 ```
 
 Automation harness:
 
 ```sh
 ./aag-build-qa.sh -bc
-./aag-build-qa.sh -p <Developer Connection Server IP>
+./aag-build-qa.sh -p YOUR_PHONE_IP
 ```
