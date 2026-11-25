@@ -37,7 +37,6 @@ void attempt_inbox_initialization(void* context);
 static void respond_to_sync(void* context);
 static void try_refresh(void* context);
 static void schedule_retry(void* context);
-static void repeat_refresh(void* context);
 
 // AppMessage initialization.
 uint32_t app_message_inbox_size() {
