@@ -22,6 +22,7 @@ test('ready waits for the SYNC acknowledgment before starting the saved interval
 
   assert.deepEqual(harness.messages, [
     { SYNC: 1 },
+    { PING: 1 },
     { TEMPERATURE: 200, WEATHER_CONDITION: 0, IS_DAY: 1, MAYBE_CURRENT_LOCATION: 'CITY A' },
   ]);
   assert.equal(harness.timers.size, 1);
@@ -45,7 +46,7 @@ for (const [label, settings] of [
     await settlePromises();
     await harness.completeRefresh();
 
-    assert.equal(harness.messages.length, 2);
+    assert.equal(harness.messages.length, 3);
     assert.equal(harness.timers.size, 1);
     assert.equal(harness.timers.values().next().value.delay, 15 * 60 * 1000);
   });
@@ -93,7 +94,7 @@ test('a repeated SYNC acknowledgment resends the cached pair through the climate
     IS_DAY: 1,
     MAYBE_CURRENT_LOCATION: 'CITY A',
   };
-  assert.deepEqual(harness.messages, [{ SYNC: 1 }, expected, expected]);
+  assert.deepEqual(harness.messages, [{ SYNC: 1 }, { PING: 1 }, expected, expected]);
   assert.equal(harness.positions.length, 0);
   assert.equal(harness.requests.length, 2);
   assert.equal(harness.timers.size, 1);
@@ -132,7 +133,8 @@ test('configuration changes replace the old timer and retain the interval on rep
   assert.equal(harness.timers.has(oldTimerId), false);
   assert.equal(harness.timers.size, 0);
   assert.equal(harness.positions.length, 1);
-  assert.equal(harness.messages.at(-1)[harness.messageKeys.WEATHER_UPDATE_MINUTES], 30);
+  assert.equal(harness.messages.at(-2)[harness.messageKeys.WEATHER_UPDATE_MINUTES], 30);
+  assert.deepEqual(harness.messages.at(-1), { PING: 1 });
   await harness.completeRefresh(originalLocation, null);
   assert.equal(harness.timers.size, 1);
   assert.equal(harness.timers.values().next().value.delay, 30 * 60 * 1000);
@@ -179,7 +181,7 @@ test('closing configuration without saving leaves the refresh timer unchanged', 
   await settlePromises();
 
   assert.equal(harness.positions.length, 0);
-  assert.equal(harness.messages.length, 1);
+  assert.equal(harness.messages.length, 2);
   assert.equal(harness.timers.size, 1);
   assert.equal(harness.timers.get(timer[0]), timer[1]);
 });

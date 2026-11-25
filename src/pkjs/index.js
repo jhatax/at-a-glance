@@ -22,7 +22,7 @@ function sendPebbleMessage(payload, success, failure) {
 var updateUser = createAppMessageQueue(sendPebbleMessage);
 var updateClimateLocation = createAppMessageQueue(sendPebbleMessage);
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
-var kickoffUpdates = createRefreshController(updateClimateLocation);
+var kickoffUpdates = createRefreshController(updateClimateLocation, updateUser);
 var health_capable = supportsHealth();
 
 function supportsHealth() {
@@ -78,8 +78,8 @@ Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
 });
 
-Pebble.addEventListener('appmessage', (e) => {
-  if (e && e.payload && e.payload.SYNC === 1) {
+Pebble.addEventListener('appmessage', (env) => {
+  if (env && env.payload && env.payload.SYNC === 1) {
     // Synchronization completed; start refresh
     var savedSettings = null;
     var minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
@@ -88,22 +88,22 @@ Pebble.addEventListener('appmessage', (e) => {
       minutes = validateWeatherUpdateMinutes(
         savedSettings ? savedSettings.WEATHER_UPDATE_MINUTES : undefined
       );
-    } catch (e) {
-      console.log('Parsing Clay Settings returned error: ' + e.message);
+    } catch (err) {
+      console.log('Parsing Clay Settings returned error: ' + err.message);
     }
     kickoffUpdates(minutes);
   }
 });
 
-Pebble.addEventListener('webviewclosed', (e) => {
-  if (!e || !e.response) {
+Pebble.addEventListener('webviewclosed', (env) => {
+  if (!env || !env.response) {
     return;
   }
 
   // Retrieves settings as a dictionary with message_keys
   // Ready to send via Pebble's app message to the watch face
   // so, messageKeys.KEY_NAME
-  var dict = clay.getSettings(e.response);
+  var dict = clay.getSettings(env.response);
 
   if (health_capable) {
     dict[messageKeys.STEPS_GOAL] = calculateStepsGoal(dict);
@@ -117,19 +117,9 @@ Pebble.addEventListener('webviewclosed', (e) => {
   dict[messageKeys.WEATHER_UPDATE_MINUTES] = validateWeatherUpdateMinutes(
     dict[messageKeys.WEATHER_UPDATE_MINUTES]
   );
-  updateUser(
-    dict,
-    () => console.log('Sent config data to Pebble'),
-    (e) => console.log('Config send failed with error: (' + e.code + '): ' + e.message)
-  );
+  updateUser(dict);
   // Update interval might have changed; so kickoff updates
   kickoffUpdates(dict[messageKeys.WEATHER_UPDATE_MINUTES]);
 });
 
-Pebble.addEventListener('ready', function () {
-  try {
-    updateUser({ SYNC: 1 });
-  } catch (e) {
-    console.log('Ready Event Handler failed due to error: ' + e.message);
-  }
-});
+Pebble.addEventListener('ready', () => updateUser({ SYNC: 1 }));

@@ -17,7 +17,7 @@ function settlePromises() {
   return new Promise(setImmediate);
 }
 
-function createHarness({ savedSettings = null } = {}) {
+function createHarness({ savedSettings = null, autoAcknowledge = true } = {}) {
   const listeners = new Map();
   const storage = new Map();
   if (savedSettings !== null) {
@@ -26,6 +26,7 @@ function createHarness({ savedSettings = null } = {}) {
   const positions = [];
   const requests = [];
   const messages = [];
+  const pendingSends = [];
   const timers = new Map();
   let nextTimerId = 1;
 
@@ -57,10 +58,12 @@ function createHarness({ savedSettings = null } = {}) {
         assert.equal(listeners.has(name), false, `Duplicate ${name} listener`);
         listeners.set(name, handler);
       },
-      sendAppMessage(payload, success) {
+      sendAppMessage(payload, success, failure) {
         messages.push({ ...payload });
-        if (success) {
+        if (autoAcknowledge) {
           success();
+        } else {
+          pendingSends.push({ success, failure });
         }
       },
     },
@@ -173,13 +176,29 @@ function createHarness({ savedSettings = null } = {}) {
     listeners.get(name)(event);
   }
 
-  async function advanceRefresh(expectedMinutes = 15) {
-    assert.equal(timers.size, 1, 'Expected exactly one scheduled refresh');
-    const [id, timer] = timers.entries().next().value;
-    assert.equal(timer.delay, expectedMinutes * 60 * 1000);
+  async function settleMessage(succeeded = true) {
+    const send = pendingSends.shift();
+    assert.ok(send, 'Expected a pending AppMessage');
+    if (succeeded) {
+      send.success();
+    } else {
+      send.failure({ code: 1, message: 'Simulated delivery failure' });
+    }
+    await settlePromises();
+  }
+
+  async function fireTimer(delay) {
+    const entry = [...timers].find(([, timer]) => timer.delay === delay);
+    assert.ok(entry, `Expected a timer for ${delay} ms`);
+    const [id, timer] = entry;
     timers.delete(id); // A real timeout is consumed before its callback runs.
     timer.callback();
     await settlePromises();
+  }
+
+  async function advanceRefresh(expectedMinutes = 15) {
+    assert.equal(timers.size, 1, 'Expected exactly one scheduled refresh');
+    await fireTimer(expectedMinutes * 60 * 1000);
     assert.equal(timers.size, 0, 'Do not schedule the next refresh before this one finishes');
     assert.equal(positions.length, 1, 'Expected the timer to start GPS');
   }
@@ -197,6 +216,14 @@ function createHarness({ savedSettings = null } = {}) {
     positions,
     requests,
     messages,
+    get climateMessages() {
+      return messages.filter(
+        (payload) => 'TEMPERATURE' in payload || 'MAYBE_CURRENT_LOCATION' in payload
+      );
+    },
+    pendingSends,
+    settleMessage,
+    fireTimer,
     timers,
     position,
     request,

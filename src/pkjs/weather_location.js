@@ -8,13 +8,14 @@ const location_request_options = {
   enableHighAccuracy: false,
 };
 
-function createRefreshController(updateClimateLocation) {
+function createRefreshController(updateClimateLocation, updateUser) {
   var waitInterval = -1;
   var waitTimeoutHandle = null;
   var lastKnownLocation = null;
   var lastKnownLookup = null;
   var lastKnownClimate = null;
   var requestChain = new ClimateLocationRequestQueue();
+  var sendUserMsg = updateUser;
 
   if (!updateClimateLocation || typeof updateClimateLocation !== 'function') {
     throw new Error('Refresh controller requires weather and location sender to watchface');
@@ -30,17 +31,6 @@ function createRefreshController(updateClimateLocation) {
     }
 
     return lastKnownLocation && latDiff < pos_tolerance && lonDiff < pos_tolerance;
-  }
-
-  function sendMessage(payload) {
-    if (!payload) {
-      return;
-    }
-    updateClimateLocation(payload, null, function (e) {
-      console.log(
-        'AtAGlance: Climate, Location Payload send failed: (' + e.code + '): ' + e.message
-      );
-    });
   }
 
   function createXHRForPKJS(type, url, reject) {
@@ -66,7 +56,7 @@ function createRefreshController(updateClimateLocation) {
   }
 
   function reverseGPS(location) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       var url =
         'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' +
         location.latitude +
@@ -120,7 +110,7 @@ function createRefreshController(updateClimateLocation) {
   }
 
   function fetchClimate(location) {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       var url =
         'https://api.open-meteo.com/v1/forecast?latitude=' +
         location.latitude +
@@ -165,7 +155,7 @@ function createRefreshController(updateClimateLocation) {
     lastKnownLocation = null;
     lastKnownLookup = null;
     lastKnownClimate = null;
-    sendMessage({
+    updateClimateLocation({
       TEMPERATURE: 0,
       WEATHER_CONDITION: -1,
       IS_DAY: 0,
@@ -175,7 +165,7 @@ function createRefreshController(updateClimateLocation) {
 
   function oneShotCachedClimateAndLocation() {
     if (lastKnownClimate && lastKnownLookup) {
-      sendMessage({
+      updateClimateLocation({
         TEMPERATURE: lastKnownClimate.TEMPERATURE,
         WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
         IS_DAY: lastKnownClimate.IS_DAY,
@@ -184,25 +174,58 @@ function createRefreshController(updateClimateLocation) {
     }
   }
 
+  function areEqualObjects(objA, objB) {
+    if (!objA || !objB || typeof objA !== 'object' || typeof objB !== 'object') {
+      return false;
+    }
+    if (objA === objB) return true;
+    return (
+      JSON.stringify(objA, Object.keys(objA).sort()) ===
+      JSON.stringify(objB, Object.keys(objB).sort())
+    );
+  }
+
   function refreshClimateAndLocation(location) {
-    return Promise.all([fetchClimate(location), reverseGPS(location)]).then(function (results) {
-      lastKnownClimate = results[0];
-      lastKnownLookup = results[1];
-      if (!lastKnownClimate || !lastKnownLookup) {
+    return Promise.all([fetchClimate(location), reverseGPS(location)]).then((results) => {
+      var cli = results[0];
+      var loc = results[1];
+      if (!cli || !loc) {
         clearClimateAndLocation();
         return;
       }
-      sendMessage({
-        TEMPERATURE: lastKnownClimate.TEMPERATURE,
-        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
-        IS_DAY: lastKnownClimate.IS_DAY,
-        MAYBE_CURRENT_LOCATION: lastKnownLookup,
-      });
+      var payload = {};
+      var toSend = false;
+      if (lastKnownLookup !== loc) {
+        payload.MAYBE_CURRENT_LOCATION = loc;
+        toSend = true;
+      }
+
+      if (!areEqualObjects(cli, lastKnownClimate)) {
+        Object.keys(cli).forEach((key) => (payload[key] = cli[key]));
+        toSend = true;
+      }
+      if (toSend) {
+        // Use promise adoption to chain this promise's execution to the request for
+        // location, climate, and lookup. This ensures no out of order execution.
+        return new Promise((resolve) =>
+          updateClimateLocation(
+            payload,
+            () => {
+              lastKnownClimate = cli;
+              lastKnownLookup = loc;
+              resolve();
+            },
+            () => {
+              resolve();
+            }
+          )
+        );
+      }
     });
   }
 
   function requestLocation() {
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       if (typeof navigator === 'undefined' || !navigator.geolocation) {
         reject("Couldn't retrieve geolocation");
         return;
@@ -238,18 +261,34 @@ function createRefreshController(updateClimateLocation) {
     );
   }
 
-  function fetchWaitRepeat() {
+  function scheduleNextRefresh() {
     if (waitTimeoutHandle) {
       clearTimeout(waitTimeoutHandle);
       waitTimeoutHandle = null;
     }
-    fetch().then(() => {
-      if (waitTimeoutHandle) {
-        clearTimeout(waitTimeoutHandle);
-        waitTimeoutHandle = null;
-      }
-      waitTimeoutHandle = setTimeout(fetchWaitRepeat, waitInterval * 60 * 1000);
-    });
+    waitTimeoutHandle = setTimeout(fetchWaitRepeat, waitInterval * 60 * 1000);
+  }
+
+  function fetchUpdate() {
+    if (waitTimeoutHandle) {
+      clearTimeout(waitTimeoutHandle);
+      waitTimeoutHandle = null;
+    }
+    fetch().then(scheduleNextRefresh);
+  }
+
+  function fetchWaitRepeat() {
+    // Check if BT connection is alive
+    if (sendUserMsg && typeof sendUserMsg === 'function') {
+      // Set max-attempts to 3
+      // If the ping fails, you still want to schedule the next refresh
+      sendUserMsg({ PING: 1 }, fetchUpdate, scheduleNextRefresh, 3);
+    } else {
+      // Possible reasons we get here:
+      // 1. First time fetching an update
+      // 2. No sendUserMsg was provided during creation
+      fetchUpdate();
+    }
   }
 
   function kickoffUpdates(minutes) {
@@ -285,10 +324,7 @@ class ClimateLocationRequestQueue {
       .then((location) => {
         return refresh(location);
       })
-      .catch((error) => {
-        console.log('Failed to gather location, climate info.\n' + error);
-        clear();
-      });
+      .catch(clear);
     return this.chain;
   }
 }

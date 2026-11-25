@@ -1,5 +1,5 @@
 const APP_MESSAGE_RETRY_DELAY_MS = 1 * 1000;
-const APP_MESSAGE_MAX_RETRIES = 5;
+const APP_MESSAGE_MAX_ATTEMPTS = 6;
 
 function createAppMessageQueue(transport) {
   var queue = [];
@@ -13,7 +13,7 @@ function createAppMessageQueue(transport) {
 
     var message = queue[0];
     inFlight = true;
-
+    ++message.attempts;
     transport(
       message.payload,
       function () {
@@ -29,15 +29,13 @@ function createAppMessageQueue(transport) {
       },
       function (error) {
         inFlight = false;
-        if (message.retries < APP_MESSAGE_MAX_RETRIES) {
-          ++message.retries;
+        if (message.attempts < message.maxAttempts) {
           retryTimer = setTimeout(function () {
             retryTimer = null;
             pump();
-          }, APP_MESSAGE_RETRY_DELAY_MS * message.retries); // Backoff to allow system to stabilize
+          }, APP_MESSAGE_RETRY_DELAY_MS * message.attempts); // Backoff to allow system to stabilize
           return;
         }
-
         queue.shift();
         try {
           if (message.failure) {
@@ -50,12 +48,13 @@ function createAppMessageQueue(transport) {
     );
   }
 
-  return function (payload, success, failure) {
+  return (payload, success, failure, maxAttempts) => {
     queue.push({
       payload: payload,
       success: success,
       failure: failure,
-      retries: 0,
+      attempts: 0,
+      maxAttempts: maxAttempts ? maxAttempts : APP_MESSAGE_MAX_ATTEMPTS,
     });
     pump();
   };

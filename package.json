@@ -60,6 +60,7 @@
       }
     ],
     "messageKeys": {
+      "PING": 10000,
       "TEMP_UNIT": 10001,
       "TEMPERATURE": 10002,
       "WEATHER_CONDITION": 10003,
