@@ -5,7 +5,7 @@ const { createContext, runInContext } = require('node:vm');
 
 const pkjsPath = join(__dirname, '../../src/pkjs');
 const manifest = require('../../package.json').pebble;
-const messageKeys = Object.fromEntries(manifest.messageKeys.map((key, i) => [key, 10000 + i]));
+const messageKeys = manifest.messageKeys;
 const originalLocation = { latitude: 37, longitude: -122 };
 const movedLocation = { latitude: 37.05, longitude: -122 };
 const weatherResponse = {
