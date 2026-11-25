@@ -23,6 +23,22 @@ var updateUser = createAppMessageQueue(sendPebbleMessage);
 var updateClimateLocation = createAppMessageQueue(sendPebbleMessage);
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 var kickoffUpdates = createRefreshController(updateClimateLocation);
+var health_capable = supportsHealth();
+
+function supportsHealth() {
+  var watch = Pebble.getActiveWatchInfo ? Pebble.getActiveWatchInfo() : null;
+
+  if (!watch || !watch.firmware) {
+    return false;
+  }
+
+  var firmware = watch.firmware;
+
+  return (
+    watch.platform !== 'aplite' &&
+    (firmware.major > 3 || (firmware.major === 3 && firmware.minor >= 8))
+  );
+}
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -89,20 +105,22 @@ Pebble.addEventListener('webviewclosed', (e) => {
   // so, messageKeys.KEY_NAME
   var dict = clay.getSettings(e.response);
 
-  dict[messageKeys.STEPS_GOAL] = calculateStepsGoal(dict);
+  if (health_capable) {
+    dict[messageKeys.STEPS_GOAL] = calculateStepsGoal(dict);
+  } else {
+    delete dict[messageKeys.STEPS_GOAL];
+    delete dict[messageKeys.HR_SAMPLE_MINUTES];
+  }
+  // Always delete these keys
+  delete dict[messageKeys.STEPS_GOAL_PRESET];
+  delete dict[messageKeys.STEPS_GOAL_CUSTOM];
   dict[messageKeys.WEATHER_UPDATE_MINUTES] = validateWeatherUpdateMinutes(
     dict[messageKeys.WEATHER_UPDATE_MINUTES]
   );
-  delete dict[messageKeys.STEPS_GOAL_PRESET];
-  delete dict[messageKeys.STEPS_GOAL_CUSTOM];
   updateUser(
     dict,
-    function () {
-      console.log('Sent config data to Pebble');
-    },
-    function (e) {
-      console.log('Config send failed with error: (' + e.code + '): ' + e.message);
-    }
+    () => console.log('Sent config data to Pebble'),
+    (e) => console.log('Config send failed with error: (' + e.code + '): ' + e.message)
   );
   // Update interval might have changed; so kickoff updates
   kickoffUpdates(dict[messageKeys.WEATHER_UPDATE_MINUTES]);
