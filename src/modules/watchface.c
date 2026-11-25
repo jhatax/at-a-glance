@@ -394,7 +394,7 @@ void watchface_refresh(
     date_module_refresh(s_surface.style.palette);
   }
   if ((updates & WATCHFACE_UPDATE_TIME) && (s_strata_created_mask & TIME_STRATUM_MASK)) {
-    time_module_refresh(s_surface.style.palette, s_wf_settings->time_format);
+    time_module_refresh(s_surface.style.palette, clock_is_24h_style());
   }
   if ((updates & WATCHFACE_UPDATE_BATTERY) && (s_strata_created_mask & BATTERY_STRATUM_MASK)) {
     battery_module_refresh(s_surface.style.palette, &s_surface.battery, data->event_context);

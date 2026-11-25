@@ -12,7 +12,6 @@ static void settings_apply_defaults(
 
   *settings = (WatchfaceSettings){
       .temp_unit = TEMP_UNIT_DEFAULT,
-      .time_format = TIME_FMT_DEFAULT,
       .display_mode = DISPLAY_MODE_DEFAULT,
       .weather_update_minutes = WEATHER_UPDATE_MINUTES_DEFAULT,
       .battery_orientation = BATTERY_ORIENTATION_DEFAULT,
@@ -30,9 +29,6 @@ static void settings_sanitize(
   }
   if (!TEMP_UNIT_VALID(settings->temp_unit)) {
     settings->temp_unit = TEMP_UNIT_DEFAULT;
-  }
-  if (!TIME_FORMAT_VALID(settings->time_format)) {
-    settings->time_format = clock_is_24h_style() ? TIME_FMT_24 : TIME_FMT_12;
   }
 #ifdef PBL_HEALTH
   if (!HR_SAMPLE_MINUTES_VALID(settings->hr_sample_minutes)) {
@@ -114,18 +110,6 @@ bool settings_set_display_mode(
   }
 
   settings->display_mode = (SupportedDisplayModes)display_mode;
-  return true;
-}
-
-bool settings_set_time_format(
-    WatchfaceSettings* settings,
-    int time_format) {
-  if (!settings || !TIME_FORMAT_VALID(time_format)) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "Settings rejected TIME_FORMAT: value=%d", time_format);
-    return false;
-  }
-
-  settings->time_format = (uint8_t)time_format;
   return true;
 }
 

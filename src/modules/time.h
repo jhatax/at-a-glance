@@ -11,4 +11,4 @@ bool time_module_create(
 void time_module_destroy(void);
 void time_module_refresh(
     const ColorPalette* palette,
-    uint8_t time_format);
+    bool is_24_h);

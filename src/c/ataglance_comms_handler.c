@@ -44,53 +44,48 @@ uint32_t app_message_inbox_size() {
   // Inbound tuples, in order:
   // Refer to package.json for tuple ordering
   // Key-name | Key-Value | Size
-  // 1. TIME_FORMAT | 10000 | APP_MESSAGE_CONFIG_VALUE_SIZE
-  // 2. TEMP_UNIT | 10001 | APP_MESSAGE_CONFIG_VALUE_SIZE
-  // 3. TEMPERATURE | 10002 | sizeof(int32_t)
-  // 4. WEATHER_CONDITION | 10003 | sizeof(int32_t)
-  // 5. IS_DAY | 10004 | sizeof(int32_t)
-  // 6. WEATHER_UPDATE_MINUTES | 10005 | APP_MESSAGE_CONFIG_VALUE_SIZE
-  // 7. DISPLAY_MODE | 10006 | APP_MESSAGE_CONFIG_VALUE_SIZE
-  // 8. HR_SAMPLE_MINUTES | 10007 | APP_MESSAGE_CONFIG_VALUE_SIZE
-  // 9. STEPS_GOAL | 10008 | sizeof(int32_t)
+  // 1. TEMP_UNIT | 10001 | APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 2. TEMPERATURE | 10002 | sizeof(int32_t)
+  // 3. WEATHER_CONDITION | 10003 | sizeof(int32_t)
+  // 4. IS_DAY | 10004 | sizeof(int32_t)
+  // 5. WEATHER_UPDATE_MINUTES | 10005 | APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 6. DISPLAY_MODE | 10006 | APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 7. HR_SAMPLE_MINUTES | 10007 | APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 8. STEPS_GOAL | 10008 | sizeof(int32_t)
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
-  // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
-  // 11. SYNC | 10012 | sizeof(int32_t)
-  // 12. BATTERY_ORIENTATION | 10013 | APP_MESSAGE_CONFIG_VALUE_SIZE
+  // 9. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
+  // 10. SYNC | 10012 | sizeof(int32_t)
+  // 11. BATTERY_ORIENTATION | 10013 | APP_MESSAGE_CONFIG_VALUE_SIZE
   //
   // One-shot-only tuples:
-  // 13. ONESHOT_BPM | 10020 | sizeof(int32_t)
-  // 14. ONESHOT_STEPS | 10021 | sizeof(int32_t)
+  // 12. ONESHOT_BPM | 10020 | sizeof(int32_t)
+  // 13. ONESHOT_STEPS | 10021 | sizeof(int32_t)
 #if defined(PBL_HEALTH)
   return dict_calc_buffer_size(
-      14,  // tuples
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
-      sizeof(int32_t),
-      sizeof(int32_t),
-      sizeof(int32_t),
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      13,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
       sizeof(int32_t),
+      sizeof(int32_t),
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
       WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
       sizeof(int32_t),
-      APP_MESSAGE_CONFIG_VALUE_SIZE);
+      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      sizeof(int32_t),
+      sizeof(int32_t));
 #else
   return dict_calc_buffer_size(
-      12,  // tuples
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
-      APP_MESSAGE_CONFIG_VALUE_SIZE,
+      9,  // tuples
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       sizeof(int32_t),
       sizeof(int32_t),
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE,
       APP_MESSAGE_CONFIG_VALUE_SIZE,
-      sizeof(int32_t),
       WATCHFACE_EVENT_LOCATION_BUFFER_SIZE,
       sizeof(int32_t),
       APP_MESSAGE_CONFIG_VALUE_SIZE);

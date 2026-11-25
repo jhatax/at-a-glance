@@ -59,22 +59,21 @@
         }
       }
     ],
-    "messageKeys": [
-      "TIME_FORMAT",
-      "TEMP_UNIT",
-      "TEMPERATURE",
-      "WEATHER_CONDITION",
-      "IS_DAY",
-      "WEATHER_UPDATE_MINUTES",
-      "DISPLAY_MODE",
-      "HR_SAMPLE_MINUTES",
-      "STEPS_GOAL",
-      "STEPS_GOAL_PRESET",
-      "STEPS_GOAL_CUSTOM",
-      "MAYBE_CURRENT_LOCATION",
-      "SYNC",
-      "BATTERY_ORIENTATION"
-    ],
+    "messageKeys": {
+      "TEMP_UNIT": 10001,
+      "TEMPERATURE": 10002,
+      "WEATHER_CONDITION": 10003,
+      "IS_DAY": 10004,
+      "WEATHER_UPDATE_MINUTES": 10005,
+      "DISPLAY_MODE": 10006,
+      "HR_SAMPLE_MINUTES": 10007,
+      "STEPS_GOAL": 10008,
+      "STEPS_GOAL_PRESET": 10009,
+      "STEPS_GOAL_CUSTOM": 10010,
+      "MAYBE_CURRENT_LOCATION": 10011,
+      "SYNC": 10012,
+      "BATTERY_ORIENTATION": 10013
+    },
     "resources": {
       "media": [
         {

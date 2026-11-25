@@ -14,14 +14,6 @@ enum {
 };
 
 enum {
-  TIME_FMT_24 = 0,
-  TIME_FMT_12,
-  TIME_FMT_MIN = TIME_FMT_24,
-  TIME_FMT_MAX = TIME_FMT_12,
-  TIME_FMT_DEFAULT = TIME_FMT_24,
-};
-
-enum {
   BATTERY_ORIENTATION_HORIZONTAL = 0,
   BATTERY_ORIENTATION_VERTICAL,
   BATTERY_ORIENTATION_MIN = BATTERY_ORIENTATION_HORIZONTAL,
@@ -59,7 +51,6 @@ enum {
 };
 
 #define TEMP_UNIT_VALID(value) (HELPER_VALUE_IN_RANGE((value), TEMP_UNIT_MIN, TEMP_UNIT_MAX))
-#define TIME_FORMAT_VALID(value) (HELPER_VALUE_IN_RANGE((value), TIME_FMT_MIN, TIME_FMT_MAX))
 #define DISPLAY_MODE_VALID(value) \
   (HELPER_VALUE_IN_RANGE((value), DISPLAY_MODE_MIN, DISPLAY_MODE_MAX))
 #define BATTERY_ORIENTATION_VALID(value) \
@@ -74,7 +65,6 @@ enum {
 typedef struct {
   // Add persisted fields at the bottom
   uint8_t temp_unit;
-  uint8_t time_format;
   SupportedDisplayModes display_mode;
   uint8_t weather_update_minutes;
 #ifdef PBL_HEALTH
@@ -89,9 +79,6 @@ bool settings_save(const WatchfaceSettings* settings);
 bool settings_set_display_mode(
     WatchfaceSettings* settings,
     int display_mode);
-bool settings_set_time_format(
-    WatchfaceSettings* settings,
-    int time_format);
 bool settings_set_temp_unit(
     WatchfaceSettings* settings,
     int temp_unit);

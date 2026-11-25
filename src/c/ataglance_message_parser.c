@@ -88,12 +88,6 @@ void parse_settings_data(
   if (!iter || !data) {
     return;
   }
-  parse_int_tuple(
-      iter,
-      MESSAGE_KEY_TIME_FORMAT,
-      data,
-      WATCHFACE_DATA_TIME_FORMAT,
-      &data->time_format);
   parse_int_tuple(iter, MESSAGE_KEY_TEMP_UNIT, data, WATCHFACE_DATA_TEMP_UNIT, &data->temp_unit);
   parse_int_tuple(
       iter,

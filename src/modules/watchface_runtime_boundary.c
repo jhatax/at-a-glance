@@ -34,15 +34,6 @@ static void apply_settings_data(
     }
   }
 
-  if (data->parsed & WATCHFACE_DATA_TIME_FORMAT) {
-    previous = settings->time_format;
-    if (settings_set_time_format(settings, data->time_format) &&
-        (settings->time_format != previous)) {
-      *refresh = (WatchfaceUpdateMask)(*refresh | WATCHFACE_UPDATE_TIME);
-      data->settings_changed = true;
-    }
-  }
-
   if (data->parsed & WATCHFACE_DATA_TEMP_UNIT) {
     previous = settings->temp_unit;
     if (settings_set_temp_unit(settings, data->temp_unit) && (settings->temp_unit != previous)) {

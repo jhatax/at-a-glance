@@ -12,26 +12,25 @@ static void format_time(
     char* buf,
     size_t buflen,
     const struct tm* t,
-    uint8_t time_format);
+    bool is_24_h);
 
 static void format_time(
     char* buf,
     size_t buflen,
     const struct tm* t,
-    uint8_t time_format) {
+    bool is_24_h) {
   if (!buf || buflen == 0 || !t) {
     return;
   }
 
-  if (time_format == TIME_FMT_12) {
+  if (is_24_h) {
+    strftime(buf, buflen, "%H:%M", t);
+  } else {
     strftime(buf, buflen, "%I:%M", t);
     if (buf[0] == '0') {
       memmove(buf, buf + 1, strlen(buf));
     }
-    return;
   }
-
-  strftime(buf, buflen, "%H:%M", t);
 }
 
 bool time_module_create(
@@ -64,7 +63,7 @@ void time_module_destroy() {
 
 void time_module_refresh(
     const ColorPalette* palette,
-    uint8_t time_format) {
+    bool is_24_h) {
   if (!s_time_layer || !palette) {
     return;
   }
@@ -75,7 +74,7 @@ void time_module_refresh(
     return;
   }
 
-  format_time(s_time_buffer, MAX_STR_LEN, t, time_format);
+  format_time(s_time_buffer, MAX_STR_LEN, t, is_24_h);
   substratum_renderer_update_text_layer(
       s_time_layer,
       s_time_buffer,

@@ -44,7 +44,6 @@ Tuple* dict_find(
 
 // Manifest-backed keys referenced by the production parser.
 enum {
-  MESSAGE_KEY_TIME_FORMAT = 10000,
   MESSAGE_KEY_TEMP_UNIT = 10001,
   MESSAGE_KEY_TEMPERATURE = 10002,
   MESSAGE_KEY_WEATHER_CONDITION = 10003,
