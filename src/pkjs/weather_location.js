@@ -155,23 +155,18 @@ function createRefreshController(updateClimateLocation, updateUser) {
     lastKnownLocation = null;
     lastKnownLookup = null;
     lastKnownClimate = null;
-    updateClimateLocation({
-      TEMPERATURE: 0,
-      WEATHER_CONDITION: -1,
-      IS_DAY: 0,
-      MAYBE_CURRENT_LOCATION: '',
-    });
-  }
-
-  function oneShotCachedClimateAndLocation() {
-    if (lastKnownClimate && lastKnownLookup) {
-      updateClimateLocation({
-        TEMPERATURE: lastKnownClimate.TEMPERATURE,
-        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
-        IS_DAY: lastKnownClimate.IS_DAY,
-        MAYBE_CURRENT_LOCATION: lastKnownLookup,
-      });
-    }
+    return new Promise((resolve) =>
+      updateClimateLocation(
+        {
+          TEMPERATURE: 0,
+          WEATHER_CONDITION: -1,
+          IS_DAY: 0,
+          MAYBE_CURRENT_LOCATION: '',
+        },
+        resolve,
+        resolve
+      )
+    );
   }
 
   function areEqualObjects(objA, objB) {
@@ -190,8 +185,7 @@ function createRefreshController(updateClimateLocation, updateUser) {
       var cli = results[0];
       var loc = results[1];
       if (!cli || !loc) {
-        clearClimateAndLocation();
-        return;
+        return clearClimateAndLocation();
       }
       var payload = {};
       var toSend = false;
@@ -215,9 +209,7 @@ function createRefreshController(updateClimateLocation, updateUser) {
               lastKnownLookup = loc;
               resolve();
             },
-            () => {
-              resolve();
-            }
+            resolve
           )
         );
       }
@@ -253,12 +245,23 @@ function createRefreshController(updateClimateLocation, updateUser) {
     });
   }
 
-  function fetch() {
-    return requestChain.execute(
-      requestLocation,
-      refreshClimateAndLocation,
-      clearClimateAndLocation
-    );
+  function oneShotCachedClimateAndLocation() {
+    return new Promise((resolve) => {
+      if (lastKnownClimate && lastKnownLookup) {
+        updateClimateLocation(
+          {
+            TEMPERATURE: lastKnownClimate.TEMPERATURE,
+            WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
+            IS_DAY: lastKnownClimate.IS_DAY,
+            MAYBE_CURRENT_LOCATION: lastKnownLookup,
+          },
+          resolve,
+          resolve
+        );
+      } else {
+        resolve();
+      }
+    });
   }
 
   function scheduleNextRefresh() {
@@ -274,7 +277,14 @@ function createRefreshController(updateClimateLocation, updateUser) {
       clearTimeout(waitTimeoutHandle);
       waitTimeoutHandle = null;
     }
-    fetch().then(scheduleNextRefresh);
+    requestChain.startHere(() => {
+      return requestLocation()
+        .then((location) => {
+          return refreshClimateAndLocation(location);
+        })
+        .catch(clearClimateAndLocation)
+        .finally(scheduleNextRefresh);
+    });
   }
 
   function fetchWaitRepeat() {
@@ -298,7 +308,7 @@ function createRefreshController(updateClimateLocation, updateUser) {
       fetchWaitRepeat();
     } else {
       // Interval unchanged and waitTimeoutHandle is valid
-      oneShotCachedClimateAndLocation();
+      requestChain.startHere(oneShotCachedClimateAndLocation);
     }
   }
 
@@ -310,21 +320,10 @@ class ClimateLocationRequestQueue {
     this.chain = Promise.resolve();
   }
 
-  // This structure is the right one because we handle the catch
-  // as well as success conditions. Therefore, the request chain
-  // always have a fulfilled promise.
-  // Additionally, the then() block of the caller always gets
-  // executed vs. needing an error block, so the next timer is set
-  // durably in all situations.
-  execute(coords, refresh, clear) {
-    this.chain = this.chain
-      .then(() => {
-        return coords();
-      })
-      .then((location) => {
-        return refresh(location);
-      })
-      .catch(clear);
+  startHere(runMe) {
+    this.chain = this.chain.then(() => {
+      return runMe();
+    });
     return this.chain;
   }
 }

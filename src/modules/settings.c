@@ -1,8 +1,8 @@
 #include "settings.h"
 
 // The ID / key that specifies where settings are persisted in storage
-static const uint32_t c_key_persisted_settings = 2;
-static const int c_settings_data_size = sizeof(WatchfaceSettings);
+static const uint32_t c_key_current_settings = 3;
+static const uint32_t c_key_prior_settings = 2;
 
 static void settings_apply_defaults(
     WatchfaceSettings* settings) {
@@ -54,50 +54,87 @@ static void settings_sanitize(
   }
 }
 
+static void read_legacy_key(
+    const uint8_t to_read,
+    WatchfaceSettings* settings) {
+  struct LegacySettings {
+    uint8_t temp_unit;
+    uint8_t time_format;
+    SupportedDisplayModes display_mode;
+    uint8_t weather_update_minutes;
+#ifdef PBL_HEALTH
+    uint8_t hr_sample_minutes;
+    uint16_t steps_goal;
+#endif
+    uint8_t battery_orientation;
+  };
+  // This is a legacy settings shape; get it from storage
+  // then never refer to it again, i.e. delete it.
+  // Persist the new shape to storage.
+  struct LegacySettings legacy = {0};
+  int bytes_read = persist_read_data(c_key_prior_settings, &legacy, to_read);
+  if (bytes_read != to_read) {
+    APP_LOG(
+        APP_LOG_LEVEL_WARNING,
+        "Persisted settings read failed: result=%d expected=%d",
+        bytes_read,
+        to_read);
+    persist_delete(c_key_prior_settings);
+  } else {
+    *settings = (WatchfaceSettings){
+        .temp_unit = legacy.temp_unit,
+        .display_mode = legacy.display_mode,
+        .battery_orientation = legacy.battery_orientation,
+        .weather_update_minutes = legacy.weather_update_minutes,
+#ifdef PBL_HEALTH
+        .hr_sample_minutes = legacy.hr_sample_minutes,
+        .steps_goal = legacy.steps_goal,
+#endif
+    };
+    if (settings_save(settings)) persist_delete(c_key_prior_settings);
+  }
+}
+
 static void settings_read_stored(
     WatchfaceSettings* settings) {
   if (!settings) {
     return;
   }
 
-  if (!persist_exists(c_key_persisted_settings)) {
+  if (!persist_exists(c_key_current_settings) && !persist_exists(c_key_prior_settings)) {
     return;
   }
 
-  int stored_size = persist_get_size(c_key_persisted_settings);
-  if (stored_size <= 0) {
-    return;
+  uint16_t to_read = 0;
+  if (persist_exists(c_key_current_settings)) {
+    to_read = persist_get_size(c_key_current_settings);
+  }
+  if (to_read <= 0 && persist_exists(c_key_prior_settings)) {
+    to_read = persist_get_size(c_key_prior_settings);
   }
 
-  WatchfaceSettings stored = *settings;
-
-  int read_size = stored_size;
-  if (read_size > c_settings_data_size) {
-    APP_LOG(
-        APP_LOG_LEVEL_WARNING,
-        "Persisted settings truncated: size=%d max=%d",
-        stored_size,
-        c_settings_data_size);
-    read_size = c_settings_data_size;
-  } else if (read_size < c_settings_data_size) {
-    APP_LOG(
-        APP_LOG_LEVEL_WARNING,
-        "Persisted settings partial: size=%d expected=%d",
-        stored_size,
-        c_settings_data_size);
+  uint16_t bytes_read = 0;
+  uint16_t expected_size = sizeof(WatchfaceSettings);
+  if (to_read > expected_size && persist_exists(c_key_prior_settings)) {
+    read_legacy_key(to_read, settings);
+  } else if (to_read == expected_size && persist_exists(c_key_current_settings)) {
+    bytes_read = persist_read_data(c_key_current_settings, settings, to_read);
+    if (bytes_read != to_read) {
+      APP_LOG(
+          APP_LOG_LEVEL_WARNING,
+          "Persisted settings read failed: result=%d expected=%d",
+          bytes_read,
+          to_read);
+      memset(settings, 0, sizeof(WatchfaceSettings));
+      persist_delete(c_key_current_settings);
+    } else if (persist_exists(c_key_prior_settings)) {
+      persist_delete(c_key_prior_settings);
+    }
+  } else {
+    // Not equal to or greater than the expected size. delete truncated keys if they exist
+    if (persist_exists(c_key_prior_settings)) persist_delete(c_key_prior_settings);
+    if (persist_exists(c_key_current_settings)) persist_delete(c_key_current_settings);
   }
-
-  int bytes_read = persist_read_data(c_key_persisted_settings, &stored, read_size);
-  if (bytes_read != read_size) {
-    APP_LOG(
-        APP_LOG_LEVEL_WARNING,
-        "Persisted settings read failed: result=%d expected=%d",
-        bytes_read,
-        read_size);
-    return;
-  }
-
-  *settings = stored;
 }
 
 // This "API" block is called by other modules or main
@@ -196,14 +233,15 @@ bool settings_save(
   if (!settings) {
     return false;
   }
-
-  int bytes_written = persist_write_data(c_key_persisted_settings, settings, c_settings_data_size);
+  uint16_t expected_size = sizeof(WatchfaceSettings);
+  uint16_t bytes_written = persist_write_data(c_key_current_settings, settings, expected_size);
   if (bytes_written != (int)sizeof(*settings)) {
     APP_LOG(
         APP_LOG_LEVEL_WARNING,
         "Persisted settings write failed: result=%d expected=%d",
         bytes_written,
-        c_settings_data_size);
+        expected_size);
+    if (persist_exists(c_key_current_settings)) persist_delete(c_key_current_settings);
     return false;
   }
 
