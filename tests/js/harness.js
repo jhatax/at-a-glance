@@ -87,7 +87,16 @@ function createHarness({ savedSettings = null } = {}) {
   const modules = new Map();
   function load(name) {
     if (name === '@rebble/clay') {
-      return function Clay() {};
+      return class Clay {
+        // These tests submit scalar settings; Clay stores names and sends numeric keys.
+        getSettings(response) {
+          const settings = JSON.parse(decodeURIComponent(response));
+          storage.set('clay-settings', JSON.stringify(settings));
+          return Object.fromEntries(
+            Object.entries(settings).map(([key, value]) => [messageKeys[key], value])
+          );
+        }
+      };
     }
     if (name === 'message_keys') {
       return messageKeys;
@@ -164,14 +173,27 @@ function createHarness({ savedSettings = null } = {}) {
     listeners.get(name)(event);
   }
 
-  async function refresh() {
-    emit('appmessage', { payload: { REFRESH: 1 } });
+  async function advanceRefresh(expectedMinutes = 15) {
+    assert.equal(timers.size, 1, 'Expected exactly one scheduled refresh');
+    const [id, timer] = timers.entries().next().value;
+    assert.equal(timer.delay, expectedMinutes * 60 * 1000);
+    timers.delete(id); // A real timeout is consumed before its callback runs.
+    timer.callback();
+    await settlePromises();
+    assert.equal(timers.size, 0, 'Do not schedule the next refresh before this one finishes');
+    assert.equal(positions.length, 1, 'Expected the timer to start GPS');
+  }
+
+  async function sync() {
+    emit('appmessage', { payload: { SYNC: 1 } });
     await settlePromises();
   }
 
   return {
     emit,
-    refresh,
+    sync,
+    advanceRefresh,
+    messageKeys,
     positions,
     requests,
     messages,

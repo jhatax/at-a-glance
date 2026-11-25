@@ -41,7 +41,6 @@ static bool s_health_events_subscribed = false;
 
 // Timers for synchronization with PKJS
 static AppTimer* s_retry_timer = NULL;
-static AppTimer* s_refresh_timer = NULL;
 
 // Lifecycle
 static void init();
@@ -129,12 +128,13 @@ static void subscribe_to_services() {
 }
 
 static void initialize_mailboxes() {
+  s_retry_timer = NULL;
   app_message_set_context(&s_settings);
   app_message_register_inbox_received(inbox_received_handler);
   app_message_register_inbox_dropped(inbox_dropped_callback);
   app_message_register_outbox_failed(outbox_failed_callback);
   app_message_register_outbox_sent(outbox_sent_callback);
-  initialize_inbox_outbox(&s_refresh_timer, &s_retry_timer);
+  initialize_inbox_outbox(&s_retry_timer);
 }
 
 static void main_window_load(
@@ -155,14 +155,13 @@ static void main_window_load(
   }
 
   // 3. Initialize inbox & outbox
-  s_refresh_timer = NULL;
-  s_retry_timer = NULL;
   initialize_mailboxes();
 
   // 4. Subscribe to services
   subscribe_to_services();
 
-  // 5. set BT status
+  // 5. set time, date, BT status
+  tick_handler(NULL, MINUTE_UNIT | DAY_UNIT);
   bt_handler(connection_service_peek_pebble_app_connection());
 }
 
@@ -180,9 +179,9 @@ static void main_window_unload(
   }
 #endif
   // Cancel timers for refresh and retry
-  if (s_refresh_timer) app_timer_cancel(s_refresh_timer);
-  if (s_retry_timer) app_timer_cancel(s_retry_timer);
-  s_refresh_timer = NULL;
+  if (s_retry_timer) {
+    app_timer_cancel(s_retry_timer);
+  }
   s_retry_timer = NULL;
   watchface_destroy();
 }

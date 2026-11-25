@@ -9,6 +9,8 @@ const location_request_options = {
 };
 
 function createRefreshController(updateClimateLocation) {
+  var waitInterval = -1;
+  var waitTimeoutHandle = null;
   var lastKnownLocation = null;
   var lastKnownLookup = null;
   var lastKnownClimate = null;
@@ -94,20 +96,21 @@ function createRefreshController(updateClimateLocation) {
             reject('Location changed during lookup');
             return;
           }
-          var lookup = (
-            address.neighbourhood ||
-            address.suburb ||
-            address.village ||
-            address.borough ||
-            address.town ||
-            address.city ||
-            address.county ||
-            address.state ||
-            'GPS'
-          )
-            .slice(0, MAX_LOCATION_STRING_LENGTH)
-            .toUpperCase();
-          resolve(lookup);
+          resolve(
+            (
+              address.neighbourhood ||
+              address.suburb ||
+              address.village ||
+              address.borough ||
+              address.town ||
+              address.city ||
+              address.county ||
+              address.state ||
+              'GPS'
+            )
+              .slice(0, MAX_LOCATION_STRING_LENGTH)
+              .toUpperCase()
+          );
         } catch (e) {
           reject('Location fetch error: (' + e.code + '): ' + e.message);
         }
@@ -170,6 +173,17 @@ function createRefreshController(updateClimateLocation) {
     });
   }
 
+  function oneShotCachedClimateAndLocation() {
+    if (lastKnownClimate && lastKnownLookup) {
+      sendMessage({
+        TEMPERATURE: lastKnownClimate.TEMPERATURE,
+        WEATHER_CONDITION: lastKnownClimate.WEATHER_CONDITION,
+        IS_DAY: lastKnownClimate.IS_DAY,
+        MAYBE_CURRENT_LOCATION: lastKnownLookup,
+      });
+    }
+  }
+
   function refreshClimateAndLocation(location) {
     return Promise.all([fetchClimate(location), reverseGPS(location)]).then(function (results) {
       lastKnownClimate = results[0];
@@ -216,11 +230,40 @@ function createRefreshController(updateClimateLocation) {
     });
   }
 
-  function fetchUpdate() {
-    requestChain.execute(requestLocation, refreshClimateAndLocation, clearClimateAndLocation);
+  function fetch() {
+    return requestChain.execute(
+      requestLocation,
+      refreshClimateAndLocation,
+      clearClimateAndLocation
+    );
   }
 
-  return fetchUpdate;
+  function fetchWaitRepeat() {
+    if (waitTimeoutHandle) {
+      clearTimeout(waitTimeoutHandle);
+      waitTimeoutHandle = null;
+    }
+    fetch().then(() => {
+      if (waitTimeoutHandle) {
+        clearTimeout(waitTimeoutHandle);
+        waitTimeoutHandle = null;
+      }
+      waitTimeoutHandle = setTimeout(fetchWaitRepeat, waitInterval * 60 * 1000);
+    });
+  }
+
+  function kickoffUpdates(minutes) {
+    var changed = waitInterval !== minutes;
+    if (changed || waitTimeoutHandle === null) {
+      waitInterval = minutes;
+      fetchWaitRepeat();
+    } else {
+      // Interval unchanged and waitTimeoutHandle is valid
+      oneShotCachedClimateAndLocation();
+    }
+  }
+
+  return kickoffUpdates;
 }
 
 class ClimateLocationRequestQueue {
@@ -228,12 +271,19 @@ class ClimateLocationRequestQueue {
     this.chain = Promise.resolve();
   }
 
-  execute(coords, get, clear) {
+  // This structure is the right one because we handle the catch
+  // as well as success conditions. Therefore, the request chain
+  // always have a fulfilled promise.
+  // Additionally, the then() block of the caller always gets
+  // executed vs. needing an error block, so the next timer is set
+  // durably in all situations.
+  execute(coords, refresh, clear) {
     this.chain = this.chain
       .then(() => {
-        return coords().then((location) => {
-          return get(location);
-        });
+        return coords();
+      })
+      .then((location) => {
+        return refresh(location);
       })
       .catch((error) => {
         console.log('Failed to gather location, climate info.\n' + error);

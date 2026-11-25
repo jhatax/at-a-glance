@@ -8,9 +8,9 @@ const {
   weatherResponse,
 } = require('./harness');
 
-test('REFRESH fetches a combined payload without scheduling another request', async () => {
+test('SYNC fetches a combined payload and schedules the next refresh after completion', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
 
   assert.equal(harness.positions.length, 1);
   assert.equal(harness.timers.size, 0);
@@ -19,31 +19,31 @@ test('REFRESH fetches a combined payload without scheduling another request', as
   assert.deepEqual(harness.messages, [
     { TEMPERATURE: 200, WEATHER_CONDITION: 0, IS_DAY: 1, MAYBE_CURRENT_LOCATION: 'CITY A' },
   ]);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
-test('four REFRESH requests produce four updates without a JS cadence timer', async () => {
+test('three timer firings produce fresh updates and rearm one timer each time', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   await harness.completeRefresh();
 
   for (let cycle = 0; cycle < 3; cycle++) {
-    await harness.refresh();
+    await harness.advanceRefresh();
     await harness.completeRefresh(originalLocation, null);
   }
 
   assert.equal(harness.requestCount('weather'), 4);
   assert.equal(harness.requestCount('lookup'), 1);
   assert.equal(harness.messages.length, 4);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
 test('movement within the tolerance reuses the name and coordinate anchor', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   await harness.completeRefresh();
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh({ latitude: 37.015, longitude: -122.015 }, null);
 
   const url = new URL(harness.requests.filter((item) => item.kind === 'weather').at(-1).url);
@@ -55,10 +55,10 @@ test('movement within the tolerance reuses the name and coordinate anchor', asyn
 
 test('movement beyond the tolerance fetches a new location name', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   await harness.completeRefresh();
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh({ latitude: 37.021, longitude: -122 }, 'City B');
 
   assert.equal(harness.requestCount('lookup'), 2);
@@ -67,30 +67,30 @@ test('movement beyond the tolerance fetches a new location name', async () => {
 
 test('GPS failure clears the display and the next refresh recovers', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.positions.shift().failure({ code: 1, message: 'GPS unavailable' });
   await settlePromises();
 
   assert.equal(harness.messages.at(-1).WEATHER_CONDITION, -1);
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, '');
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh();
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, 'CITY A');
 });
 
 test('weather failure clears both caches and forces a new lookup', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   await harness.completeRefresh();
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   harness.position();
   await settlePromises();
   harness.fail('weather');
   await settlePromises();
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, '');
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh(originalLocation, 'New Name');
   assert.equal(harness.requestCount('lookup'), 2);
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, 'NEW NAME');
@@ -98,7 +98,7 @@ test('weather failure clears both caches and forces a new lookup', async () => {
 
 test('a late lookup cannot refill the cache after failure clears the coordinates', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   const oldLookup = harness.request('lookup');
@@ -109,7 +109,7 @@ test('a late lookup cannot refill the cache after failure clears the coordinates
   await settlePromises();
   assert.equal(harness.messages.length, 1);
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh(originalLocation, 'Fresh Name');
   assert.equal(harness.requestCount('lookup'), 2);
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, 'FRESH NAME');
@@ -117,47 +117,48 @@ test('a late lookup cannot refill the cache after failure clears the coordinates
 
 test('a late old lookup cannot overwrite the newer location cache', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   const oldLookup = harness.request('lookup');
 
-  await harness.refresh();
+  await harness.sync();
   harness.fail('weather');
   await settlePromises();
   await harness.completeRefresh(movedLocation, 'City B');
   harness.respond(oldLookup, { address: { city: 'City A' } });
   await settlePromises();
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh(movedLocation, null);
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, 'CITY B');
   assert.equal(harness.requestCount('lookup'), 2);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
-test('REFRESH requests during a refresh preserve ordering without JS timers', async () => {
+test('SYNC requests during a refresh serialize fetches and leave one cadence timer', async () => {
   const harness = createHarness();
-  await harness.refresh();
-  await harness.refresh();
-  await harness.refresh();
+  await harness.sync();
+  await harness.sync();
+  await harness.sync();
   assert.equal(harness.positions.length, 1);
+  assert.equal(harness.timers.size, 0);
 
   await harness.completeRefresh();
   assert.equal(harness.positions.length, 1);
   await harness.completeRefresh(originalLocation, null);
   assert.equal(harness.positions.length, 1);
   await harness.completeRefresh(originalLocation, null);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh(originalLocation, null);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
-test('lookup timeout clears the display and the next REFRESH recovers', async () => {
+test('lookup timeout clears the display and the next timer refresh recovers', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   harness.respond(harness.request('weather'), weatherResponse);
@@ -165,14 +166,14 @@ test('lookup timeout clears the display and the next REFRESH recovers', async ()
   await settlePromises();
   assert.equal(harness.messages.at(-1).WEATHER_CONDITION, -1);
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh();
   assert.equal(harness.messages.at(-1).MAYBE_CURRENT_LOCATION, 'CITY A');
 });
 
-test('malformed weather JSON clears the display without scheduling another request', async () => {
+test('malformed weather JSON clears the display and schedules the next refresh', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   harness.respond(harness.request('lookup'), { address: { city: 'City A' } });
@@ -180,12 +181,12 @@ test('malformed weather JSON clears the display without scheduling another reque
   await settlePromises();
 
   assert.equal(harness.messages.at(-1).WEATHER_CONDITION, -1);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
-test('HTTP lookup failure clears the display without scheduling another request', async () => {
+test('HTTP lookup failure clears the display and schedules the next refresh', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   harness.respond(harness.request('weather'), weatherResponse);
@@ -193,15 +194,15 @@ test('HTTP lookup failure clears the display without scheduling another request'
   await settlePromises();
 
   assert.equal(harness.messages.at(-1).WEATHER_CONDITION, -1);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
-test('a new REFRESH waits for fresh climate instead of immediately resending the cached pair', async () => {
+test('a timer refresh waits for fresh climate before sending the next pair', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   await harness.completeRefresh();
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   assert.equal(harness.positions.length, 1);
   assert.equal(harness.messages.length, 1);
   harness.position();
@@ -220,15 +221,15 @@ test('a new REFRESH waits for fresh climate instead of immediately resending the
     MAYBE_CURRENT_LOCATION: 'CITY A',
   });
   assert.equal(harness.messages.length, 2);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });
 
 for (const failure of ['weather', 'lookup']) {
-  test(`REFRESH after ${failure} failure cannot resend the previous pair`, async () => {
+  test(`SYNC after ${failure} failure cannot resend the previous pair`, async () => {
     const harness = createHarness();
-    await harness.refresh();
+    await harness.sync();
     await harness.completeRefresh();
-    await harness.refresh();
+    await harness.advanceRefresh();
     harness.position(movedLocation);
     await settlePromises();
     const pending = harness.request(failure === 'weather' ? 'lookup' : 'weather');
@@ -241,7 +242,9 @@ for (const failure of ['weather', 'lookup']) {
       failure === 'weather' ? { address: { city: 'City B' } } : weatherResponse
     );
     await settlePromises();
-    await harness.refresh();
+    await harness.sync();
+    assert.equal(harness.positions.length, 0);
+    await harness.advanceRefresh();
 
     assert.deepEqual(harness.messages, [
       { TEMPERATURE: 200, WEATHER_CONDITION: 0, IS_DAY: 1, MAYBE_CURRENT_LOCATION: 'CITY A' },
@@ -257,19 +260,19 @@ for (const failure of ['weather', 'lookup']) {
     });
     assert.equal(harness.messages.length, 3);
     assert.equal(harness.requestCount('lookup'), 3);
-    assert.equal(harness.timers.size, 0);
+    assert.equal(harness.timers.size, 1);
   });
 }
 
 test('a late climate response from a failed attempt cannot overwrite a newer successful update', async () => {
   const harness = createHarness();
-  await harness.refresh();
+  await harness.sync();
   harness.position();
   await settlePromises();
   const oldWeather = harness.request('weather');
 
-  // Another watch request queues an attempt while the first is still running.
-  await harness.refresh();
+  // Another SYNC queues an attempt while the first is still running.
+  await harness.sync();
   harness.fail('lookup');
   await settlePromises();
   await harness.completeRefresh(movedLocation, 'City B');
@@ -279,7 +282,7 @@ test('a late climate response from a failed attempt cannot overwrite a newer suc
   await settlePromises();
   assert.equal(harness.messages.length, 2);
 
-  await harness.refresh();
+  await harness.advanceRefresh();
   await harness.completeRefresh(movedLocation, null);
 
   const expected = {
@@ -292,5 +295,5 @@ test('a late climate response from a failed attempt cannot overwrite a newer suc
   assert.equal(harness.positions.length, 0);
   assert.equal(harness.requestCount('weather'), 3);
   assert.equal(harness.requestCount('lookup'), 2);
-  assert.equal(harness.timers.size, 0);
+  assert.equal(harness.timers.size, 1);
 });

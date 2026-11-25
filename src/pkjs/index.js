@@ -21,6 +21,8 @@ function sendPebbleMessage(payload, success, failure) {
 
 var updateUser = createAppMessageQueue(sendPebbleMessage);
 var updateClimateLocation = createAppMessageQueue(sendPebbleMessage);
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+var kickoffUpdates = createRefreshController(updateClimateLocation);
 
 function clampStepsGoal(goal) {
   if (goal < STEPS_GOAL_MIN) {
@@ -56,27 +58,28 @@ function validateWeatherUpdateMinutes(input) {
   return toReturn >= WEATHER_UPDATE_MINUTES_MIN ? toReturn : WEATHER_UPDATE_MINUTES_MIN;
 }
 
-var clay = new Clay(clayConfig, null, {
-  autoHandleEvents: false,
-});
-// var startRefresh = createRefreshController(updateClimateLocation);
-var requestUpdate = createRefreshController(updateClimateLocation);
-
 Pebble.addEventListener('showConfiguration', function () {
   Pebble.openURL(clay.generateUrl());
 });
 
-Pebble.addEventListener('appmessage', function (e) {
-  if (!e || !e.payload) {
-    return;
-  }
-  if (e.payload.REFRESH && e.payload.REFRESH === 1) {
-    // Refresh climate and location
-    requestUpdate();
+Pebble.addEventListener('appmessage', (e) => {
+  if (e && e.payload && e.payload.SYNC === 1) {
+    // Synchronization completed; start refresh
+    var savedSettings = null;
+    var minutes = WEATHER_UPDATE_MINUTES_DEFAULT;
+    try {
+      savedSettings = JSON.parse(localStorage.getItem('clay-settings'));
+      minutes = validateWeatherUpdateMinutes(
+        savedSettings ? savedSettings.WEATHER_UPDATE_MINUTES : undefined
+      );
+    } catch (e) {
+      console.log('Parsing Clay Settings returned error: ' + e.message);
+    }
+    kickoffUpdates(minutes);
   }
 });
 
-Pebble.addEventListener('webviewclosed', function (e) {
+Pebble.addEventListener('webviewclosed', (e) => {
   if (!e || !e.response) {
     return;
   }
@@ -98,15 +101,16 @@ Pebble.addEventListener('webviewclosed', function (e) {
       console.log('Sent config data to Pebble');
     },
     function (e) {
-      console.log('Config sent failed with error: (' + e.code + '): ' + e.message);
+      console.log('Config send failed with error: (' + e.code + '): ' + e.message);
     }
   );
-  // If settings have changed, C will request a refresh
+  // Update interval might have changed; so kickoff updates
+  kickoffUpdates(dict[messageKeys.WEATHER_UPDATE_MINUTES]);
 });
 
 Pebble.addEventListener('ready', function () {
   try {
-    updateUser({ JS_READY: 1 });
+    updateUser({ SYNC: 1 });
   } catch (e) {
     console.log('Ready Event Handler failed due to error: ' + e.message);
   }

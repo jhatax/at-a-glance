@@ -18,9 +18,7 @@
  *   transport handling stay distinct.
  */
 // Inbox-Outbox handling
-void initialize_inbox_outbox(
-    AppTimer** refresh_interval,
-    AppTimer** retry_interval);
+void initialize_inbox_outbox(AppTimer** retry_timer);
 void inbox_received_handler(
     DictionaryIterator* iter,
     void* context);

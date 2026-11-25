@@ -29,16 +29,14 @@
 
 static uint8_t s_weather_sync_attempts = 0;
 static AppTimer** s_retry_timer = NULL;
-static AppTimer** s_refresh_timer = NULL;
 
 static uint8_t s_init_attempts = 1;
 static AppTimer* s_init_timer = NULL;
 
 void attempt_inbox_initialization(void* context);
-static void request_refresh(void* context);
+static void respond_to_sync(void* context);
 static void try_refresh(void* context);
 static void schedule_retry(void* context);
-static void schedule_next_cycle(void* context);
 static void repeat_refresh(void* context);
 
 // AppMessage initialization.
@@ -58,7 +56,7 @@ uint32_t app_message_inbox_size() {
   // STEPS_GOAL_CUSTOM and STEPS_GOAL_PRESET do not cross the JS<->C boundary
   // these two are processed in the handler for WebViewClosed.
   // 10. LOCATION | 10011 | 15 Latin-1 characters, up to 31 UTF-8 bytes
-  // 11. JS_READY | 10012 | sizeof(int32_t)
+  // 11. SYNC | 10012 | sizeof(int32_t)
   // 12. BATTERY_ORIENTATION | 10013 | APP_MESSAGE_CONFIG_VALUE_SIZE
   //
   // One-shot-only tuples:
@@ -100,10 +98,8 @@ uint32_t app_message_inbox_size() {
 }
 
 void initialize_inbox_outbox(
-    AppTimer** refresh_timer,
     AppTimer** retry_timer) {
-  if (refresh_timer && retry_timer) {
-    s_refresh_timer = refresh_timer;
+  if (retry_timer) {
     s_retry_timer = retry_timer;
   }
   if (s_init_timer) {
@@ -169,7 +165,7 @@ void inbox_received_handler(
     return;
   }
   if (parse_ready_sentinel(iter)) {
-    request_refresh(context);
+    respond_to_sync(context);
   }
 
   // Sometimes, PKJS can coalesce messages, so don't assume
@@ -194,9 +190,6 @@ void inbox_received_handler(
       &data.oneshot_steps);
 #endif
 
-  // Capture the value of update minutes before it will be applied to settings
-  const uint8_t prev_update_minutes = settings->weather_update_minutes;
-
   // A side-effect of applying settings to the pointer is that if settings change,
   // the app_message_context is changed under the covers.
   watchface_apply_received_data(&data, settings);
@@ -207,10 +200,6 @@ void inbox_received_handler(
   // We don't need to inform PKJS because that layer has its own copy of settings
   if (data.settings_changed) {
     settings_save(settings);
-    if (prev_update_minutes != settings->weather_update_minutes) {
-      request_refresh(context);
-      schedule_next_cycle(context);
-    }
   }
 
 #ifdef PBL_HEALTH
@@ -222,14 +211,12 @@ void inbox_received_handler(
 }
 
 // Mechanism to request a single refresh of climate and location
-static void request_refresh(
+static void respond_to_sync(
     void* context) {
   if (s_retry_timer && *s_retry_timer) {
     app_timer_cancel(*s_retry_timer);
     *s_retry_timer = NULL;
   }
-
-  APP_LOG(APP_LOG_LEVEL_INFO, "Refresh requested");
 
   s_weather_sync_attempts = 0;
   try_refresh(context);
@@ -237,8 +224,10 @@ static void request_refresh(
 
 static void try_refresh(
     void* context) {
-  // Set the retry-timer to NULL => we got here because of a direct-call from request_refresh or
-  // the timer fired after interval elapsed.
+  // Set the retry-timer to NULL => we got here for 2-reasons:
+  // 1. a direct-call from respond_to_sync; or
+  // 2. the timer fired after interval elapsed
+  // In both cases, we need to start again with a clean retry_timer.
   *s_retry_timer = NULL;
   // Record this as an attempt
   ++s_weather_sync_attempts;
@@ -257,7 +246,7 @@ static void try_refresh(
     return;
   }
 
-  DictionaryResult dict_result = dict_write_uint8(out_iter, MESSAGE_KEY_REFRESH, 1);
+  DictionaryResult dict_result = dict_write_uint8(out_iter, MESSAGE_KEY_SYNC, 1);
   if (dict_result != DICT_OK) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "Weather refresh dict write failed: result=%d", dict_result);
     schedule_retry(context);
@@ -283,9 +272,6 @@ static void schedule_retry(
       app_timer_cancel(*s_retry_timer);
       *s_retry_timer = NULL;
     }
-    // The next refresh should be scheduled here as well:
-    // Just because weather sync request failed, doesn't mean we give up.
-    schedule_next_cycle(context);
     return;
   }
   if (s_retry_timer && *s_retry_timer) {
@@ -295,30 +281,6 @@ static void schedule_retry(
 
   *s_retry_timer =
       app_timer_register(MESSAGE_SEND_RETRY_MS * s_weather_sync_attempts, try_refresh, NULL);
-}
-
-// Mechanism to wait for the requested interval and then request new data
-static void schedule_next_cycle(
-    void* context) {
-  // If there is an existing timer, cancel it.
-  if (*s_refresh_timer) {
-    app_timer_cancel(*s_refresh_timer);
-    *s_refresh_timer = NULL;
-  }
-
-  if (!context) {
-    context = app_message_get_context();
-  }
-  WatchfaceSettings* settings = (WatchfaceSettings*)context;
-  const uint32_t interval = settings->weather_update_minutes * 60 * 1000;
-  APP_LOG(APP_LOG_LEVEL_INFO, "Setting Refresh Timer to be: %d", interval);
-  *s_refresh_timer = app_timer_register(interval, repeat_refresh, context);
-}
-
-static void repeat_refresh(
-    void* context) {
-  *s_refresh_timer = NULL;
-  request_refresh(context);
 }
 
 // Inbox, Outbox Callbacks
@@ -339,7 +301,7 @@ void outbox_failed_callback(
   schedule_retry(context);
 }
 
-// Send succeeded; schedule the next refresh to occur after user requested interval
+// Send succeeded
 void outbox_sent_callback(
     DictionaryIterator* iterator,
     void* context) {
@@ -349,7 +311,4 @@ void outbox_sent_callback(
     app_timer_cancel(*s_retry_timer);
     *s_retry_timer = NULL;
   }
-
-  // Schedule the next refresh
-  schedule_next_cycle(context);
 }
