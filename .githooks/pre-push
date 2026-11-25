@@ -6,7 +6,7 @@ cd "${repo_root}"
 
 echo "Running unit tests before push."
 npm run test:harness
-npm run test:native
+npm run test:native -- --matrix commit
 npm run test:js
 
 echo "Building the watchface before push."

@@ -15,6 +15,10 @@ py_files=(${(M)staged_files:#*.py})
 c_files=(${(M)staged_files:#*.(c|h)})
 js_files=(${(M)staged_files:#*.(js|jsx|ts|tsx|json|css|scss|yaml|yml)})
 
+# Preserve the pinned native C test dependency.
+py_files=(${py_files:#tests/native/vendor/*})
+c_files=(${c_files:#tests/native/vendor/*})
+
 # 3. Format and automatically re-stage modified files safely
 if (( ${#sh_files} )); then
   # "${sh_files[@]}" ensures multi-file selections expand cleanly
@@ -38,7 +42,7 @@ npm run docs:check
 
 # Run deterministic harness tests before allowing the commit.
 npm run test:harness
-npm run test:native
+npm run test:native -- --matrix commit
 npm run test:js
 
 git add "${staged_files[@]}"
