@@ -40,7 +40,7 @@ cd at-a-glance
 
 ## Personalization Options
 
-- Time format: 24-hour or 12-hour
+- Time format: follows the watch’s system 24-hour or 12-hour preference
 - Temperature unit: Fahrenheit or Celsius
 - Weather updates: 15, 30, 45, or 60 minutes
 - Display mode: platform-appropriate light, dark, and color palettes

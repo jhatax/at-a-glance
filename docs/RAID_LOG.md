@@ -33,12 +33,26 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Platform geometry | Reuse the architect/stylist architecture while giving each target intentional geometry instead of uniformly scaling another device class. | [UserInterface](UserInterface.md) |
 | Lifecycle failure | Keep the established Pebble lifecycle behavior unless fresh evidence reveals a crash, leak, or teardown defect. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Display default | Light mode is the product and Clay default. | [SettingsandConfiguration](SettingsandConfiguration.md) |
-| Health configuration | Clay filters health settings by capability; C health paths remain feature-guarded. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Health configuration | Clay filters controls, PKJS omits unsupported health settings, and C guards health paths. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Text geometry | Field widths and heights follow role, font, and target geometry; there is no uniform-width invariant. | [UserInterface](UserInterface.md) |
 | Shared bolt | Charging and thunderstorm may reuse a low-level bolt primitive without sharing product semantics. | [VisualVocabulary](VisualVocabulary.md) |
 | Glyph validation | Validate non-trivial glyph work with representative emulators and visual evidence before production use. | [Contributing](Contributing.md) |
 | Tiny snowflakes | Reduce topology in mini frames instead of forcing large-frame detail. | [UserInterface](UserInterface.md) |
 | Palette reference | The consolidated UI palette table follows active module palette code. | [UserInterface](UserInterface.md) |
+| Weather scheduling | PKJS restores its saved Clay interval and schedules after completion; C owns bounded startup synchronization. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Climate/location delivery | Serialize acquisition, changed-data sends, unavailable sends, and cached replay; advance result caches after acknowledgment. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Platform time format | Read the system 12/24-hour preference on every time refresh; keep it outside persisted watchface settings. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Connectivity and data availability | Probe before acquisition. Failed probes preserve displayed data; failed acquisition clears weather and location together. | [SettingsandConfiguration](SettingsandConfiguration.md#weather-scheduling-and-delivery) |
+| Startup recovery | End startup synchronization after bounded retries; the user resynchronizes through the phone app. | [SettingsandConfiguration](SettingsandConfiguration.md#startup-synchronization), [Communications handler](../src/c/ataglance_comms_handler.c) |
+| Temperature transport | Request Celsius, send integer Celsius-tenths, and retain conversion and formatting in C. | [SettingsandConfiguration](SettingsandConfiguration.md), [RuntimeArchitecture](RuntimeArchitecture.md#climate-specific-transport-behavior) |
+| Message IDs | Assign explicit numeric IDs in the manifest and preserve existing assignments when changing keys. | [SettingsandConfiguration](SettingsandConfiguration.md#appmessage-and-message-key-contract) |
+| Settings migration | A new format uses a new storage key. During load, write the converted format before deleting readable legacy storage. | [SettingsandConfiguration](SettingsandConfiguration.md#persistence), [Settings loader](../src/modules/settings.c), [Settings tests](../tests/native/suites/settings.c) |
+| PKJS build compatibility | Use explicit null checks and Promise chains without adding transpilation machinery. | [PKJS entry point](../src/pkjs/index.js), [Refresh controller](../src/pkjs/weather_location.js), [Build script](../wscript) |
+| Native C scope | Compile production C against narrow dependency replacements; keep test branches out of production and visual signoff with the operator. | [Native C tests](../tests/native/README.md#execution-and-ownership) |
+| Native case isolation | Build once per configuration and run each case in a fresh process; continue after failures and reject stale binaries after failed builds. | [Native C tests](../tests/native/README.md#flat-run-list) |
+| Native test matrices | Use the representative commit matrix for routine gates and the full matrix for platform, health, persistence, geometry, mock, or runner changes. | [Native C tests](../tests/native/README.md#run-tests) |
+| Dependency integrity | Keep vendored Clar identical to a pinned upstream revision; keep integration code outside it and protect vendor files from formatters. | [Clar provenance](../tests/native/vendor/clar/UPSTREAM.md) |
+| Geometry validation | Check production calculations against containment rules and geometric relationships; keep frame intersections distinct from rendered clipping. | [Native geometry checks](../tests/native/README.md#inspect-calculated-geometry) |
 | Weather/location absence | Failed retrieval clears both fields through one unavailable payload; there is no fixed-location fallback. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Location presentation | Production PKJS limits locations to 15 characters and renders them uppercase; direct AppMessage and QA inputs may retain case. | [UserInterface](UserInterface.md) |
 | Battery presentation | Battery state is rendered as a track rather than percentage text. | [UserInterface](UserInterface.md) |
@@ -47,7 +61,7 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Release hygiene | Forced debug defines and incidental screenshots stay out of normal release commits. | [Contributing](Contributing.md) |
 | Prototype shortcuts | Replace prototype shortcuts before release when they bypass established ownership. | [Contributing](Contributing.md) |
 | Horizontal-rule ownership | `watchface` owns the horizontal rule as a dedicated layer with explicit lifecycle and targeted refresh. | [WatchfaceImplementationFlow](WatchfaceImplementationFlow.md) |
-| Frugal settings persistence | Persist settings only when a validated persisted field changes. | [SettingsandConfiguration](SettingsandConfiguration.md) |
+| Frugal settings persistence | Write on validated field changes; loading a legacy format also writes its replacement under the new key. | [SettingsandConfiguration](SettingsandConfiguration.md) |
 | Settings validation | Sanitize on initial load; reject invalid live updates and retain the current valid value. | [SettingsandConfiguration](SettingsandConfiguration.md#runtime-mutation) |
 | Orientation refresh | Orientation changes target battery, Bluetooth-icon layout, and horizontal rule; connection handling remains separate. | [RuntimeArchitecture](RuntimeArchitecture.md) |
 | Dirty versus refresh | `layer_mark_dirty()` schedules a layer redraw; application refresh masks separately control state reads, frame application, visibility, and alerts. | [RuntimeArchitecture](RuntimeArchitecture.md) |
@@ -57,9 +71,105 @@ This document records the non-trivial engineering decisions, risks, assumptions,
 | Charging indication | The procedural bolt is the required charging indicator; color remains supporting information. | [UserInterface](UserInterface.md) |
 | Editor include policy | `Completion.HeaderInsertion: Never` leaves include changes under developer control. | [`.clangd`](../.clangd) |
 
+## Current Weather Response Ordering
+
+The [historical out-of-order response entry](#weather-responses-can-arrive-out-of-order) records a superseded implementation. The current Promise chain replaces request-ID filtering, and the accepted weather/location absence decision replaces the fixed OAK fallback with an unavailable payload for both fields.
+
+Current PKJS serializes acquisition, changed-data delivery, unavailable delivery, and cached replay in one Promise chain. Each queued operation waits for prior sends to succeed or exhaust retries. This preserves refresh order and prevents an older unavailable update from clearing newer weather and location data. [SettingsandConfiguration](SettingsandConfiguration.md#weather-scheduling-and-delivery) owns the current contract.
+
+## Recent Decision Context
+
+This update reconciles commits after `5154e5c` on November 11, 2026, through `7adb509` on November 25, 2026, with the decisions settled in the November 25 review.
+
+### Phone-owned acquisition
+
+Type: Decision Status: Accepted
+
+Commit `060a931` superseded the C-owned cadence introduced in `12aa103` and returned scheduling to PKJS to prepare for subscription-based plugins. Bidirectional `SYNC` replaced `JS_READY`, and `REFRESH` was removed. The change preserves the [narrow transport boundary](#keep-the-ataglancewatchface-boundary-narrow): C retains parsing, validation, lifecycle cleanup, state, and rendering. PKJS restores its interval from Clay storage; C’s persisted copy does not drive that schedule.
+
+Startup synchronization stops after its bounded attempts. Recovery belongs to the user through the phone app’s resync action. The watchface does not restart itself or add indefinite retry timers. Connectivity probes before later acquisition cycles reduce phone work when updates cannot reach the watch.
+
+The connectivity decision refines the weather/location absence decision: a failed probe preserves displayed data; acquisition failure clears both fields. Plugin adoption remains separate work, subject to the [weather-condition coverage risk](#plugin-weather-condition-coverage).
+
+### Health capability filtering
+
+Type: Decision Status: Accepted
+
+The current health-configuration decision supersedes [keeping health controls visible on non-health targets](#health-settings-on-non-health-targets). Clay filters controls by capability, PKJS omits unsupported health keys, and C retains its feature guards. These checks apply the same capability boundary at configuration, transport, and runtime.
+
+### System time format
+
+Type: Decision Status: Accepted
+
+Commit `d5d5c96` replaced the app-owned `TIME_FORMAT` preference with the system 12/24-hour setting, read on every time refresh. Removing the stored field required the [format migration below](#persisted-format-and-key-migration).
+
+### Stable message IDs
+
+Type: Decision Status: Accepted
+
+Explicit message IDs extend the [battery-orientation key decision](#battery-orientation-default-follows-device-geometry). Preserving numeric assignments keeps existing keys stable when another key is renamed or removed. The manifest, generated mapping, and QA commands continue to share those assignments.
+
+### Persisted format and key migration
+
+Type: Decision Status: Accepted
+
+This decision refines [frugal settings persistence](#persist-pebble-settings-frugally). Normal updates still write only when a validated persisted field changes. Changing the persisted format and its storage key is itself a persisted-state change, even when user preference values stay the same.
+
+The loader writes the replacement immediately during migration and deletes the readable legacy record only after the write succeeds. A failed replacement write preserves that record for another attempt. For the incompatible layout caused by removing `TIME_FORMAT`, explicit conversion under a new key supersedes the older instruction to append fields to the existing struct. [SettingsandConfiguration](SettingsandConfiguration.md#persistence) owns the persistence contract.
+
+### PKJS build compatibility
+
+Type: Decision Status: Accepted
+
+Promise chains support the [response-ordering contract](#current-weather-response-ordering) within the current build. Explicit null checks and Promise chains remain the accepted forms in place of optional chaining and `async`/`await`; adding transpilation machinery requires a separate decision. This compatibility decision applies to the current toolchain. Reconsidering syntax support requires fresh toolchain evidence.
+
+### Native execution and ownership
+
+Type: Decision Status: Accepted
+
+Commit `7adb509` established six native suites. `run.sh` owns selection, the consolidated suite-to-source table, compilation, process launches, and aggregate status. Clar owns registration, assertions, and case lifecycle. `discover.py` reuses Clar’s parser for listing and exact selection; runner diagnostics and Pebble replacements remain project-owned.
+
+The native scope and test matrices extend the accepted QA-evidence decision with host-side behavioral checks. Canonical `report.json` remains the QA harness’s reporting contract, and visual signoff remains with the operator. Keeping Clar pinned and unmodified preserves its ownership of discovery and case lifecycle; project integration stays outside the dependency.
+
+Every selection becomes one ordered list of platform, health variant, suite, and case. Generate it each run; keep saved-list input and its extra validation machinery outside the runner. Each configuration reuses one binary across isolated case processes. Diagnostics retain case context, logs, and replay commands. Suite files keep lifecycle callbacks, private helpers, and cases in a consistent order. [Native C tests](../tests/native/README.md) owns the execution and authoring contracts.
+
+### Geometry and visual evidence
+
+Type: Decision Status: Accepted
+
+Native geometry checks supplement the [glyph-lab validation gate](#glyph-lab-is-the-validation-gate-for-glyph-work) and preserve the [platform-specific geometry decision](#reuse-architecture-not-geometry). The earlier [round-validation closure](#round-visual-validation-is-not-final) applies to its milestone; later geometry changes still need fresh evidence.
+
+Native tests execute production calculations and collect all boundary violations. Expected results come from containment rules and geometric relationships, without a maintained coordinate table. A text or image frame intersecting a round screen’s edge does not alone prove visible clipping. The accepted Gabbro observations do not establish a general pixel-overflow allowance.
+
+Native checks cover behavior and calculated geometry. They do not establish complete SDK ABI compatibility or rendered correctness. The target build and operator visual review retain those responsibilities. [Native C tests](../tests/native/README.md#inspect-calculated-geometry) records the checks and their limits.
+
+## Settled Issues Since November 11, 2026
+
+Status: Closed. The commits and regression coverage below record each resolution.
+
+| Issue | Resolution | Evidence |
+| --- | --- | --- |
+| Removing `TIME_FORMAT` shifted persisted fields. | Read the old layout explicitly, copy retained fields, and write the new shape to key `3`. | `4dd4253`; [settings migration tests](../tests/native/suites/settings.c) |
+| Migration failures could erase preferences or persist defaults. | Preserve readable key `2` until key `3` is saved successfully. Discard unreadable legacy records without persisting defaults. | `4dd4253`; [legacy read and migration write failure tests](../tests/native/suites/settings.c) |
+| Cached replay could overwrite newer weather and suppress correction. | Queue replay itself and read the cache when that operation executes. | `4dd4253`; [refresh controller](../src/pkjs/weather_location.js) |
+| Incomplete Promise settlement could release or stall the refresh chain. | Return delivery promises for changed data, unavailable data, and cached replay. Settle sends on success or exhausted retries before continuing. | `6b673f0`, `4dd4253`; [delivery regression tests](../tests/js/weather_location.test.js) |
+| Native assertion failures or crashes could prevent later cases from running. | Use Clar cleanup for assertion failures and fresh processes for crash isolation; preserve diagnostics and continue the run. | `7adb509`; [runner regression checks](../tests/native/verify_runner.py) |
+
+## Open Risks
+
+### Plugin weather-condition coverage
+
+Type: Risk Status: Open
+
+Owner: PKJS weather integration.
+
+The November 23 plugin review identified missing standard mappings for weather distinctions used by the watchface, including thunderstorms. Adopting that vocabulary could remove condition detail from existing glyphs. This risk concerns the [representative WMO branch coverage](#representative-weather-qa-coverage) and [shared bolt primitive](#shared-bolt-primitive): a new source must retain the condition distinctions that drive those glyphs.
+
+Next action: verify the current plugin contract and resolve condition mappings before adopting it as the weather source. Preserve Celsius-tenths transport and C rendering. Scheduling changes do not establish that plugin integration is complete.
+
 ## Historical Log
 
-Use this lightweight log alongside `ARCHITECTURE_LEDGER.md` for non-trivial layout, platform, lifecycle, or API work. It should not replace the ledger.
+The entries below preserve earlier decisions and their original context. The accepted-decision summary above routes current behavior to its canonical documents.
 
 RAID means:
 

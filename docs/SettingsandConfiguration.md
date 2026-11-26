@@ -1,6 +1,6 @@
 # Settings and Configuration
 
-This document defines settings, defaults, valid values, message keys, persistence, and runtime effects for _At A Glance_. It traces a preference from Clay through PKJS and AppMessage to the watch.
+This document defines settings, defaults, valid values, message keys, persistence, and runtime effects for _At A Glance_. It traces a preference from Clay through PKJS and AppMessage to the watch, and defines weather scheduling and delivery.
 
 `ataglance.c` loads persisted settings before creating the watchface. The runtime validates incoming settings; the communications handler saves accepted changes and applies service side effects.
 
@@ -11,17 +11,16 @@ This document defines settings, defaults, valid values, message keys, persistenc
 
 ## Settings Catalog
 
-The runtime setting source of truth is `WatchfaceSettings` in `src/modules/settings.h`. On health-capable builds, there are seven persisted runtime settings.
+The runtime setting source of truth is `WatchfaceSettings` in `src/modules/settings.h`. On health-capable builds, there are six persisted runtime settings. Time follows the watch’s system 12/24-hour preference through `clock_is_24h_style()`; Clay has no time-format setting.
 
 | Setting | C field | Canonical key | Default | Valid values | Persisted | Runtime effect |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1. Time format | `time_format` | `TIME_FORMAT` | `0` / `TIME_FMT_24` | `0` 24-hour, `1` 12-hour | Yes | Refreshes time text |
-| 2. Temperature unit | `temp_unit` | `TEMP_UNIT` | `0` / `TEMP_UNIT_F` | `0` Fahrenheit, `1` Celsius | Yes | Refreshes climate text |
-| 3. Display mode | `display_mode` | `DISPLAY_MODE` | `0` / `DISPLAY_MODE_LIGHT_MONOCHROME` | `0`, `1` on B/W; `0`, `1`, `2`, `3` on color | Yes | Repaints watch face |
-| 4. Weather cadence | `weather_update_minutes` | `WEATHER_UPDATE_MINUTES` | `15` | `15`, `30`, `45`, `60` | Yes | C persists the interval and schedules refresh requests |
-| 5. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `15` | C accepts integers `10` through `120`; Clay offers `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
-| 6. Steps goal | `steps_goal` | `STEPS_GOAL` | `10000` | `4000` through `32000` | Yes on `PBL_HEALTH` | Refreshes steps display |
-| 7. Battery orientation | `battery_orientation` | `BATTERY_ORIENTATION` | `0` horizontal on rectangular displays; `1` vertical on round displays | `0` horizontal, `1` vertical | Yes | Relayouts battery presentation |
+| 1. Temperature unit | `temp_unit` | `TEMP_UNIT` | `0` / `TEMP_UNIT_F` | `0` Fahrenheit, `1` Celsius | Yes | Refreshes climate text |
+| 2. Display mode | `display_mode` | `DISPLAY_MODE` | `0` / `DISPLAY_MODE_LIGHT_MONOCHROME` | `0`, `1` on B/W; `0`, `1`, `2`, `3` on color | Yes | Repaints watch face |
+| 3. Weather cadence | `weather_update_minutes` | `WEATHER_UPDATE_MINUTES` | `15` | `15`, `30`, `45`, `60` | Yes | PKJS schedules updates; C persists its copy |
+| 4. Heart-rate cadence | `hr_sample_minutes` | `HR_SAMPLE_MINUTES` | `15` | C accepts integers `10` through `120`; Clay offers `10`, `15`, `30`, `60`, `120` | Yes on `PBL_HEALTH` | Updates HealthService sample period |
+| 5. Steps goal | `steps_goal` | `STEPS_GOAL` | `10000` | `4000` through `32000` | Yes on `PBL_HEALTH` | Refreshes steps display |
+| 6. Battery orientation | `battery_orientation` | `BATTERY_ORIENTATION` | `0` horizontal on rectangular displays; `1` vertical on round displays | `0` horizontal, `1` vertical | Yes | Relayouts battery presentation |
 
 Clay also exposes two settings-page inputs that are not canonical runtime settings:
 
@@ -38,23 +37,23 @@ Weather, location, and one-shot health overrides are transient AppMessage data. 
 
 | Source | Owns |
 | --- | --- |
-| `package.json` | Pebble manifest `messageKeys` order and generated numeric IDs |
+| `package.json` | Explicit `messageKeys` numeric IDs and generated symbols |
 | `src/pkjs/config.json` | Clay settings page fields, labels, options, capability filters, and form defaults |
-| `src/pkjs/index.js` | Clay result parsing, settings normalization, readiness announcement, and refresh-request handling |
-| `src/pkjs/weather_location.js` | One climate/location request per REFRESH, location reuse, and combined payload creation |
+| `src/pkjs/index.js` | Clay result parsing, settings normalization, health capability checks, and startup synchronization |
+| `src/pkjs/weather_location.js` | Refresh scheduling, connectivity probes, serialized acquisition, location reuse, and changed-field payloads |
 | `src/pkjs/app_message_queue.js` | Serialized sends and bounded retries for each queue |
 | `src/modules/settings.h` | Runtime setting enums, defaults, validation macros, and `WatchfaceSettings` shape |
 | `src/modules/settings.c` | Defaults application, persisted read/write, and persisted-value sanitization |
 | `src/c/ataglance.c` | Settings loading, service subscriptions, and AppMessage callback registration |
 | `src/c/ataglance_message_parser.c` | Tuple parsing and receipt/parse masks |
-| `src/c/ataglance_comms_handler.c` | Inbox sizing/opening, refresh scheduling and retries, settings-save trigger, and HealthService cadence updates |
+| `src/c/ataglance_comms_handler.c` | Inbox sizing/opening, startup sync replies and retries, settings-save trigger, and HealthService cadence updates |
 | `src/modules/watchface_runtime_boundary.c` | Runtime setting validation, mutation, repaint/refresh decisions |
 | `src/modules/watchface.c` | Settings consumption during repaint and module refresh |
 | [SettingsandConfiguration](SettingsandConfiguration.md) | Human-readable settings contract |
 
 ## Clay And PKJS Flow
 
-Clay is configured in `src/pkjs/config.json` and opened from PKJS:
+Clay is configured in `src/pkjs/config.json`. PKJS disables Clay’s automatic event handlers and owns configuration events. `clay.getSettings()` persists submitted preferences in phone local storage and returns the outbound dictionary:
 
 ```text
 Pebble showConfiguration event
@@ -90,57 +89,74 @@ else
   -> send STEPS_GOAL_DEFAULT
 ```
 
-PKJS removes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM` after computing `STEPS_GOAL`. Only the canonical goal crosses the boundary, so inbox sizing excludes those two Clay inputs.
+PKJS computes `STEPS_GOAL` when active-watch information identifies a non-Aplite platform with firmware 3.8 or newer. Otherwise, it removes `STEPS_GOAL` and `HR_SAMPLE_MINUTES` from the outbound dictionary. Clay also filters health controls by capability, and C guards health paths with `PBL_HEALTH`. PKJS always removes `STEPS_GOAL_PRESET` and `STEPS_GOAL_CUSTOM`, so inbox sizing excludes those two form inputs.
 
-**2. Weather Update Minutes & Scheduling**
+**2. Weather update minutes**
 
-C owns the weather schedule and uses its persisted `WEATHER_UPDATE_MINUTES` value. Clay offers `15`, `30`, `45`, and `60` minutes. PKJS parses the submitted value, defaults unparseable values to 15, and clamps the result to 15–60. C accepts only the four supported intervals and retains its current value when a live update is invalid.
+PKJS owns the weather schedule. Clay offers `15`, `30`, `45`, and `60` minutes. PKJS parses saved or submitted values, defaults unparseable values to 15, and clamps the result to 15–60. C persists its own copy, accepts only the four supported intervals, and retains its current value when a live update is invalid.
 
-Startup and refresh requests use separate keys:
+## Weather Scheduling And Delivery
 
-- On `ready`, PKJS sends `JS_READY=1` through the settings/control queue and waits for a request.
-- C creates the watchface before registering callbacks and opening AppMessage. On receipt of `JS_READY`, C starts a refresh attempt and continues parsing other tuples in the message.
-- Each `REFRESH=1` queues one climate/location request in JS. Weather is fetched again; a reverse-geocoded location may be reused while coordinates remain within the location tolerance.
-- C checks the phone app connection before each attempt. While disconnected, it skips the outbox and schedules a retry. These checks count toward the same six-attempt limit as failed sends.
-- Retry delays run from one through five seconds. Successful delivery resets the retry state and schedules the next C cycle. Exhausted attempts also schedule the next cycle, which checks the connection again.
-- C schedules the next request independently of whether JS retrieves or delivers climate/location successfully. PKJS has no periodic refresh timer.
-- An accepted interval change starts a refresh immediately and replaces the C cadence timer. An unchanged interval leaves the schedule alone.
+Data accuracy requires refresh operations to complete in request order. The Promise chain includes acquisition, changed-data delivery, unavailable delivery, and cached replay. Each queued operation waits for prior sends to succeed or exhaust their retries before starting. This prevents an older unavailable update from clearing newer weather and location data.
 
-Climate and reverse-geocoding requests run concurrently. PKJS updates `lastKnownClimate` and `lastKnownLookup` together only after both promises resolve. A missing result clears the cached fields and sends unavailable data. Geolocation failure or a rejected request also clears the caches and sends unavailable data. The combined payload contract belongs to PKJS; C continues to accept weather and location tuples independently.
+### Startup synchronization
+
+- On `ready`, PKJS sends `SYNC=1` through the settings/control queue.
+- C creates the watchface before registering callbacks and opening AppMessage. On receipt of `SYNC`, C replies with `SYNC=1` and continues parsing other tuples.
+- C checks the phone app connection before each reply attempt. Disconnected checks and failed sends share a limit of six attempts, with retry delays of one through five seconds. Successful delivery resets retry state; exhaustion ends the sync attempt.
+- After startup sync exhausts its attempts, resync from the phone app to start another attempt.
+- On receipt of C’s `SYNC=1`, PKJS reads `clay-settings` from local storage, validates `WEATHER_UPDATE_MINUTES`, and calls `kickoffUpdates(minutes)`. Missing, malformed, or unparseable saved settings use 15 minutes.
+
+### Refresh scheduling
+
+- Startup and interval changes start a connectivity probe immediately. PKJS sends `PING=1` through the control queue, allowing three total attempts with retry delays of one and two seconds. Its send-success callback starts acquisition; C sends no application-level PING reply.
+- Failed probes skip acquisition and schedule the next check after the selected interval. Existing watch data remains visible.
+- PKJS schedules the next check with one timeout after the acquisition chain settles. Both changed-data and unavailable-message sends remain in the chain until delivery succeeds or retries are exhausted.
+- A changed interval starts a new probe; acquisition clears the prior timeout. The next timeout uses the new interval. With an unchanged interval and an active timeout, `kickoffUpdates()` resends the cached pair, when available, and leaves the timeout in place. With no active timeout, it starts a probe.
+
+### Acquisition and delivery
+
+- Each acquisition requests coordinates first. Latitude and longitude differences must each be less than `0.02` degrees to reuse the coordinate anchor and cached name. Weather is fetched even when coordinates are unchanged.
+- Geolocation and network requests use a 15-second timeout. Geolocation may reuse a position up to 10 minutes old.
+- Climate and reverse geocoding run concurrently. `Promise.all()` waits for both results before building a payload.
+- A location name that differs from the cached lookup adds `MAYBE_CURRENT_LOCATION`. Movement beyond the coordinate tolerance clears that lookup and forces a new name request, so the location field is sent even if the new name matches the previous name.
+- A change in any climate value adds all three climate fields: `TEMPERATURE`, `WEATHER_CONDITION`, and `IS_DAY`. Unchanged fields are omitted; unchanged results produce no send.
+- Successful delivery updates `lastKnownClimate` and `lastKnownLookup` together. Failed delivery does not advance either cache, so the next acquisition can send the changes again.
+- Geolocation failure, a rejected request, or a missing result clears the coordinates and caches. PKJS sends the full unavailable payload: temperature `0`, condition `-1`, `IS_DAY=0`, and an empty location string.
+- PKJS owns coordinated acquisition and changed-field delivery. C accepts weather and location independently; a weather update still requires all three climate fields.
 
 ## AppMessage And Message-Key Contract
 
-`package.json` owns the manifest-backed message-key list.
+`package.json` assigns explicit numeric IDs in its `messageKeys` object.
 
 Current manifest-backed keys:
 
-| #   | Key                      | Generated numeric ID | Role                                |
-| --- | ------------------------ | -------------------- | ----------------------------------- |
-| 1   | `TIME_FORMAT`            | `10000`              | Runtime setting                     |
-| 2   | `TEMP_UNIT`              | `10001`              | Runtime setting                     |
-| 3   | `TEMPERATURE`            | `10002`              | Weather data                        |
-| 4   | `WEATHER_CONDITION`      | `10003`              | Weather data                        |
-| 5   | `IS_DAY`                 | `10004`              | Weather data                        |
-| 6   | `WEATHER_UPDATE_MINUTES` | `10005`              | Runtime setting                     |
-| 7   | `DISPLAY_MODE`           | `10006`              | Runtime setting                     |
-| 8   | `HR_SAMPLE_MINUTES`      | `10007`              | Runtime setting on `PBL_HEALTH`     |
-| 9   | `STEPS_GOAL`             | `10008`              | Runtime setting on `PBL_HEALTH`     |
-| 10  | `STEPS_GOAL_PRESET`      | `10009`              | Clay-only input                     |
-| 11  | `STEPS_GOAL_CUSTOM`      | `10010`              | Clay-only input                     |
-| 12  | `MAYBE_CURRENT_LOCATION` | `10011`              | Optional location data              |
-| 13  | `JS_READY`               | `10012`              | PKJS readiness announcement         |
-| 14  | `BATTERY_ORIENTATION`    | `10013`              | Runtime setting                     |
-| 15  | `REFRESH`                | `10014`              | C request for climate/location      |
+| #   | Key                      | Generated numeric ID | Role                            |
+| --- | ------------------------ | -------------------- | ------------------------------- |
+| 1   | `PING`                   | `10000`              | PKJS connectivity probe         |
+| 2   | `TEMP_UNIT`              | `10001`              | Runtime setting                 |
+| 3   | `TEMPERATURE`            | `10002`              | Weather data                    |
+| 4   | `WEATHER_CONDITION`      | `10003`              | Weather data                    |
+| 5   | `IS_DAY`                 | `10004`              | Weather data                    |
+| 6   | `WEATHER_UPDATE_MINUTES` | `10005`              | Runtime setting                 |
+| 7   | `DISPLAY_MODE`           | `10006`              | Runtime setting                 |
+| 8   | `HR_SAMPLE_MINUTES`      | `10007`              | Runtime setting on `PBL_HEALTH` |
+| 9   | `STEPS_GOAL`             | `10008`              | Runtime setting on `PBL_HEALTH` |
+| 10  | `STEPS_GOAL_PRESET`      | `10009`              | Clay-only input                 |
+| 11  | `STEPS_GOAL_CUSTOM`      | `10010`              | Clay-only input                 |
+| 12  | `MAYBE_CURRENT_LOCATION` | `10011`              | Optional location data          |
+| 13  | `SYNC`                   | `10012`              | Startup synchronization in both directions |
+| 14  | `BATTERY_ORIENTATION`    | `10013`              | Runtime setting                 |
 
 **Notes**
 
-- Pebble assigns manifest-backed numeric message IDs from the `package.json` `messageKeys` order.
-- Generated artifacts may list names alphabetically; numeric IDs still follow manifest order.
+- Numeric IDs come from explicit manifest values. Object order does not assign IDs.
+- Generated artifacts may list names alphabetically.
 - Manual QA commands, harness helpers, PKJS, and C must follow the generated numeric mapping.
 
 **Rules**
 
-- Add new manifest-backed keys at the end unless a deliberate renumbering is being performed.
+- Preserve assigned IDs when adding keys; assign each new key an unused ID.
 - Recheck generated key output after any `messageKeys` change.
 - Update JS, C parsing, inbox sizing, harness helpers, manual QA commands, and docs in the same change.
 - Do not assume generated file order is the same as numeric order.
@@ -178,17 +194,16 @@ main_window_load(window)
 ```text
 inbox_received_handler(iter, context)
   -> retain the previous heart-rate cadence on PBL_HEALTH
-  -> request a refresh when JS_READY is present, then continue parsing
+  -> respond to SYNC when present, then continue parsing
   -> parse settings tuples
   -> parse weather and location tuples
   -> parse one-shot health tuples on PBL_HEALTH
   -> watchface_apply_received_data(&data, settings)
   -> save settings if persisted fields changed
-  -> request a refresh and reschedule if weather cadence changed
   -> update HealthService sample period if HR cadence changed
 ```
 
-## Runtime mutation
+### Runtime mutation
 
 Sanitize settings on initial load. Reject invalid live updates and retain the current valid value.
 
@@ -203,15 +218,20 @@ Refresh effects:
 
 | Setting | Runtime action |
 | --- | --- |
-| `TIME_FORMAT` | `WATCHFACE_UPDATE_TIME` |
 | `TEMP_UNIT` | `WATCHFACE_UPDATE_CLIMATE` |
 | `DISPLAY_MODE` | `WATCHFACE_REPAINT` |
 | `BATTERY_ORIENTATION` | `WATCHFACE_UPDATE_BATTERY_ORIENTATION` |
-| `WEATHER_UPDATE_MINUTES` | Persisted in C; requests a refresh and schedules the new interval |
+| `WEATHER_UPDATE_MINUTES` | Persisted in C; PKJS applies its local value through `kickoffUpdates()` |
 | `HR_SAMPLE_MINUTES` | Persisted in C; HealthService sample period updated in `ataglance_comms_handler.c` |
 | `STEPS_GOAL` | `WATCHFACE_UPDATE_HEALTH` |
 
-Persistence uses Pebble persistent storage key `2` and writes the full `WatchfaceSettings` struct only when a validated persisted field changes. Stored settings are sanitized on load.
+### Persistence
+
+Normal settings updates write the full `WatchfaceSettings` struct to Pebble storage key `3` only when a validated persisted field changes.
+
+Migration changes the persisted format and key. After reading a complete legacy record from key `2`, the loader immediately writes its replacement to key `3`. It deletes key `2` only after the full replacement write succeeds. A failed or partial write preserves the readable legacy record for the next load. Preference values can remain unchanged while their persisted representation changes.
+
+The loader sanitizes loaded values. Stored weather intervals are clamped to 15–60 and rounded down to a multiple of 15; invalid live updates retain the current value.
 
 ## Change Checklist
 
@@ -220,10 +240,10 @@ For a settings change, reconcile the affected owners and validate the complete p
 - Update `package.json` only when the AppMessage key set changes.
 - Regenerate message-key output after key changes and confirm IDs match manual QA commands and harness helpers.
 - Check `src/pkjs/config.json` fields, defaults, options, and capability filters.
-- Check `src/pkjs/index.js` normalization, canonical outbound keys, and refresh-request handling.
+- Check `src/pkjs/index.js` normalization, canonical outbound keys, and startup synchronization.
 - Update `src/modules/settings.h` and `src/modules/settings.c` for defaults, validation, persisted shape, or sanitization changes.
 - Update `src/c/ataglance_message_parser.c` for tuple parsing.
-- Update `src/c/ataglance_comms_handler.c` for inbox sizing, save triggers, or cadence side effects.
+- Update `src/c/ataglance_comms_handler.c` for inbox sizing, save triggers, or HealthService side effects.
 - Update `src/c/ataglance.c` when startup loading or service subscriptions change.
 - Update `src/modules/watchface_runtime_boundary.c` for runtime validation, mutation, repaint, or refresh behavior.
 - Update [SettingsandConfiguration](SettingsandConfiguration.md).
@@ -237,4 +257,4 @@ For a settings change, reconcile the affected owners and validate the complete p
 - [RuntimeArchitecture](RuntimeArchitecture.md) for the runtime architecture.
 - [UserInterface](UserInterface.md) for the visual consequences of settings.
 - [BuildandInstall](BuildandInstall.md) describes build and install flows and associated commands.
-- [Validation](Validation.md) for emulator validation and QA evidence.
+- [Validation](Validation.md) for automated tests, emulator checks, and operator evidence.

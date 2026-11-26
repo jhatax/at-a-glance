@@ -32,6 +32,9 @@ wscript
 ```text
 README.md
 docs/
+tests/native/README.md
+qa/README.md
+qa/docs/
 ```
 
 ## Watch Face Product Implementation Map
@@ -47,9 +50,12 @@ package.json
 |               |
 |               src/pkjs/index.js ──────────────────> package.json message keys
 |               - Clay bootstrap                    - generated message key symbols
-|               - JS_READY announcement, REFRESH handling, and settings/control sends
+|               - startup SYNC and saved interval restoration
+|               - health gating and settings/control sends
 |               src/pkjs/weather_location.js
-|               - geolocation, parallel weather/location requests, combined payload
+|               - cadence timer and PING probes
+|               - one Promise chain for acquisition, delivery, and cached replay
+|               - changed-field and unavailable payloads
 |               src/pkjs/app_message_queue.js
 |               - independent control and climate queues with bounded retries
 V               ────────────────────────────────────────────────────────────────────
@@ -66,11 +72,12 @@ src/c/ataglance.c ────────────────────�
 - settings load                                    - update masks
 - service subscriptions                            - runtime-visible transport keys
 - AppMessage callback registration
-- refresh/retry timer lifetime
+- startup sync retry-timer lifetime
 - WatchfaceEventData dispatch
         |
         +-> ataglance_comms_handler.c
-        |   - inbox/outbox callbacks, transport opening, and C refresh scheduling/retries
+        |   - inbox/outbox callbacks and transport opening
+        |   - startup sync replies/retries
         |   - changed-settings persistence and HR cadence side effects
         |       -> ataglance_message_parser.c
         |          - typed tuple conversion and received/parsed masks
@@ -97,8 +104,9 @@ watchface.c ──────────────────────�
         +─────────────────────────────────────────> watchface_layout.h
         |                                           - public layout facade
         +─────────────────────────────────────────> layout_surface.h
-        |                                           - geometry/design vocabulary
-        |                                           - calculated layout structures
+        |                                           - layout metric-pair types
+        +─────────────────────────────────────────> layout_blueprints.h
+        |                                           - platform constants and size classes
         +─────────────────────────────────────────> layout_style.h
         |                                           - visual vocabulary - fontbooks
         |                                           - color & text roles - palettes
@@ -135,21 +143,25 @@ substratum_renderer.c ───────────────────�
 - glyph primitives                                 - small rendering helpers
         |
         v
-helper.c ────────────────────────────────────────> helper.h
-- bitmap palette helpers                           - shared utility macros
-helper_computations.c
-- shared computation helpers
+helper_bmp_ops.c ────────────────────────────────> helper.h
+- bitmap palette helpers                           - bitmap helper declarations
+helper_computations.h
+- shared value, range, and scaling macros
+substratum_computations.c ───────────────────────> substratum_computations.h
+- icon coordinate scaling and subframe calculations
 ────────────────────────────────────────────────────────────────────────────
 ```
+
+The PKJS request chain preserves refresh order through acquisition and send completion, including unavailable updates and cached replay. [SettingsandConfiguration](SettingsandConfiguration.md#weather-scheduling-and-delivery) owns this data-accuracy invariant.
 
 ### Header groups
 
 - Runtime contract: `watchface.h`, `settings.h`
-- Watchface vocabulary: `watchface_components.h`, `watchface_layout.h`, `layout_surface.h`, `layout_style.h`
+- Watchface vocabulary: `watchface_components.h`, `watchface_layout.h`, `layout_surface.h`, `layout_blueprints.h`, `layout_style.h`
 - Diagnostics: `watchface_debug.h`
 - Module contracts: `date.h`, `time.h`, `battery.h`, `climate.h`, `climate_glyphs.h`, `steps.h`, `bpm.h`
 - Private message adapter: `ataglance_comms_adapter.h`, `ataglance_message_parser.h`
-- Shared helpers: `substratum_renderer.h`, `helper.h`, `helper_computations.h`
+- Shared helpers: `substratum_renderer.h`, `substratum_computations.h`, `helper.h`, `helper_computations.h`
 
 **Notes**
 

@@ -82,9 +82,9 @@ This document defines each document's purpose, scope, and navigation contract. U
 
 ### 10. SettingsandConfiguration
 
-**Purpose:** Defines the settings contract from Clay and PKJS through AppMessage, C parsing, persistence, and runtime effects. It records defaults, valid values, message keys, and the validation obligations for changes.
+**Purpose:** Defines the settings contract from Clay and PKJS through AppMessage, C parsing, persistence, and runtime effects. It records defaults, valid values, message keys, weather scheduling and delivery, and validation obligations for changes.
 
-**Sub-concepts:** Setting catalog; defaults; valid ranges; Clay mapping; messageKeys; PKJS normalization; persisted and ephemeral values; runtime side effects; AppMessage payloads; message-key table; persistence; validation requirements; change checklist.
+**Sub-concepts:** Setting catalog; defaults; valid ranges; Clay mapping; messageKeys; PKJS normalization; startup synchronization; weather scheduling; connectivity probes; changed-field delivery; cache invalidation; persisted and ephemeral values; runtime side effects; AppMessage payloads; message-key table; persistence; validation requirements; change checklist.
 
 **Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [VisualVocabulary](VisualVocabulary.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [UserInterface](UserInterface.md), [BuildandInstall](BuildandInstall.md), [Validation](Validation.md).
 
@@ -92,9 +92,9 @@ This document defines each document's purpose, scope, and navigation contract. U
 
 **Purpose:** Guides contributors from repository setup through build, validation, review, formatting, and commit. It provides the working discipline that keeps product, source, and documentation changes traceable.
 
-**Sub-concepts:** GitHub checkout; prerequisites; environment verification; Git hook setup; editor checks; source discipline; glyph development; review discipline; formatters; pre-commit; documentation management; decision-log use.
+**Sub-concepts:** GitHub checkout; prerequisites; environment verification; Git hook setup; editor checks; native C test entry points; source discipline; glyph development; review discipline; formatters; dependency integrity; pre-commit; documentation management; decision-log use.
 
-**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [QA README](../qa/README.md).
+**Connections:** Adjacent: [BuildandInstall](BuildandInstall.md), [Validation](Validation.md), [RAID Log](RAID_LOG.md). Read next: [RuntimeArchitecture](RuntimeArchitecture.md), [SettingsandConfiguration](SettingsandConfiguration.md), [Native C tests](../tests/native/README.md), [QA README](../qa/README.md).
 
 ### 12. BuildandInstall
 
@@ -108,9 +108,9 @@ This document defines each document's purpose, scope, and navigation contract. U
 
 **Purpose:** Defines how contributors choose a validation path and what evidence each path produces. It keeps signoff with the operator while making build, runtime, settings, visual, and release checks repeatable.
 
-**Sub-concepts:** Validation goals; validation invariants; path selection; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather and location; display mode; one-shot health; config page; debug builds.
+**Sub-concepts:** Validation goals; validation invariants; path selection; automated test entry points; native C coverage and geometry diagnostics; operator evidence; release validation; canonical pre-release plan; plan execution; run inspection; comparison; manual emulator commands; battery; weather and location; display mode; one-shot health; config page; debug builds.
 
-**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [QA README](../qa/README.md).
+**Connections:** Adjacent: [ProductInvariants](ProductInvariants.md), [Contributing](Contributing.md), [BuildandInstall](BuildandInstall.md). Read next: [Native C tests](../tests/native/README.md), [QA README](../qa/README.md).
 
 ### 14. QA README
 
@@ -144,6 +144,14 @@ This document defines each document's purpose, scope, and navigation contract. U
 
 **Connections:** Adjacent: [RuntimeArchitecture](RuntimeArchitecture.md), [DocumentationContracts](DocumentationContracts.md). Read next: [Contributing](Contributing.md), [Validation](Validation.md).
 
+### 18. Native C tests
+
+**Purpose:** Explains how to run, write, and debug native C tests for core behavior and calculated geometry. It owns the suite's architecture, authoring conventions, and operator commands.
+
+**Sub-concepts:** Suite and case selection; platform and health matrices; shared builds; flat run list; case process isolation; Clar registration and lifecycle; Pebble mocks; source mappings; calculated geometry; bounds output; circle observations; retained logs; failure replay; sanitizers; runner checks; pinned dependency maintenance.
+
+**Connections:** Adjacent: [Validation](Validation.md). Read next: none.
+
 ## Adding A Document
 
 1. State the document's independent question in one sentence.
@@ -158,6 +166,7 @@ This document defines each document's purpose, scope, and navigation contract. U
 ## Contract Rules
 
 - One document owns each first-class concept.
+- Summaries guide the reader and link to the canonical owner for depth.
 - A document's opening purpose states the question it answers.
 - The sub-concept list stays within that purpose.
 - Prescriptive documents define intent, acceptance properties, or visual rules.

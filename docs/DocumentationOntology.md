@@ -30,6 +30,7 @@ Place each concept in its canonical home. Other documents link to that home and 
 | How do I make and review a change? | [Contributing](Contributing.md) | Workflow |
 | How do I build, install, and prepare a release artifact? | [BuildandInstall](BuildandInstall.md) | Workflow |
 | What validation and evidence does a change need? | [Validation](Validation.md) | Validation |
+| How do I run, write, and debug native C tests? | [Native C tests](../tests/native/README.md) | Native C testing |
 | How do I operate the QA harness? | [QA README](../qa/README.md) | QA operations |
 | How do I write scenarios, Matrices, and suites? | [WritingTestCasesAndPlans](../qa/docs/WritingTestCasesAndPlans.md) | QA grammar |
 | How does the QA harness execute and report? | [QAHarnessImplementationFlow](../qa/docs/QAHarnessImplementationFlow.md) | QA implementation |
@@ -58,6 +59,8 @@ flowchart TD
 
   subgraph workflow["Change and validate"]
     contribute["Contributing"] --> build["Build and Install"] --> validate["Validation"]
+    validate --> native["Native C tests"]
+    contribute --> native
     validate --> qa["QA README"] --> plans["Writing Test Cases and Plans"]
     plans --> execution["QA Harness Implementation Flow"]
   end

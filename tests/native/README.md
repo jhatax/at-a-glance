@@ -2,6 +2,10 @@
 
 These tests compile production C against small dependency replacements and run on the developer's computer. They validate core behavior and calculated geometry. Clang, Python 3, and a POSIX shell are required. No Pebble SDK, emulator, network connection, or real timer delays are needed.
 
+## Adjacent
+
+- [Validation](../../docs/Validation.md) owns validation-path selection, emulator checks, and operator evidence expectations.
+
 ## Run tests
 
 The default runs every suite across the commit matrix:

@@ -10,8 +10,8 @@ This document maps _At A Glance's_ runtime execution, ownership, boundaries, and
 
 | Responsibility | Owner | Role |
 | --- | --- | --- |
-| Pebble lifecycle | `ataglance.c` | Own the window, load settings, register callbacks, subscribe to services, and cancel refresh/retry timers on unload. |
-| Communications | `ataglance_comms_handler.c` | Open AppMessage, handle inbox/outbox callbacks, schedule refresh requests and retries, and apply persistence and service side effects after runtime validation. |
+| Pebble lifecycle | `ataglance.c` | Own the window, load settings, register callbacks, subscribe to services, and cancel the startup sync retry timer on unload. |
+| Communications | `ataglance_comms_handler.c` | Open AppMessage, handle inbox/outbox callbacks, reply to startup synchronization with bounded retries, and apply persistence and service side effects after runtime validation. |
 | Message parsing | `ataglance_message_parser.c` | Convert tuples into typed event data and receipt/parse masks. |
 | Runtime decisions | `watchface_runtime_boundary.c` | Validate and apply settings, build domain updates, and choose repaint or targeted refresh. |
 | Visual coordination | `watchface.c` | Own the live surface, manage feature lifecycles, and dispatch visual updates. |
@@ -19,7 +19,7 @@ This document maps _At A Glance's_ runtime execution, ownership, boundaries, and
 | Style | `layout_stylist.c` | Resolve palettes and fonts for the selected display mode and layout. |
 | Feature rendering | `time`, `date`, `battery`, `climate`, `steps`, and `bpm` modules | Own feature layers, source state, and rendering. Climate also owns location text. |
 
-PKJS handles configuration and retrieves climate/location data when C requests it. C owns the refresh schedule.
+PKJS owns configuration events, the weather cadence timer, connectivity probes, and climate/location acquisition. C completes startup synchronization and applies received data.
 
 ### Core Concepts
 
@@ -58,6 +58,7 @@ ataglance.c
             -> app_message_open(...)
                  -> retry open with AppTimer only if opening fails
             -> subscribe tick, battery, connection, and health services
+            -> refresh time and date from current system state
             -> apply the current Bluetooth connection state
 ```
 
@@ -74,7 +75,7 @@ AppMessage inbox handler in ataglance_comms_handler.c
   -> parse WatchfaceEventData through ataglance_message_parser.c
   -> watchface_apply_received_data(&data, settings)
        -> apply_settings_data(...)
-            -> mutate settings for time format, temp unit, display mode, battery orientation, weather cadence, HR cadence, and steps goal
+            -> mutate settings for temp unit, display mode, battery orientation, weather cadence, HR cadence, and steps goal
             -> accumulate targeted refresh mask
             -> request repaint when the accepted display mode changes
        -> apply_weather_data(...)
@@ -106,69 +107,69 @@ AppMessage inbox handler in ataglance_comms_handler.c
 
 ```text
 AppMessage inbox handler
-  -> request a refresh when JS_READY is present, then continue parsing
+  -> reply to SYNC when present, then continue parsing
   -> parse settings, weather, location, and one-shot health tuples
   -> watchface_apply_received_data(&data, settings)
   -> if any persisted setting changed
        -> settings_save(settings)
-       -> if weather_update_minutes changed, request a refresh and schedule the new interval
   -> if hr_sample_minutes changed
        -> health_service_set_heart_rate_sample_period(...)
 ```
 
 ### 4. Weather-cadence scheduling
 
+PKJS owns the refresh loop. It waits for startup synchronization, restores the saved interval, and probes connectivity before acquiring data. C owns the bounded startup sync reply.
+
 ```text
 src/pkjs/index.js ready
-  -> enqueue JS_READY=1 through the settings/control queue
-  -> wait for REFRESH from C
+  -> enqueue SYNC=1 through the settings/control queue
 
 AppMessage inbox handler in ataglance_comms_handler.c
-  -> receive JS_READY after watchface creation and AppMessage opening
-  -> request_refresh(context)
+  -> respond_to_sync(context)
        -> check the phone app connection before each attempt
        -> if disconnected, schedule a retry without opening the outbox
-       -> if connected, send REFRESH=1 to PKJS
-       -> allow six total attempts, including disconnected checks and failed sends
-       -> after delivery succeeds or attempts are exhausted, schedule the next C cycle
+       -> if connected, send SYNC=1 to PKJS
+       -> stop after successful delivery or the reply-attempt limit
   -> continue parsing other tuples
 
 src/pkjs/index.js appmessage handler
-  -> receive REFRESH=1 from C
-  -> requestUpdate()
-       -> queue one geolocation and combined climate/location request
-       -> send valid or unavailable data to C
+  -> receive SYNC=1 from C
+  -> read and validate the saved Clay interval
+  -> kickoffUpdates(minutes)
+       -> probe connectivity with PING=1
+       -> on send success, queue location and climate acquisition
+       -> send changed fields, or all unavailable fields on acquisition failure
+       -> wait for send success or exhausted retries
+       -> schedule the next check before the next queued operation starts
+       -> on failed probe, skip acquisition and schedule the next check
 
 src/pkjs/index.js webviewclosed handler
   -> Clay saves the submitted settings in localStorage
   -> normalize and enqueue settings
+  -> kickoffUpdates(minutes)
+       -> changed interval starts a probe
+       -> unchanged interval with an active timeout queues available cached data for replay
 
 C receives a changed WEATHER_UPDATE_MINUTES
   -> persist the accepted value
-  -> request a refresh immediately and schedule the new interval
-
-C cadence timer expires
-  -> request_refresh(context)
 ```
 
-C schedules the next cycle without waiting for climate/location data. A failed JS fetch or response delivery does not cancel the C cadence. PKJS has no periodic refresh timer.
-
-[SettingsandConfiguration](SettingsandConfiguration.md) owns the readiness, refresh-request, retry, and cadence contract.
+[SettingsandConfiguration](SettingsandConfiguration.md#weather-scheduling-and-delivery) defines the saved-value rules, timeout replacement, cache replay, attempt limits, and recovery behavior.
 
 ### 5. App teardown
 
-`ataglance.c` owns the refresh and send-retry timer handles. The communications handler schedules these timers through pointers to those handles. Window unload cancels both timers before destroying the watchface.
+`ataglance.c` owns the startup sync retry-timer handle. The communications handler schedules retries through a pointer to that handle. Window unload cancels it before destroying the watchface. PKJS owns its separate cadence timeout.
 
 ```text
 main_window_unload(window)
   -> unsubscribe tick and battery services
-  -> deregister AppMessage callbacks and context
+  -> deregister AppMessage callbacks
   -> unsubscribe connection service
   -> if health events were subscribed
        -> unsubscribe health events
        -> clear the subscription flag
-  -> cancel active refresh and send-retry timers
-  -> set both timer handles to NULL
+  -> cancel the active startup sync retry timer
+  -> set the timer handle to NULL
   -> watchface_destroy()
        -> destroy date, time, battery, and climate modules
        -> destroy Bluetooth and horizontal-rule resources
@@ -271,7 +272,7 @@ watchface_destroy()
 
 ### Current module variants
 
-- Text-only modules such as date and time own a text layer and refresh text from time/date state plus the active palette.
+- Text-only modules such as date and time own a text layer and refresh text from time/date state plus the active palette. Time follows the watch’s system preference through `clock_is_24h_style()` on each time refresh.
 - Service-backed modules such as battery, BPM, and steps read Pebble service state during refresh, then map that source state to text, progress, icon, or live colors.
 - Climate refresh accepts `ClimateUpdate` and location refresh accepts `LocationUpdate`. Each refresh applies received data to module-owned source state before rendering. Repaints and unit changes preserve source state when no new data arrived.
 - QA-only one-shot health setters queue a single source-state override that is consumed by the next health refresh and cleared during module or watch face teardown.
@@ -382,30 +383,27 @@ The steps module demonstrates the intended boundary:
 
 ### Inbound AppMessage coverage
 
-- **Settings tuples**: time format, temperature unit, display mode, battery orientation, weather cadence, heart-rate cadence, and steps goal.
+- **Control tuples**: `SYNC` triggers the startup reply. `PING` relies on transport acknowledgment and carries no runtime data.
+- **Settings tuples**: temperature unit, display mode, battery orientation, weather cadence, heart-rate cadence, and steps goal.
 - **Weather tuples**: temperature, weather condition, and `is_day`.
 - **Location tuple**: current-location text from PKJS; an empty value renders `---`.
 - **QA-only one-shot health tuples**: heart-rate and steps overrides.
 
 ### AppMessage sends
 
-- PKJS announces readiness with `JS_READY=1`. C requests climate/location with `REFRESH=1` after the watchface has been created. C owns cadence and bounded request retries.
-- PKJS uses two independent serialized queues: settings/control and combined weather/location.
-- Each queue retries a failed `Pebble.sendAppMessage()` up to five times, with delays of one through five seconds.
-- Each queue advances independently, so climate retries do not hold settings/control messages in the same queue.
+- PKJS announces readiness with `SYNC=1`; C replies with `SYNC=1` after watchface creation and AppMessage opening.
+- PKJS uses two independent serialized queues: settings/control and climate/location.
+- Each queue retries messages independently, with a per-message attempt limit.
+- Climate retries do not block the settings/control queue.
 
-[SettingsandConfiguration](SettingsandConfiguration.md) owns Clay field mapping, generated message-key numbering, PKJS normalization, and persistence rules.
+[SettingsandConfiguration](SettingsandConfiguration.md) owns Clay field mapping, explicit message-key IDs, retry limits, PKJS normalization, and persistence rules.
 
 ### Climate-specific transport behavior
 
-- `weather_location.js` owns geolocation, Open-Meteo weather requests, and OpenStreetMap reverse geocoding for each `REFRESH=1` request. Weather is fetched for every request; the reverse-geocoded name may be reused while coordinates remain within the location tolerance.
-- Weather and reverse-geocoding requests run concurrently. `Promise.all()` waits for both, updates the climate and lookup caches together, and sends one payload containing `TEMPERATURE`, `WEATHER_CONDITION`, `IS_DAY`, and `MAYBE_CURRENT_LOCATION`. Individual request callbacks do not update these caches.
-- If geolocation fails, either request rejects, or either resolved result is missing, PKJS clears its coordinates and climate/location caches. It sends one unavailable payload: temperature `0`, condition `-1`, `is_day` `0`, and an empty location string. Network requests and geolocation use a 15-second timeout; geolocation may reuse a position up to 10 minutes old.
-- Refresh attempts run through a serialized promise chain. Reverse-geocoding responses for superseded coordinates are rejected. A late response from a failed attempt cannot publish a cached pair.
-- PKJS owns combined climate/location delivery. C parses weather and location independently and accepts partial messages.
-- `climate.c` owns the location buffer and text layer. A received empty or malformed location renders `---`; a repaint without a location tuple preserves the buffer.
-- Temperature is sent to the watch in Celsius tenths and rendered according to settings.
-- `weather_code` and `is_day` are sent to C for glyph selection.
+- `weather_location.js` serializes acquisition, delivery, unavailable updates, and cached replay through one Promise chain. Each operation waits for delivery to succeed or exhaust retries before the next starts. This preserves refresh order through the phone-to-watch boundary.
+- [SettingsandConfiguration](SettingsandConfiguration.md#weather-scheduling-and-delivery) defines connectivity probes, changed-field payloads, acknowledged caches, invalidation, and request timeouts.
+- C accepts weather and location independently. `climate.c` owns both source states and their text layers. Empty or malformed location data renders `---`; a repaint without a location tuple preserves the buffer.
+- `TEMPERATURE` arrives in Celsius tenths and is rendered according to settings. `WEATHER_CONDITION` and `IS_DAY` select the condition glyph.
 - Weather tuple flow:
   1. A received tuple triggers a climate refresh.
   2. The runtime marks the climate update complete only when temperature, condition, and `is_day` all parse.

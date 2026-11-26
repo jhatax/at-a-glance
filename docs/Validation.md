@@ -28,13 +28,38 @@ Use the narrowest path that proves the change.
 | --- | --- |
 | Documentation only | Read the touched docs for contradictions and run Markdown/link checks when practical. |
 | Build tooling | Run the affected build or compile-database path. |
-| Runtime C change | Run `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
+| Runtime C change | Run the relevant native C cases, then `pebble build` and a scenario or manual emulator path that exercises the changed behavior. |
 | PKJS climate/location change | Run the JavaScript tests, then exercise the changed path with PKJS and the emulator or phone companion. |
-| Settings, AppMessage, or persistence | Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
-| UI layout, palette, glyph, or visual state | Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, confirm the mode changes and the watch repaints. |
+| Settings, AppMessage, or persistence | Run the relevant native C and JavaScript cases. Validate defaults, invalid values, applied behavior, and restart behavior where applicable. |
+| UI layout, palette, glyph, or visual state | For layout calculations, run the native layout suite across the full matrix. Capture screenshots or run a screenshot-producing scenario and perform manual visual review. For display-mode changes, confirm the mode changes and the watch repaints. |
 | Release candidate | Run the release scenario path and complete manual signoff. |
 
 If a validation path cannot be run, state the gap explicitly in the closeout.
+
+## Automated Tests
+
+Run all automated suites from the repository root:
+
+```sh
+npm test
+```
+
+This runs the native C, JavaScript, and Python harness suites in sequence. It does not build the watchface or run an emulator scenario. [Contributing](Contributing.md) lists prerequisites and individual suite commands.
+
+## Native C Tests
+
+The native suite runs production C against mocked Pebble dependencies on the developer's computer. Six suites cover settings persistence and migration, message parsing, runtime dispatch, communications, shared helpers, and calculated layout geometry. It requires Clang, Python 3, and a POSIX shell; it needs no Pebble SDK or emulator.
+
+```sh
+npm run test:native
+npm run test:native -- --suite layout --matrix full --bounds --keep-build
+```
+
+The default runs all suites on Emery, Chalk, and Flint with health enabled, plus Aplite without health. `npm test` and both Git hooks use this matrix. Each case runs in a separate process, so a crash does not stop later cases. Failures identify the case and include a replay command; assertion diagnostics can also include input context and captured calls.
+
+The layout command checks all supported geometries with both health configurations and battery orientations. Its bounds output lists each item's origin, width, height, and bottom-right coordinate in Y/X order. `--keep-build` retains per-case logs under `build/native-tests/<platform>-<variant>/`. Circle-intersection observations identify text or image frames that need visual inspection. The operator or developer owns visual validation.
+
+The [Native C tests guide](../tests/native/README.md) explains suite and case selection, result interpretation, retained logs, sanitizers, architecture, and authoring. Use it to narrow a failure or add coverage; use the emulator paths below to check runtime integration and rendered behavior.
 
 ## JavaScript Tests
 
@@ -50,7 +75,7 @@ To run only the climate/location tests:
 node --test tests/js/weather_location.test.js
 ```
 
-The tests use Node's built-in test runner and one shared harness in `tests/js/harness.js`. Each test gets an isolated environment running the production entry point, refresh controller, and message queues. The harness supplies Pebble events, storage, geolocation, network responses, message sends, and timers; Clay is stubbed. Tests cover JS_READY and REFRESH handling, requests without JS cadence timers, fresh climate fetches, location reuse, movement, failures, timeouts, and late responses. Validate C scheduling, retry behavior, and actual AppMessage delivery separately with the emulator or phone companion.
+The tests use Node's built-in test runner and one shared harness in `tests/js/harness.js`. Each test gets an isolated environment running the production entry point, refresh controller, and message queues. The harness supplies Pebble events, storage, geolocation, network responses, message sends, and timers; Clay is stubbed. Tests cover startup SYNC, saved intervals, PKJS cadence timers, PING-gated acquisition, fresh climate fetches, location reuse, changed-field delivery, acknowledged caches, failures, timeouts, and late responses. Native C tests cover the watch's startup reply and retry decisions. Use the emulator or phone companion to validate actual AppMessage delivery.
 
 ## Operator Evidence Review Expectations
 
@@ -157,9 +182,11 @@ pebble send-app-message --emulator emery --int 10006=2
 
 Use [SettingsandConfiguration](SettingsandConfiguration.md) for the message-key catalog and transport contract.
 
-Key `10005` changes the watch's persisted cadence and starts a refresh when the accepted value differs. Change the interval through Clay to exercise the full settings path, then restart the watchface to check the saved cadence.
+Key `10005` changes the watch’s persisted interval only. Change the interval through Clay to exercise PKJS scheduling, then restart the phone companion to check restoration from saved Clay settings. Restart the watchface separately to check its persisted copy.
 
-Check refresh behavior with the phone app disconnected: C must skip the outbox and use the existing retry schedule. Reconnect during retries and confirm the next attempt sends the request. If all six attempts occur while disconnected, confirm another attempt occurs after the selected refresh interval.
+Check startup synchronization with the phone app disconnected: C must skip the outbox and count disconnected checks toward its six-attempt limit. Reconnect during retries and confirm the next attempt sends SYNC. Exhaustion ends that sync attempt.
+
+After synchronization, disconnect before a scheduled PKJS check. Three failed PING sends must skip GPS and network acquisition, preserve visible data, and schedule another check after the selected interval. Reconnect and confirm acquisition resumes.
 
 #### Weather And Location State
 
@@ -168,10 +195,14 @@ pebble send-app-message --emulator emery --int 10002=265 10003=0 10004=1 --strin
 pebble send-app-message --emulator emery --int 10006=1
 pebble send-app-message --emulator emery --int 10001=1
 pebble send-app-message --emulator emery --int 10002=265
-pebble send-app-message --emulator emery --int 10002=0 10003=-1 10004=-1 --string '10011='
+pebble send-app-message --emulator emery --int 10002=0 10003=-1 10004=0 --string '10011='
 ```
 
-Confirm that palette and unit changes preserve received weather and location. The combined unavailable payload must show unavailable weather and `---` for location. A partial weather packet must invalidate prior weather. Manual messages exercise C ingress; use the phone companion to check combined request success, failure, timeout, and late-response handling.
+Confirm that palette and unit changes preserve received weather and location. The combined unavailable payload must show unavailable weather and `---` for location. A partial weather packet must invalidate prior weather.
+
+Manual messages exercise C ingress; use the phone companion to check coordinated acquisition, failure, timeout, and late-response handling. At unchanged coordinates, change weather and confirm all three climate fields are sent without the unchanged location. Unchanged results must produce no data message. Failed data delivery must not advance the caches; the next acquisition must be able to resend the changes. Move beyond the coordinate tolerance and confirm a new lookup and location send, even when the returned name is unchanged.
+
+To verify the [refresh-order invariant](SettingsandConfiguration.md#weather-scheduling-and-delivery), delay acknowledgment of an unavailable payload and queue another refresh or cached replay. Confirm the next queued operation waits until that send succeeds or exhausts retries. Repeat with a valid-data send and a cached replay awaiting acknowledgment. Check that an older unavailable update cannot clear data from a later refresh and that the next cadence timeout is scheduled after the acquisition and send outcome settle.
 
 #### One-Shot Health
 
@@ -186,11 +217,21 @@ pebble send-app-message --emulator emery --int 10020=0
 pebble send-app-message --emulator emery --int 10021=0
 ```
 
+#### Refresh Interval Changes
+
+Change the interval through Clay and confirm a connectivity probe starts immediately. After acquisition settles, confirm the next timeout uses the new interval. Save the same interval again and confirm cached weather and location are resent without replacing the active cadence timeout. Cancel configuration and confirm polling stays unchanged.
+
+#### System Time Format
+
+Select each 12/24-hour format in the watch’s system settings. Confirm the watchface follows that preference at startup and on a time refresh. In 12-hour mode, confirm a single-digit hour has no leading zero.
+
 #### Config Page
 
 ```sh
 pebble emu-app-config
 ```
+
+Confirm Clay has no time-format control. Check that health controls follow capability filters and that PKJS omits health settings when its active-watch capability check fails.
 
 ### 3. Visually using Debug Builds
 
@@ -207,4 +248,5 @@ Use this path when layer bounds, glyph bounds, or debug-only runtime evidence wo
 
 ## Read Next
 
+- [Native C tests](../tests/native/README.md) for focused runs, geometry diagnostics, debugging, and adding cases or suites.
 - [QA README](../qa/README.md) for QA commands, plans, and artifacts.

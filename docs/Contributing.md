@@ -30,6 +30,7 @@ Verify the tools needed for the path you intend to run:
 ```sh
 node --version
 npm --version
+clang --version
 uv --version
 uv run --python 3.13 python --version
 clang-format --version
@@ -85,6 +86,8 @@ npm run check
 
 `npm run test:js` uses Node's built-in test runner. The tests in `tests/js/` load PKJS source with isolated GPS, network, and timer mocks. They require no Pebble build, emulator, network connection, or real timer delays.
 
+`npm run test:native` runs all native C suites across the four-profile commit matrix: Emery, Chalk, and Flint with health enabled, plus Aplite without health. `npm test` and both Git hooks explicitly use this matrix. Use `npm run test:native -- --matrix full` for every platform with both health configurations. The [native test guide](../tests/native/README.md) owns architecture, authoring, selection, debugging, and sanitizer commands. The operator or developer owns visual validation.
+
 Use one harness test or test class when narrowing a change:
 
 ```sh
@@ -123,7 +126,7 @@ Pre-commit restages the full contents of files that were staged when the hook st
 
 ## C, JavaScript, And Tooling Rules
 
-For C and headers, use the repository `.clang-format`, keep lines at or below 100 characters where practical, and prefer direct auditable code. Check existing helpers before introducing a new abstraction.
+For project C and headers, use the repository `.clang-format`, keep lines at or below 100 characters where practical, and prefer direct auditable code. Check existing helpers before introducing a new abstraction. Keep vendored Clar sources identical to their pinned upstream revision; repository formatters exclude them.
 
 For PebbleKit JS, use runtime-compatible CommonJS modules, validate AppMessage payloads, guard optional APIs, and handle network failures explicitly. Prettier formats JavaScript and JSON.
 
@@ -148,7 +151,7 @@ Documentation rules:
 - Give each document one independent question, canonical purpose, and clear audience.
 - Use [DocumentationOntology](DocumentationOntology.md) to route concepts.
 - Use [DocumentationContracts](DocumentationContracts.md) to maintain `Adjacent`, `Read Next`, and ownership metadata.
-- Link to the canonical document instead of duplicating its content.
+- Summarize related content when it helps the reader act, then link to its canonical owner for details.
 
 Keep each prose paragraph on one logical line so the editor controls wrapping. Preserve structural breaks for headings, lists, tables, blockquotes, code fences, and intentional hard breaks.
 
@@ -175,4 +178,5 @@ The pre-commit hook is the final local gate, not a replacement for a build, emul
 
 - [RuntimeArchitecture](RuntimeArchitecture.md) for runtime ownership and lifecycle.
 - [SettingsandConfiguration](SettingsandConfiguration.md) for settings and message contracts.
+- [Native C tests](../tests/native/README.md) for running, debugging, and extending core C coverage.
 - [QA README](../qa/README.md) for harness operation and artifacts.
